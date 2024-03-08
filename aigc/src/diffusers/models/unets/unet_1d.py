@@ -19,8 +19,9 @@ import torch
 import torch.nn as nn
 
 from ...utils import BaseOutput
-from ...configuration_utils import ConfigMixin
+from ...configuration_utils import ConfigMixin, register_to_config
 from ..modeling_utils import ModelMixin
+from ..embeddings import GaussianFourierProjection, TimestepEmbedding, Timesteps
 
 from .unet_1d_blocks import get_down_block, get_mid_block, get_out_block, get_up_block
 
@@ -68,3 +69,173 @@ class Unet1DModel(ModelMixin, ConfigMixin):
         downsample_each_block (`int`, *optional*, defaults to `False`):
             Experimental feature for using a UNet without upsampling.
     """
+    @register_to_config
+    def __init__(self,
+                sample_size: int = 65536,
+                sample_rate: Optional[int] = None,
+                in_channels: int = 2,
+                out_channels: int = 2,
+                extral_in_channels: int = 0,
+                time_embedding_type: str = 'fourier',
+                freq_shift: float = 0.,
+                flip_sin_to_cos: bool = True,
+                use_timestep_embedding: bool = False,
+                down_block_types: Tuple[str] = ("DownBlock1DNoSkip", "DownBlock1D", "AttnDownBlock1D"),
+                up_block_types: Tuple[str] = ("AttnUpBlock1D", "UpBlock1D", "UpBlock1DNoSkip"),
+                block_out_channels: Tuple[int] = (32, 32, 64),
+                mid_block_type: str = "UNetMidBlock1D",
+                out_block_type: str = None,
+                act_fn: str = None,
+                norm_num_groups: int = 8,
+                layers_per_block: int = 1,
+                downsample_each_block: bool = False,
+                ):
+        super().__init__()
+        self.sample_size = sample_size
+        
+        # time
+        if time_embedding_type == "fourier":
+            self.time_proj = GaussianFourierProjection(embedding_size=8, log=False, flip_sin_to_cos=flip_sin_to_cos)
+            timestep_input_dim = 2 * block_out_channels[0]
+        elif time_embedding_type == "positional":
+            self.time_proj = Timesteps(block_out_channels[0], flip_sin_to_cos=flip_sin_to_cos, downscale_freq_shift=freq_shift)
+            timestep_input_dim = block_out_channels[0]
+        
+        if use_timestep_embedding:
+            time_embed_dim = block_out_channels[0] * 4
+            self.time_mlp = TimestepEmbedding(
+                in_channels=timestep_input_dim,
+                time_embed_dim=time_embed_dim,
+                act_fn=act_fn,
+                out_dim=block_out_channels[0],
+            )
+        self.down_blocks = nn.ModuleList([])
+        self.mid_block = None
+        self.up_blocks = nn.ModuleList([])
+        self.out_block = None
+        
+        # down 
+        output_channel = in_channels
+        for i, down_block_type in enumerate(down_block_types):
+            input_channel = output_channel
+            output_channel = block_out_channels[i]
+            
+            if i == 0:
+                input_channel += extral_in_channels
+            is_final_block = i == len(block_out_channels) - 1
+
+            down_block = get_down_block(
+                down_block_type,
+                num_layers=layers_per_block,
+                in_channels=input_channel,
+                out_channels=output_channel,
+                temb_channels=block_out_channels[0],
+                add_downsample=not is_final_block or downsample_each_block
+            )
+            self.down_blocks.append(down_block)
+        
+        # mid
+        self.mid_block = get_mid_block(
+            mid_block_type,
+            in_channels= block_out_channels[-1],
+            mid_channels= block_out_channels[-1],
+            out_channels=block_out_channels[-1],
+            embed_dim=block_out_channels[0],
+            num_layers=layers_per_block,
+            add_downsample=downsample_each_block,
+        )
+        # up 
+        reversed_block_out_channels = list(reversed(block_out_channels))
+        output_channel = reversed_block_out_channels[0]
+        if out_block_type is None:
+            final_upsample_channels = out_channels
+        else:
+            final_upsample_channels = block_out_channels[0]
+
+        for i, up_block_type in enumerate(up_block_types):
+            prev_output_channel = output_channel
+            output_channel = (
+                reversed_block_out_channels[i + 1] if i < len(up_block_types) - 1 else final_upsample_channels
+            )
+
+            is_final_block = i == len(block_out_channels) - 1
+
+            up_block = get_up_block(
+                up_block_type,
+                num_layers=layers_per_block,
+                in_channels=prev_output_channel,
+                out_channels=output_channel,
+                temb_channels=block_out_channels[0],
+                add_upsample=not is_final_block,
+            )
+            self.up_blocks.append(up_block)
+            prev_output_channel = output_channel
+        
+        # out 
+        num_groups_out = norm_num_groups if norm_num_groups is not None else min(block_out_channels[0] // 4, 32)
+        self.out_block = get_out_block(
+            out_block_type=out_block_type,
+            num_groups_out=num_groups_out,
+            embed_dim=block_out_channels[0],
+            out_channels=out_channels,
+            act_fn=act_fn,
+            fc_dim=block_out_channels[-1] // 4,
+        )
+        
+    def forward(self, 
+                sample: torch.FloatTensor,
+                timestep: Union[torch.Tensor, float, int],
+                return_dict: bool = True,
+                ) -> Union[Unet1DOutput, Tuple]:
+        r"""
+        The [`UNet1DModel`] forward method.
+        Args:
+            sample (`torch.FloatTensor`):
+                The noisy input tensor with the following shape `(batch_size, num_channels, sample_size)`.
+            timestep (`torch.FloatTensor` or `float` or `int`): The number of timesteps to denoise an input.
+            return_dict (`bool`, *optional*, defaults to `True`):
+                Whether or not to return a [`~models.unet_1d.UNet1DOutput`] instead of a plain tuple.
+
+        Returns:
+            [`~models.unet_1d.UNet1DOutput`] or `tuple`:
+                If `return_dict` is True, an [`~models.unet_1d.UNet1DOutput`] is returned, otherwise a `tuple` is
+                returned where the first element is the sample tensor.
+        """
+        # 1. time
+        timesteps = timestep
+        if not torch.is_tensor(timesteps):
+            timesteps = torch.tensor([timesteps], dtype=torch.long, device=sample.device)
+        elif torch.is_tensor(timesteps) and len(timesteps.shape) == 0:
+            timesteps = timesteps[None].to(sample.device)
+        
+        timestep_embed = self.time_proj(timesteps)
+        if self.config.use_timestep_embedding:
+            timestep_embed = self.time_mlp(timestep_embed)
+        else:
+            timestep_embed = timestep_embed[..., None]
+            timestep_embed = timestep_embed.repeat([1, 1, sample.shape[2]]).to(sample.device)
+            timestep_embed = timestep_embed.broadcast_to((sample.shape[:1] + timestep_embed.shape[1:]))
+        # 2. down
+        down_block_res_samples = ()
+        for downsample_block in self.down_blocks:
+            sample, res_samples = downsample_block(hidden_states=sample, temb=timestep_embed)
+            down_block_res_samples += res_samples
+
+        # 3. mid
+        if self.mid_block:
+            sample = self.mid_block(sample, timestep_embed)
+
+        # 4. up
+        for i, upsample_block in enumerate(self.up_blocks):
+            res_samples = down_block_res_samples[-1:]
+            down_block_res_samples = down_block_res_samples[:-1]
+            sample = upsample_block(sample, res_hidden_states_tuple=res_samples, temb=timestep_embed)
+
+        # 5. post-process
+        if self.out_block:
+            sample = self.out_block(sample, timestep_embed)
+
+        if not return_dict:
+            return (sample,)
+
+        return Unet1DOutput(sample=sample)

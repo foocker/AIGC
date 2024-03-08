@@ -108,7 +108,6 @@ class DownBlock1DSkip(nn.Module):
         pass
 
 
-
 DownBlockType = Union[DownResnetBlock1D, DownBlock1D, AttnDownBlock1D, DownBlock1DSkip]
 MidBlockType = Union[MidResTemporaBlock1D, ValueFunctionMidBlock1D, UnetMidBlock1D]
 UpBlockType = Union[UpResnetBlock1D, UpBlock1D, AttnUpBlock1D, UpBlock1DNoSkip]
