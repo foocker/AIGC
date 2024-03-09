@@ -600,7 +600,7 @@ p_m(\mathbf{x} ; \boldsymbol{\theta})=\frac{\tilde{p}_m(\mathbf{x} ; \boldsymbol
 \begin{equation}
 \mathbf{s}_m(\mathbf{x} ; \boldsymbol{\theta}) \triangleq \nabla_{\mathbf{x}} \log p_m(\mathbf{x} ; \boldsymbol{\theta})=\nabla_{\mathbf{x}} \log \tilde{p}_m(\mathbf{x} ; \boldsymbol{\theta}), \quad  \mathbf{s}_d(\mathbf{x} ; \boldsymbol{\theta}) \triangleq \nabla_{\mathbf{x}} \log p_d(\mathbf{x} ; \boldsymbol{\theta})
 \end{equation}
-消去了${Z_{\boldsymbol{\theta}}$，其中$p_d$是$p_{data}$的简写。
+消去了$Z_{\boldsymbol{\theta}}$，其中$p_d$是$p_{data}$的简写。
 
 上述分数匹配于2005(Hyvärinen, 2005)年被提出，主要用来解决基于能量的概率密度估计(极大似然建模)分母归一化因子难处理的问题，原始优化目标为：
 \begin{equation}
@@ -649,14 +649,14 @@ NCSN是在以上基础上提出的，作者分析了基于分数的生成模型�
 基于这些基本观察，分析，作者提出了带尺度的扰动分数模型：Noise Conditional Score Networks。一来解决了高低密度不均匀难以优化，导致采样不准的问题，二来解决了数据在高维空间的低维嵌入的普遍现象导致的分数模型无法正确优化的问题。因为将数据不断扰动，能使其充满整个空间，同时，低密度区域得到了有效填充，另外不同尺度，从极小扰动到不断增幅扰动因子，使得一个分数模型在全空间中去拟合不同尺度的扰动，得到非常充分的训练，因此其逆向采样，能更好的近似到原始分布。
 
 称$\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)$为Noise Conditional Score Network (NCSN)是指：
-设扰动因子$\{\sigma_i}\}_{i=1}^{L}$满足$\frac{\sigma_1}{\sigma_2}=\dots=\frac{\sigma_{L-1}}{\sigma_L}>1 $，
+设扰动因子$\{\sigma_i\}_{i=1}^{L}$满足$\frac{\sigma_1}{\sigma_2}=\dots=\frac{\sigma_{L-1}}{\sigma_L}>1 $，
 定义扰动尺度为$\sigma$的数据分布
 \begin{equation}
 q_\sigma(\tilde{\mathbf{x}}) \triangleq \int p_{\text {data }}(\mathbb{t}) \mathcal{N}(\tilde{\mathbf{x}} \mid \mathbb{t}, \sigma^2I)
 \end{equation}
 训练一个
 \begin{equation}
-\forall \sigma \in\left\{\sigma_i\right\}_{i=1}^L: \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}}, \sigma) \approx \nabla_{\mathbf{x}} \log q_\sigma(\tilde{\mathbf{x}})
+\forall \sigma \in\left\{\sigma_i\right\}_{i=1}^L: \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}, \sigma) \approx \nabla_{\mathbf{x}} \log q_\sigma(\tilde{\mathbf{x}})
 \end{equation}
 的网络，其中$ \mathbf{x} \in \mathbb{R}^{D}, \mathbf{s}_{\boldsymbol{\theta}} \in \mathbb{R}^{D}$。
 
