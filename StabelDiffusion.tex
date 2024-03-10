@@ -60,7 +60,9 @@
 
 \end{itemize}
 \section{一些废话}
-不重复生产，因此部分使用了两个博客的原文部分内容，和一些研究者的见解，在统一符号上做了一些调整。
+不重复生产，因此部分使用了两个博客的原文部分内容，和一些研究者的见解，在统一符号上做了一些调整。另外我发现，知乎用户
+\href{https://www.zhihu.com/people/bai-e-ji-wan-qi}{Hammour Yue}很早开始写了，写得比较系统，在得到他同意的情况下，后面有些文章
+我会cp他的原文，或做部分修改(粗看了下，他文章中细节问题比较多)。
 \subsection{无中生有}
 。
 \subsection{翻译}
@@ -228,18 +230,375 @@ $，
   \end{aligned}
 \end{equation}
 
-\section{SDE 和ODE}
-简单介绍下。
 
-概率流常微分的迹，
-随机微分方程的边缘概率密度，以及这两者的关系。
-从同样的数据分布采样，迹有同样的边缘分布？
-概率流常微分的半边结构。
+\section{SDE}
+本小节的\href{https://zhuanlan.zhihu.com/p/619188621}{摘录源}，并作了少量细节修改，和补充内容。
 
-% \newpage
-% \begin{problemset}
-%   \item 完成一个RL与动作控制的开源项目
-% \end{problemset}
+\begin{definition}
+  设随机变量序列$\left\{X_n, n=1,2, \ldots\right\}$和随机变量$ X_n$的二阶矩有限，若均方极限：
+  \begin{equation}
+    \lim _{n \rightarrow \infty} E\left|X_n-X\right|^2=0
+  \end{equation}
+ 则称为$X_n$ 均方收敛于$X$ ，记作  $\mathrm{l.i.m}_{n \rightarrow \infty} X_n=X$或者$X_n \xrightarrow{m . s} X$。
+ 其中记号 l.i.m代表Limit in mean square。
+\end{definition}
+
+\begin{theorem}
+  若$\mathrm{l.i.m}_{n \rightarrow \infty} X_n=X$，则：
+  \begin{equation}
+    \lim _{n \rightarrow \infty} E\left(X_n\right)=E\left(\text { l.i. } \mathrm{m}_{n \rightarrow \infty} X_n\right)
+  \end{equation}
+\end{theorem}
+
+\begin{proof}
+  因为$D(Y)=E Y^2-E^2 Y$，所以$E^2Y = EY^2 - D(Y) \leq EY^2$，故：
+  \begin{equation}
+    \left|E\left(X_n-X\right)\right| \leq \sqrt{E\left|X_n-X\right|^2}
+  \end{equation}
+  当$n->\infty$时，由条件已$\lim _{n \rightarrow \infty} E\left|X_n-X\right|^2=0$，也即
+  $\lim _{n \rightarrow \infty} E X_n=E X=E\left(\right.$ l.i. $\left.\mathrm{m}_{n \rightarrow \infty} X_n\right)$
+\end{proof}
+定理3.1说明了，若均方极限存在，那么普通极限和均方极限在期望下可以交换位置。
+
+\begin{theorem}
+  若$\mathrm{l.i.m}_{n \rightarrow \infty} X_n=X$，则 $X_n$依概率收敛于 $X$。
+\end{theorem}
+
+\begin{proof}
+  由切比雪夫不等式可知：
+  $$
+  \forall \varepsilon>0, P\left(\left|X_n-X\right|>\varepsilon\right) \leq \frac{E\left|X_n-X\right|^2-E^2\left|X_n-X\right|}{\varepsilon^2}
+  $$
+  由于$\lim _{n \rightarrow \infty} E\left|X_n-X\right|^2=0$，由定理3.1可知，$\lim _{n \rightarrow \infty} E\left|X_n-X\right|=0$，
+  所以$\lim _{n \rightarrow \infty} P\left(\left|X_n-X\right|>\varepsilon\right) \rightarrow 0$，即$X_n$依概率收敛于$X$。
+\end{proof}
+
+\begin{definition}
+  如果随机过程 $\{X(t), t\in T\}$满足下式，对于$t_0, t_0 + \Delta t \in T $，有：
+  $$
+\lim _{\Delta t \rightarrow 0} E\left|X\left(t_0+\Delta t\right)-X\left(t_0\right)\right|^2=0
+$$
+也即：
+$$
+\text { l.i.m } \mathrm{m}_{\Delta t 0} X\left(t_0+\Delta t\right)=X\left(t_0\right)
+$$
+则称$X(t)$在$x_0$处均方连续。若 $X(t)$在每一点 $t \in T$处均方连续，则称 $X(t)$在$T$上均方连续。
+\end{definition}
+由定理3.2可知，均方收敛则依概率收敛，故$\Delta t \rightarrow 0, \forall \varepsilon, \forall \eta, P\left(\left|X\left(t_0+\Delta t\right)-X\left(t_0\right)\right|>\varepsilon\right)<\eta$。
+这说明当时间做出微小的扰动$\Delta t$时，$X(t_0 + \Delta t) - X(t_0)$的偏差大于$\epsilon$的事件几乎不可能出现，这也是随机过程中连续性的统计物理意义。
+
+\begin{definition}
+  若随机过程 $\{ X(t), t \in T \}$ 在$t_0$处下，均方极限：
+  \begin{equation}
+    \Delta t \rightarrow 0, \forall \varepsilon, \forall \eta, P\left(\left|X\left(t_0+\Delta t\right)-X\left(t_0\right)\right|>\varepsilon\right)<\eta
+    \end{equation}
+  存在，则称此极限为$X(t)$在$t_0$处的均方导数，记作$X^{\prime}(t_0)$或$\left.\frac{d X(t)}{d t}\right|_{t=t_0}$，
+  也称$X(t)$在$t_0$处均方可导。
+
+  若$X(t)$在每一点$t \in T$处均方可导，则称$X(t)$在$T$上均方可导或均方可微，记作$X^{\prime}(t)$或
+  $\frac{d X(t)}{d t}$ ，是一个新的随机过程。
+\end{definition}
+
+均方导数具有普通导数的类似性质：
+
+\begin{property}
+  \begin{itemize}
+    \item[1.]  均方可导则均方连续；
+    \item[2.]  若$X(t)$和$Y(t)$都在$T$上均方可导，$a, b$为常数，则$[a X(t)+b Y(t)]^{\prime}=a X^{\prime}(t)+b Y^{\prime}(t)$；
+    \item[3.]  $X(t)$均方导数的均值函数为$E(X^{\prime}(t))=\frac{d}{dt}E(X(t))$ ，前者对随机过程求导，后者对普通函数求导。
+  \end{itemize}
+\end{property}
+类似的可以定义$n$阶均方导数为：
+\begin{equation}
+  X^{(n)}(t)=\text { l.i.m }_{\Delta t \rightarrow 0} \frac{X^{(n-1)}\left(t_0+\Delta t\right)-X^{(n-1)}\left(t_0\right)}{\Delta t}, n=1,2, \ldots
+  \end{equation}
+
+\begin{definition}
+  设随机过程$\{X(t), t \in T =[a, b] \}$，$f(t)$为任意普通函数。将$[a, b]$分成$n$个子区间，分点为$a=t_0 < t_1 < ... < t_n = b$，
+  记：
+  $Delta t = max(t_k - t_{k-1}) = max \Delta t_k, k \in [1, n]$作和式：
+  \begin{equation}
+    \begin{array}{rlr}
+    Y_n & =\sum_{k=1}^n f\left(\xi_k\right) X\left(\xi_k\right)\left(t_k-t_{k-1}\right) & \\
+    & =\sum_{k=1}^n f\left(\xi_k\right) X\left(\xi_k\right) \Delta t_k & \xi_k \in\left[t_{k-1}, t_k\right]
+    \end{array}
+  \end{equation}
+如果在$\Delta t \rightarrow 0$时，$Y_n$均方收敛于$Y$，$Y$是一个不依赖子区间和$\xi_k$取法，则称$f(t)X(t)$
+在$T=[a, b]$上均方可积，并称$Y_n$的极限$Y$为$f(t)X(t)$在$T=[a, b]$上的均方积分，记为：
+\begin{equation}
+  \begin{aligned}
+  Y & =\int_a^b f(t) X(t) d t \\
+  & =\operatorname{li.}_{\Delta t \rightarrow 0} \sum_{k=1}^n f\left(\xi_k\right) X\left(\xi_k\right) \Delta t_k \quad \xi_k \in\left[t_{k-1}, t_k\right]
+  \end{aligned}
+  \end{equation}
+\end{definition}
+均方积分具有普通积分类似的性质，例如唯一性、线性可加性等。
+
+\begin{theorem}
+  若$X(t)$在$[a, b]$ 上均方可积，则：
+  \begin{equation}
+    \left[\int_a^t X(s) d s\right]^{\prime}=X(t)
+  \end{equation}
+\end{theorem}
+
+\begin{theorem}[牛顿-莱布尼茨公式]
+  设$X(t)$在$[a, b]$上均方可导，且$X^{\prime}(t)$在$[a, b]$上均方连续，则：
+  \begin{equation}
+    \int_a^b X^{\prime}(t) d t=X(b)-X(a)
+  \end{equation}
+\end{theorem}
+
+\begin{theorem}
+  若$X(t)$在$[a, b]$ 上均方可积，则：
+  \begin{equation}
+    E\left[\int_a^b X(t) d t\right]=\int_a^b E[X(t)] d t
+  \end{equation}
+\end{theorem}
+
+如同高等数学(数学分析)中的微分方程一样，在均方可导的意义下，同样具有所谓的随机微分方程的求解问题，其定义类似普通函数的微分方程。
+
+\begin{definition}
+  设随机过程$\{X(t), t \in T =[a, b] \}$与$\{Y(t), t \in T =[a, b] \}$，$Y(t)$的$n$阶均方导数$Y^{n}(t)$存在，$a_k(1 \leq k \leq n)$
+  为随机变量或常数，则称：
+  \begin{equation}
+    a_n Y^{(n)}(t)+a_n Y^{(n)}(t)+\ldots+a_1 Y^{\prime}(t)+a_0 Y(t)=X(t)
+  \end{equation}
+  为$n$阶线性随机微分方程。
+\end{definition}
+那么一阶线性随机微分方程就可以写成：
+\begin{equation}
+  dY = f(X, Y) dt
+\end{equation}
+
+\textbf{小结}：这一节简要介绍了均方微积分的定义和性质，其中最关键的是给出了均方极限的定义，有了极限就可以定义连续性、可微性和可积性了。
+疑惑的是，从高等数学的角度出发，应该对应的是定义均值极限或者期望极限 $\lim_{n\rightarrow \infty}E|X_n - X|$，
+而为什么在随机分析中要定义均方极限呢？一个直观的理解角度是，因为随机变量具有期望和方差的数字特征，均值极限只考虑了期望，
+而均方收敛考虑了不仅考虑了期望，还考虑了方差，给出了更严格的收敛条件，这种收敛性质对于研究随机过程的稳定性和渐进性质非常有用。
+很多公式并没有给出严格的证明，严格证明是建立在测度论上的，这里侧重点是科普和实际应用，所以省去了纯数的非常严格的处理方式。
+介绍这些一方面说明了目前AI论文的一些基础在以实际应用为背景，或工科理论的严格性的前提下，需要做的理论上的工作，
+另一方面也可以给实际工程工作中，带来对相关知识的理解和更好的直觉的可能。
+
+\subsection{布朗运动}
+考虑一条直线上的简单的，对称的随机游动。假设质点每经过$\Delta t$时间，随机地向左或者右移动$\Delta x$个单位，向左向右移动的概率均为
+$1/2$，且每次移动互相独立，记：
+\begin{equation}
+  X_i= \begin{cases}1, & \text { 质点第 } i \text { 次向右移动 } \\ -1, & \text { 质点第 } \boldsymbol{i} \text { 次向左移动 }\end{cases}
+\end{equation}
+若$X(t)$表示时间$t$时刻质点的位置，则$X(t)=\Delta x(X_1 + X_2 + \dots + X_{[\frac{t}{\Delta t}]})$，其中$[x]$表示的超过$x$
+的最大整数。有：
+
+$EX_i = 0, DX_i = EX^2_i - E^2X_i = 1, E[X(t)]=0, D[X(t)]=[\frac{t}{\Delta t}](\Delta x)^2$
+
+考虑$\Delta \rightarrow 0$，那么$\Delta x \rightarrow 0$，要使$D[X(t)]$收敛且数值稳定，一般令$\Delta x=c\sqrt{\Delta t}$。
+此时$D[X(t)]=c^2t$。另外，$X(t)$可以看做$X(t_i) - X(t_{i-1})$独立同分布随机变量之和，故由中心极限定理可知：
+\begin{equation}
+  \lim _{\Delta t \rightarrow 0} P\left\{\frac{\sum_{i=0}^{\left[\frac{t}{\Delta t}\right]} \Delta x X_i-0}{\sqrt{c^2 t}} \leq x\right\}=\Phi(x)
+\end{equation}
+也即：
+\begin{equation}
+  \lim _{\Delta t \rightarrow 0} P\left\{\frac{X(t)}{\sqrt{c^2 t}} \leq x\right\}=\Phi(x)=\frac{1}{\sqrt{2 \pi}} \int_{-\infty}^x e^{-\frac{u^2}{2}} d u
+\end{equation}
+所以$X(t)$趋向正态分布，即$\Delta t \rightarrow 0, X(t) \sim N(0, c^2t)$。
+
+\begin{definition}
+  若一个随机过程$\{X(t), t \geq 0 \}$满足
+  \begin{itemize}
+    \item[1.] $X(t)$是独立增量过程；
+    \item[2.] $\forall s, t>0, X(s+t)-X(s) \sim N\left(0, c^2 t\right)$；
+  \end{itemize}
+  则称随机过程$\{X(t), t \geq 0 \}$为\textbf{布朗运动}记为$B(t)$，或\textbf{维纳过程}记为$W(t)$。
+  后续统称用$W(t)$表示。
+  若$c=1$，则称为标准布朗运动$B(t)\sim N(0, t)$。
+\end{definition}
+
+\textbf{小结}：这一节通过随机游走过程导出了布朗运动的定义。从微观的角度来看，给定一个位置，时间间隔$\Delta t$
+非常小的情况下，质点下次出现的地点距离原始的距离服从$N(0, \Delta t)$；从宏观角度看，在经过 
+$t$时间后，质点出现的地点服从 $N(0, t)$，所以经过的时间越长，最后质点出现的地点越不好预测。
+\subsection{Itô积分}
+$W(t) - W(s)$表示布朗运动在两个时间节点$s$到$t$移动的矢量距离，至于在区间 $(s, t]$ 内如何移动是不能
+反映的。然后布朗运动在$(s, t]$内移动曲线长度是我们关心的量，因为它在布朗运动的积分中具有重要作用。
+在随机过程中，可以采用有界变差来描述随机运动的路径长度： 
+
+将时间区间 $[0, T]$ 进行划分: $0=t_0<t_1<\ldots<t_n=T$ ，那么在布朗运动 $\{W(t), t \geq 0\}$ 的每个小区间 $\left(t_i, t_{i+1}\right]$ 上的矢量距离为 $W\left(t_{i+1}\right)-W\left(t_i\right)$ ，所以曲线长度可以近似的表示为: $\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|$ 。那么总距离可以近似为:
+$$
+\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|
+$$
+
+当 $\delta=\max _{0 \leq i \leq n-1}\left\{t_{i+1}-t_i\right\} \rightarrow 0$ 时，布朗运动 $\{W(t), t \geq 0\}$ 的有界变差 $W V(T)$为:
+$$
+W V(T)=1 . \mathrm{i} . \mathrm{m}_{\delta \rightarrow 0} \sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|
+$$
+
+但遗憾的是，布朗运动的有界变差并不存在，利用布朗运动的概率密度函数可以得到 $E[W V(T)]=\infty$ 。
+
+因此自然地可以定义二阶变差 $[W, W]([0, T])$ :
+$$
+[W, W]([0, T])=\text { l.i.m } \mathrm{m}_{\delta \rightarrow 0} \sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2
+$$
+
+幸运的是布朗运动的二阶变差存在，且 $[W, W]([0, T])=T$ 。
+\begin{proof}
+  由于：
+  \begin{equation}
+    \begin{aligned}
+      E\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2\right] & =\sum_{i=0}^{n-1} E\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2 \\
+      & =\sum_{i=0}^{n-1} E^2\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)+\sum_{i=0}^{n-1} D\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right) \\
+      & =0+\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right) \\
+      & =T
+    \end{aligned}
+  \end{equation}
+  而：
+  \begin{equation}
+  \begin{aligned}
+    D\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2\right] & =\sum_{i=0}^{n-1} D\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2 \\
+    & =\sum_{i=0}^{n-1} 2\left(t_{i+1}-t_i\right)^2  \qquad(*)\\
+    & \leq 2 \delta \sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right) \\
+    & =2 \delta T
+  \end{aligned}
+\end{equation}
+上式(*)：设随机变量$X \sim N(\mu. \sigma^2)$，则矩母函数
+
+$$
+\begin{aligned}
+M(t) & =E\left[e^{t x}\right] \\
+& =\int e^{t x} f(x) d x \\
+& =\int e^{t x} \frac{e^{-\frac{1}{2}(x-\mu)^2}}{\sqrt{2 \pi} \sigma} d x \\
+& =e^{\mu t+\frac{\sigma^2 t^2}{2}}
+\end{aligned}
+$$
+
+因此二阶矩 $E\left(X^2\right)=M^{\prime \prime}(0)=\mu^2+\sigma^2$ ，
+四阶矩 $E\left(X^4\right)=M^{(4)}(0)=3 \sigma^4+\mu \sigma^2+5 \mu^2+\mu^4$ ，所以:
+$$
+\begin{aligned}
+D\left(X^2\right) & =E\left[X^2-E\left(X^2\right)\right]^2 \\
+& =E\left[X^4-2 X^2 E\left(X^2\right)+E^2\left(X^2\right)\right] \\
+& =E\left(X^4\right)-E^2\left(X^2\right) \\
+& =2 \sigma^4+\left(\mu-2 \mu^2\right) \sigma^2+5 \mu^2
+\end{aligned}
+$$
+
+最后将 $\mu=0, \sigma^2=t_{i+1}-t_i$ 带入即可。
+所以：
+$$
+\begin{aligned}
+& \lim _{\delta \rightarrow 0} E\left|\sum_{i=0}^{n-1}\right| W\left(t_{i+1}\right)-\left.W\left(t_i\right)\right|^2-\left.T\right|^2 \\
+& =\lim _{\delta \rightarrow 0} E^2\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2-T\right]+\lim _{\delta \rightarrow 0} D\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2-T\right] \\
+& =0+\lim _{\delta \rightarrow 0} D\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2\right] \\
+& =\lim _{\delta \rightarrow 0} 2 \delta T
+\end{aligned}
+$$
+
+因为 $\delta \rightarrow 0$ ，所以 $n \rightarrow \infty$ ，最后:
+$$
+\lim _{\delta \rightarrow 0} E\left|\sum_{i=0}^{n-1}\right| W\left(t_{i+1}\right)-\left.W\left(t_i\right)\right|^2-\left.T\right|^2=\lim _{n \rightarrow \infty} 2 \delta T=0
+$$
+
+根据均方极限的定义有:
+\begin{equation}
+  \text { l.i. } \mathrm{m}_{\delta \rightarrow 0} \sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2=T
+\end{equation}
+
+因此，布朗运动的二阶变差存在且为 $T$。
+\end{proof}
+
+式3.26中，将等式右边$T$看作$dt \text{在}, [0, T]$上的积分，等式左边$W(t_{i+1} - W(t_i))$记为$dW \text{或}dW_t$，则
+\begin{equation}
+  dW dW = dt
+\end{equation}
+又 
+$$
+\begin{aligned}
+E\left[\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] & \leq \delta E\left[\sum_{i=0}^{n-1}\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] \\
+& =0
+\end{aligned}
+$$
+
+和:
+$$
+\begin{aligned}
+D\left[\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] & \leq \delta^2 D\left[\sum_{i=0}^{n-1}\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] \\
+& =\delta^2 T
+\end{aligned}
+$$
+
+因此:
+$$
+\begin{aligned}
+\lim _{\delta \rightarrow 0} E\left|\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right|^2 & =\lim _{\delta \rightarrow 0} D\left[\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] \\
+& \leq \lim _{\delta \rightarrow 0} \delta^2 T \\
+& =0
+\end{aligned}
+$$
+即：
+$$
+\text { l.i. } \mathrm{m}_{\delta \rightarrow 0} \sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|=0
+$$
+于是有：
+\begin{equation}
+  dt dW = 0
+\end{equation}
+
+\begin{definition}[Itô积分]
+  设$\{X(t), t\in [0, T] \}$为随机过程，若积分:
+  \begin{equation}
+    I=\int_0^T g(X(t), t) d W
+  \end{equation}
+  存在，即:
+$$
+\sum_{t=0}^{n-1} g\left(X\left(t_i\right), t_i\right)\left[W\left(t_{i+1}\right)-W\left(t_i\right)\right] \xrightarrow{m . s} I
+$$
+则称积分$I$为Itô积分。
+\end{definition}
+
+\begin{property}
+  \begin{equation}
+    E\left[\int_S^T g(X(t), t) d W\right]=0
+    \end{equation}
+\end{property}
+
+将均方微积分和Itô微积分结合一下：
+\begin{definition}[Itô随机微分方程]
+  形如
+  \begin{equation}
+    X(T)-X(0)=\int_0^T f(X(t), t) d t+\int_0^T g(X(t), t) d W
+  \end{equation}
+  的方程称为积分形式Itô随机微分方程。
+\end{definition}
+
+\begin{definition}[扩散方程]
+  形如
+  \begin{equation}
+    d X(t)=f(X(t), t) d t+g(X(t), t) d W
+  \end{equation}
+  的方程称为微分形式Itô随机微分方程或Itô过程或漂移布朗运动或者扩散方程。
+\end{definition}
+关于扩散方程的理解，可以分两块来看。一方面， $d X(t)=f(X(t), t) d t$ 
+是一阶均方微分方程，给出了下一时刻分布 $X(t+d t)$ 和当前时刻分布 $X(t)$ 之间的一个确定的关系，
+所以 $X(t)$能被唯一确定。另一方面， $d W$ 的含义就是在 $d t$ 内质点布朗运动的距离，这个距离服从 
+$N(0, d t)$ 的分布，所以 $g(X(t), t) d W$ 相当于噪声项。总的来看，在添加噪声项后，意味着下一时刻
+分布 $X(t+d t)$ 和当前时刻分布 $X(t)$ 之间的关系含有噪声， $X(t)$ 不能被唯一确定。
+
+\begin{lemma}[Itô引理]
+  设 $X_t$ 是Itô过程， $f\left(t, X_t\right)$ 关于 $t$ 一阶可微，关于 $X_t$ 二阶可微，则:
+\begin{equation}
+  d f\left(t, X_t\right)=\frac{\partial f\left(t, X_t\right)}{\partial t} d t+\frac{\partial f\left(t, X_t\right)}{\partial X_t} d X_t+\frac{1}{2} \frac{\partial^2 f\left(t, X_t\right)}{\left(\partial X_t\right)^2}\left(d X_t\right)^2
+\end{equation}
+\end{lemma}
+直观的理解，（3.33）实际就是 $f(t, X_t)$的二元泰勒展开，只展开到这几项是因为根据（3.27,28）等几个结论，
+高阶项在积分下均为0。
+
+\textbf{小结}：为了研究布朗运动的运动轨迹性质，导出了二阶变差的概念，进而导出对布朗运动微分概念，引出Itô积分，最后和均方微分方程综合，
+得到含有布朗运动微分的Itô随机微分方程和扩散方程。
+
+% \section{SDE 和ODE}
+% 简单介绍下。
+
+% 概率流常微分的迹，
+% 随机微分方程的边缘概率密度，以及这两者的关系。
+% 从同样的数据分布采样，迹有同样的边缘分布？
+% 概率流常微分的半边结构。
+
 
 
 \chapter{扩散模型}
