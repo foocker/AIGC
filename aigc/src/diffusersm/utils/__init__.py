@@ -18,3 +18,5 @@ from .constants import (CONFIG_NAME,)
 from .logging import get_logger
 
 from .constants import WEIGHTS_NAME, SAFETENSORS_WEIGHTS_NAME
+
+from .import_utils import (_LazyModule,)
