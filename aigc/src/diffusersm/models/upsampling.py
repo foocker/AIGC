@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from typing import Optional
 
@@ -44,6 +45,7 @@ class Upsample1D(nn.Module):
         assert inputs.shape[1] == self.channels
         if self.use_conv_transpose:
             return self.conv(inputs)
+        outputs = F.interpolate(inputs, scale_factor=2., mode="nearest")
         if self.use_conv:
             outputs = self.conv(outputs)
         return outputs
