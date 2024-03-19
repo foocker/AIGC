@@ -464,7 +464,6 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
             block_out_channels[0], out_channels, kernel_size=conv_out_kernel, padding=conv_out_padding
         )
         
-        
     def _check_config(
         self,down_block_types: Tuple[str],
         up_block_types: Tuple[str],
@@ -573,5 +572,123 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
     
     @property
     def attn_processors(self) -> Dict[str, AttentionProcessor]:
+        r"""
+        Returns:
+            `dict` of attention processors: A dictionary containing all attention processors used in the model with
+            indexed by its weight name.
+        """
+        # set recursively
+        processors = {}
+        def fn_recursive_add_processors(name: str, module: nn.Module, processors: Dict[str, AttentionProcessor]):
+            if hasattr(module, "get_processor"):
+                processors[f"{name}.processor"] = module.get_processor()  # TODO remove Deprecated lora
+            
+            for sub_name, child in module.named_children():
+                fn_recursive_add_processors(f"{name}.{sub_name}", child, processors)
+        
+        for sub_name, child in self.named_children():
+            fn_recursive_add_processors(sub_name, child, processors)
+            
+        return processors
+    
+    def set_attn_processor(self, processor: Union[AttentionProcessor, Dict[str, AttentionProcessor]]):
         pass
+    
+    def set_default_attn_processor(self):
+        pass
+    
+    def _set_gradient_checkpointing(self, module, value=False):
+        if hasattr(module, "gradient_checkpointing"):
+            module.gradient_checkpointing = value
 
+    
+    def get_time_embed(
+        self, sample: torch.Tensor, timestep: Union[torch.Tensor, float, int]
+    ) -> Optional[torch.Tensor]:
+        pass
+    
+    def get_class_embed(self, sample: torch.Tensor, class_labels: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
+        pass
+    
+    def get_aug_embed(
+        self, emb: torch.Tensor, encoder_hidden_states: torch.Tensor, added_cond_kwargs: Dict[str, Any]
+    ) -> Optional[torch.Tensor]:
+        pass
+    
+    def process_encoder_hidden_states(
+        self, encoder_hidden_states: torch.Tensor, added_cond_kwargs: Dict[str, Any]
+    ) -> torch.Tensor:
+        pass
+    
+    def forward(
+        self,
+        sample: torch.FloatTensor,
+        timestep: Union[torch.Tensor, float, int],
+        encoder_hidden_states: torch.Tensor,
+        class_labels: Optional[torch.Tensor] = None,
+        timestep_cond: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        cross_attention_kwargs: Optional[Dict[str, Any]] = None,
+        added_cond_kwargs: Optional[Dict[str, torch.Tensor]] = None,
+        down_block_additional_residuals: Optional[Tuple[torch.Tensor]] = None,
+        mid_block_additional_residual: Optional[torch.Tensor] = None,
+        down_intrablock_additional_residuals: Optional[Tuple[torch.Tensor]] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
+        return_dict: bool = True,
+    ) -> Union[UNet2DConditionOutput, Tuple]:
+        r"""
+        The [`UNet2DConditionModel`] forward method.
+
+        Args:
+            sample (`torch.FloatTensor`):
+                The noisy input tensor with the following shape `(batch, channel, height, width)`.
+            timestep (`torch.FloatTensor` or `float` or `int`): The number of timesteps to denoise an input.
+            encoder_hidden_states (`torch.FloatTensor`):
+                The encoder hidden states with shape `(batch, sequence_length, feature_dim)`.
+            class_labels (`torch.Tensor`, *optional*, defaults to `None`):
+                Optional class labels for conditioning. Their embeddings will be summed with the timestep embeddings.
+            timestep_cond: (`torch.Tensor`, *optional*, defaults to `None`):
+                Conditional embeddings for timestep. If provided, the embeddings will be summed with the samples passed
+                through the `self.time_embedding` layer to obtain the timestep embeddings.
+            attention_mask (`torch.Tensor`, *optional*, defaults to `None`):
+                An attention mask of shape `(batch, key_tokens)` is applied to `encoder_hidden_states`. If `1` the mask
+                is kept, otherwise if `0` it is discarded. Mask will be converted into a bias, which adds large
+                negative values to the attention scores corresponding to "discard" tokens.
+            cross_attention_kwargs (`dict`, *optional*):
+                A kwargs dictionary that if specified is passed along to the `AttentionProcessor` as defined under
+                `self.processor` in
+                [diffusers.models.attention_processor](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/attention_processor.py).
+            added_cond_kwargs: (`dict`, *optional*):
+                A kwargs dictionary containing additional embeddings that if specified are added to the embeddings that
+                are passed along to the UNet blocks.
+            down_block_additional_residuals: (`tuple` of `torch.Tensor`, *optional*):
+                A tuple of tensors that if specified are added to the residuals of down unet blocks.
+            mid_block_additional_residual: (`torch.Tensor`, *optional*):
+                A tensor that if specified is added to the residual of the middle unet block.
+            encoder_attention_mask (`torch.Tensor`):
+                A cross-attention mask of shape `(batch, sequence_length)` is applied to `encoder_hidden_states`. If
+                `True` the mask is kept, otherwise if `False` it is discarded. Mask will be converted into a bias,
+                which adds large negative values to the attention scores corresponding to "discard" tokens.
+            return_dict (`bool`, *optional*, defaults to `True`):
+                Whether or not to return a [`~models.unets.unet_2d_condition.UNet2DConditionOutput`] instead of a plain
+                tuple.
+            cross_attention_kwargs (`dict`, *optional*):
+                A kwargs dictionary that if specified is passed along to the [`AttnProcessor`].
+            added_cond_kwargs: (`dict`, *optional*):
+                A kwargs dictionary containin additional embeddings that if specified are added to the embeddings that
+                are passed along to the UNet blocks.
+            down_block_additional_residuals (`tuple` of `torch.Tensor`, *optional*):
+                additional residuals to be added to UNet long skip connections from down blocks to up blocks for
+                example from ControlNet side model(s)
+            mid_block_additional_residual (`torch.Tensor`, *optional*):
+                additional residual to be added to UNet mid block output, for example from ControlNet side model
+            down_intrablock_additional_residuals (`tuple` of `torch.Tensor`, *optional*):
+                additional residuals to be added within UNet down blocks, for example from T2I-Adapter side model(s)
+
+        Returns:
+            [`~models.unets.unet_2d_condition.UNet2DConditionOutput`] or `tuple`:
+                If `return_dict` is True, an [`~models.unets.unet_2d_condition.UNet2DConditionOutput`] is returned, otherwise
+                a `tuple` is returned where the first element is the sample tensor.
+        """
+    
+        return UNet2DConditionOutput(sample=sample)

@@ -13,7 +13,7 @@
 # limitations under the License.
 import inspect
 from importlib import import_module
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -21,6 +21,8 @@ from torch import nn
 
 from ..utils import logging
 from ..utils.torch_utils import maybe_allow_in_graph
+
+from ..image_processor import IPAdapterMaskProcessor
 
 USE_PEFT_BACKEND = True  # TODO 
 
@@ -485,7 +487,136 @@ class IPAdapterAttnProcessor(nn.Module):
         scale (`float` or List[`float`], defaults to 1.0):
             the weight scale of image prompt.
     """
-    pass
+    def __init__(self, hidden_size, cross_attention_dim=None, num_tokens=(4,), scale=1.0):
+        super().__init__()
+
+        self.hidden_size = hidden_size
+        self.cross_attention_dim = cross_attention_dim
+
+        if not isinstance(num_tokens, (tuple, list)):
+            num_tokens = [num_tokens]
+        self.num_tokens = num_tokens
+
+        if not isinstance(scale, list):
+            scale = [scale] * len(num_tokens)
+        if len(scale) != len(num_tokens):
+            raise ValueError("`scale` should be a list of integers with the same length as `num_tokens`.")
+        self.scale = scale
+
+        self.to_k_ip = nn.ModuleList(
+            [nn.Linear(cross_attention_dim, hidden_size, bias=False) for _ in range(len(num_tokens))]
+        )
+        self.to_v_ip = nn.ModuleList(
+            [nn.Linear(cross_attention_dim, hidden_size, bias=False) for _ in range(len(num_tokens))]
+        )
+
+    def __call__(
+        self,
+        attn: Attention,
+        hidden_states: torch.FloatTensor,
+        encoder_hidden_states: Optional[Tuple[torch.FloatTensor]] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
+        temb: Optional[torch.FloatTensor] = None,
+        scale: float = 1.0,
+        ip_adapter_masks: Optional[torch.FloatTensor] = None,
+    ):
+        residual = hidden_states
+
+        # separate ip_hidden_states from encoder_hidden_states
+        if encoder_hidden_states is not None:
+            if isinstance(encoder_hidden_states, tuple):
+                encoder_hidden_states, ip_hidden_states = encoder_hidden_states
+            else:
+                raise ValueError(f'{encoder_hidden_states} must be tuple')
+            
+        if attn.spatial_norm is not None:
+            hidden_states = attn.spatial_norm(hidden_states, temb)
+
+        input_ndim = hidden_states.ndim
+
+        if input_ndim == 4:
+            batch_size, channel, height, width = hidden_states.shape
+            hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
+
+        batch_size, sequence_length, _ = (
+            hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
+        )
+        attention_mask = attn.prepare_attention_mask(attention_mask, sequence_length, batch_size)
+
+        if attn.group_norm is not None:
+            hidden_states = attn.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
+
+        query = attn.to_q(hidden_states)
+
+        if encoder_hidden_states is None:
+            encoder_hidden_states = hidden_states
+        elif attn.norm_cross:
+            encoder_hidden_states = attn.norm_encoder_hidden_states(encoder_hidden_states)
+
+        key = attn.to_k(encoder_hidden_states)
+        value = attn.to_v(encoder_hidden_states)
+
+        query = attn.head_to_batch_dim(query)
+        key = attn.head_to_batch_dim(key)
+        value = attn.head_to_batch_dim(value)
+
+        attention_probs = attn.get_attention_scores(query, key, attention_mask)
+        hidden_states = torch.bmm(attention_probs, value)
+        hidden_states = attn.batch_to_head_dim(hidden_states)
+        
+        # -----------------add for ip-adapter-----------------
+        if ip_adapter_masks is not None:
+            if not isinstance(ip_adapter_masks, torch.Tensor) or ip_adapter_masks.ndim != 4:
+                raise ValueError(
+                    " ip_adapter_mask should be a tensor with shape [num_ip_adapter, 1, height, width]."
+                    " Please use `IPAdapterMaskProcessor` to preprocess your mask"
+                )
+            if len(ip_adapter_masks) != len(self.scale):
+                raise ValueError(
+                    f"Number of ip_adapter_masks ({len(ip_adapter_masks)}) must match number of IP-Adapters ({len(self.scale)})"
+                )
+        else:
+            ip_adapter_masks = [None] * len(self.scale)
+        
+        for current_ip_hidden_state, scale, to_k_ip, to_v_ip, mask in zip(ip_hidden_states, scale, self.to_k_ip, self.to_v_ip, ip_adapter_masks):
+            ip_key = to_k_ip(current_ip_hidden_state)
+            ip_value = to_v_ip(current_ip_hidden_state)
+            
+            ip_key = attn.head_to_batch_dim(ip_key)
+            ip_value = attn.head_to_batch_dim(ip_value)
+            
+            ip_attention_probs = attn.get_attention_scores(query, ip_key, None)
+            current_ip_hidden_state = torch.bmm(ip_attention_probs, ip_value)
+            current_ip_hidden_states = attn.batch_to_head_dim(current_ip_hidden_states)
+            
+            if mask is not None:
+                mask_downsample = IPAdapterMaskProcessor.downsample(
+                    mask, batch_size, current_ip_hidden_states.shape[1], current_ip_hidden_states.shape[2]
+                )
+
+                mask_downsample = mask_downsample.to(dtype=query.dtype, device=query.device)
+
+                current_ip_hidden_states = current_ip_hidden_states * mask_downsample
+
+            hidden_states = hidden_states + scale * current_ip_hidden_states
+        
+        # -----------------end of ip-adapter-----------------
+        
+        # linear proj
+        hidden_states = attn.to_out[0](hidden_states)
+        # dropout
+        hidden_states = attn.to_out[1](hidden_states)
+
+        if input_ndim == 4:
+            hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+
+        if attn.residual_connection:
+            hidden_states = hidden_states + residual
+
+        hidden_states = hidden_states / attn.rescale_output_factor
+
+        return hidden_states
+            
 
 
 AttentionProcessor = Union[
