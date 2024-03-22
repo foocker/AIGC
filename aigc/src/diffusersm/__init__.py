@@ -110,6 +110,7 @@
 from .configuration_utils import ConfigMixin
 from .models import (
         AsymmetricAutoencoderKL,
+        UNet2DConditionModel
     )
 from .optimization import (
     get_constant_schedule,
