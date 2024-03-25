@@ -51,8 +51,7 @@ class UNet2DConditionOutput(BaseOutput):
     """
 
     sample: torch.FloatTensor = None
-    
-    
+
 class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin, PeftAdapterMixin):
     r"""
     A conditional 2D UNet model that takes a noisy sample, conditional state, and a timestep and returns a sample
@@ -146,7 +145,6 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
             `only_cross_attention` value is used as the value for `mid_block_only_cross_attention`. Default to `False`
             otherwise.
     """
-
     _supports_gradient_checkpointing = True
     
     @register_to_config
@@ -600,7 +598,6 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
     def _set_gradient_checkpointing(self, module, value=False):
         if hasattr(module, "gradient_checkpointing"):
             module.gradient_checkpointing = value
-
     
     def get_time_embed(
         self, sample: torch.Tensor, timestep: Union[torch.Tensor, float, int]
