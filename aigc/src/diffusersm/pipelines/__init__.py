@@ -1,2 +1,2 @@
-
+from .stable_diffusion_xl import StableDiffusionXLPipeline
 

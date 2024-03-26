@@ -123,9 +123,11 @@ from .optimization import (
 )
 from .pipelines import (
     AudioPipelineOutput,
+    StableDiffusionXLPipeline
 )
 from .schedulers import (
     DDPMScheduler,
+    LCMScheduler,
 )
 from .training_utils import EMAModel
 
@@ -136,3 +138,6 @@ from .pipelines import (
         AudioLDMPipeline,
         
     )
+from .loaders import (
+    StableDiffusionXLLoraLoaderMixin,
+)
