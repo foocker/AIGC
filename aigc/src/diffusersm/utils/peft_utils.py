@@ -24,3 +24,15 @@ def set_adapter_layers(model, enabled=True):
 
 def delete_adapter_layers(model, adapter_name):
     pass
+
+def get_peft_kwargs(rank_dict, network_alpha_dict, peft_state_dict, is_unet=True):
+    pass
+
+def recurse_remove_peft_layers(model):
+    pass
+
+def get_adapter_name(model):
+    pass
+
+def scale_lora_layers(model, weight):
+    pass

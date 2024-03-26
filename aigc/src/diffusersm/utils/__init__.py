@@ -30,4 +30,8 @@ from .state_dict_utils import (
 from .peft_utils import (
     set_weights_and_activate_adapters,
     set_adapter_layers,
-    delete_adapter_layers)
+    delete_adapter_layers,
+    get_adapter_name,
+    get_peft_kwargs,
+    recurse_remove_peft_layers,
+    scale_lora_layers)
