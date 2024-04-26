@@ -30,7 +30,7 @@ class UNet2DConditionLoadersMixin:
     """
     Load LoRA layers into a [`UNet2DCondtionModel`].
     """
-    def load_attn_process(self, pretrained_model_name_or_path_or_dict:Union[str, Dict[str, torch.Tensor]], **kwargs):
+    def load_attn_procs(self, pretrained_model_name_or_path_or_dict:Union[str, Dict[str, torch.Tensor]], **kwargs):
         r"""
         Load pretrained attention processor layers into [`UNet2DConditionModel`]. Attention processor layers have to be
         defined in

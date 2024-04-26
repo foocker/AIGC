@@ -260,10 +260,6 @@ class Attention(nn.Module):
         Returns:
             `torch.Tensor`: The output of the attention layer.
         """
-        # The `Attention` class can call different attention processors / attention functions
-        # here we simply pass along all tensors to the selected processor class
-        # For standard processors that are defined here, `**cross_attention_kwargs` is empty
-        
         attn_parameters = set(inspect.signature(self.processor.__call__).parameters.keys())
         unused_kwargs = [k for k, _ in cross_attention_kwargs.items() if k not in attn_parameters]
         
@@ -276,7 +272,6 @@ class Attention(nn.Module):
         
         return self.processor(self, hidden_states, encoder_hidden_states=encoder_hidden_states,
                               attention_mask=attention_mask, **cross_attention_kwargs)
-        
     
     def batch_to_head_dim(self, tensor: torch.Tensor) -> torch.Tensor:
         pass
