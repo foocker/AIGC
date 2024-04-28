@@ -75,7 +75,7 @@
 \begin{itemize}
   \item 模板官网：\href{https://elegantlatex.org/}{elegantlatex.org}
   \item 模板GitHub 地址：\href{https://github.com/ElegantLaTeX/}{ElegantLaTeX}
-  \item 项目地址：\href{https://github.com/foocker}{Sisyphes}
+  \item 项目地址：\href{https://github.com/foocker/AIGC}{Sisyphes}
   \item 作图工具：\href{https://www.geogebra.org/?lang=en}{geogebra}
 \end{itemize}
 
@@ -590,6 +590,270 @@ $N(0, d t)$ 的分布，所以 $g(X(t), t) d W$ 相当于噪声项。总的来�
 
 \textbf{小结}：为了研究布朗运动的运动轨迹性质，导出了二阶变差的概念，进而导出对布朗运动微分概念，引出Itô积分，最后和均方微分方程综合，
 得到含有布朗运动微分的Itô随机微分方程和扩散方程。
+
+\subsection{Fokker-Planck方程}
+\href{https://zhuanlan.zhihu.com/p/535688931}{什么是Fokker-Planck方程？}
+简称FP方程。定义3.9的扩散方程的FP方程为：
+\begin{equation}
+  \frac{\partial p\left(x_t\right)}{\partial t}=-\nabla_{x_t} \cdot\left[f\left(x_t, t\right) p\left(x_t\right)\right]+\frac{1}{2} g^2(t) \nabla_{x_t} \nabla_{x_t} p\left(x_t\right)
+\end{equation}
+
+Fokker-Planck方程，又叫Kolmogorov前向方程，是一个描述随机过程（stochastic process）的PDF（概率密度函数）的PDE（偏微分方程）。
+在统计力学（statistical mechanics）中，Fokker-Planck方程被用来描述粒子在
+随机力的作用下的速度的PDF。与Fokker-Planck方程（Kolmogorov前向方程）联系紧密的是Kolmogorov后向方程，
+它是一个描述随机过程的函数期望的PDE，
+并且和Fokker-Planck方程构成对偶性（duality）关系。在本文中，我们介绍Fokker-Planck方程的推导和例子。
+
+考虑一维扩散过程（diffusion process）
+$$
+d X_t=\mu\left(t, X_t\right) d t+\sigma\left(t, X_t\right) d W_t
+$$
+
+这里 $W_t$ 是标准布朗运动 (standard Brownian motion) 。令 $p(t, x)$ 为 $X_t$ 在 $t$ 时的PDF。固定 $t_1<t_2$ ，
+并定义函数 $F(t, x)$ ，使其满足 $F\left(t_1, x\right)=F\left(t_2, x\right)=0$ ，
+且当 $x \rightarrow \pm \infty$ ， $F(t, x), F_x(t, x) \rightarrow 0$ 。比如，我们可以选择 $f(x)$ ，
+其满足当 $x \rightarrow \pm \infty$ ，
+$f(x), f^{\prime}(x) \rightarrow 0$ ，并定义 $F(t, x)=\left(t-t_1\right)\left(t-t_2\right) f(x)$ 。
+根据伊藤引理（Ito's lemma），我们有
+$$
+\begin{gathered}
+d F\left(t, X_t\right)=F_t d t+F_x d X_t+\frac{1}{2} F_{x x}\left(d X_t\right)^2 \\
+\quad=\left(F_t+F_x \mu+\frac{1}{2} F_{x x} \sigma^2\right) d t+F_x \sigma d W_t
+\end{gathered}
+$$
+
+等式两边同时取期望，我们有
+$$
+\begin{gathered}
+\mathbb{E}\left[d F\left(t, X_t\right)\right]=\mathbb{E}\left[\left(F_t+F_x \mu+\frac{1}{2} F_{x x} \sigma^2\right) d t\right] \\
+=\int_{-\infty}^{\infty}\left(F_t+F_x \mu+\frac{1}{2} F_{x x} \sigma^2\right) p(t, x) d t d x
+\end{gathered}
+$$
+
+等式两边同时从 $t_1$ 积分到 $t_2$ ，由于 $F\left(t_1, x\right)=F\left(t_2, x\right)=0$ ，我们有
+$$
+\begin{aligned}
+& 0=\mathbb{E}\left[F\left(t_2, x\right)-F\left(t_1, x\right)\right]=\int_{-\infty}^{\infty} 
+\int_{t_1}^{t_2}\left(F_t+F_x \mu+\frac{1}{2} F_{x x} \sigma^2\right) p(t, x) d t d x=I_1 \\
+& +I_2+I_3
+\end{aligned}
+$$
+
+通过分部积分 (integration by parts)，并根据 $F\left(t_1, x\right)=F\left(t_2, x\right)=0$ 和Fubini定理，我们可以得到
+$$
+\begin{gathered}
+I_1=\int_{-\infty}^{\infty} \int_{t_1}^{t_2} \frac{\partial F}{\partial t} p(t, x) d t d x \\
+=\int_{-\infty}^{\infty}\left(F\left(t_2, x\right)-F\left(t_1, x\right)-\int_{t_1}^{t_2} F 
+\frac{\partial}{\partial t} p(t, x) d t\right) d x \\
+=-\int_{t_1}^{t_2} \int_{-\infty}^{\infty} F \frac{\partial}{\partial t} p(t, x) d x d t
+\end{gathered}
+$$
+
+同理，我们计算得到
+$$
+\begin{gathered}
+I_2=-\int_{t_1}^{t_2} \int_{-\infty}^{\infty} F \frac{\partial}{\partial x}(\mu p(t, x)) d x d t \\
+I_3=\int_{t_1}^{t_2} \int_{-\infty}^{\infty} F \frac{\partial^2}{\partial x^2}\left(\frac{1}{2} \sigma^2 p(t, x)\right) d x d t
+\end{gathered}
+$$
+
+由于
+
+$$
+\begin{gathered}
+0=I_1+I_2+I_3=\int_{t_1}^{t_2} \\
+\int_{-\infty}^{\infty} F\left[-\frac{\partial}{\partial t} p(t, x)-\frac{\partial}{\partial x} 
+p(t, x)+\frac{\partial^2}{\partial x^2}\left(\frac{1}{2} \sigma^2 p(t, x)\right)\right] d x d t
+\end{gathered}
+$$
+
+，且 $F$ 是任意选取的，我们得到
+$$
+\frac{\partial}{\partial t} p(t, x)=-\frac{\partial}{\partial x}(\mu p(t, x))+\frac{\partial^2}{\partial x^2}\left(\frac{1}{2} \sigma^2 p(t, x)\right)
+$$
+
+这就是一维Fokker-Planck方程，又叫一维Kolmogorov前向方程。
+
+对偶性
+
+考虑$n$维扩散过程（diffusion process）
+$$
+d X_t=\mu\left(X_t\right) d t+\sigma\left(X_t\right) d W_t
+$$
+
+给定函数 $f: \mathbb{R}^n \rightarrow \mathbb{R}$ ，定义 $X_t$ 的生成算子 (generator) 为
+$$
+L f(x)=\lim _{t \downarrow 0} \frac{\mathbb{E}_x\left[f\left(X_t\right)\right]-f(x)}{t}
+$$
+
+这里 $\mathbb{E}_x\left[f\left(X_t\right)\right]=\mathbb{E}\left[f\left(X_t\right) \mid X_0=x\right]$ 。对 $f\left(X_t\right)$ 
+应用伊藤引理，我们可以通过计算得到
+$$
+L f(x)=\sum_i \mu_i(x) \frac{\partial}{\partial x_i} f(x)+\frac{1}{2} \sum_i \sum_j\left(\sigma \sigma^{\top}\right)_{i, j}(x) \frac{\partial^2}{\partial x_i \partial x_j} f(x)
+$$
+
+定义 $u(t, x)=\mathbb{E}_x\left[f\left(X_t\right)\right]$ 和 $g(x)=u(t, x)$ 。由于 $u(t, x)$ 关于 $t$ 可导，
+根据tower性质 $\mathbb{E}[X]=\mathbb{E}[\mathbb{E}[X \mid \mathcal{F}]]$ ，我们有
+
+$$
+\begin{gathered}
+\frac{\mathbb{E}_x\left[g\left(X_s\right)\right]-g(x)}{s}=\frac{1}{s} \mathbb{E}_x\left[\mathbb{E}_{X_s}\left[f\left(X_t\right)\right]-\mathbb{E}_x\left[f\left(X_t\right)\right]\right] \\
+=\frac{1}{s} \mathbb{E}_x\left[\mathbb{E}_x\left[f\left(X_{t+s}\right) \mid \mathcal{F}_s\right]-\mathbb{E}_x\left[f\left(X_t\right) \mid \mathcal{F}_s\right]\right] \\
+=\frac{1}{s} \mathbb{E}_x\left[f\left(X_{t+s}\right)-f\left(X_t\right)\right]=\frac{u(t+s, x)-u(t, x)}{s}
+\end{gathered}
+$$
+
+当 $s \downarrow 0 ， \frac{\mathbb{E}_x\left[g\left(X_s\right)\right]-g(x)}{s}=L u=\frac{\partial u}{\partial t}$ 。这样，我们就得到了给定初始条件Kolmogorov后向方程。如果我们把变量 $t$ 转换为 $T-t$ ，
+我们可以得到更常见的给定终止条件的Kolmogorov后向方程 $-\partial_t u=L u$ ，即
+$$
+-\frac{\partial}{\partial t} u(t, x)=\sum_i \mu_i(x) \frac{\partial}{\partial x_i} u(t, x)+\frac{1}{2} \sum_i \sum_j\left(\sigma \sigma^{\top}\right)_{i, j}(x) \frac{\partial^2}{\partial x_i \partial x_j} u(t, x)
+$$
+
+给定定义 $L_2$ 内积 (inner product) $\langle q, g\rangle=\int q(x) g(x) d x$ ，我们可以定义生成算子 $L$ 的
+伴随算子 (adjoint operator) $L^*$ ，使得对于每一个函数对 $q, g ，\left\langle L^* q, g\right\rangle=\langle q, L g\rangle$ ，
+即 $L$和 $L^*$ 构成对偶性。使用和在1.1中用分部积分进行的推导类似的计算过程，我们可以得到
+$$
+L^* q(x)=-\sum_i \frac{\partial}{\partial x_i}\left[\mu_i(x) q(x)\right]+\frac{1}{2} \sum_i \sum_j \frac{\partial^2}{\partial x_i \partial x_j}\left[\left(\sigma \sigma^{\top}\right)_{i, j}(x) q(x)\right]
+$$
+
+根据之前提到的 $t$ 到 $T-t$ 的变量变换， $u(t, x)=\mathbb{E}_x\left[f\left(X_T\right)\right]=\mathbb{E}\left[f\left(X_t\right) \mid X_t=x\right]$ 。给定函数 $f: \mathbb{R}^n \rightarrow \mathbb{R}$ ，根据tower性质，我们知道 $\mathbb{E}\left[f\left(X_T\right)\right]=\int p(t, x) u(t, x) d x \forall t \in[0, T]$ 。由于 $\mathbb{E}\left[f\left(X_T\right)\right]$ 与 $t$ 无关，在根据莱布尼茨法则 (Leibniz rule) 和对偶性，我们得到
+$$
+\begin{gathered}
+0=\frac{d}{d t}\langle p, f\rangle=\left\langle\partial_t p, f\right\rangle+\left\langle p, \partial_t f\right\rangle \\
+=\left\langle\partial_t p, f\right\rangle-\langle p, L f\rangle=\left\langle\partial_t p, f\right\rangle-\left\langle L^* p, f\right\rangle \\
+=\left\langle\partial_t p-L^* p, f\right\rangle
+\end{gathered}
+$$
+
+由于 $f$ 是任意选取的，我们得到Kolmogorov前向方程 $\partial_t p-L^* p$ ，即
+$$
+\frac{\partial}{\partial x_i} p(t, x)=-\sum_i \frac{\partial}{\partial x_i}\left[\mu_i(x) p(t, x)\right]+
+\frac{1}{2} \sum_i \sum_j \frac{\partial^2}{\partial x_i \partial x_j}
+\left[\left(\sigma \sigma^{\top}\right)_{i, j}(x) p(t, x)\right]
+$$
+可以看出，两种推导Fokker-Planck方程的方法框架是十分类似的，都是通过伊藤引理和分部积分作为主要步骤，
+而相比第一种推导方法，第二种方法体现了Fokker-Planck方程和后向方程的对偶性。
+
+稳定密度分布
+
+考虑这样的一维扩散过程 $d X_t=\mu\left(X_t\right) d t+\sigma\left(X_t\right) d W_t$ ，其中漂移项和扩散项与时间无关，且存在稳定密分布度 (stationary density distribution) $p(x)$ 。那么Fokker-Planck方程写作
+$$
+0=-\frac{d}{d x}(\mu p(x))+\frac{d^2}{d x^2}\left(\frac{1}{2} \sigma^2 p(x)\right)
+$$
+
+根据边界条件，当 $x \rightarrow \pm \infty ， p(x), p^{\prime}(x) \rightarrow 0$ ，等式两边关于 $x$ 积分后得到
+$$
+0=-\mu(x) p(x)+\left(\frac{1}{2} \sigma^2(x) p(x)\right)^{\prime}
+$$
+
+令 $q(x)=\sigma^2(x) p(x)$ ，解常微分方程 (ODE) $\frac{q^{\prime}}{q}=\frac{2 \mu}{\sigma^2}$ ，我们得到 $q(x)=\exp \left(\int \frac{2 \mu(x)}{\sigma(x)^2} d x\right)$ ，因此稳定密分布度是
+$$
+p(x)=\frac{1}{\sigma(x)^2} \exp \left(\int \frac{2 \mu(x)}{\sigma^2(x)} d x\right)
+$$
+
+在一定条件下， $p(t, x)$ 一定会收敛于稳定密分布度 $p(x)$ 。
+
+布朗运动
+
+顺时方差为 $\sigma^2$ 的布朗运动 $X_t$ 的动态是
+$$
+d X_t=\sigma d W_t
+$$
+
+终止时间为 $T$ 的布朗运动的后向方程是
+$$
+\partial_t u+\frac{1}{2} \sigma^2 \partial_x^2 u=0, t<T
+$$
+
+起始时间为 0 的布朗运动的Fokker-Planck方程是
+$$
+\partial_t p-\frac{1}{2} \sigma^2 \partial_x^2 p=0, t>0
+$$
+
+Fokker-Planck方程的解是正态分布
+$$
+p(t, x)=\frac{1}{\sigma \sqrt{2 \pi t}} \exp \left(-\frac{x^2}{2 \sigma^2 t}\right)
+$$
+
+带漂移项的布朗运动
+
+起始值为 $x_0$ ，漂移项为 $\mu$ 且顺时方差为 $\sigma^2$ 的布朗运动 $X_t$ 的动态是
+$$
+\begin{gathered}
+d X_t=\mu d t+\sigma d W_t \\
+X_0=x_0
+\end{gathered}
+$$
+$X_t$ 的Fokker-Planck方程是
+$$
+\begin{gathered}
+\partial_t p(t, x)=-\mu \partial_x p(t, x)+\frac{1}{2} \sigma^2 \partial_x^2 p(t, x)=0 \\
+p(0, x)=\delta\left(x-x_0\right)
+\end{gathered}
+$$
+
+Fokker-Planck方程的解是正态分布
+$$
+p(t, x)=\frac{1}{\sigma \sqrt{2 \pi t}} \exp \left(-\frac{\left(x-x_0-\mu t\right)^2}{2 \sigma^2 t}\right)
+$$
+
+几何布朗运动
+
+起始值为 $x_0$ 的几何布朗运动 (geometric Brownian motion) $X_t$ 的动态是
+$$
+\begin{gathered}
+d X_t=\mu X_t d t+\sigma X_t d W_t \\
+X_0=x_0
+\end{gathered}
+$$
+$X_t$ 的Fokker-Planck方程是
+$$
+\begin{gathered}
+\partial_t p(t, x)=-\mu \partial_x(x p(t, x))+\frac{1}{2} \sigma^2 \partial_x^2\left(x^2 p(t, x)\right)=0 \\
+p(0, x)=\delta\left(x-x_0\right)
+\end{gathered}
+$$
+
+Fokker-Planck方程的解是对数正态分布
+$$
+p(t, x)=\frac{1}{x \sigma \sqrt{2 \pi t}} \exp \left(-\frac{\left(\ln \left(x / x_0\right)-\left(\mu-\sigma^2 / 2\right) t\right)^2}{2 \sigma^2 t}\right)
+$$
+
+如果几何布朗运动 $X_t$ 带有漂移项 $q>0$ ，即其动态是
+$$
+d X_t=\left(\mu X_t+q\right) d t+\sigma X_t d W_t
+$$
+$X_t$ 的稳定密度分布是伽马分布 (gamma distribution)
+$$
+p(x)=\frac{\beta^\alpha}{\Gamma(\alpha)} x^{-\alpha-1} \exp \left(-\frac{\beta}{x}\right)
+$$
+
+这里 $\alpha=1-2 \mu / \sigma^2 ， \beta=2 q / \sigma^2>0$ ，且 $\Gamma(x)=\int_0^{\infty} t^{x-1} e^{-t} d t$ 。
+
+Ornstein-Uhlenbeck过程
+
+起始值为 $x_0$ 的Ornstein-Uhlenbeck过程 $X_t$ 的动态是
+$$
+\begin{gathered}
+d X_t=-\mu X_t d t+\sigma d W_t \\
+X_0=x_0
+\end{gathered}
+$$
+$X_t$ 的Fokker-Planck方程是
+$$
+\begin{gathered}
+\partial_t p(t, x)=-\mu \partial_x(x p(t, x))+\frac{1}{2} \sigma^2 \partial_x^2 p(t, x)=0 \\
+p(0, x)=\delta\left(x-x_0\right)
+\end{gathered}
+$$
+
+Fokker-Planck方程的解是正态分布
+$$
+p(t, x)=\frac{1}{\sqrt{2 \pi e^{-2 \mu t}\left(e^{-2 \mu t}-1\right) \sigma^2 / \mu}} 
+\exp \left(-\frac{\left(x-x_0-e^{-\mu t}\right)^2}{2 e^{-2 \mu t}\left(e^{-2 \mu t}-1\right) \sigma^2 / \mu}\right)
+$$
+
+而当 $t \rightarrow \infty ， X_t$ 的稳定密度分布是 $N\left(0, \frac{\sigma^2}{\mu}\right)$ 。
 
 % \section{SDE 和ODE}
 % 简单介绍下。
@@ -1249,9 +1513,9 @@ $\boldsymbol{f}_{\boldsymbol{\theta}}(\mathbf{x}, t)=c_{\text {skip }}(t) \mathb
 
 排列组合+卡+数据，太多了。
 
-\subsubsection{VAE、CLIP、U-Net、U-ViT等模块}
+\subsubsection{VAE、CLIP、U-Net、U-ViT、DiT等模块}
+\subsection{Rectified Flow}
 \subsubsection{条件控制}
-
 \subsection{变大}
 \subsubsection{SDXL}
 \subsection{Finetune}
@@ -1265,14 +1529,17 @@ $\boldsymbol{f}_{\boldsymbol{\theta}}(\mathbf{x}, t)=c_{\text {skip }}(t) \mathb
 \subsection{ComfyUI、WebUI、Fooocus}
 
 
+
+
 \chapter{部署}
 \section{量化}
-\section{TensorRTt}
+\section{TensorRT}
 \section{TritonServer}
-\section{OneDiff}
 
 \chapter{商业}
 \section{Sora}
+\section{SD3}
+
 
 % $q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)=\prod_{t=1}^T q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)$
 
