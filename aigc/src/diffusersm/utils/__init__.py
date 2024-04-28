@@ -17,6 +17,21 @@ from .outputs import BaseOutput
 from .constants import (CONFIG_NAME,)
 from .logging import get_logger
 
-from .constants import WEIGHTS_NAME, SAFETENSORS_WEIGHTS_NAME
+from .constants import WEIGHTS_NAME, SAFETENSORS_WEIGHTS_NAME, SAFETENSORS_FILE_EXTENSION
 
 from .import_utils import (_LazyModule,)
+
+from .state_dict_utils import (
+    convert_all_state_dict_to_peft,
+    convert_state_dict_to_diffusers,
+    convert_state_dict_to_peft,
+    convert_unet_state_dict_to_peft,)
+
+from .peft_utils import (
+    set_weights_and_activate_adapters,
+    set_adapter_layers,
+    delete_adapter_layers,
+    get_adapter_name,
+    get_peft_kwargs,
+    recurse_remove_peft_layers,
+    scale_lora_layers)

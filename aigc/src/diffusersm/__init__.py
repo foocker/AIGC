@@ -110,6 +110,7 @@
 from .configuration_utils import ConfigMixin
 from .models import (
         AsymmetricAutoencoderKL,
+        UNet2DConditionModel
     )
 from .optimization import (
     get_constant_schedule,
@@ -122,9 +123,11 @@ from .optimization import (
 )
 from .pipelines import (
     AudioPipelineOutput,
+    StableDiffusionXLPipeline
 )
 from .schedulers import (
     DDPMScheduler,
+    LCMScheduler,
 )
 from .training_utils import EMAModel
 
@@ -135,3 +138,6 @@ from .pipelines import (
         AudioLDMPipeline,
         
     )
+from .loaders import (
+    StableDiffusionXLLoraLoaderMixin,
+)
