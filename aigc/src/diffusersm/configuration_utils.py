@@ -88,8 +88,7 @@ class ConfigMixin:
         is_attribute = name in self.__dict__
         
         if is_in_config and not is_attribute:
-            deprecation_message = f"Accessing config attribute `{name}` directly via '{type(self).__name__}' object attribute is deprecated. 
-            Please access '{name}' over '{type(self).__name__}'s config object instead, e.g. 'scheduler.config.{name}'."
+            deprecation_message = f"Accessing config attribute `{name}` directly via '{type(self).__name__}' object attribute is deprecated. Please access '{name}' over '{type(self).__name__}'s config object instead, e.g. 'scheduler.config.{name}'."
             print(deprecation_message)
             return self._internal_dict[name]
 

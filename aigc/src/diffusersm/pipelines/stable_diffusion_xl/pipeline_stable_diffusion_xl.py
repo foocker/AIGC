@@ -15,21 +15,39 @@
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import torch 
+from transformers import (
+    CLIPImageProcessor,
+    CLIPTextModel,
+    CLIPTextModelWithProjection,
+    CLIPTokenizer,
+    CLIPVisionModelWithProjection,
+)
+
+from ...image_processor import PipelineImageInput, VaeImageProcessor
+
+
 from ...loaders import (
     StableDiffusionXLLoraLoaderMixin,
 )
 
+from ...models import AutoencoderKL, ImageProjection, UNet2DConditionModel
+from ...models.attention_processor import (
+    AttnProcessor2_0,
+)
+
+from ...schedulers import KarrasDiffusionSchedulers
+from ...utils import (
+    logging,
+    scale_lora_layers,
+)
 from ..pipeline_utils import (
     DiffusionPipeline,
     StableDiffusionMixin,
 )
+from .pipeline_output import StableDiffusionXLPipelineOutput
 
-from ...utils import (
-    USE_PEFT_BACKEND,
-    logging,
-    scale_lora_layers,
-    unscale_lora_layers,
-)
+
 logger = logging.get_logger(__name__)
 
 EXAMPLE_DOC_STRING = """
@@ -57,3 +75,31 @@ class StableDiffusionXLPipeline(
     Pipeline for text-to-image generation using Stable Diffusion XL.
     """
     
+    _optional_components = [
+        "tokenizer",
+        "tokenizer_2",
+        "text_encoder",
+        "text_encoder_2",
+        "image_encoder",
+        "feature_extractor"
+    ]
+    
+    _callback_tensor_inputs = [
+        "latents",
+        "prompt_embeds",
+        "negative_prompt_embeds",
+        "add_time_ids",
+        "negative_pooled_prompt_embeds",
+        "negativate_add_time_ids",
+    ]
+    
+    def __init__(
+        self,
+        vae: AutoencoderKL,
+        
+    ):
+        super().__init__()
+        self.register_modules(
+            
+        )
+        
