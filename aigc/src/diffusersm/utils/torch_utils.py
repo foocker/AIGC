@@ -75,3 +75,9 @@ def randn_tensor(
         latents = torch.randn(shape, generator=generator, device=rand_device, dtype=dtype, layout=layout).to(device)
 
     return latents
+
+def is_compiled_module(module) -> bool:
+    """Check whether the module was compiled with torch.compile() 
+        torch version must > 2.0.0
+    """ 
+    return isinstance(module, torch._dynamo.eval_frame.OptimizedModule)

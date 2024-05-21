@@ -35,3 +35,7 @@ from .peft_utils import (
     get_peft_kwargs,
     recurse_remove_peft_layers,
     scale_lora_layers)
+
+from .torch_utils import is_compiled_module, randn_tensor
+
+from .pil_utils import numpy_to_pil
