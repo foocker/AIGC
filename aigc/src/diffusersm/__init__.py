@@ -141,3 +141,4 @@ from .pipelines import (
 from .loaders import (
     StableDiffusionXLLoraLoaderMixin,
 )
+from .callbacks import PipelineCallback, MultiPipelineCallbacks

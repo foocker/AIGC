@@ -14,6 +14,8 @@
 """
 PEFT utilities: Utilities related to peft library
 """
+from typing import Optional
+
 
 def set_weights_and_activate_adapters(model, adapter_names, weights):
     pass
@@ -35,4 +37,7 @@ def get_adapter_name(model):
     pass
 
 def scale_lora_layers(model, weight):
+    pass
+
+def unscale_lora_layers(model, weight: Optional[float] = None):
     pass
