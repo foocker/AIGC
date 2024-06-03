@@ -1,4 +1,3 @@
-# https://github.com/tencent-ailab/IP-Adapter/blob/main/tutorial_train.py
 import os
 import random
 import argparse
@@ -18,12 +17,9 @@ from accelerate.utils import ProjectConfiguration
 from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection
 
-from ip_adapter.ip_adapter import ImageProjModel
+from ip_adapter.ip_adapter_faceid import MLPProjModel
 from ip_adapter.utils import is_torch2_available
-if is_torch2_available():
-    from ip_adapter.attention_processor import IPAttnProcessor2_0 as IPAttnProcessor, AttnProcessor2_0 as AttnProcessor
-else:
-    from ip_adapter.attention_processor import IPAttnProcessor, AttnProcessor
+from ip_adapter.attention_processor_faceid import LoRAAttnProcessor, LoRAIPAttnProcessor
 
 
 # Dataset
@@ -39,7 +35,7 @@ class MyDataset(torch.utils.data.Dataset):
         self.ti_drop_rate = ti_drop_rate
         self.image_root_path = image_root_path
 
-        self.data = json.load(open(json_file)) # list of dict: [{"image_file": "1.png", "text": "A dog"}]
+        self.data = json.load(open(json_file)) # list of dict: [{"image_file": "1.png", "id_embed_file": "faceid.bin"}]
 
         self.transform = transforms.Compose([
             transforms.Resize(self.size, interpolation=transforms.InterpolationMode.BILINEAR),
@@ -47,7 +43,8 @@ class MyDataset(torch.utils.data.Dataset):
             transforms.ToTensor(),
             transforms.Normalize([0.5], [0.5]),
         ])
-        self.clip_image_processor = CLIPImageProcessor()
+
+        
         
     def __getitem__(self, idx):
         item = self.data[idx] 
@@ -57,7 +54,9 @@ class MyDataset(torch.utils.data.Dataset):
         # read image
         raw_image = Image.open(os.path.join(self.image_root_path, image_file))
         image = self.transform(raw_image.convert("RGB"))
-        clip_image = self.clip_image_processor(images=raw_image, return_tensors="pt").pixel_values
+
+        face_id_embed = torch.load(item["id_embed_file"], map_location="cpu")
+        face_id_embed = torch.from_numpy(face_id_embed)
         
         # drop
         drop_image_embed = 0
@@ -69,6 +68,8 @@ class MyDataset(torch.utils.data.Dataset):
         elif rand_num < (self.i_drop_rate + self.t_drop_rate + self.ti_drop_rate):
             text = ""
             drop_image_embed = 1
+        if drop_image_embed:
+            face_id_embed = torch.zeros_like(face_id_embed)
         # get text and tokenize
         text_input_ids = self.tokenizer(
             text,
@@ -81,23 +82,24 @@ class MyDataset(torch.utils.data.Dataset):
         return {
             "image": image,
             "text_input_ids": text_input_ids,
-            "clip_image": clip_image,
+            "face_id_embed": face_id_embed,
             "drop_image_embed": drop_image_embed
         }
 
     def __len__(self):
         return len(self.data)
     
+
 def collate_fn(data):
     images = torch.stack([example["image"] for example in data])
     text_input_ids = torch.cat([example["text_input_ids"] for example in data], dim=0)
-    clip_images = torch.cat([example["clip_image"] for example in data], dim=0)
+    face_id_embed = torch.stack([example["face_id_embed"] for example in data])
     drop_image_embeds = [example["drop_image_embed"] for example in data]
 
     return {
         "images": images,
         "text_input_ids": text_input_ids,
-        "clip_images": clip_images,
+        "face_id_embed": face_id_embed,
         "drop_image_embeds": drop_image_embeds
     }
     
@@ -141,7 +143,7 @@ class IPAdapter(torch.nn.Module):
 
         print(f"Successfully loaded weights from checkpoint {ckpt_path}")
 
-
+    
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument(
@@ -280,20 +282,21 @@ def main():
     text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder")
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae")
     unet = UNet2DConditionModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="unet")
-    image_encoder = CLIPVisionModelWithProjection.from_pretrained(args.image_encoder_path)
+    # image_encoder = CLIPVisionModelWithProjection.from_pretrained(args.image_encoder_path)
     # freeze parameters of models to save more memory
     unet.requires_grad_(False)
     vae.requires_grad_(False)
     text_encoder.requires_grad_(False)
-    image_encoder.requires_grad_(False)
+    #image_encoder.requires_grad_(False)
     
     #ip-adapter
-    image_proj_model = ImageProjModel(
+    image_proj_model = MLPProjModel(
         cross_attention_dim=unet.config.cross_attention_dim,
-        clip_embeddings_dim=image_encoder.config.projection_dim,
-        clip_extra_context_tokens=4,
+        id_embeddings_dim=512,
+        num_tokens=4,
     )
     # init adapter modules
+    lora_rank = 128
     attn_procs = {}
     unet_sd = unet.state_dict()
     for name in unet.attn_processors.keys():
@@ -307,15 +310,15 @@ def main():
             block_id = int(name[len("down_blocks.")])
             hidden_size = unet.config.block_out_channels[block_id]
         if cross_attention_dim is None:
-            attn_procs[name] = AttnProcessor()
+            attn_procs[name] = LoRAAttnProcessor(hidden_size=hidden_size, cross_attention_dim=cross_attention_dim, rank=lora_rank)
         else:
             layer_name = name.split(".processor")[0]
             weights = {
                 "to_k_ip.weight": unet_sd[layer_name + ".to_k.weight"],
                 "to_v_ip.weight": unet_sd[layer_name + ".to_v.weight"],
             }
-            attn_procs[name] = IPAttnProcessor(hidden_size=hidden_size, cross_attention_dim=cross_attention_dim)
-            attn_procs[name].load_state_dict(weights)
+            attn_procs[name] = LoRAIPAttnProcessor(hidden_size=hidden_size, cross_attention_dim=cross_attention_dim, rank=lora_rank)
+            attn_procs[name].load_state_dict(weights, strict=False)
     unet.set_attn_processor(attn_procs)
     adapter_modules = torch.nn.ModuleList(unet.attn_processors.values())
     
@@ -329,7 +332,7 @@ def main():
     #unet.to(accelerator.device, dtype=weight_dtype)
     vae.to(accelerator.device, dtype=weight_dtype)
     text_encoder.to(accelerator.device, dtype=weight_dtype)
-    image_encoder.to(accelerator.device, dtype=weight_dtype)
+    #image_encoder.to(accelerator.device, dtype=weight_dtype)
     
     # optimizer
     params_to_opt = itertools.chain(ip_adapter.image_proj_model.parameters(),  ip_adapter.adapter_modules.parameters())
@@ -370,15 +373,7 @@ def main():
                 # (this is the forward diffusion process)
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
             
-                with torch.no_grad():
-                    image_embeds = image_encoder(batch["clip_images"].to(accelerator.device, dtype=weight_dtype)).image_embeds
-                image_embeds_ = []
-                for image_embed, drop_image_embed in zip(image_embeds, batch["drop_image_embeds"]):
-                    if drop_image_embed == 1:
-                        image_embeds_.append(torch.zeros_like(image_embed))
-                    else:
-                        image_embeds_.append(image_embed)
-                image_embeds = torch.stack(image_embeds_)
+                image_embeds = batch["face_id_embed"].to(accelerator.device, dtype=weight_dtype)
             
                 with torch.no_grad():
                     encoder_hidden_states = text_encoder(batch["text_input_ids"].to(accelerator.device))[0]
@@ -408,4 +403,4 @@ def main():
             begin = time.perf_counter()
                 
 if __name__ == "__main__":
-    main()   
+    main() 
