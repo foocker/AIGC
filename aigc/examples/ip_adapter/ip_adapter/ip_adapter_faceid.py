@@ -11,7 +11,7 @@ from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
 from .attention_processor_faceid import LoRAAttnProcessor, LoRAIPAttnProcessor
 from .utils import is_torch2_available, get_generator
 
-USE_DAFAULT_ATTN = False # should be True for visualization_attnmap
+USE_DAFAULT_ATTN = True # should be True for visualization_attnmap
 if is_torch2_available() and (not USE_DAFAULT_ATTN):
     from .attention_processor_faceid import (
         LoRAAttnProcessor2_0 as LoRAAttnProcessor,

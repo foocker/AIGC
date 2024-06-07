@@ -188,6 +188,8 @@ class LoRAIPAttnProcessor(nn.Module):
 
         ip_attention_probs = attn.get_attention_scores(query, ip_key, None)
         self.attn_map = ip_attention_probs
+        # print(self.attn_map.shape, 'LoRAIPAttnProcessor', query.shape, ip_key.shape, ip_hidden_states.shape, \
+        #     self.cross_attention_dim, self.hidden_size)
         ip_hidden_states = torch.bmm(ip_attention_probs, ip_value)
         ip_hidden_states = attn.batch_to_head_dim(ip_hidden_states)
 

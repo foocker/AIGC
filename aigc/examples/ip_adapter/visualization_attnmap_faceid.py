@@ -12,15 +12,17 @@ import cv2
 from ip_adapter.utils import register_cross_attention_hook, get_net_attn_map, attnmaps2images
 
 
-app = FaceAnalysis(name="buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+app = FaceAnalysis(name="buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'], root="/root/.insightface")
 app.prepare(ctx_id=0, det_size=(640, 640))
 
 v2 = False
-base_model_path = "SG161222/Realistic_Vision_V4.0_noVAE"
-vae_model_path = "stabilityai/sd-vae-ft-mse"
-image_encoder_path = "IP-Adapter/models/image_encoder/"
-plus_ip_ckpt = "IP-Adapter-FaceID/ip-adapter-faceid-plusv2_sd15.bin"
-ip_ckpt = "IP-Adapter-FaceID/ip-adapter-faceid_sd15.bin"
+# base_model_path = "SG161222/Realistic_Vision_V4.0_noVAE"
+base_model_path = "/data/modelscope_cache/AI-ModelScope/stable-diffusion-v1-5"
+vae_model_path = "/data/modelscope_cache/zhuzhukeji/sd-vae-ft-mse"
+image_encoder_path = "/data/modelscope_cache/q2792046875/ip-adapter/h94/IP-Adapter/models/image_encoder"
+# https://huggingface.co/h94/IP-Adapter-FaceID/tree/main
+plus_ip_ckpt = "/data/modelscope_cache/q2792046875/ip-adapter/h94/IP-Adapter/models/IP-Adapter-FaceID/ip-adapter-faceid-plusv2_sd15.bin"
+ip_ckpt = "/data/modelscope_cache/q2792046875/ip-adapter/h94/IP-Adapter/models/IP-Adapter-FaceID/ip-adapter-faceid_sd15.bin"
 device = "cuda"
 
 noise_scheduler = DDIMScheduler(
@@ -41,6 +43,7 @@ pipe = StableDiffusionPipeline.from_pretrained(
     feature_extractor=None,
     safety_checker=None
 )
+
 pipe.unet = register_cross_attention_hook(pipe.unet)
 
 # generate image
@@ -64,7 +67,9 @@ faceid_embeds = faces[0].normed_embedding
 faceid_embeds = torch.from_numpy(faceid_embeds).unsqueeze(0)
 face_image = faces[0].crop_face
 
-plus_ip_model = IPAdapterFaceIDPlus(copy.deepcopy(pipe), image_encoder_path, plus_ip_ckpt, device)
+# pip_faceidplus = copy.deepcopy(pipe)
+# plus_ip_model = IPAdapterFaceIDPlus(copy.deepcopy(pipe), image_encoder_path, plus_ip_ckpt, device)
+plus_ip_model = IPAdapterFaceIDPlus(pipe, image_encoder_path, plus_ip_ckpt, device)
 images = plus_ip_model.generate(
     prompt=prompt,
     negative_prompt=negative_prompt,
@@ -77,22 +82,31 @@ images = plus_ip_model.generate(
     num_inference_steps=30, seed=2023
 )
 
-attn_maps = get_net_attn_map((768, 512))
-print(attn_maps.shape)
-attn_hot = attnmaps2images(attn_maps)
+# for name, module in pipe.unet.named_modules():
+#     if name.split('.')[-1].startswith('attn2'):
+#         if hasattr(module.processor, "attn_map"):
+#             print(2)
 
+# register_cross_attention_hook(plus_ip_model.pipe.unet)
+# print(images[0].size)  # 512, 768, wh
+attn_maps = get_net_attn_map((768, 512)) # hw
+# print(attn_maps.shape)  # [4, 768, 512]
+attn_hot = attnmaps2images(attn_maps)
 
 import matplotlib.pyplot as plt
 #axes[0].imshow(attn_hot[0], cmap='gray')
 display_images = [cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)] + attn_hot + [images[0]]
 fig, axes = plt.subplots(1, len(display_images), figsize=(12, 4))
+cmaps = ['gray', 'viridis', 'plasma', 'inferno', 'magma', 'jet']
 for axe, image in zip(axes, display_images):
-    axe.imshow(image, cmap='gray')
+    axe.imshow(image, cmap='viridis')
     axe.axis('off')
-plt.show()
+# plt.show()
+plt.savefig("face_attn_1_cp.png")
 
-
-ip_model = IPAdapterFaceID(copy.deepcopy(pipe), ip_ckpt, device)
+# pipe_faceid = copy.deepcopy(pipe)
+# ip_model = IPAdapterFaceID(copy.deepcopy(pipe), ip_ckpt, device)
+ip_model = IPAdapterFaceID(pipe, ip_ckpt, device)
 images = ip_model.generate(
     prompt=prompt, negative_prompt=negative_prompt,
     faceid_embeds=faceid_embeds,
@@ -109,7 +123,8 @@ attn_hot = attnmaps2images(attn_maps)
 display_images = [cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)] + attn_hot + [images[0]]
 fig, axes = plt.subplots(1, len(display_images), figsize=(12, 4))
 for axe, image in zip(axes, display_images):
-    axe.imshow(image, cmap='gray')
+    axe.imshow(image, cmap='viridis')
     axe.axis('off')
-plt.show()
+# plt.show()
+plt.savefig("face_attn_2_cp.png")
 

@@ -14,3 +14,7 @@ aigc/src/diffusersm.egg-info/
 t.py
 **/__pycache__
 **/results
+**/*.png
+**/*.gif
+**/*.mp4
+**/*.jpg
