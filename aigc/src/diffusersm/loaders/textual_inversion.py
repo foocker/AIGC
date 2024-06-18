@@ -6,6 +6,7 @@ from torch import nn
 
 from transformers import PreTrainedModel, PreTrainedTokenizer
 from ..models.modeling_utils import load_state_dict
+from accelerate.hooks import AlignDevicesHook, CpuOffload, remove_hook_from_module
 from ..utils import logging
 
 
@@ -211,7 +212,6 @@ class TextualInversionLoaderMixin:
 
         return all_tokens, all_embeddings
 
-    @validate_hf_hub_args
     def load_textual_inversion(
         self,
         pretrained_model_name_or_path: Union[str, List[str], Dict[str, torch.Tensor], List[Dict[str, torch.Tensor]]],
