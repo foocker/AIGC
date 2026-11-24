@@ -34,8 +34,6 @@ C_{\mathrm{edit}}=P\bigl[E_v(F_c);E_v(F_k);D(M)\bigr].
 
 这套表示可以覆盖几种任务：空条件和全生成 mask 对应文生视频；源帧与全生成 mask 对应重绘；源帧与局部 mask 对应局部编辑；历史帧可作为续写条件。它们使用相近接口，却仍需要各自的训练样本，表示统一不能推出任务能力自然齐全。
 
-\seedancenetworkfigure{3}{候选条件注入的两条路径：参考记忆通过 K/V 被读取，源内容与结构条件通过对齐残差进入目标流。文本的联合注意力入口见总览章。}{fig:seedance-condition-injection}
-
 \section{时间和空间需要同时定义}\label{seedance-m17-ux65f6ux95f4ux548cux7a7aux95f4ux9700ux8981ux540cux65f6ux5b9aux4e49}
 
 用户要求``第二到第四秒更换角色 A 的外套''时，最终编辑范围可写为：

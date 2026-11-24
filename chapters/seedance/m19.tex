@@ -163,8 +163,6 @@ z_v\in\mathbb{R}^{B\times128\times T_v\times H_v\times W_v},
 
 新增参考strength首先作为门控残差的缩放量，独立于原生guidance保存。短片保留原生采样配置作对照，长片候选采用有界长度shift并与训练噪声课程配套；这是需要比较的新选择，见 \hyperref[seedance-m25]{数据与训练规格}。具体步数从配套配置读取；尚未进行少步数训练时，不指定一个未经验证的高速档位。
 
-\seedancenetworkfigure{5}{Seedance 2.5 推测方案的联合采样回路与两种长视频执行关系。图中主干沿用总览章的 Dual-MMDiT 推测；本章 LTX 替代实现说明同类执行接口，不表示二者逐层拓扑相同。}{fig:seedance-joint-inference}
-
 \section{联合长片与因果续写分别保存版本}\label{seedance-m19-ux8054ux5408ux957fux7247ux4e0eux56e0ux679cux7eedux5199ux5206ux522bux4fddux5b58ux7248ux672c}
 
 第一版先保留整段联合去噪，按 8、16、30 秒任务逐步训练，全局连接作质量对照。因为视频和声音状态每步都变，这一版不使用跨步历史 KV 来声称精确复用。先看长程条件是否真的保持，再改依赖结构。

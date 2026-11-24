@@ -59,7 +59,7 @@
   {参考 / 源内容 / 结构编码\\独立条件 token 与条件特征};
 \node[lab] (ri) at (3.0,6.75) {图像、视频、音频、mask\\depth / pose / camera};
 \draw[wire] (ri.north)--(refs.south);
-\draw[cw] (refs.east)--node[above,lab] {第3页}(7.7,8.05);
+\draw[cw] (refs.east)--node[above,lab] {\snPlateRef{3}}(7.7,8.05);
 \node[box,text width=4.5cm] (time) at (3.0,10.45)
   {噪声时间 $t$：独立输入\\块内具体参数化不预先指定};
 \draw[cw] (time.east)--(6.9,10.45)--(6.9,9.15)--(7.7,9.15);

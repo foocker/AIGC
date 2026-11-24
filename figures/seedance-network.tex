@@ -33,8 +33,11 @@
   \path[use as bounding box] (-.4,-1.8) rectangle (27.6,16.55);
   \node[font=\bfseries\fontsize{16}{18}\selectfont] at (13.6,16.05) {#2};
   \node[lab,text=snInk!75] at (13.6,15.38) {#3};
-  \node[lab,anchor=south east] at (27.2,-1.58) {#1 / 5};
+  \ifdefined\SeedanceBookPlate\else
+    \node[lab,anchor=south east] at (27.2,-1.58) {#1 / 5};
+  \fi
 }
+\newcommand{\snPlateRef}[1]{\ifdefined\SeedanceBookPlate 图版#1\else 第#1页\fi}
 \newcommand{\snNote}[1]{%
   \draw[snInk!25,line width=.45pt] (0,-.55)--(27.2,-.55);
   \node[lab,anchor=north west,text width=26.1cm,align=left] at (0,-.76) {#1};

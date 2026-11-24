@@ -47,11 +47,9 @@ z_t^m=(1-t_m)z_0^m+t_m\epsilon^m,\qquad m\in\{v,a\}.
 
 \clearpage
 \section{整体计算图}
-五张图保留独立图册的图版顺序：总图与联合块为图版1、2，
-条件注入见图\ref{fig:seedance-condition-injection}，
-VAE 见图\ref{fig:seedance-causal-vae-detail}，
-联合推理见图\ref{fig:seedance-joint-inference}。
-图内“第2页”“第3页”等指图版序号，不是本书页码。
+五张图集中放在本节，依次是完整网络、Dual-MMDiT、条件注入、
+3D Causal VAE 与联合推理。图内“图版1”至“图版5”表示这组图的顺序；
+页脚沿用本书的连续页码。
 
 沿图从下向上看，输入先变成两类量：一类是可读取的条件，另一类是要更新的目标状态。
 文本和静态参考可以预先编码，干净源内容也可以走固定条件塔。
@@ -64,6 +62,14 @@ VAE 见图\ref{fig:seedance-causal-vae-detail}，
 把这些位置分清，后面的张量和损失才对应得上。
 
 \seedancenetworkfigure{1}{Seedance 2.5 完整推测网络：3D Causal VAE、Dual-MMDiT、音视频联合模块与独立条件路径。纵向箭头从下到上；图中具体连接仍为候选。}{fig:seedance-network-overview}
+
+\seedancenetworkfigure{2}{Dual-MMDiT 的候选块展开。文本与媒体分别投影 Q/K/V，联合注意力后拆回各流，再通过音视频模块交换旧状态。}{fig:seedance-joint-block}
+
+\seedancenetworkfigure{3}{候选条件注入的两条路径：参考记忆通过 K/V 被读取，源内容与结构条件通过对齐残差进入目标流。}{fig:seedance-condition-injection}
+
+\seedancenetworkfigure{4}{3D Causal VAE 的编码、解码与时间因果关系。具体阶段数与压缩参数不作为 2.5 的已知配置。}{fig:seedance-causal-vae-detail}
+
+\seedancenetworkfigure{5}{联合采样回路与两种长视频执行关系。主干沿用本章的 Dual-MMDiT 推测；后文的 LTX 替代实现不表示与之逐层拓扑相同。}{fig:seedance-joint-inference}
 
 \clearpage
 \section{一个联合块内部怎样计算}
@@ -78,8 +84,6 @@ VAE 见图\ref{fig:seedance-causal-vae-detail}，
 \]
 交换结果分别残差更新，再进入后续联合块。若先更新视频，再给声音读更新后的视频，
 就成了另一种有先后次序的计算图；本文候选沿用两边读同一旧状态的约定。
-
-\seedancenetworkfigure{2}{Dual-MMDiT 的候选块展开。文本与媒体分别投影 Q/K/V，联合注意力后拆回各流，再通过音视频模块交换旧状态。}{fig:seedance-joint-block}
 
 作为另一条可检查的实现路线，公开替代实例的原生规格是 48 个联合块、视频宽 4096、音频宽 2048，
 两侧 latent token 均为 128 维；这些数字属于 LTX-2 原系列，不是 Seedance 的参数披露。

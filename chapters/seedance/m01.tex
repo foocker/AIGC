@@ -38,8 +38,6 @@ z=\mu+\sigma\odot\epsilon,\qquad \epsilon\sim\mathcal{N}(0,I).
 N=31\times30\times52=48\,360.
 \]
 
-\seedancenetworkfigure{4}{3D Causal VAE 的编码、解码与时间因果关系。沿 Seedance 系列公开方向展开，具体阶段数与压缩参数不作为 2.5 的已知配置。}{fig:seedance-causal-vae-detail}
-
 \section{为什么首帧需要单独处理}\label{seedance-m01-ux4e3aux4ec0ux4e48ux9996ux5e27ux9700ux8981ux5355ux72ecux5904ux7406}
 
 为什么要单独保留首帧？一方面，因果编码允许它不依赖后面帧；另一方面，输入只有一张图时，时间维仍是合法的。于是图片可以看成这个视频编码过程的一个特例，同一个编码器就有机会处理两者。

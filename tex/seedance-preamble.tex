@@ -3,7 +3,6 @@
 \usepackage{fvextra,needspace}
 \usepackage{xurl}
 \usepackage{adjustbox}
-\usepackage{pdflscape}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit}
 \IfFontExistsTF{Consolas}{\setmonofont{Consolas}[Scale=0.88]}{\setmonofont{Latin Modern Mono}[Scale=0.88]}
@@ -36,15 +35,13 @@
 \setlength{\emergencystretch}{2em}
 \hypersetup{unicode=true,breaklinks=true}
 \pdfstringdefDisableCommands{\def\codepath#1{#1}}
-% Shared, full-page landscape plates from the reviewed vector diagram set.
+% Consecutive portrait plates use the book's paper size and page numbering.
 \newcommand{\seedancenetworkfigure}[3]{%
   \clearpage
-  \begin{landscape}
-  \thispagestyle{plain}
   \begin{figure}[p]
     \centering
-    \includegraphics[page=#1,width=\linewidth,height=0.94\textheight,keepaspectratio]{assets/seedance/figures/seedance25-inferred-network.pdf}
+    \makebox[\linewidth][c]{%
+      \includegraphics[page=#1,width=\dimexpr\paperwidth-18mm\relax,height=0.84\textheight,keepaspectratio]{assets/seedance/figures/seedance25-inferred-network.pdf}}
     \caption{#2}\label{#3}
   \end{figure}
-  \end{landscape}
   \clearpage}
