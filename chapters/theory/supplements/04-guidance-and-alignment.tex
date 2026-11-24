@@ -1,0 +1,241 @@
+\chapter{条件生成、逆问题与偏好对齐}
+\label{supp:guidance}
+
+原稿中 CFG 的公式已经列出，但仍有一串问题需要接着回答：
+为什么加的是似然的梯度？分类器应该接收哪个噪声级？
+把引导系数调大之后，得到的分布究竟是什么？
+如果条件来自一个测量方程或一个偏好评分，又应该怎样进入生成过程？
+本章按参考书第8章展开这些问题。\cite{theorybook}
+
+\section{条件分布的分数与分类器引导}
+设条件 $c$ 在前向加噪时不变，$p_t(x\mid c)$ 是带噪条件分布。
+贝叶斯公式给出
+\[
+p_t(x\mid c)=\frac{p_t(c\mid x)p_t(x)}{p(c)},\qquad
+\nabla_x\log p_t(x\mid c)=s_t(x)+\nabla_x\log p_t(c\mid x).
+\]
+分母只依赖 $c$，所以对 $x$ 求导后消失。
+将右边代入原稿的反向 SDE，就得到 classifier guidance。
+若使用原先递减的扩散时钟，新增漂移为
+$-g(t)^2\nabla_x\log p_t(c\mid x)$，
+但乘上负的 $\mathrm dt$ 后，实际采样会朝分类器认为更符合条件的方向移动。
+若改用递增反时钟，这个控制项直接写成正号。
+
+这里不能忽略下标 $t$。训练分类器时，应先从有标签数据中取 $(x_0,c)$，
+再按同一个前向核构造 $x_t$，优化
+\[
+\mathbb E_{t,x_0,c,x_t}[-\log C_\psi(c\mid x_t,t)].
+\]
+只有这样，分类器才近似在估计采样时需要的噪声条件似然。
+仅在干净样本上准确的分类器，并不因此在高噪声输入上给出正确梯度。
+即便分数和分类器都精确，起始端也应匹配 $p_T(x\mid c)$；
+当噪声足够大而条件信息已被抹去时，才常用同一个高斯先验来近似各个条件的终端。
+
+\section{CFG 的训练、尺度约定与跨时间兼容性}
+\subsection{为什么同一个网络能做有条件与无条件预测}
+训练时以概率 $\rho$ 将 $c$ 替换为空条件 $\varnothing$，记处理后的条件为 $\tilde c$。
+例如噪声回归目标为
+\[
+\mathbb E\|\epsilon_\theta(a_tx_0+b_t\epsilon,t,\tilde c)-\epsilon\|^2.
+\]
+空条件分支的数据并未只来自某个类别，所以它学习无条件噪声预测；
+保留条件的分支学习条件预测。总体最优解在两种输入下分别是相应的条件平均。
+采样时组合
+\[
+\epsilon_{\rm cfg}=\epsilon_u+w(\epsilon_c-\epsilon_u),\qquad
+s_{\rm cfg}=s_u+w(s_c-s_u).
+\]
+这里 $w=0$ 为无条件，$w=1$ 为通常的条件预测。
+如果代码使用 $(1+\omega)\epsilon_c-\omega\epsilon_u$，则 $w=1+\omega$。
+讨论强度前先对照这个定义，否则同一个“scale=1”可能对应不同含义。
+
+\subsection{固定时间的幂次密度不等于完整采样的端点定律}
+在分数精确的理想情形，固定 $t$ 时
+\[
+s_{\rm cfg}=\nabla\log[p_t(x)p_t(c\mid x)^w].
+\]
+这只说明当时的向量场是一个倾斜密度的分数。
+要使不同 $t$ 的倾斜密度成为同一条前向扩散的边缘，还必须满足 Fokker--Planck 方程。
+把这个要求直接展开，可以看到缺少的条件。
+
+令 $u_t(x)$ 为任意倾斜势，定义
+$\tilde p_t=p_te^{u_t}/Z_t$，前向算子为
+$L_t^*p=-\nabla\cdot(fp)+\tfrac12g^2\Delta p$。
+由于 $p_t$ 本身满足前向方程，乘积求导与空间乘积展开给出
+\begin{align}
+\frac{\partial_t\tilde p_t-L_t^*\tilde p_t}{\tilde p_t}
+ &=\partial_tu_t+f^\top\nabla u_t-g^2s_t^\top\nabla u_t\\
+ &\quad-\frac{g^2}{2}(\Delta u_t+\|\nabla u_t\|^2)
+ -\partial_t\log Z_t.
+\label{supp:tilt-residual}
+\end{align}
+右边必须为零，才有跨时间兼容性。
+精确分类条件对应 $u_t=\log p_t(c\mid x)$，$w=1$ 时确实恢复真实条件路径；
+但任意损失、任意时间调度、任意幂次一般没有这个保证。
+因此增大 CFG 可以改变条件服从性和样本外观，却不能未经检查就说终点精确服从
+$p_0(x\mid c)^w p_0(x)^{1-w}$。
+这类误差在求解器无限精确时仍可能存在，和数值误差不是同一个来源。
+
+\section{逆问题：为什么需要带噪似然}
+设观测为 $y=\mathcal A(x_0)+\eta$，$\eta\sim\mathcal N(0,\sigma_y^2I)$。
+生成目标是 $p(x_0\mid y)$，在噪声时间 $t$ 需要
+\[
+p_t(y\mid x_t)=\int p(y\mid x_0)p(x_0\mid x_t)\,\mathrm dx_0.
+\label{supp:noisy-likelihood}
+\]
+这里积分的是一个分布，而不是单个去噪结果。
+若只知道去噪均值 $m_t(x_t)=\mathbb E[X_0\mid x_t]$，
+把积分近似为 $p(y\mid m_t(x_t))$，就得到常见的均值代入思路。
+其引导梯度是
+\[
+\nabla_{x_t}\log p(y\mid m_t(x_t))
+=\frac1{\sigma_y^2}J_{m_t}(x_t)^\top
+ J_{\mathcal A}(m_t)^\top[y-\mathcal A(m_t)].
+\]
+梯度必须经过去噪器和观测算子一起传播。
+把 $m_t$ 停止梯度会改变这个公式；保留或近似哪些 Jacobian，需要单独说明。
+
+\subsection{用高斯例子看被忽略的后验方差}
+若 $X_0\mid x_t\sim\mathcal N(m_t,C_t)$，$\mathcal A(x)=Ax$，则积分可精确完成：
+\[
+Y\mid x_t\sim\mathcal N(Am_t,\Sigma_t),\qquad
+\Sigma_t=\sigma_y^2I+AC_tA^\top.
+\]
+当 $C_t$ 不依赖 $x_t$ 时，精确引导为
+\[
+\nabla_{x_t}\log p_t(y\mid x_t)
+=J_{m_t}^\top A^\top\Sigma_t^{-1}(y-Am_t).
+\]
+均值代入会把 $\Sigma_t$ 换成 $\sigma_y^2I$，因此忽略高噪声下的干净后验不确定性，
+可能过度相信测量残差。
+若后验协方差也随输入变化，精确求导还会出现协方差和行列式的导数，
+不能直接沿用上式。这也说明相关近似何时比较可信：后验足够集中，或者不确定性相对测量噪声很小。
+
+\subsection{二阶 Tweedie 关系}
+原稿的一阶 Tweedie 公式给出均值。对 $X_t=a_tX_0+b_tZ$，再求一次导数，
+可把协方差也写出来。后验对输入的对数导数为
+\[
+\nabla_x\log p(x_0\mid x)
+=\frac{a_t}{b_t^2}[x_0-m_t(x)].
+\]
+因此，对均值的每个坐标求导可得
+\[
+J_{m_t}(x)=\frac{a_t}{b_t^2}\operatorname{Cov}(X_0\mid X_t=x).
+\]
+再由 $m_t=(x+b_t^2s_t(x))/a_t$ 得到
+\[
+\operatorname{Cov}(X_0\mid X_t=x)
+=\frac{b_t^2}{a_t^2}\left[I+b_t^2\nabla_x^2\log p_t(x)\right].
+\label{supp:second-tweedie}
+\]
+它在适当可微、矩存在及内部时间条件下成立。
+这给高阶分数和后验不确定性一个明确联系，
+但网络近似的 Hessian 未必使右边保持半正定，实际使用仍需检查数值与模型误差。
+
+\section{终端奖励与 Doob 的 $h$ 变换}
+有时条件不是测量方程，而是最终样本的奖励 $R(x)$。
+这里改用生成时间 $r$，从噪声 $r=0$ 走到数据 $r=1$，参考过程为
+$\mathrm dX=b\mathrm dr+g\mathrm dW$。
+定义
+\[
+h(x,r)=\mathbb E\left[\exp(R(X_1)/\kappa)\mid X_r=x\right],\qquad\kappa>0.
+\]
+由 Markov 性和后向方程，
+\[
+\partial_rh+b^\top\nabla h+\frac{g^2}{2}\Delta h=0,
+\qquad h(x,1)=e^{R(x)/\kappa}.
+\]
+以终端因子重加权整条参考路径后，新的局部漂移为
+\[
+b^h=b+g^2\nabla\log h.
+\]
+为什么不能直接用 $\nabla R(x_r)$ 代替它？因为 $h$ 评价的是
+“从当前状态继续生成，最终可能获得的指数奖励平均”，并非当前带噪样本的奖励。
+
+还要处理起始分布。若整条路径按 $e^{R(X_1)/\kappa}/Z$ 重加权，
+其初始边缘也变成 $\rho_0(x)h(x,0)/Z$，终端才是精确指数倾斜。
+若坚持保持原来的初始边缘，则条件路径需除以各自的 $h(X_0,0)$，
+最后得到的端点不再自动等于同一个全局倾斜公式。
+在高噪声起点几乎不含终端信息时，$h(x,0)$ 近似常数，这种区别才可能很小。
+这也是无训练奖励引导需要近似未来价值或校正权重的原因。
+
+\section{分数蒸馏：把图像先验传给另一个生成器}
+如果优化变量是三维场景、可微渲染器或另一个生成器的参数，
+输出图像写为 $x_0=g_\theta(z)$，可以希望它的加噪分布接近扩散先验。
+考虑一个理想平滑目标
+\[
+\mathcal J(\theta)=\mathbb E_{t,z}
+ D_{\rm KL}\bigl(\mathcal N(a_tg_\theta(z),b_t^2I)\|p_t(\cdot\mid c)\bigr).
+\]
+单个高斯的熵与均值无关，所以使用重参数化后，梯度为
+\begin{align}
+\nabla_\theta\mathcal J
+ &=-\mathbb E_{t,z,\epsilon}
+ a_tJ_{g_\theta}^\top s_t(x_t\mid c)\\
+ &=\mathbb E_{t,z,\epsilon}\frac{a_t}{b_t}
+ J_{g_\theta}^\top[\hat\epsilon_t(x_t,c)-\epsilon].
+\end{align}
+第二行减去的 $\epsilon$ 对 $z$ 条件下期望为零，可作为控制变量。
+这解释了 SDS 类更新中“预测噪声减实际噪声”的来源。
+实践还会改变时间权重、使用 CFG 或其它梯度近似，因此需要说明具体目标。
+
+更关键的是，这里平均的是每个 $z$ 的单个加噪高斯相对先验的 KL，
+并非生成器整体混合分布的同一个 KL。
+若 $q_t$ 表示混合边缘，则有
+\[
+\mathbb E_zD_{\rm KL}(q_t(\cdot\mid z)\|p_t)
+=D_{\rm KL}(q_t\|p_t)+I(Z;X_t).
+\]
+多出的互信息项会改变优化行为。
+因此把 SDS 视为对任意生成器分布的无偏完整分布匹配，需要额外论证。
+
+\section{KL 正则奖励优化与 DPO}
+\subsection{先求分布空间中的最优解}
+固定条件 $c$，设参考模型为 $\pi_{\rm ref}(x\mid c)$，奖励为 $r(c,x)$。
+考虑
+\[
+\max_\pi\left\{\mathbb E_\pi r-\beta D_{\rm KL}(\pi\|\pi_{\rm ref})\right\},\quad\beta>0.
+\]
+对密度作变分并加入归一化约束，得到
+\[
+r-\beta[\log(\pi/\pi_{\rm ref})+1]+\lambda=0.
+\]
+因此在归一化常数有限时，
+\[
+\pi^*(x\mid c)=\frac{\pi_{\rm ref}(x\mid c)e^{r(c,x)/\beta}}{Z(c)}.
+\label{supp:reward-optimum}
+\]
+也可将目标改写为 $\beta\log Z-\beta D_{\rm KL}(\pi\|\pi^*)$，直接验证最优性。
+这是所有密度上的理想最优解；有限神经网络和实际训练不一定能达到它。
+
+\subsection{成对偏好怎样变成对数概率比}
+采用 Bradley--Terry 偏好模型
+$P(x_w\succ x_l\mid c)=\operatorname{sigmoid}(r(c,x_w)-r(c,x_l))$。
+由式\eqref{supp:reward-optimum}，奖励差可写为
+\[
+r_w-r_l=\beta\left[
+ \log\frac{\pi^*(x_w\mid c)}{\pi_{\rm ref}(x_w\mid c)}
+ -\log\frac{\pi^*(x_l\mid c)}{\pi_{\rm ref}(x_l\mid c)}\right].
+\]
+条件归一化常数在同条件的差里消失，遂得到 DPO 形式的目标
+\[
+-\mathbb E\log\operatorname{sigmoid}\left(\beta\left[
+ \log\frac{\pi_\theta(x_w\mid c)}{\pi_{\rm ref}(x_w\mid c)}
+ -\log\frac{\pi_\theta(x_l\mid c)}{\pi_{\rm ref}(x_l\mid c)}\right]\right).
+\]
+它以成对比较的分类损失拟合隐式奖励差，不要求先单独拟合一个显式奖励网络。
+但偏好模型、数据分布和参考约束仍是实际假设。
+
+\subsection{为什么扩散 DPO 不能直接用噪声 MSE 冒充样本似然}
+离散扩散的端点似然要积分掉整条潜轨迹，直接计算通常困难。
+若比较路径分布，相同先验下可以分解
+\[
+\log\frac{P_\theta(x_{0:T}\mid c)}{P_{\rm ref}(x_{0:T}\mid c)}
+=\sum_{t=1}^T\log
+ \frac{p_\theta(x_{t-1}\mid x_t,c)}{p_{\rm ref}(x_{t-1}\mid x_t,c)}.
+\]
+共享固定高斯方差时，每个对数转移比可转成均值误差差，再转成带系数的噪声误差差。
+这使训练能抽样时间与加噪监督，但路径 KL、端点 KL、变分代理并非同一个对象。
+尤其 $\log\operatorname{sigmoid}$ 是非线性的，把期望放到其内外会改变目标。
+所以实际 Diffusion-DPO 推导需要说明使用哪一种路径或变分代理、怎样取期望与共享噪声，
+而不是直接把一个无权 MSE 差写成精确的端点对数似然比。\cite{theorybook}

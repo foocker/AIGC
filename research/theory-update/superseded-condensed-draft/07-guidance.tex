@@ -1,0 +1,110 @@
+\chapter{条件生成、引导、逆问题与偏好对齐}
+\label{th:guidance}
+
+\section{条件输入与概率条件不是同一保证}
+
+条件生成的目标是 $p_\theta(x\mid c)$。
+把文本 embedding 拼入网络、经 cross-attention 读取参考或使用条件残差，
+是表示条件的架构方式。网络是否真正遵循条件，还取决于训练配对、
+条件丢弃、数据覆盖和损失。外部控制接口存在，不等于已经学到对应条件分布。
+
+精确条件分数满足贝叶斯恒等式
+\begin{equation}\label{th:classifier-guidance}
+\nabla_x\log p_t(x\mid c)=s_t(x)+\nabla_x\log p_t(c\mid x).
+\end{equation}
+Classifier guidance 用噪声条件分类器近似后一项。
+分类器需要覆盖对应噪声时间；干净图分类器不自动给出任意 $t$ 的正确梯度。
+引导加入的是分数，反向 SDE 与 ODE 的速度系数仍由各自公式决定。
+
+\section{Classifier-free guidance 的两种尺度记号}
+
+训练时随机丢弃条件，让同一模型能预测有条件与空条件结果。
+统一写为
+\begin{equation}\label{th:cfg}
+s_{\rm cfg}=s_{\rm uncond}+w(s_{\rm cond}-s_{\rm uncond}).
+\end{equation}
+$w=0$ 对应无条件，$w=1$ 对应通常的条件预测。
+另一种写法是 $(1+\omega)s_{\rm cond}-\omega s_{\rm uncond}$，
+两者关系为 $w=1+\omega$。
+在相同路径、相同输出转换下，对噪声或速度作相同线性组合可得到对应引导。
+前提是两分支的基底项和缩放一致。
+
+若两分数都精确，固定时刻上这个场是
+$p_t(x\mid c)^w p_t(x)^{1-w}$ 的对数梯度（归一化存在时）。
+但这些逐时倾斜密度未必满足原扰动过程的同一演化方程，
+所以不能据此断言最终采样恰好服从 $p_0(x\mid c)^w p_0(x)^{1-w}$。
+这是局部分数恒等式与全局生成分布之间的重要区别。
+
+负提示的基线分支是另一个条件，不是严格无条件分布。
+过强引导可能导致过饱和、模式缩减和更难积分的速度场。
+动态 threshold、重缩放或时段引导是带质量权衡的工程处理，
+不因命名为 correction 就具有普适无偏性。
+
+\section{训练外能量引导}
+
+给定约束能量 $E(x)$，可考虑目标倾斜 $p(x)\exp(-\tau E(x))$，
+其额外分数为 $-\tau\nabla E(x)$。
+带噪态却通常不能直接用于干净域的能量，实际会采用去噪估计
+$E(D_\theta(x_t,t))$。求梯度时要明确是否经过 $D_\theta$ 的 Jacobian。
+跳过该 Jacobian、裁剪梯度或改时间权重均改变算法。
+理想干净目标的梯度与一个随时刻启发式构造的梯度需要区分。
+
+\section{逆问题中的后验梯度}
+
+设测量模型 $y=\mathcal A(x_0)+\eta$，$\eta\sim\mathcal N(0,\Sigma_y)$。
+干净后验为 $p(x_0\mid y)\propto p_0(x_0)p(y\mid x_0)$。
+扩散时刻的精确条件量是
+\begin{equation}\label{th:inverse-likelihood}
+p_t(y\mid x_t)=\int p(y\mid x_0)p(x_0\mid x_t)\,\mathrm dx_0.
+\end{equation}
+其梯度通常不可求。常用近似以 $D_\theta(x_t,t)$ 代替随机 $X_0$，
+对 $-\frac12\|y-\mathcal A(D_\theta(x_t,t))\|^2_{\Sigma_y^{-1}}$ 求梯度。
+但一般有
+$\E[p(y\mid X_0)\mid x_t]\ne p(y\mid\E[X_0\mid x_t])$，
+所以这是近似的 plug-in 后验引导，不是精确贝叶斯采样。
+
+测量噪声极小时，简单强制数据一致性可能把轨迹推离学到的先验流形。
+非线性、病态算子还会放大去噪偏差。
+应分别检验测量残差、后验不确定性、样本多样性与重建误差，
+不能用一张视觉清晰的结果证明后验正确。
+
+\section{奖励引导与模型对齐的理论目标}
+
+采样时引导固定模型；对齐训练更新模型参数。
+给定参考分布 $p_{\rm ref}(x\mid c)$，熵正则奖励问题为
+\[
+\max_p\ \E_p[r(x,c)]-\tau\KL(p\Vert p_{\rm ref}).
+\]
+用变分法可得理想解
+\begin{equation}\label{th:reward-tilt}
+p^*(x\mid c)=\frac1{Z(c)}p_{\rm ref}(x\mid c)e^{r(x,c)/\tau}.
+\end{equation}
+这刻画目标分布，不说明如何高效训练扩散模型达到它。
+
+若采用 Bradley--Terry 偏好模型，DPO 型成对损失可写为
+\[
+-\log\operatorname{sigmoid}\left(
+ \tau\left[\log\frac{p_\theta(x^+\mid c)}{p_{\rm ref}(x^+\mid c)}
+ -\log\frac{p_\theta(x^-\mid c)}{p_{\rm ref}(x^-\mid c)}\right]\right).
+\]
+扩散端点似然难求，实际可能用路径似然或变分去噪代理。
+代理必须说明其假设和权重，不能把一次噪声 MSE 当成端点精确 log-prob。
+
+\section{随机策略、确定性流与奖励误用}
+
+有噪声的反向 SDE 在非退化转移下可定义采样路径的条件密度，
+从而使用策略梯度和相对于旧策略的似然比。
+确定性 ODE 的一步转移是 Dirac 测度，
+不能直接套用具有高斯方差的转移密度公式。
+可改用路径可微训练、专门构造的随机策略或其它明确的估计器。
+
+奖励模型、描述模型、提示改写器与生成器是不同的被训练对象。
+奖励随审美与任务切片变化，可能被生成器投机利用。
+冻结评估、真实约束和多样性检查是区分“奖励上升”与“任务改善”的必要手段。
+
+\begin{theorytakeaway}
+条件分数的贝叶斯公式是精确的；强 CFG、去噪 plug-in 和偏好代理通常有额外近似。
+引导、对齐和控制接口需要分别说明目标分布、梯度路径及随机性。
+\end{theorytakeaway}
+\threading{主参考第8章\cite{theorybook}；本章围绕该章的条件引导、训练外引导、逆问题及
+RL/DPO 统一目标展开，不把某一个业务奖励当成通用原理。}

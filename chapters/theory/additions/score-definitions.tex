@@ -1,0 +1,32 @@
+这两个 score 容易混在一起，关键是看对谁求导。
+对于参数模型 $p_\theta(x)$，参数分数为
+\[
+u_\theta(x)=\nabla_\theta\log p_\theta(x),\qquad
+\mathcal I(\theta)=\mathbb E_{p_\theta}[u_\theta(X)u_\theta(X)^\top].
+\]
+后一个矩阵是 Fisher 信息。它描述分布对参数变化的敏感程度。
+而后面扩散模型所说的分数，通常是对数据坐标求导：
+\[
+s(x)=\nabla_x\log p(x).
+\]
+比如一维高斯 $p(x)=\mathcal N(x;\mu,\sigma^2)$，空间分数是
+$s(x)=-(x-\mu)/\sigma^2$；对均值参数求导则为
+$\partial_\mu\log p(x)=(x-\mu)/\sigma^2$。
+同一个对数密度，求导变量一换，意义和符号都可能改变。
+
+这里还能看出分数建模的一个好处。设
+$p_\theta(x)=\tilde p_\theta(x)/Z_\theta$，归一化常数 $Z_\theta$
+可能需要高维积分才能算出，但它与 $x$ 无关，因此
+\[
+\nabla_x\log p_\theta(x)=\nabla_x\log\tilde p_\theta(x).
+\]
+只学习空间分数，就能避开显式计算 $Z_\theta$。
+当然，这还没有解决“如何从这个向量场采样”的问题，下一小节接着看。
+
+Stein 恒等式也使用这个空间分数。若 $p$ 和向量函数 $h$ 足够光滑，
+边界项消失，那么分部积分给出
+\[
+\mathbb E_p[s(X)^\top h(X)+\nabla\cdot h(X)]=0.
+\]
+后面分数匹配把未知的 $\nabla\log p$ 从训练目标中消去，
+用到的就是这种分部积分关系。这里先把定义与用途接起来，具体损失在 NCSN 中继续推导。

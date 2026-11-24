@@ -1,11 +1,12 @@
 % Imported from topics/video-generation/seedance-2.5/training.md
-\chapter{M13 增量训练阶段与停止条件}\label{seedance-m13}
+\chapter{增量训练阶段与停止条件}\label{seedance-m13}
 \moduleinfo{M13}{增量路线与工程阅读；未运行教学代码}{\hyperref[src-seedance-1.0]{\texttt{seedance-1.0}}、\hyperref[src-seedance-1.5-pro]{\texttt{seedance-1.5-pro}}、\hyperref[src-wan-2.1]{\texttt{wan-2.1}}、\hyperref[src-long-context-tuning]{\texttt{long-context-tuning}}、\hyperref[src-dancegrpo]{\texttt{dancegrpo}}、\hyperref[src-rewarddance]{\texttt{rewarddance}}、\hyperref[src-diffsynth-code]{\texttt{diffsynth-code}}、\hyperref[src-longlive-code]{\texttt{longlive-code}}、\hyperref[src-ltx-code]{\texttt{ltx-code}}、\hyperref[src-dancegrpo-code]{\texttt{dancegrpo-code}}}
 
+接着沿上一章的 Wan 候选路线安排训练，保持它与联合音视频路线的权重及接口区别。
 
-训练一个完整视频基础模型，与在现有模型上增加业务能力，需要完全不同的数据和预算。对于可控参考、局部编辑和多镜头任务，更容易执行的路线是保留已训练好的基座，先证明数据与损失链路正确，再逐项增加能力。
+上章给出了要增加哪些条件，这章接着看怎样训练。若从零训练视频基础模型，数据和预算都很大；若是在现有基座上补参考、局部编辑和多镜头，则可以先保留已学能力，把新增数据、梯度和损失接通，再逐项扩大任务。两种训练范围要先分清。
 
-下面给出以 Wan-2.1 T2V-1.3B 为候选基座的训练流程。参数是初始试验配方，尚未经过实际训练验证；是否扩大训练，取决于每阶段的测量结果。
+下面仍以 Wan-2.1 T2V-1.3B 为候选。给出的参数用于开始试验，尚未经真实训练验证，后续是否增加规模，由各阶段测量结果决定。
 
 本流程面向较轻的视频增量试验。需要训练统一参考、编辑、结构条件和原生音视频时，采用单独的 \hyperref[seedance-m20]{联合候选训练配方}，与相应 \hyperref[seedance-m19]{完整架构} 配套；Wan 阶段的 latent、参数组和优化器状态不能直接挪用。
 
@@ -19,19 +20,19 @@
 \caption{基础模型与精修模型的训练及推理组织 （论文示意，来源：seedance-1.0）}
 \end{figure}
 
-分阶段的作用是改变数据分布、训练目标或可训练参数，同时保留上一步的能力。它不意味着必须照搬某个大模型的全部预训练规模。预算有限时，应先完成基座适配，而不是从头复刻基础训练。
+分阶段并不只是把一个大训练拆成几段。每一段可能改变数据分布、训练目标或可训练参数，同时要观察旧能力是否保留。预算有限时，先完成基座适配，比照搬某个基础模型的全部预训练规模更有实际意义。
 
 \section{第一步：证明原版模型和数据链路正确}\label{seedance-m13-ux7b2cux4e00ux6b65ux8bc1ux660eux539fux7248ux6a21ux578bux548cux6570ux636eux94feux8defux6b63ux786e}
 
-固定源码、模型、VAE、文本编码器、scheduler 和环境版本。先运行原版生成与真实视频重建，保存固定种子的输出，记录数值精度、非确定性算子、显存和时间。
+先固定源码、模型、VAE、文本编码器、scheduler 和环境。运行原版生成与真实视频重建，保存固定种子的结果，再记精度、非确定性算子、显存和耗时。否则后面看到变化，连原来的对照是什么都不清楚。
 
-选择 32 个有权使用的真实样本作调试集，另留来源隔离的验证集。起初关闭随机增强与条件 dropout，检查模型能否过拟合这些样本，并测试换文本、移除参考后输出是否相应变化。调试集的重现不能作为泛化成绩，但能快速发现目标符号、latent 缩放和条件接线错误。
+可先拿 32 个有权使用的真实样本调试，验证集按来源另留。暂时关掉随机增强与条件 dropout，观察能否过拟合，再换文本、移除参考，看输出是否对应变化。这不是泛化评价，而是在检查速度符号、latent 缩放和条件接线有没有错误。
 
-必须测到有效样本/秒、有效 token/秒、step 时间、峰值显存和梯度范数，才有依据确定后续 batch、分辨率和预算。
+再测有效样本/秒、有效 token/秒、step 时间、峰值显存和梯度范数。有了这些量，才能决定 batch、分辨率与预算；仅知道模型参数量，训练这笔账还没有算完。
 
 \section{第二步：只训练图片参考支路}\label{seedance-m13-ux7b2cux4e8cux6b65ux53eaux8badux7ec3ux56feux7247ux53c2ux8003ux652fux8def}
 
-冻结原 VAE、文本编码器和主干，训练参考特征投影、池化、角色嵌入和门控交叉注意力。先保留纯文本任务作回归，再比较少量主干 LoRA 是否带来额外收益。
+参考阶段先固定原 VAE、文本编码器和主干，只更新参考投影、池化、角色嵌入与门控注意力。纯文本任务继续保留作回归，之后再用少量主干 LoRA 作对照。这样才能看出收益来自新增条件，还是来自主干被重新调整。
 
 {\def\LTcaptype{table} % do not increment counter
 \small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
@@ -72,11 +73,11 @@ B_{\mathrm{global}}=B_{\mathrm{micro}}\times K_{\mathrm{accum}}\times N_{\mathrm
 
 \section{第三步：训练区域和区间编辑}\label{seedance-m13-ux7b2cux4e09ux6b65ux8badux7ec3ux533aux57dfux548cux533aux95f4ux7f16ux8f91}
 
-新增源条件支路，输入源 latent、编辑与上下文 mask、修改指令和可选参考。先冻结已验证的参考支路，在受控重渲染真值上验证，再混入人工真实编辑对和弱监督数据。
+编辑阶段再增加源条件支路，读取源 latent、编辑与上下文 mask、指令及可选参考。先冻结已经验证的参考模块，在受控重渲染数据上检查，再逐步混入人工真实编辑对和弱监督对；监督可信度不同，不能一开始就当成同一类目标。
 
 起步任务可以是服装颜色、局部物体和背景替换；相机视角、全局光照和复杂遮挡另立切片。损失掩码、非目标保持损失以及最终像素合成要明确分工。latent 一致不保证像素无变化，外区直接复用也不保证边缘光照自然。
 
-只有目标变化、外区保持和时间边界同时改善，才扩大训练；否则应先回到数据配对、mask 和任务约束，而不是立即用更复杂奖励压高总分。
+目标变化、外区保持和时间边界需要一起看。如果只有保持误差变小，模型也可能只是在复制。没有同时改善时，先检查配对、mask 和任务约束，再考虑奖励设计，不能用一个更复杂的总分掩盖问题。
 
 \section{第四步：扩大到场景级多镜头}\label{seedance-m13-ux7b2cux56dbux6b65ux6269ux5927ux5230ux573aux666fux7ea7ux591aux955cux5934}
 
@@ -84,7 +85,7 @@ B_{\mathrm{global}}=B_{\mathrm{micro}}\times K_{\mathrm{accum}}\times N_{\mathrm
 
 异步噪声需要逐镜头噪声时间与相应调制。如果基座仅支持全局 timestep，必须增加并训练正确的逐 token 条件，而不是只替换 attention mask。
 
-双向场景模型先作为联合生成对照，因果续写另做适配并独立保存版本。缓存先通过完整重算等价检查，再测速度。训练时逐步加入自生成历史，观察它与真实历史之间的分布差异；长程评测按时间段看漂移，不能只报告整段平均。
+联合双向模型先留下作对照，因果续写另存一个适配版本。缓存与完整重算等价之后再测速度；训练历史也逐步从真实转向自生成，观察条件分布如何变化。长程错误按时间分段记录，避免后段漂移被整段平均稀释。
 
 \section{第五步：把联合音频作为独立工程}\label{seedance-m13-ux7b2cux4e94ux6b65ux628aux8054ux5408ux97f3ux9891ux4f5cux4e3aux72ecux7acbux5de5ux7a0b}
 
@@ -94,13 +95,13 @@ B_{\mathrm{global}}=B_{\mathrm{micro}}\times K_{\mathrm{accum}}\times N_{\mathrm
 
 \section{偏好优化和蒸馏放在哪一步}\label{seedance-m13-ux504fux597dux4f18ux5316ux548cux84b8ux998fux653eux5728ux54eaux4e00ux6b65}
 
-先做高质量 SFT，再验证固定候选的奖励重排是否与人工一致。奖励可靠后才考虑 RL；低步数蒸馏再以已确定的 teacher 和任务分布展开。生成器、奖励模型、数据和 student 都需独立版本，防止边训练边换评价标准。
+后训练先用高质量 SFT，再用固定候选检查奖励重排和人工判断是否一致。奖励可靠、任务分布稳定后，才讨论 RL 与低步数蒸馏。生成器、reward、数据和 student 都独立登记版本，否则比较过程中评价标准也在移动。
 
 若奖励上涨但人工通过率下降，或者动作和构图趋于单一，应停止回滚。少步数 student 也需要与 teacher 比较身份、动作与交付可用率，不能只比较每秒出多少帧。
 
 \section{怎样保证训练能恢复、成本能估算}\label{seedance-m13-ux600eux6837ux4fddux8bc1ux8badux7ec3ux80fdux6062ux590dux6210ux672cux80fdux4f30ux7b97}
 
-保存模型权重之外，还要保存 optimizer、scheduler、全局步数、所有随机状态、数据采样位置和梯度累积状态。一次中断后，应对照不中断运行的下一批样本 ID 与损失，验证恢复语义。只加载权重继续跑不等于精确续训。
+恢复训练时，真正要恢复的不是一份权重，而是某一步的完整状态：optimizer、scheduler、步数、随机状态、样本位置和梯度累积。可将中断后下一批的样本 ID 与损失同不中断运行对照。只加载模型再跑，可能得到可用结果，却还不等于沿同一轨迹续训。
 
 预算依据实测 step 时间计算：
 
@@ -110,7 +111,7 @@ T_{\mathrm{hours}}=\frac{N_{\mathrm{steps}}t_{\mathrm{step}}}{3600},
 C_{\mathrm{GPU\,hours}}=T_{\mathrm{hours}}N_{\mathrm{GPU}}.
 \]
 
-还要另计数据制作、验证、checkpoint 和失败重跑。学习率、有效 batch、分辨率和训练参数范围改变后，吞吐可能重新变化；预算应随测量更新，而不是由模型参数量单独推断。
+式子里的 GPU 时间还只是其中一项，数据制作、验证、存盘和失败重跑都要另计。学习率、batch、分辨率或更新参数范围一变，吞吐也可能变，所以预算应跟着实测更新，不能只从参数量推出固定小时数。
 
 \section{真实工程从哪里进入}\label{seedance-m13-ux771fux5b9eux5de5ux7a0bux4eceux54eaux91ccux8fdbux5165}
 

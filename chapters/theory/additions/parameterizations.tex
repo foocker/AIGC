@@ -1,0 +1,39 @@
+\subsection{噪声、分数、干净样本与速度的换算}
+到这里可以回答前面反复出现的疑问：为什么 DDPM 与分数模型能够互换表达。
+把一个时刻的高斯扰动统一写为
+\[
+X_t=a_tX_0+b_t\epsilon,\qquad \epsilon\sim\mathcal N(0,I).
+\]
+这里 $a_t,b_t$ 是整体路径的信号与噪声尺度，
+DDPM 中分别为 $\sqrt{\bar\alpha_t}$ 与 $\sqrt{1-\bar\alpha_t}$。
+对每个固定的 $t$，平方回归的最优噪声预测是
+$\hat\epsilon(x,t)=\mathbb E[\epsilon\mid X_t=x]$。
+由前面的条件分数平均公式，依次得到
+\[
+s_t(x)=-\frac{\hat\epsilon(x,t)}{b_t},\qquad
+\hat x_0(x,t)=\frac{x-b_t\hat\epsilon(x,t)}{a_t}.
+\]
+换算分母非零时，已知其中一个就能算出另外两个。
+但这不意味着不同参数化下使用相同的无权 MSE 就是相同训练。
+例如 $\|s_\theta-s_t\|^2=\|\epsilon_\theta-\hat\epsilon\|^2/b_t^2$，
+噪声尺度带来的权重仍然存在。
+
+如果还关心这条路径的确定性速度，对插值求导再作条件平均，得到
+\begin{align}
+v_t(x)&=\mathbb E[\dot a_tX_0+\dot b_t\epsilon\mid X_t=x]\\
+&=\frac{\dot a_t}{a_t}x+
+ \left(\dot b_t-\frac{\dot a_tb_t}{a_t}\right)\hat\epsilon(x,t).
+\end{align}
+对于由线性前向 SDE 产生的高斯路径，代入尺度满足的方程，
+这个式子正是前面的概率流速度。对更一般的插值，它给出了后面 Flow Matching 的入口。
+
+还有一种常见的 $v$-prediction：在 $a_t^2+b_t^2=1$ 时定义标签
+$V_t=a_t\epsilon-b_tX_0$。它与 $X_t$ 构成旋转变换，故
+\[
+\hat x_0=a_tx-b_t\hat V_t,\qquad
+\hat\epsilon=b_tx+a_t\hat V_t.
+\]
+这个 $V_t$ 一般不等于上面的时间速度 $v_t$。
+只有特定路径和时钟下两者才会相等或相差一个时间因子；读公式和代码时要先核对定义。
+这些等价关系也都发生在给定路径的同一时刻，不能据此推出不同采样器有相同的逐样本轨迹。
+\cite{theorybook,flow-guide}

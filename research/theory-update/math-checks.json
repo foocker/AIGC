@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-24",
+  "status": "passed",
+  "random_cases_per_identity": 100,
+  "seed": 20261124,
+  "maximum_absolute_residuals": {
+    "tweedie_gaussian": 4.440892098500626e-16,
+    "ddpm_variance": 1.1102230246251565e-16,
+    "ddpm_mean_precision": 8.881784197001252e-16,
+    "ddpm_mean_noise": 1.3322676295501878e-15,
+    "velocity_inverse_clean": 8.881784197001252e-16,
+    "velocity_inverse_noise": 4.440892098500626e-16,
+    "rotation_not_time_velocity": 8.881784197001252e-16,
+    "ddim_equals_noise_integral": 9.43689570931383e-16,
+    "ddim_equals_data_integral": 8.881784197001252e-16,
+    "ou_variance_differential": 4.440892098500626e-16,
+    "meanflow_identity": 8.881784197001252e-16,
+    "mask_reverse_normalization": 2.220446049250313e-16,
+    "gaussian_cfm_variance_ode": 0.0,
+    "gaussian_cfm_exact_endpoint_scale": 0.0,
+    "gaussian_cfm_euler_endpoint_scale": 0.0
+  },
+  "scope": "Numerical transcription checks for analytic identities, not a general proof or model experiment."
+}

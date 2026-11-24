@@ -1,0 +1,69 @@
+\begin{tikzpicture}[sn]
+\snPage{1}{Seedance 2.5 推测方案：整体网络}
+  {主线：3D Causal VAE + Dual-MMDiT + 音视频交互 + 多模态条件；箭头自下向上}
+\node[lab] at (11.6,14.65) {输出视频 $\hat x^v$};
+\node[lab] at (22.2,14.65) {输出声音 $\hat x^a$};
+\node[embed] (vd) at (11.6,13.70) {3D Causal VAE\\Decoder};
+\node[embed] (ad) at (22.2,13.70) {Audio Codec Decoder\\+ Vocoder};
+\draw[wire] (vd.north)--(11.6,14.40);
+\draw[wire] (ad.north)--(22.2,14.40);
+\node[box,text width=13.7cm,minimum height=.7cm] (sampler) at (16.9,12.20)
+  {联合采样器：$(z_t^v,z_t^a)\ \longrightarrow\ (z_{t-\Delta t}^v,z_{t-\Delta t}^a)$};
+\draw[wire] (11.6,12.60)--(vd.south);
+\draw[wire] (22.2,12.60)--(ad.south);
+\node[ff] (vh) at (11.6,10.90) {Video Output Head\\$\hat u^v$};
+\node[ff] (ah) at (22.2,10.90) {Audio Output Head\\$\hat u^a$};
+\draw[wire] (vh.north)--(11.6,11.80);
+\draw[wire] (ah.north)--(22.2,11.80);
+\begin{scope}[on background layer]
+\path[frame] (7.7,3.90) rectangle (26.1,10.10);
+\end{scope}
+\node[heading] at (16.9,9.68) {Dual-MMDiT（本文推测展开）};
+\node[lab,anchor=west,font=\fontsize{15}{17}\selectfont] at (26.35,7.0) {$N\times$};
+\node[attn,text width=4.55cm] (vm) at (11.6,5.05)
+  {Video--Text MMDiT\\空间层：视觉--文本联合注意力};
+\node[attn,text width=4.55cm] (am) at (22.2,5.05)
+  {Audio--Text MMDiT\\音频--文本联合注意力};
+\node[attn,text width=4.55cm] (vt) at (11.6,6.68)
+  {Visual Temporal Attention\\视频窗口的时空交互};
+\node[box,text width=4.55cm,draw=none,fill=snFrame] (at) at (22.2,6.68)
+  {音频序列沿物理时间建模\\与视频保持共同时间基准};
+\node[attn,text width=4.1cm] (avv) at (11.6,8.43) {Audio $\rightarrow$ Video\\Cross-Modal Joint Module};
+\node[attn,text width=4.1cm] (ava) at (22.2,8.43) {Video $\rightarrow$ Audio\\Cross-Modal Joint Module};
+\draw[wire] (vm.north)--(vt.south);
+\draw[wire] (am.north)--(at.south);
+\draw[wire] (vt.north)--(avv.south);
+\draw[wire] (at.north)--(ava.south);
+\draw[wire] (vt.east)--node[pos=.20,below,sloped,lab,fill=snFrame,inner sep=1pt] {video state}(ava.west);
+\draw[wire] (at.west)--node[pos=.20,below,sloped,lab,fill=snFrame,inner sep=1pt] {audio state}(avv.east);
+\draw[wire] (avv.north)--(vh.south);
+\draw[wire] (ava.north)--(ah.south);
+\node[embed] (vp) at (11.6,2.65) {Video Token Projection\\$z_t^v\mapsto h_v$};
+\node[embed] (ap) at (22.2,2.65) {Audio Token Projection\\$z_t^a\mapsto h_a$};
+\node[box] (vi) at (11.6,1.05) {带噪视频 latent $z_t^v$};
+\node[box] (ai) at (22.2,1.05) {带噪音频 latent $z_t^a$};
+\draw[wire] (vi.north)--(vp.south);
+\draw[wire] (ai.north)--(ap.south);
+\draw[wire] (vp.north)--(vm.south);
+\draw[wire] (ap.north)--(am.south);
+\node[lab,fill=white,inner sep=2pt] at (11.6,3.55) {3D / Multishot MM-RoPE};
+\node[lab,fill=white,inner sep=2pt] at (22.2,3.55) {Audio time positions};
+\node[lab] (prompt) at (3.0,1.05) {提示、对白、分镜描述};
+\node[embed,text width=4.5cm] (te) at (3.0,2.65) {PE / Text Encoder\\文本特征与模态专用投影};
+\node[cond,text width=4.5cm] (tc) at (3.0,5.05) {Text tokens $h_c$\\分别送入两条 MMDiT 分支};
+\draw[wire] (prompt.north)--(te.south);
+\draw[wire] (te.north)--(tc.south);
+\draw[wire] (tc.east)--(vm.west);
+\draw[wire,rounded corners=2pt] (tc.south east)--(6.9,4.08)--(18.85,4.08)--(18.85,5.05)--(am.west);
+\node[cond,text width=4.5cm] (refs) at (3.0,8.05)
+  {参考 / 源内容 / 结构编码\\独立条件 token 与条件特征};
+\node[lab] (ri) at (3.0,6.75) {图像、视频、音频、mask\\depth / pose / camera};
+\draw[wire] (ri.north)--(refs.south);
+\draw[cw] (refs.east)--node[above,lab] {第3页}(7.7,8.05);
+\node[box,text width=4.5cm] (time) at (3.0,10.45)
+  {噪声时间 $t$：独立输入\\块内具体参数化不预先指定};
+\draw[cw] (time.east)--(6.9,10.45)--(6.9,9.15)--(7.7,9.15);
+\node[lab,text width=5cm] at (3.0,13.5)
+  {长叙事：镜头 / 主体 / 时间绑定\\统一位置与条件可见性\\高分辨率精修位于基座之后};
+\snNote{图中整体拓扑是本文针对 2.5 的推测：视频--文本与音频--文本分别组成 MMDiT，再通过音视频联合模块交换状态。文本是注意力 token 输入；不是把整段提示只压成归一化调制。依据：Seedance 1.0 的 MMDiT / 因果 VAE，1.5 Pro 的 MMDiT 双分支方向，以及 M07/M17/M27 的条件设计；不引入 LTX 的层数、宽度或插件间隔。}
+\end{tikzpicture}

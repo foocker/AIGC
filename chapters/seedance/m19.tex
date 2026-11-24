@@ -1,9 +1,10 @@
 % Imported from topics/video-generation/seedance-2.5/integrated-design.md
-\chapter{M19 完整联合音视频候选架构}\label{seedance-m19}
+\chapter{完整联合音视频候选架构}\label{seedance-m19}
 \moduleinfo{M19}{候选设计与工程选型；组合效果待验证}{\hyperref[src-ltx-2]{\texttt{ltx-2}}、\hyperref[src-alchemint]{\texttt{alchemint}}、\hyperref[src-vace]{\texttt{vace}}、\hyperref[src-videocof]{\texttt{videocof}}、\hyperref[src-vincie-next]{\texttt{vincie-next}}、\hyperref[src-geometry-as-context]{\texttt{geometry-as-context}}、\hyperref[src-long-context-tuning]{\texttt{long-context-tuning}}、\hyperref[src-longlive]{\texttt{longlive}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-vace-code]{\texttt{vace-code}}、\hyperref[src-videocof-code]{\texttt{videocof-code}}、\hyperref[src-ltx-original-model]{\texttt{ltx-original-model}}}
 
+至此各条输入和执行路径已有定义，下面将它们放回共同主干，检查完整候选系统是否相互兼容。
 
-要让一个视频系统同时接受图像、视频、音频和结构条件，生成较长的音视频，再对指定片段进行修改，需要先选定共同的表示和主干。把各篇方法直接排列成模块清单，还不足以形成方案：它们必须共享时间、任务定义、条件接口和训练目标。
+各模块已有了局部定义，现在把问题收回来：同一系统要读图片、视频、音频与结构条件，生成较长音视频，再定向修改，怎样形成一条可以训练的计算链？必须先选共同表示和主干，让时间、条件与目标在各处使用同样的含义。仅列出多篇方法的名称，还没有建立这种关系。
 
 下面选定 LTX-2 初始公开系列的非蒸馏联合音视频模型作为共同主干，保留其 VAE、文本组件、双流 block 和原生 scheduler，再新增有绑定的参考记忆、源视频条件、区域定位与结构控制。它是面向类似公开能力的\textbf{完整候选设计}；尚未训练验证，也不代表 Seedance 2.5 的真实内部实现或同等效果。
 
@@ -45,7 +46,7 @@
 
 \section{统一任务规格}\label{seedance-m19-ux7edfux4e00ux4efbux52a1ux89c4ux683c}
 
-请求先编译为一个任务对象：输出时长与帧率、镜头计划、角色/speaker映射、参考绑定、原视频、编辑范围、结构条件、音轨保持规则、随机种子和质量档位。
+因此先把请求翻译成任务对象：时长、帧率、镜头计划、角色与 speaker、参考绑定、源视频、编辑范围、结构条件、音轨保持、种子和质量档位。后续每个模块都从这个对象取得自己的条件，不再独立猜一次用户要求。
 
 \begin{verbatim}
 用户要求
@@ -59,9 +60,9 @@
 
 例如三十秒广告包含两个镜头：角色A前半段展示产品，后半段角色B加入；产品图只锁结构，动作视频只锁手部动作，声音参考只锁speaker A。若第二镜头的外套颜色错误，编辑请求保留角色、产品、动作和音轨，只重做指定区间的外套区域。
 
-这条链中的绑定不会在提示改写时丢失。原始指令与编译结果都保留，不能靠一段加长提示替代任务对象。
+提示改写后，这些绑定仍要在。保留原始指令和编译结果，才能检查目标有没有被改变。一段更长的提示可以增加描述，却不能代替角色、素材和区间之间明确的对应。
 
-每种条件还要声明来源：用户提供、自动估计或模型生成。低置信自动区域先回到区域确认，主体绑定冲突先回到任务编译；生成后只对失败的镜头或区域重做。业务验收按交付任务统计身份、动作、台词、区域保持和人工返工，不能只挑最佳候选。
+条件还注明是用户给定、自动估计还是模型生成。自动区域低置信时先确认区域，主体冲突时先修绑定；结果若只错了某个镜头或局部，就沿该范围重做。身份、动作、台词、保持与返工最后按交付任务统计，而不是只留下最好的一次候选。
 
 \section{共同潜空间与时间对齐}\label{seedance-m19-ux5171ux540cux6f5cux7a7aux95f4ux4e0eux65f6ux95f4ux5bf9ux9f50}
 
@@ -88,19 +89,19 @@ z_v\in\mathbb{R}^{B\times128\times T_v\times H_v\times W_v},
 \Delta h_a=g_a\operatorname{Attn}(Q_a,K_{r_a},V_{r_a};B_a).
 \]
 
-镜头不允许的主体参考可屏蔽，时间区间加入软bias；始终保留null token。空间query没有天然的subject ID，只有提供布局、源跟踪或可靠预测区域时才做空间主体硬约束，其余情况通过主体embedding与监督学习绑定。两边再通过原生音视频交换模块传递同步信息。声音绑定必须与画面角色/speaker映射一致，不能靠跨模态attention自行猜测。
+新增支路先按镜头屏蔽不允许的主体，按时间加软偏置，并保留 null token。空间 query 本身没有 subject ID，只有已给布局、源跟踪或可靠预测区域时，才有依据作空间硬约束；其余绑定通过主体 embedding 与训练学习。两条流再经原生 AV 模块交换信息，声音也要遵守角色与 speaker 的映射，不能把归属全部留给 attention 去猜。
 
-动作视频的pose/flow和相机进入结构支路，而非默认把原人物外观全送入身份记忆。音色克隆需要跨台词同speaker训练数据；只有输入音频接口，不算具备稳定音色保持。
+动作视频中的姿态、光流和相机走结构支路，需要时关闭原人物外观。音色克隆则用同 speaker 跨台词配对。于是“能输入声音”与“能保持指定音色”仍隔着相应的条件和监督，不能由接口存在推出能力已经学到。
 
 需要保留对白或配乐时，完整干净音轨走对齐条件路径，不能压成32个音色摘要后期待逐字或逐拍一致。其时序token按原音频codec单独计费；多人同时说话时，混合音频token可能对应多个speaker，不能无条件强制一个token只绑定一个人。
 
 \section{源条件与区域预测怎样接入}\label{seedance-m19-ux6e90ux6761ux4ef6ux4e0eux533aux57dfux9884ux6d4bux600eux6837ux63a5ux5165}
 
-有源视频时，将待变条件、保留条件和mask分别对齐编码，送入新增context adapter。目标noisy latent仍走原主干，新增支路只在约定层提供残差。源图、参考图、源视频独立经过VAE，避免素材边界污染。
+源视频再拆成待变、保留内容与 mask，分别对齐编码后进入 context adapter。带噪目标仍从原主干输入，新增支路在约定层加残差。参考图、源图和源视频独立编码，避免在 VAE 时间轴上制造本来不存在的连续关系。
 
-没有用户mask时先定位目标区域，可用便宜的grounding/分割，也可训练视觉区域预测；关键帧编辑示例则提供``原样→目标外观''的映射。首版采用可检查的两阶段，不在一个巨大序列里同时塞源、区域、目标的所有token。
+用户没给 mask 时，先用 grounding、分割或训练得到的视觉区域预测定位；关键帧编辑对再提供原样到目标外观的对应。首版先把定位与生成分开，便于检查，不将源、区域与目标一开始全部堆进大序列。
 
-模型内的源条件保持干净，不随目标去噪时间改变；目标已知区若参与重噪覆盖，则使用固定噪声路径。二者是不同条件方式，训练时明确选择，不能在同一接口里混用时间含义。
+这里干净源条件与目标覆盖又要分清。源条件不随目标去噪时间变化；目标的已知区若作重噪覆盖，则仍沿一条固定噪声路径变化。训练必须选明这种条件方式，否则同名输入在两处使用不同时间含义。
 
 \section{原生双流块怎样保持同步}\label{seedance-m19-ux539fux751fux53ccux6d41ux5757ux600eux6837ux4fddux6301ux540cux6b65}
 
@@ -112,11 +113,11 @@ z_v\in\mathbb{R}^{B\times128\times T_v\times H_v\times W_v},
 \caption{联合主干与音视频跨注意力的组成 （论文示意，来源：ltx-2）}
 \end{figure}
 
-两边读取交换前的状态，再各自加残差，避免代码执行顺序引入偏差。缺失音轨的样本跳过音频目标与不合法交互；真实静音仍有有效音频目标。保持源音轨的编辑任务将其作为干净条件，最终输出直接复用，不能为``联合''而强行再生成。
+交换时两边先读取同一组旧状态，再各自加残差。若先更新一边再给另一边读，执行顺序本身就改变了计算图。缺音轨时跳过无效目标和交互，真实静音仍监督；需要保留原音轨时，则把它作干净条件，输出复用，不为“联合”强行重生声音。
 
 \section{一次采样的具体执行顺序}\label{seedance-m19-ux4e00ux6b21ux91c7ux6837ux7684ux5177ux4f53ux6267ux884cux987aux5e8f}
 
-先把条件编码缓存下来，按任务分别决定哪些目标要更新。条件mask表示能读什么，denoise mask表示更新什么，loss mask表示训练时监督什么，最终合成mask表示交付时替换什么；四者各自保存。
+采样前可先缓存固定条件编码，再按任务决定哪些目标更新。可读条件、去噪更新、损失有效位和最终替换范围各有一个 mask：它们来自同一请求，但对应不同计算，因而分别保存。
 
 {\def\LTcaptype{table} % do not increment counter
 \small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
@@ -148,7 +149,7 @@ z_v\in\mathbb{R}^{B\times128\times T_v\times H_v\times W_v},
 
 保留音轨与缺音轨是新增任务策略，训练必须出现相同状态，不能只在推理时把音频噪声改成零。干净音频仍可提供口型条件，缺音轨则完全不提供有效声音信息。
 
-模态存在、隐藏状态计算和latent更新分别控制。保留音轨时固定干净音频latent、关闭音频loss与采样更新，但声音流仍参与联合计算；深层音频特征读取当步视频，默认每步重算。只复用其codec结果，不能直接缓存全部声音Transformer状态。
+还需把模态存在、隐藏计算和 latent 更新分开。保留声音时，输入音频 latent 固定且干净，不计算音频 loss，也不更新它；声音流仍参与 AV 计算。其深层状态一旦读取当步视频，就仍随步数变化，所以默认只缓存 codec 结果，Transformer 声音特征每步重算。
 
 \begin{verbatim}
 1. 编译任务，确定内部帧数、补帧映射、两流时间坐标和各类mask。
@@ -162,9 +163,11 @@ z_v\in\mathbb{R}^{B\times128\times T_v\times H_v\times W_v},
 
 新增参考strength首先作为门控残差的缩放量，独立于原生guidance保存。短片保留原生采样配置作对照，长片候选采用有界长度shift并与训练噪声课程配套；这是需要比较的新选择，见 \hyperref[seedance-m25]{数据与训练规格}。具体步数从配套配置读取；尚未进行少步数训练时，不指定一个未经验证的高速档位。
 
+\seedancenetworkfigure{5}{Seedance 2.5 推测方案的联合采样回路与两种长视频执行关系。图中主干沿用总览章的 Dual-MMDiT 推测；本章 LTX 替代实现说明同类执行接口，不表示二者逐层拓扑相同。}{fig:seedance-joint-inference}
+
 \section{联合长片与因果续写分别保存版本}\label{seedance-m19-ux8054ux5408ux957fux7247ux4e0eux56e0ux679cux7eedux5199ux5206ux522bux4fddux5b58ux7248ux672c}
 
-第一版长叙事模型仍联合去噪整段，逐步训练8、16、30秒任务，保留原全局连接作为质量基线。它不用跨步历史KV缓存，因为每步视频/音频状态都在变。
+第一版先保留整段联合去噪，按 8、16、30 秒任务逐步训练，全局连接作质量对照。因为视频和声音状态每步都变，这一版不使用跨步历史 KV 来声称精确复用。先看长程条件是否真的保持，再改依赖结构。
 
 续写模型从它另行派生：以约4秒的时间块为单位，块内双向，块间只能读历史；视频和音频都采用同一块时间边界，四类流内与跨模态注意力都不能偷读未来。编码依赖越过边界的token延迟入块。训练先以真实/扰动历史起步，自生成历史需由teacher按实际历史重标后续并过滤状态冲突，历史梯度截断。
 
@@ -174,7 +177,7 @@ z_v\in\mathbb{R}^{B\times128\times T_v\times H_v\times W_v},
 
 已知白模先渲染同步depth/normal/pose/camera射线，经过type专用投影与context adapter进入视频流。静态结构、动态主体状态、带置信度的关键视角分开保存，每镜头检索少量可见且相关的历史视图。
 
-首版不要求模型重建完整世界，也不将生成画面的深度视为精确真值。学习型几何预测作为后续辅助任务，不与已知CAD约束混成同一种监督。
+首版不要求同时恢复完整世界，生成图像的深度也不作为精确几何真值。已知 CAD 给定的约束与后续学习型几何预测，来源和确定程度不同，应分别监督。
 
 \section{三十秒的成本必须先算清楚}\label{seedance-m19-ux4e09ux5341ux79d2ux7684ux6210ux672cux5fc5ux987bux5148ux7b97ux6e05ux695a}
 
@@ -186,11 +189,11 @@ N_v=91\times16\times28=40\,768,\qquad N_a\approx750.
 
 视频dense attention每头约有16.6亿个连接；单方向音视频交互约3060万个；2048视觉参考的完整交叉读取约8350万个。Flash attention避免显式保存完整矩阵，却不会消除算术量。
 
-所以初版从短片、较小分辨率和少量参考起步。达到30秒需配合显存分片、context parallel、条件预算和训练课程；空间窗口、稀疏与少步数属于后续有质量预算的优化，不能作为本方案默认无损能力。
+这也解释了从短片、小分辨率和少量参考开始的原因。扩到 30 秒后，显存分片、context parallel、条件预算与训练课程都要跟上。窗口、稀疏和少步数可再优化，但需要质量对照，不能预先作为无损能力计入。
 
 \section{方案的完成边界}\label{seedance-m19-ux65b9ux6848ux7684ux5b8cux6210ux8fb9ux754c}
 
-这套设计已经选定共同主干、表示、条件路径、训练任务和两种长视频模式，可以据此逐块实现或选择已有工程。尚未证明的是：多路参考经压缩后足够精细、三十秒复杂动作足够稳定、音色保持和局部编辑达到业务要求，以及所需训练预算。
+到这里，共同主干、表示、条件路径、训练任务，以及两种长视频方式，已经有了对应关系，可以逐块实施。仍待实验回答的是：压缩参考后细节是否足够，复杂动作能否稳定到三十秒，音色与局部保持能否达到要求，以及训练要花多少资源。这些不能由结构图本身推出。
 
 真实联合音视频与训练从 \href{https://github.com/Lightricks/LTX-2}{LTX-2} 进入；统一视觉条件借鉴 \href{https://github.com/ali-vilab/VACE}{VACE}，区域定位式编辑看 \href{https://github.com/knightyxp/VideoCoF}{VideoCoF}，因果流式机制看 \href{https://github.com/NVlabs/LongLive}{LongLive}。迁移这些机制仍是新增工作，不是现成仓库之间的一键连接。
 

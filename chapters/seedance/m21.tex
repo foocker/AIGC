@@ -1,9 +1,10 @@
 % Imported from topics/video-generation/seedance-2.5/adapter-contract.md
-\chapter{M21 新增模块的维度与接入契约}\label{seedance-m21}
+\chapter{新增模块的维度与接入契约}\label{seedance-m21}
 \moduleinfo{M21}{候选设计与工程选型；组合效果待验证}{\hyperref[src-ltx-2]{\texttt{ltx-2}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-ltx-original-model]{\texttt{ltx-original-model}}、\hyperref[src-vace]{\texttt{vace}}}
 
+前面分别讲了注意力和音视频交换，这里固定一个公开替代基座，逐层核对候选条件支路的维度与插入顺序。
 
-在已有音视频模型上增加控制能力，需要同时保持两件事：原有权重仍按自己的输入约定工作，新条件又能影响正确的生成位置。下面固定 LTX-2 原系列19B开发模型，给出一套增量模块契约。模型原生配置来自公开元数据；新增模块的宽度、层位与训练方式属于候选选择，尚未训练验证。
+已有音视频主干之后，怎样增加控制而不把原来所有接口重做？先把原权重的输入约定固定，再定义新条件从哪里读、以什么维度加回来。下面以 LTX-2 原系列 19B 开发模型逐层写出这种关系。原生配置来自公开元数据，新增宽度、层位与训练方式则是未验证的候选。
 
 \section{先固定一套确切的主干}\label{seedance-m21-ux5148ux56faux5b9aux4e00ux5957ux786eux5207ux7684ux4e3bux5e72}
 
@@ -42,9 +43,9 @@
 
 \section{新增模块放在什么位置}\label{seedance-m21-ux65b0ux589eux6a21ux5757ux653eux5728ux4ec0ux4e48ux4f4dux7f6e}
 
-原联合块保持``各流自注意力与文本读取→双向AV交换→各流FFN''的执行顺序。两个方向的AV交换读取同一组交换前状态。新增模块放在第4、8、12，直至48个原块之后，共12个插入位置。
+原联合块先作流内 self-attention 与文本读取，再进行双向 AV 交换，最后各自过 FFN；交换两边都读更新前状态。候选新模块接在第 4、8、12，直到第 48 个原块之后，共 12 处。这样原块和新支路的先后关系就确定了。
 
-每个位置按以下顺序运行，模型版本中固定这一顺序：
+每处再按下面的顺序计算，不能在不同版本中只保留相同模块名称，却悄悄交换执行位置：
 
 \begin{verbatim}
 原生AV块
@@ -54,11 +55,11 @@
   → 下一个原生AV块
 \end{verbatim}
 
-新增条件在下一个原块的AV交换中相互影响。最后一次插入后的残差直接影响各自输出头；不额外假设第48层后还存在一次原生AV交换。
+加进来的条件会在下一原块的 AV 交换里继续传播。最后一处则已经在第 48 块后，残差直接走向输出头，不应再凭空假设还有一次原生 AV 交换。这个差别从调用顺序就能看出。
 
 \section{参考支路的维度与共享规则}\label{seedance-m21-ux53c2ux8003ux652fux8defux7684ux7ef4ux5ea6ux4e0eux5171ux4eabux89c4ux5219}
 
-所有摘要记忆采用512维，视觉和声音分别池化。每张图32、每段动作参考64、每段音色参考32个摘要位置是起始预算；精确时序音轨另走完整音频条件。
+为使读取支路有共同维度，摘要记忆暂取 512 维，视觉与声音分别池化。每图 32、动作参考 64、音色参考 32 个摘要位置，只是起始预算；精确时序音轨仍保留完整条件，不能用摘要位置替代。
 
 每个插入位置独立拥有Q/K/V与输出投影，8个头、每头64维：
 
@@ -72,9 +73,17 @@ h'_v=h_v+\tanh(g_v)
 \operatorname{Attn}(Q_v,K_r,V_r;B)W_o^v.
 \]
 
+这里可以再检查一次起始梯度。若残差记为 \(\tanh(g)f_\phi\)，则
+\[
+\partial_g[\tanh(g)f_\phi]_{g=0}=f_\phi,
+\qquad
+\partial_\phi[\tanh(g)f_\phi]_{g=0}=0.
+\]
+因此正常初始化的支路先让门控学习，门控离开零以后才进一步更新支路参数。若 \(f_\phi\) 也被置成零，第一项便可能一起消失，不能只凭“零初始化稳定”就把所有因子全置零。
+
 \(W_q^v\)为 \(4096\times512\)，\(W_o^v\)为 \(512\times4096\)，\(W_k^v,W_v^v\)为 \(512\times512\)。音频支路将4096替换成2048。素材编码和池化器跨12处共享，读取投影与门控逐处独立；参考K/V因此可以按层缓存，不能误认为所有层拥有同一K/V。
 
-门控标量初始为0，其余投影正常初始化，输出线性层不使用bias。初始残差严格为零，先由门控得到梯度，后续更新再进入支路。若同时将输出投影和门控都初始化为零，两者可能互相阻断起始梯度。
+为什么只把门控置零？门控为零时初始残差严格为零，正常初始化的投影先提供一条非零候选路径，门控因而能获得梯度；门控更新后梯度再进入支路。若输出投影也同时全零，两个因子就可能互相挡住起始更新。因此输出线性层不加 bias，其余投影正常初始化。
 
 示意实现见 \hyperref[code-gated-condition]{gated\_condition.py}。它省略多头布局、时间调制与区域kernel，仅说明零门控和维度关系。
 
@@ -91,9 +100,9 @@ S_0=P_{257\rightarrow512}
 
 为避免复制完整19B主干，候选源条件塔采用512宽的轻量残差块：逐点通道混合、时间深度可分离卷积与空间深度可分离卷积。联合生成版可读条件邻域；因果续写版必须使用左侧时间卷积和同样的块边界。每处由独立的 \(512\rightarrow4096\) 投影与零门控把条件特征加回视频流。
 
-depth、normal、pose和相机射线分别经type专用投影到512维，附有效位与置信度，再与源条件塔融合。数值条件使用各自规范化，不能把米制深度当普通RGB送入图像归一化。
+结构条件也先注明自身类型。depth、normal、pose 与相机射线分别投影到 512 维，附有效位和置信度，再同源条件塔融合。深度的物理数值不能按普通 RGB 归一化，否则输入表面形状相同，含义已经改变。
 
-源塔只读取干净条件和固定任务标签，首版不读取当前带噪目标，因此推理时各层条件残差可缓存。目标运动与条件不对齐的任务，应改用结构对齐或参考记忆；不能硬加一个对应关系错误的逐点残差。
+源塔在首版只读干净条件与固定任务标签，不读当前带噪目标，所以这些条件残差在推理步之间可以固定。若条件运动本来就与目标位置不对齐，则要改用结构对齐或参考记忆，不能为了逐点相加硬造一个错误对应。
 
 \section{三个状态开关必须分开}\label{seedance-m21-ux4e09ux4e2aux72b6ux6001ux5f00ux5173ux5fc5ux987bux5206ux5f00}
 
@@ -110,7 +119,7 @@ depth、normal、pose和相机射线分别经type专用投影到512维，附有�
 
 保留音轨时，音频latent保持干净、噪声时间为0，但音频流仍可处理隐藏状态并参与AV交换；采样器不更新其latent。仅将原生 \codepath{enabled=False} 不能表达这一完整策略，因为它还会跳过该流的自注意力、文本与FFN路径。
 
-每个采样步都重新从固定音频latent构建输入。其深层隐藏状态可能读到当前视频，因此通常仍随去噪步改变；可缓存的是codec结果，不能据此缓存全部音频Transformer特征。
+音频输入 latent 固定后，每步仍从它重新构造隐藏状态。因为深层声音特征可能已经读到当步视频，视频变化时它也变化。因此 codec 结果能缓存，并不能推出整条声音 Transformer 都能缓存。
 
 \section{自定义策略需要改到哪些工程接口}\label{seedance-m21-ux81eaux5b9aux4e49ux7b56ux7565ux9700ux8981ux6539ux5230ux54eaux4e9bux5de5ux7a0bux63a5ux53e3}
 
@@ -140,10 +149,10 @@ checkpoint保存 & 除LoRA外保存所有新增模块、门控、规格版本及
 \end{longtable}
 }
 
-若新模块挂在Transformer对象外，原trainer只扫描Transformer可训练参数的逻辑会漏掉它们。即便模块位于对象内，PEFT封装、LoRA筛选与保存逻辑也需要明确保留新增权重。原版checkpoint路径主要保存模型或LoRA权重，不能据此认定已保存optimizer、随机状态和数据游标。只写一个训练strategy类，并不会自动完成这些改动。
+新增模块还要确实进入优化器和保存列表。若它挂在 Transformer 外，原 trainer 只扫描 Transformer 就可能漏掉；挂在内部，也要检查 PEFT 包装和 LoRA 筛选。现有 checkpoint 主要保存模型或 LoRA 权重，并不因此包含 optimizer、随机状态和样本游标。一个 strategy 类只定义前向任务，还没有自动完成这些连接。
 
 \section{哪些结果应能由设计直接解释}\label{seedance-m21-ux54eaux4e9bux7ed3ux679cux5e94ux80fdux7531ux8bbeux8ba1ux76f4ux63a5ux89e3ux91ca}
 
-关闭新增门控时恢复原生结构；换参考只影响相应绑定；源条件换mask时工作区与交付区分别变化；停训恢复后模块与数据游标对应同一版本。它们是实施时应检查的性质，当前设计尚未给出模型实测。
+检查时可以依次关掉门控、替换参考、改变源 mask，再中断恢复。分别观察是否回到原生结构、是否只改变相应绑定、工作区和交付区是否按定义变化、恢复后模块与样本位置是否一致。这些都是实施时需要验证的关系，当前仍没有模型实测结果。
 
 真实实现阅读入口是固定版本的 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/model.py}{块循环}、\href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/transformer.py}{联合块} 和 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/trainer.py}{trainer}。新增支路属于待实现的候选结构，不能直接加载为现成上游插件。

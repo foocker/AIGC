@@ -1,0 +1,25 @@
+\documentclass[lang=cn,newtx,10pt,scheme=chinese]{elegantbook}
+\title{AIGC：扩散模型理论基础}
+\subtitle{原稿保留与理论增补}
+\author{Sisyphes}
+\institute{AIGC 技术笔记}
+\date{2026年11月24日}
+\version{0.5 · 理论增补审阅稿}
+\logo{logo-blue.png}
+\cover{cover.jpg}
+\definecolor{customcolor}{RGB}{32,178,170}
+\colorlet{coverlinecolor}{customcolor}
+\input{tex/seedance-preamble}
+\input{tex/theory-preamble}
+\addbibresource{reference.bib}
+\addbibresource{theory.bib}
+\setcounter{tocdepth}{1}
+\begin{document}
+\maketitle
+\frontmatter
+\tableofcontents
+\mainmatter
+\input{chapters/theory/contents}
+\nocite{yang2023diffusion,276}
+\printbibliography[heading=bibintoc,title={原理篇参考文献}]
+\end{document}

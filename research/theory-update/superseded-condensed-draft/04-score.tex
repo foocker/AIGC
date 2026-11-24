@@ -1,0 +1,105 @@
+\chapter{分数视角：从能量、去噪到多噪声生成}
+\label{th:score}
+
+\section{为什么学习密度的空间梯度}
+
+空间分数定义为 $s(x)=\nabla_x\log p(x)$。
+它指示局部对数密度上升最快的方向，但不是“离最近训练样本的向量”。
+对标准高斯 $s(x)=-x$；对混合高斯，各分量的梯度按后验责任度混合，
+方向取决于局部分布而非单个点。
+
+若能得到精确分数，过阻尼 Langevin SDE
+\[
+\mathrm dX_r=s(X_r)\mathrm dr+\sqrt2\mathrm dW_r
+\]
+在适当遍历与边界条件下以 $p$ 为不变密度。
+Euler 离散式为 $x\leftarrow x+h s_\theta(x)+\sqrt{2h}\,z$。
+有限步长有离散偏差，非凸多峰分布还可能混合很慢。
+只沿分数做确定性上升会聚到模式，不能代替覆盖概率质量的随机采样。
+
+\section{显式分数匹配与分部积分}
+
+理想目标是 Fisher 散度型误差
+$\tfrac12\E_p\|s_\theta-s\|^2$。展开交叉项，
+在边界通量消失、可微可积的条件下
+\[
+\int p\,s_\theta\cdot\nabla\log p\,\mathrm dx
+=\int s_\theta\cdot\nabla p\,\mathrm dx
+=-\int p\,\nabla\cdot s_\theta\,\mathrm dx.
+\]
+所以与参数有关的目标可写为
+\begin{equation}\label{th:implicit-sm}
+\mathcal L_{\rm SM}=\E_p\left[\tfrac12\|s_\theta(X)\|^2+
+ \nabla\cdot s_\theta(X)\right]+\text{常数}.
+\end{equation}
+它不需要真实分数，但高维散度计算昂贵，数据若在低维流形上也可能没有平滑密度。
+对数据加正噪声可改善密度定义，同时导出更方便的条件监督。
+
+\section{去噪分数匹配的条件技巧}
+
+取 $x_t=a_tx_0+b_t\epsilon$，$b_t>0$。
+条件扰动核的分数容易计算：
+\[
+\nabla_{x_t}\log q_t(x_t\mid x_0)
+=-\frac{x_t-a_tx_0}{b_t^2}=-\frac\epsilon{b_t}.
+\]
+对边缘密度 $p_t(x)=\int q_t(x\mid x_0)p_0(x_0)\mathrm dx_0$ 求导，有
+\begin{equation}\label{th:fisher-identity}
+\nabla_x\log p_t(x)
+=\E[\nabla_x\log q_t(x\mid X_0)\mid X_t=x].
+\end{equation}
+这要求可以交换微分与积分。
+由条件均值投影，去噪目标
+\[
+\mathcal L_{\rm DSM}=\E_{t,x_0,\epsilon}
+ \left[w(t)\left\|s_\theta(x_t,t)+\frac\epsilon{b_t}\right\|^2\right]
+\]
+与边缘分数误差只差一个与预测函数无关的项。
+训练有监督标签，生成时却不需要原始 $x_0$。
+
+\section{Tweedie 公式与噪声预测}
+
+把式\eqref{th:fisher-identity} 中的条件分数重新整理，可得
+\begin{equation}\label{th:tweedie}
+a_t\E[X_0\mid X_t=x]=x+b_t^2s_t(x).
+\end{equation}
+当 $a_t\ne0$，最优去噪器为
+$D^*(x,t)=(x+b_t^2s_t(x))/a_t$。
+同时最优噪声预测为 $\epsilon^*(x,t)=-b_ts_t(x)$。
+若定义 $s_\theta=-\epsilon_\theta/b_t$，
+则分数平方误差为噪声平方误差的 $1/b_t^2$ 倍。
+输出换算正确而训练权重不换算，仍会改变实际优化重点。
+
+上述公式的 $D^*$ 是后验均值。除特殊高斯等情况外，它不等于
+概率流 ODE 从 $(x,t)$ 积分到0的终点映射，后者由一整段速度场决定。
+这一区别在一步生成和一致性模型中尤其重要。
+
+\section{NCSN 的多噪声级与退火采样}
+
+单个噪声级只学一个平滑分布。
+NCSN 用多个 $b_1>\cdots>b_L>0$ 学习从平滑到精细的一族分数，
+在每个级别做多步 Langevin 后逐步降噪。
+早期形式常取 $a=1$，配合 $b^2$ 一类权重平衡不同噪声级的分数尺度。
+具体权重不是数学唯一选择。
+
+大噪声有助于连接模式，小噪声恢复局部细节；退火仍受有限混合和数值误差影响。
+Score SDE 将离散噪声级变成连续时间，用时间反演构造更统一的生成过程。
+“增加噪声级”与“在固定级别增加 MCMC 次数”控制不同误差。
+
+\section{分数能说明什么，不能说明什么}
+
+在连通区域内，精确分数决定对数密度至一个加法常数。
+若区域互不连通，各自的相对质量还需要额外信息。
+高斯平滑使 $t>0$ 的密度通常有全空间支持，
+但很小噪声下的低密度连接区仍难学习。
+
+训练数据的边缘 MSE 小，不自动控制远离训练分布、采样器可能到达的区域。
+分数量级通常随 $b_t\downarrow0$ 变大，
+因此端点截断、输出参数化和损失权重是理论与数值稳定性的一部分。
+
+\begin{theorytakeaway}
+DSM 学习边缘分数，是因为条件分数的条件平均恰好等于边缘分数。
+噪声预测与去噪预测都是它的参数化；后验均值与轨迹终点需要始终分开。
+\end{theorytakeaway}
+\threading{主参考第3--4、6章\cite{theorybook}，连续生成过程参见\cite{sde}。
+本章明确了分部积分边界条件、低维支持问题，以及原稿缺少的 DSM 等价推导。}

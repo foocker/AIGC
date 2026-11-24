@@ -1,0 +1,114 @@
+\chapter{概率、变分推断与概率运输的数学基础}
+\label{th:probability}
+
+\section{条件概率、似然与学习目标}
+
+贝叶斯公式为 $p(z\mid x)=p(x\mid z)p(z)/p(x)$，前提是 $p(x)>0$。
+固定参数时，$p_\theta(x)$ 是样本的密度；固定观测 $x$ 时，同一个表达式作为
+$\theta$ 的函数称为似然。连续密度值可以大于1，它不是某个点的概率。
+
+总体最大似然训练最小化交叉熵
+\[
+\mathcal L_{\rm NLL}=\E_{p_{\rm data}}[-\log p_\theta(X)]
+=H(p_{\rm data})+\KL(p_{\rm data}\Vert p_\theta).
+\]
+等式要求相应熵与积分存在；经验分布由有限样本组成，直接与连续密度比较时应解释为
+经验负对数似然，而不是把离散经验熵直接当连续微分熵。
+图像的离散像素要用去量化或离散似然接口处理，不能遗漏数据单位而比较 bits/dim。
+
+KL 非负却不对称。若 $p$ 在某区域有正质量而 $q=0$，$\KL(p\Vert q)$ 可发散。
+Wasserstein 距离则用移动质量的成本衡量分布差异，可能在支持不重合时仍有限。
+这些性质解释了为何似然、对抗学习和运输目标并不优化同一种误差。
+
+\section{高斯分布与 KL 的可计算形式}
+
+对 $d$ 维非退化高斯 $\mathcal N(m_1,S_1)$ 与 $\mathcal N(m_2,S_2)$，
+\begin{equation}\label{th:gaussian-kl}
+\KL=\frac12\left[\tr(S_2^{-1}S_1)
+ +(m_2-m_1)^\top S_2^{-1}(m_2-m_1)-d
+ +\log\frac{\det S_2}{\det S_1}\right].
+\end{equation}
+证明只需展开对数密度差，并用
+$\E[(X-m_1)(X-m_1)^\top]=S_1$。固定两个协方差时，
+高斯 KL 对均值的优化等价于一个加权平方误差；
+方差也参与学习时，行列式与逆协方差项不能丢掉。
+
+\section{ELBO 是怎样从恒等式产生的}
+
+对潜变量模型 $p_\theta(x,z)=p(z)p_\theta(x\mid z)$ 与推断分布 $q_\phi(z\mid x)$，
+只要支持与积分条件满足，有
+\begin{align}
+\log p_\theta(x)
+&=\E_q\log\frac{p_\theta(x,z)}{q_\phi(z\mid x)}
+ +\KL(q_\phi(z\mid x)\Vert p_\theta(z\mid x)),\\
+\mathrm{ELBO}(x)
+&=\E_q\log p_\theta(x\mid z)-\KL(q_\phi(z\mid x)\Vert p(z)).
+\end{align}
+因此 ELBO 是对数证据的下界，负 ELBO 是负对数似然的上界。
+VLB 常被不同作者用于 ELBO 或其负值，不能用缩写判断正负，必须看完整目标。
+后验精确时下界取等；改用更强推断器与改进生成模型是不同的工作。
+
+若 $q_\phi=\mathcal N(\mu_\phi,\operatorname{diag}\sigma_\phi^2)$，
+令 $z=\mu_\phi+\sigma_\phi\odot\epsilon$ 可把随机性移到与参数无关的噪声上，
+从而在适当可微、可积条件下交换梯度和期望。
+重参数技巧降低梯度估计的难度，不会使潜变量变成确定真值。
+
+\section{平方回归为什么学到条件均值}
+
+对任意随机标签 $Y$ 与输入 $X$，设 $m(X)=\E[Y\mid X]$，则
+\begin{equation}\label{th:conditional-mean}
+\E\|h(X)-Y\|^2
+=\E\|h(X)-m(X)\|^2+\E\|Y-m(X)\|^2.
+\end{equation}
+交叉项为零，因为 $\E[Y-m(X)\mid X]=0$。
+右侧第二项与 $h$ 无关，故最优回归是 $h^*=m$。
+这是去噪分数匹配与条件流匹配共用的监督技巧。
+如果回归权重只依赖 $X$，同样成立；若权重还依赖不可观测标签，
+最优解一般变为加权条件均值。
+
+例如等概率数据取 $x_0\in\{-1,1\}$，加大噪声后，观测到 $x_t\approx0$ 的样本
+可能来自两边。去噪 MSE 的最优答案接近0，而0并不是任何一个数据模式。
+一个后验均值不能直接代替从后验采样。
+
+\section{能量模型：归一化常数为何消失}
+
+令 $p_\theta(x)=e^{-E_\theta(x)}/Z_\theta$。
+最大似然参数梯度含有模型期望：
+\[
+\nabla_\theta[-\log p_\theta(x)]
+=\nabla_\theta E_\theta(x)-\E_{p_\theta}\nabla_\theta E_\theta(X).
+\]
+难点在第二项需要模型样本。空间梯度则为
+$\nabla_x\log p_\theta(x)=-\nabla_x E_\theta(x)$，$Z_\theta$ 与 $x$ 无关而消失。
+分数建模借此绕开显式归一化，但仍需解决采样和全局密度信息的问题。
+
+参数分数 $\nabla_\theta\log p_\theta(x)$ 通常联系 Fisher 信息；
+空间分数 $\nabla_x\log p(x)$ 用于扩散。
+两者求导变量不同。直接输出向量场的分数网络也未必在有限训练误差下
+严格等于某个标量势的梯度。
+
+\section{从变量替换到连续性方程}
+
+若 $y=\Psi(x)$ 是可微双射，
+\[
+\log p_Y(y)=\log p_X(x)-\log|\det D\Psi(x)|.
+\]
+对小时间步 $x_{t+h}=x_t+h u_t(x_t)+O(h^2)$，
+有 $\log\det(I+hDu)=h\tr(Du)+O(h^2)$，沿轨迹得到
+\begin{equation}\label{th:cnf-density}
+\frac{\mathrm d}{\mathrm dt}\log p_t(x_t)=-\nabla\cdot u_t(x_t).
+\end{equation}
+展开物质导数 $\mathrm d/\mathrm dt=\partial_t+u\cdot\nabla$，得到概率守恒：
+\begin{equation}\label{th:continuity}
+\partial_t p_t+\nabla\cdot(p_tu_t)=0.
+\end{equation}
+Normalizing flow 用有限层双射，连续流用 ODE；不必要求每次更新是加噪。
+在 Lipschitz 速度等条件下，ODE 解存在唯一，有限时间映射可逆。
+把全空间密度精确压到低维流形可能需要奇异极限，不能无条件假设干净端点可逆。
+
+\begin{theorytakeaway}
+变分方法把不可求的对数似然化为下界；条件回归把不可求的边缘函数化为监督学习；
+变量替换把样本运动化为密度演化。这三种技巧将在后文反复使用。
+\end{theorytakeaway}
+\threading{主参考第1--3、5--6章与附录B\cite{theorybook}。
+本章补全原稿的贝叶斯、KL、ELBO和参数/空间分数定义，推导按本篇统一记号重写。}

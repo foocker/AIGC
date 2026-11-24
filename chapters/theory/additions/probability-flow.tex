@@ -1,0 +1,29 @@
+为什么上式恰好多出一个 $1/2$，可以直接用前面已经推导的 Fokker--Planck 方程看出来。
+在扩散系数只依赖时间、且各方向相同的情形，原 SDE 的密度满足
+\[
+\partial_t p_t=-\nabla\cdot(\mathbf f p_t)+\tfrac12g(t)^2\Delta p_t.
+\]
+因为 $\nabla p_t=p_t\nabla\log p_t$，扩散项也可以写成散度：
+\[
+\partial_t p_t=-\nabla\cdot\left[
+ p_t\left(\mathbf f-\tfrac12g(t)^2\nabla\log p_t\right)\right].
+\]
+这已经是一个确定性速度场的连续性方程。
+所以，在精确分数和匹配的初始分布等条件下，
+这个速度场驱动的 ODE 与原 SDE 具有相同的逐时边缘密度。
+系数 $1/2$ 来自扩散通量的改写，不是把反向 SDE 的噪声项简单删掉。
+
+还需要留意时间的方向。前面 reverse-time SDE 的写法仍使用原来的 $t$，
+生成时 $t$ 从 $T$ 走向0，$\mathrm dt$ 为负。
+若另设 $r=T-t$，把它改写成正步长过程，漂移应写为
+\[
+\mathrm dY_r=\left[-\mathbf f(Y_r,T-r)+g(T-r)^2s_\theta(Y_r,T-r)\right]\mathrm dr
+ +g(T-r)\mathrm dB_r.
+\]
+这两种时钟描述同一个逆向过程，不能只把步长改成正数而不改漂移。
+
+最后，相同边缘分布不等于相同轨迹。
+SDE 中一个样本的运动包含新的随机增量，ODE 则由起点与向量场确定。
+因此它们可以在每个时刻给出相同的样本总体分布，
+却对同一个初始样本给出不同的路径和端点对应关系。
+后面讨论 DDIM 与一致性模型时，需要用到这个区别。\cite{sde,theorybook}

@@ -1,0 +1,127 @@
+\chapter{先看整个网络：表示、条件与音视频生成}
+\label{seedance-architecture}
+
+前面推导扩散模型时，给定 $x_t$、时间和条件，网络预测一个局部去噪方向，
+再沿采样过程得到 $x_0$。换成 Seedance 2.5 这类多模态视频任务，
+基本问题没有消失，只是输入与条件多了：文字、人物图、动作视频、声音、源视频，
+究竟怎样进入网络？生成的是像素、波形，还是潜变量？
+这些对象在总图中没有对应位置，后面再逐个讲模块就容易失去线索。
+因此先把完整的输入、主干和输出画出来，再按图中的顺序往下拆。
+
+\section{这张图中的已知与假设}
+公开材料支持 2.5 延续统一多模态音视频联合生成方向，
+并增强长叙事、参考与编辑能力，具体材料见\hyperref[seedance-m00]{公开能力章节}。
+但完整层级图、参数规模和新增条件路径并没有在这些材料中全部披露。
+因此下面画的是\textbf{面向这些能力的教学候选网络}：
+以 Seedance 系列已公开的 MMDiT、音视频双分支与因果 VAE 为线索，
+再把本书提出的参考和源条件支路画在明确的位置。
+它不是从产品功能唯一反推得到的 Seedance 官方网络图。
+
+图中具体的 Dual-MMDiT 连接、参考读取与源条件残差属于本文推测，
+并不表示这份组合已经训练。文本与媒体通过联合注意力交互，
+噪声时间单列输入，不预先指定 2.5 的归一化调制方式。
+后文另以 LTX-2 原系列给出可检查的替代实现；其层数、宽度与插件间隔不用于标定本图。
+
+\section{先定义网络要预测的对象}
+设视频和声音分别为 $x^v,x^a$，各自编码为
+\[
+z_0^v=E_v(x^v),\qquad z_0^a=E_a(x^a).
+\]
+文本、参考、源内容与结构组成条件 $c$。
+候选网络要描述的是 $p_\theta(z_0^v,z_0^a\mid c)$，
+而不是把四种输入模态都当成四种待生成输出。
+图片参考可以只产生条件记忆，源声音也可以保持不变，具体由任务决定。
+
+用前文直线路径作教学约定，对活动目标构造
+\[
+z_t^m=(1-t_m)z_0^m+t_m\epsilon^m,\qquad m\in\{v,a\}.
+\]
+联合网络读取两边当前状态并预测
+\[
+(\hat u^v,\hat u^a)
+=F_\theta(z_t^v,z_t^a,t_v,t_a,c).
+\]
+这里 $t$ 是噪声时间。视频帧和声音采样所属的物理时间另记为 $\tau$，
+后面的跨模态位置与镜头区间按 $\tau$ 对齐，不能与去噪步编号混用。
+实际基座的 sigma/time 和输出参数化仍使用配套约定。
+
+\clearpage
+\section{整体计算图}
+五张图保留独立图册的图版顺序：总图与联合块为图版1、2，
+条件注入见图\ref{fig:seedance-condition-injection}，
+VAE 见图\ref{fig:seedance-causal-vae-detail}，
+联合推理见图\ref{fig:seedance-joint-inference}。
+图内“第2页”“第3页”等指图版序号，不是本书页码。
+
+沿图从下向上看，输入先变成两类量：一类是可读取的条件，另一类是要更新的目标状态。
+文本和静态参考可以预先编码，干净源内容也可以走固定条件塔。
+活动视频与声音却会随采样改变，联合网络因此要重复计算，
+直到得到接近干净端的目标 latent，再分别解码。
+
+这里有几条线不能误读。参考图进入记忆，不等于它直接变成目标首帧；
+干净源视频进入条件塔，不等于所有源 latent 都要参与速度损失；
+采样器在网络外更新状态，不是每个 Transformer block 都输出一段已经解码的视频。
+把这些位置分清，后面的张量和损失才对应得上。
+
+\seedancenetworkfigure{1}{Seedance 2.5 完整推测网络：3D Causal VAE、Dual-MMDiT、音视频联合模块与独立条件路径。纵向箭头从下到上；图中具体连接仍为候选。}{fig:seedance-network-overview}
+
+\clearpage
+\section{一个联合块内部怎样计算}
+总图中的主干还需要再拆一层。假设视频、音频已经投影为 $h_v,h_a$，
+它们各自有时间位置和文本条件。文本与媒体先分别在两条 MMDiT 分支中联合建模，
+经各自前馈与视频时空交互后得到 $\tilde h_v,\tilde h_a$，
+再从同一组旧状态计算双向增量：
+\[
+\Delta h_v=\operatorname{Attn}(\tilde h_vW_Q^v,\tilde h_aW_K^a,\tilde h_aW_V^a),
+\quad
+\Delta h_a=\operatorname{Attn}(\tilde h_aW_Q^a,\tilde h_vW_K^v,\tilde h_vW_V^v).
+\]
+交换结果分别残差更新，再进入后续联合块。若先更新视频，再给声音读更新后的视频，
+就成了另一种有先后次序的计算图；本文候选沿用两边读同一旧状态的约定。
+
+\seedancenetworkfigure{2}{Dual-MMDiT 的候选块展开。文本与媒体分别投影 Q/K/V，联合注意力后拆回各流，再通过音视频模块交换旧状态。}{fig:seedance-joint-block}
+
+作为另一条可检查的实现路线，公开替代实例的原生规格是 48 个联合块、视频宽 4096、音频宽 2048，
+两侧 latent token 均为 128 维；这些数字属于 LTX-2 原系列，不是 Seedance 的参数披露。
+该替代实现的候选在每四个原块后插入一次 512 维条件读取，共 12 处，
+先零门控接入，再用相应任务训练。具体投影、顺序与保存方式见\hyperref[seedance-m21]{模块接口}。
+
+\section{训练图与推理图在什么地方分开}
+训练时有干净目标 $z_0^m$，所以能抽噪声构造 $z_t^m$，
+标签直接由已知数据与噪声相减得到。一个基础联合目标是
+\[
+\mathcal L=\lambda_v\mathbb E\|\hat u^v-(\epsilon^v-z_0^v)\|^2
+ +\lambda_a\mathbb E\|\hat u^a-(\epsilon^a-z_0^a)\|^2,
+\]
+各项还需按有效元素和有效样本平均。缺音轨跳过声音目标，静音则保留监督。
+条件编码是否更新、新支路是否更新、主干是否冻结，也分别由参数组决定。
+
+推理没有目标 $z_0$，从高噪声状态开始，每步用预测更新，例如
+\[
+z_{t_{i+1}}^m=z_{t_i}^m+(t_{i+1}-t_i)\hat u^m,
+\qquad t_{i+1}<t_i.
+\]
+这一步再送回主干，就是总图中的回路。若原音轨必须保留，
+声音 latent 固定，但其隐藏流仍可能参与视频条件计算；
+因此固定 latent 不自动说明所有声音隐藏特征都可缓存。
+
+\section{后面按哪条线阅读}
+先读表示，再读条件，再进主干，最后看训练与执行。模块号 M00--M27 保留，
+用于与原材料及书内链接对应；它们是材料索引，不再作为正文排列顺序。
+
+\begin{longtable}{@{}p{0.20\linewidth}p{0.43\linewidth}p{0.30\linewidth}@{}}
+\toprule 图中位置 & 接着需要回答的问题 & 正文入口\\\midrule
+\endhead
+像素与波形表示 & 首帧怎样压缩，latent 时间怎样对齐 & \hyperref[seedance-m01]{M01 VAE}；\hyperref[seedance-encoders]{文本与声音编码}\\
+参考编码 & 素材、主体、属性和区间怎样绑定 & \hyperref[seedance-m07]{M07}、\hyperref[seedance-m16]{M16}、\hyperref[seedance-m22]{M22}\\
+源与结构条件 & 哪里可变，哪里保持，相机与几何怎样输入 & \hyperref[seedance-m08]{M08}、\hyperref[seedance-m17]{M17}、\hyperref[seedance-m23]{M23}、\hyperref[seedance-m18]{M18}\\
+主干内部 & 坐标、注意力、AV 交换与候选投影怎样连接 & \hyperref[seedance-m04]{M04}、\hyperref[seedance-m03]{M03}、\hyperref[seedance-m05]{M05}、\hyperref[seedance-m21]{M21}\\
+目标与采样 & 回归什么，怎样从噪声走回数据，成本怎样算 & \hyperref[seedance-m02]{M02}、\hyperref[seedance-m10]{M10}、\hyperref[seedance-m26]{M26}\\
+长视频执行 & 哪些历史固定，怎样分块和提交缓存 & \hyperref[seedance-m06]{M06}、\hyperref[seedance-m24]{M24}、\hyperref[seedance-m19]{M19}\\
+数据与更新 & 样本怎样制作，各任务怎样训练，反馈怎样进入 & \hyperref[seedance-m11]{M11}、\hyperref[seedance-m25]{M25}、\hyperref[seedance-m20]{M20}、\hyperref[seedance-m09]{M09}\\
+实现与来源 & 替代路线、实际代码和公开依据分别是什么 & \hyperref[seedance-m12]{M12}、\hyperref[seedance-m13]{M13}、\hyperref[seedance-m15]{M15}、\hyperref[seedance-m00]{M00}\\
+\bottomrule
+\end{longtable}
+
+这样读到某个局部公式时，可以先回到总图确认它属于哪一条路径。
+后面的训练、预算和最终方案都引用同一组对象，不再把产品能力、网络结构和服务流程交错成一套顺序。

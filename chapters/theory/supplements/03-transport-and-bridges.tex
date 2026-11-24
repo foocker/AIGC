@@ -1,0 +1,228 @@
+\chapter{最优传输、Schrödinger 桥与分布梯度流}
+\label{supp:transport}
+
+前面已经知道同一组分布可以由不同的速度连接。现在继续问：如果还要求运输代价最小，
+应该选择哪一个映射或哪一条路径？这就进入最优传输问题。
+如果再保留随机扩散，并要求尽量少地改变一个参考过程，就进入 Schrödinger 桥问题。
+这部分对应参考书第7章及附录B，补上原稿此前仅提到名字的内容。\cite{theorybook}
+
+\section{Monge、Kantorovich 与两端耦合}
+为直接讨论从源到目标的运输，本章用 $r\in[0,1]$ 表示运输时间，
+$\mu$ 表示源分布，$\nu$ 表示目标分布。它们可以取噪声和数据，也可以是任意两组分布。
+给定代价 $c(x,y)$，Monge 问题寻找确定映射 $T$：
+\[
+\inf_{T:\,T_\#\mu=\nu}\int c(x,T(x))\,\mu(\mathrm dx).
+\]
+$T_\#\mu=\nu$ 表示先从 $\mu$ 抽样再作用 $T$，得到的分布恰好为 $\nu$。
+这个要求与“某几个样本看起来靠近目标”不同，它约束的是完整边缘分布。
+
+确定映射不能在同一个源点处分拆质量。如果源只有一个原子、目标有两个不同原子，
+这类映射甚至不存在。因此放宽为联合分布 $\gamma$，只要求两端边缘分别为 $\mu,\nu$：
+\[
+\inf_{\gamma\in\Pi(\mu,\nu)}\int c(x,y)\,\gamma(\mathrm dx,\mathrm dy).
+\]
+这就是 Kantorovich 问题。$\gamma$ 可以将一处质量拆给多个目标。
+当代价为 $\|x-y\|^2$、两端二阶矩有限时，最优值定义为 $W_2^2(\mu,\nu)$。
+在源分布绝对连续等条件下，二次代价最优耦合可由凸函数的梯度映射实现，
+即 Brenier 映射；离散、奇异分布则不能直接套用这组结论。
+
+一维时可以看得更直观。若累积分布函数连续且严格增加，令
+$T(x)=F_\nu^{-1}(F_\mu(x))$，就把相同分位数对应起来。
+对 $x_1<x_2$、$y_1<y_2$，交叉配对与顺序配对的代价差为
+\[
+(x_1-y_2)^2+(x_2-y_1)^2
+ -(x_1-y_1)^2-(x_2-y_2)^2
+=2(x_2-x_1)(y_2-y_1)\geq0.
+\]
+所以二次代价不鼓励交叉配对。对高斯
+$\mu=\mathcal N(m_0,\sigma_0^2)$、$\nu=\mathcal N(m_1,\sigma_1^2)$，结果为
+\[
+T(x)=m_1+\frac{\sigma_1}{\sigma_0}(x-m_0),\qquad
+W_2^2=(m_1-m_0)^2+(\sigma_1-\sigma_0)^2.
+\]
+这是一条可以算完的最优映射，不能据此推断任意扩散流都自动学到它。
+
+\section{从端点代价走向动态动能}
+\subsection{Benamou--Brenier 表述}
+对绝对连续的粒子轨迹 $X_r$，
+\[
+\|X_1-X_0\|^2=\left\|\int_0^1\dot X_r\,\mathrm dr\right\|^2
+\leq\int_0^1\|\dot X_r\|^2\mathrm dr.
+\]
+同一对端点之间，匀速直线使这个不等式取等。
+如果整个总体由速度 $v_r$ 推动，密度为 $p_r$，则需要满足
+\[
+\partial_rp_r+\nabla\cdot(p_rv_r)=0,\qquad p_0=\mu,\quad p_1=\nu.
+\]
+在相应有限二阶矩条件下，动态最优传输写为
+\[
+W_2^2(\mu,\nu)=\inf_{p,v}
+ \int_0^1\int\|v_r(x)\|^2p_r(x)\,\mathrm dx\mathrm dr.
+\label{supp:bb}
+\]
+任一合法速度场的动能都是这个最优值的上界。
+反过来，从最优端点耦合的直线插值构造动态路径，可达到相应最优值，
+这说明静态与动态表述的联系；一般结论涉及弱解与测度路径的技术条件。
+
+引入动量 $m=pv$ 后，目标变成 $\int\|m\|^2/p$，约束变成
+$\partial_rp+\nabla\cdot m=0$，凸性因而更清楚。
+若对带 $1/2$ 的动能目标引入乘子 $\varphi$，分部积分后的内部项是
+\[
+\int p\left(\frac12\|v\|^2-\partial_r\varphi-v^\top\nabla\varphi\right).
+\]
+先对 $v$ 取驻点得到 $v=\nabla\varphi$；在光滑正密度区域再得到
+\[
+\partial_r\varphi+\frac12\|\nabla\varphi\|^2=0.
+\]
+这就是 Hamilton--Jacobi 方程。最优速度要同时满足质量守恒与最优性条件，
+普通 Flow Matching 只拟合指定路径的速度，没有自动加入全部这些约束。
+
+\subsection{为什么保持正确分布还不等于最优运输}
+取二维标准高斯作为源和目标。恒等映射的代价为0，所以已经最优。
+若让所有粒子旋转一个非零角度，目标仍是标准高斯，但
+\[
+\mathbb E\|RX-X\|^2=2d-2\operatorname{tr}R>0
+\]
+（$R\ne I$ 的二维旋转，$d=2$）。这给出一个最直接的反例：
+正确边缘和可逆确定性流并不充分保证最优传输。
+概率流 ODE 还受它原先指定的加噪路径约束，因此也不能仅由分数精确就推出端点映射最优。
+即使每个时刻的速度是某个标量势的梯度，跨时间组合的最终映射也不自动是凸势的梯度。
+
+\section{Rectification 与 reflow 能保证什么}
+现在把前章的条件速度放进动态代价。
+设一组端点 $A,B$ 来自任意耦合，条件插值为 $X_r=(1-r)A+rB$，
+条件速度为 $B-A$，边缘速度为 $v_r(x)=\mathbb E[B-A\mid X_r=x]$。
+条件 Jensen 不等式给出
+\[
+\mathbb E\|v_r(X_r)\|^2\leq\mathbb E\|B-A\|^2.
+\]
+设 $Y_r$ 是这个边缘场的 ODE 轨迹，并具有相同逐时边缘，则
+\begin{align}
+\mathbb E\|Y_1-Y_0\|^2
+ &\leq\int_0^1\mathbb E\|v_r(Y_r)\|^2\mathrm dr\\
+ &=\int_0^1\mathbb E\|v_r(X_r)\|^2\mathrm dr
+ \leq\mathbb E\|B-A\|^2.
+\label{supp:reflow-bound}
+\end{align}
+所以把旧配对换成 ODE 产生的新配对，可以得到二次端点代价不增加的理想结论。
+下一轮再对这些新端点做直线回归，就是 reflow 的基本过程。
+
+但上面的两个不等式只保证“不比旧耦合更贵”，没有说已经达到所有耦合中的全局最小值。
+它还假设速度准确、ODE 正确求解、边缘确实匹配。
+实际网络误差和有限步积分会破坏精确结论。少步生成质量与运输代价也不是同一个评价量。
+
+\section{熵正则传输与 Sinkhorn 缩放}
+离散样本上，设两端概率向量为 $\mu_i,\nu_j$，代价为 $C_{ij}$。
+熵正则问题可写为
+\[
+\min_{\gamma\geq0}\sum_{i,j}C_{ij}\gamma_{ij}
+ +\varepsilon\sum_{i,j}\gamma_{ij}\log\frac{\gamma_{ij}}{\mu_i\nu_j},
+\quad \gamma\mathbf1=\mu,\quad\gamma^\top\mathbf1=\nu.
+\]
+对内部正解引入边缘约束的乘子，求 $\gamma_{ij}$ 的驻点，得到
+$\gamma_{ij}=a_iK_{ij}b_j$，其中 $K_{ij}=\exp(-C_{ij}/\varepsilon)$，
+与两端质量有关的因子可吸收到 $a,b$。
+边缘约束于是转化为逐元素缩放：
+\[
+a\leftarrow\mu/(Kb),\qquad b\leftarrow\nu/(K^\top a).
+\]
+这就是 Sinkhorn 迭代的基本形式。小 $\varepsilon$ 更重视运输代价，
+较大 $\varepsilon$ 更重视相对独立耦合的熵正则。
+当 $\varepsilon\to0$ 时，在适当紧性和可积条件下可讨论最优值与最优计划的极限，
+不能简单将可能具有无限 KL 的确定性最优耦合代入一个有限熵上界证明。
+实际还需要数值稳定的对数域计算。
+
+小批量上计算一次 Sinkhorn，只解决该批经验分布之间的问题。
+它可以为 CFM 提供更好的训练配对，但与全数据分布的最优耦合仍有采样差异。
+
+\section{Schrödinger 桥：约束的是整条随机路径}
+\subsection{路径 KL 的静态分解}
+设参考路径分布为 $R$，其端点联合分布为 $R_{01}$。
+桥问题要求 $P_0=\mu,P_1=\nu$，同时最小化 $D_{\rm KL}(P\|R)$。
+将路径按两个端点条件化，KL 链式分解给出
+\begin{align}
+D_{\rm KL}(P\|R)
+ &=D_{\rm KL}(P_{01}\|R_{01})\\
+ &\quad+\mathbb E_{(A,B)\sim P_{01}}
+ D_{\rm KL}(P(\cdot\mid A,B)\|R(\cdot\mid A,B)).
+\end{align}
+固定端点耦合后，第二项的最小值为0，由参考过程的条件桥实现。
+因此问题分为两步：先找最优端点耦合，再在给定端点下使用参考桥。
+
+若参考为 $\mathrm dX_r=\sqrt\varepsilon\mathrm dW_r$、$R_0=\mu$，
+转移密度与 $\exp[-\|b-a\|^2/(2\varepsilon)]$ 成比例，故对固定两端边缘，
+\[
+D_{\rm KL}(\gamma\|R_{01})
+=\frac1{2\varepsilon}\mathbb E_\gamma\|B-A\|^2
+ +D_{\rm KL}(\gamma\|\mu\otimes\nu)+\text{const}.
+\]
+这说明桥问题与熵正则运输的联系，也给出了系数的来源。
+条件于端点 $A=a,B=b$，内部时间的 Brownian bridge 为
+\[
+X_r\mid a,b\sim\mathcal N((1-r)a+rb,\varepsilon r(1-r)I).
+\]
+条件均值是直线，但路径还有随机波动。
+仅从独立端点采这组桥，通常不等于已经求出了最优桥，因为最优端点耦合那一步还没有完成。
+
+\subsection{控制能量、势函数与交替投影}
+令参考 SDE 为 $\mathrm dX=f\mathrm dr+g\mathrm dW$，
+受控漂移改成 $f+u$，扩散保持相同。
+由前章 Girsanov 公式，
+\[
+D_{\rm KL}(P\|R)=D_{\rm KL}(\mu\|R_0)
+ +\frac12\mathbb E_P\int_0^1\frac{\|u(X_r,r)\|^2}{g(r)^2}\,\mathrm dr.
+\]
+所以桥问题是在两端约束下最小化对参考过程的控制能量。
+解的路径密度在适当条件下具有
+$\mathrm dP^*/\mathrm dR=a(X_0)b(X_1)$ 的形式。
+终端势的条件平均
+$h(x,r)=\mathbb E_R[b(X_1)\mid X_r=x]$
+满足参考生成算子的后向方程，额外前向漂移为 $g^2\nabla\log h$。
+初始因子 $a$ 则与另一个势共同落实两端边缘。
+
+从算法角度，一次只匹配终端边缘的 KL 投影为
+\[
+\frac{\mathrm dP^{\rm new}}{\mathrm dP^{\rm old}}
+=\frac{\nu(X_1)}{p_1^{\rm old}(X_1)}.
+\]
+下一次再按 $\mu(X_0)/p_0^{\rm new}(X_0)$ 修正初始边缘，交替进行，
+就是路径空间 IPF 的基本想法。一次投影会改变另一端，因此往往需要迭代。
+
+普通扩散模型固定前向过程，由数据端自然产生一个终端分布，
+这个分布通常只近似预设高斯。对这个自然端点，原参考过程可以是零控制的特殊桥；
+但若两端分布被另外指定且不兼容，就需要非零控制，不能把普通反向扩散直接叫作任意端点的最优桥。
+
+\section{Wasserstein 梯度流与 Langevin 的关系}
+前面优化的是连接两端的运输代价；现在改为让一个分布逐渐降低某个泛函。
+用 $\tau$ 表示这种分布演化时间，以免与模型的噪声时间混淆。
+取 $\mathcal F(p)=D_{\rm KL}(p\|\pi)$，其一阶变分为
+$\delta\mathcal F/\delta p=\log(p/\pi)+1$。
+选择下降速度
+\[
+w_\tau=-\nabla\frac{\delta\mathcal F}{\delta p}
+=\nabla\log\pi-\nabla\log p_\tau.
+\]
+代回连续性方程，得到
+\[
+\partial_\tau p=\Delta p-\nabla\cdot(p\nabla\log\pi),
+\]
+恰好是 $\mathrm dX=\nabla\log\pi\mathrm d\tau+\sqrt2\mathrm dW$ 的 Fokker--Planck 方程。
+在边界项消失时还可以验证
+\[
+\frac{\mathrm d}{\mathrm d\tau}\mathcal F(p_\tau)
+=-\int p_\tau\left\|\nabla\frac{\delta\mathcal F}{\delta p}\right\|^2\mathrm dx\leq0.
+\]
+这把“分数指向高密度”和“整体分布的 KL 下降”连接起来。
+但神经网络参数的梯度下降被限制在一个参数族中，未必等于这里自由的分布空间梯度流。
+
+最后补一个熵与 Fisher 信息的关系。若 $\partial_\tau p=\tfrac12\Delta p$，
+微分熵 $h(p)=-\int p\log p$ 满足
+\begin{align}
+\frac{\mathrm dh}{\mathrm d\tau}
+ &=-\frac12\int(\Delta p)\log p
+ =\frac12\int\frac{\|\nabla p\|^2}{p}
+ =\frac12\mathbb E_p\|\nabla\log p\|^2.
+\end{align}
+第一步用了总质量导数为0，第二步用了分部积分。
+因此高斯平滑使熵增加，其变化率由空间分数的平方决定。
+它也是前文熵、分数和扩散这三个对象之间一条具体的数学联系。

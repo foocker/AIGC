@@ -1,0 +1,79 @@
+\begin{tikzpicture}[sn]
+\snPage{2}{Dual-MMDiT：文本和媒体怎样共同参与注意力}
+  {左：视频--文本分支；右：音频--文本分支。两个分支的具体组合属于本文推测。}
+\begin{scope}[on background layer]
+\path[frame] (.15,.25) rectangle (11.1,10.08);
+\path[frame] (15.3,.25) rectangle (26.25,10.08);
+\end{scope}
+\node[heading] at (5.62,9.78) {Video--Text MMDiT};
+\node[heading] at (20.77,9.78) {Audio--Text MMDiT};
+\foreach \xx/\id/\sym in {2.55/cv/c_v,8.45/v/v,17.95/a/a,23.85/ca/c_a}{
+  \node[lab] (in\id) at (\xx,-.03) {$h_{\sym}$};
+  \node[norm,text width=2.6cm] (norm\id) at (\xx,.97) {Norm};
+  \node[box,text width=2.6cm] (qkv\id) at (\xx,1.98) {QKV Linear\\\fontsize{9}{10}\selectfont Q/K Norm + RoPE};
+  \node[box,text width=2.6cm,minimum height=.45cm] (proj\id) at (\xx,6.02) {Output Linear};
+  \node[plus] (add\id) at (\xx,6.80) {$+$};
+  \node[norm,text width=2.6cm] (fn\id) at (\xx,7.53) {Norm};
+  \node[ff,text width=2.6cm] (mlp\id) at (\xx,8.35) {Feed Forward};
+  \node[plus] (out\id) at (\xx,9.18) {$+$};
+  \draw[wire] (in\id.north)--(norm\id.south);
+  \draw[wire] (norm\id.north)--(qkv\id.south);
+  \draw[wire] (proj\id.north)--(add\id.south);
+  \draw[wire] (add\id.north)--(fn\id.south);
+  \draw[wire] (fn\id.north)--(mlp\id.south);
+  \draw[wire] (mlp\id.north)--(out\id.south);
+}
+\foreach \cx/\tag/\one/\two in {5.5/v/c_v/v,20.9/a/a/c_a}{
+  \node[box,text width=8.5cm,minimum height=.58cm] (cat\tag) at (\cx,3.18)
+    {Concat along token axis：$Q=[Q_{\one};Q_{\two}]$，$K,V$ 同理};
+  \node[attn,text width=8.5cm,minimum height=.82cm] (joint\tag) at (\cx,4.32)
+    {Joint Multi-Head Self-Attention\\$Y=\operatorname{softmax}(QK^\top/\sqrt{d_h}+B)\,V$};
+  \node[box,text width=8.5cm,minimum height=.43cm] (split\tag) at (\cx,5.23)
+    {Split outputs by query rows：文本与媒体均得到更新};
+  \draw[wire] (cat\tag.north)--(joint\tag.south);
+  \draw[wire] (joint\tag.north)--(split\tag.south);
+}
+\draw[wire] (qkvcv.north)--(2.55,2.84);
+\draw[wire] (qkvv.north)--(8.45,2.84);
+\draw[wire] (qkva.north)--(17.95,2.84);
+\draw[wire] (qkvca.north)--(23.85,2.84);
+\foreach \xx/\id in {2.55/cv,8.45/v,17.95/a,23.85/ca}{
+  \draw[wire] (\xx,5.48)--(proj\id.south);
+}
+\foreach \xx/\sx/\id/\side in {2.55/.45/cv/west,8.45/10.8/v/east,17.95/15.6/a/west,23.85/25.95/ca/east}{
+  \node[dot] at (\xx,.48) {};
+  \draw[skip] (\xx,.48)--(\sx,.48)--(\sx,6.80)--(add\id.\side);
+  \node[dot] at (\xx,7.13) {};
+  \draw[skip] (\xx,7.13)--(\sx,7.13)--(\sx,9.18)--(out\id.\side);
+}
+\node[attn,text width=3.6cm,minimum height=.60cm] (temporal) at (8.45,10.83)
+  {Video Temporal\\Attention};
+\draw[wire] (outv.north)--(temporal.south);
+\node[attn,text width=4.2cm] (avv) at (8.45,12.20) {Video reads Audio\\\fontsize{9}{10}\selectfont $\Delta h_v=\operatorname{Attn}(Q_v,K_a,V_a)$};
+\node[attn,text width=4.2cm] (ava) at (17.95,12.20) {Audio reads Video\\\fontsize{9}{10}\selectfont $\Delta h_a=\operatorname{Attn}(Q_a,K_v,V_v)$};
+\draw[wire] (temporal.north)--(avv.south);
+\draw[wire] (outa.north)--(ava.south);
+\draw[cw] (temporal.east)--node[pos=.20,below,sloped,lab,fill=white,inner sep=1pt] {$K_v,V_v$}(ava.west);
+\draw[cw] (17.95,10.83)--node[pos=.20,below,sloped,lab,fill=white,inner sep=1pt] {$K_a,V_a$}(avv.east);
+\node[plus] (ov) at (8.45,13.40) {$+$};
+\node[plus] (oa) at (17.95,13.40) {$+$};
+\draw[wire] (avv.north)--(ov.south);
+\draw[wire] (ava.north)--(oa.south);
+\node[dot] at (8.45,11.28) {};
+\draw[skip] (8.45,11.28)--(5.8,11.28)--(5.8,13.40)--(ov.west);
+\node[dot] at (17.95,10.83) {};
+\draw[skip] (17.95,10.83)--(20.6,10.83)--(20.6,13.40)--(oa.east);
+\node[lab] (finalv) at (8.45,14.35) {$h_v'$};
+\node[lab] (finala) at (17.95,14.35) {$h_a'$};
+\draw[wire] (ov.north)--(finalv.south);
+\draw[wire] (oa.north)--(finala.south);
+\node[lab] (finalcv) at (2.55,14.35) {$h_{c_v}'$};
+\node[lab] (finalca) at (23.85,14.35) {$h_{c_a}'$};
+\draw[wire] (outcv.north)--(finalcv.south);
+\draw[wire] (outca.north)--(finalca.south);
+\node[lab,text width=3.5cm] at (13.2,7.55)
+  {四条 token 流分别保留\\Norm / QKV / MLP 参数\\\medskip 文本也产生 query\\并在块内更新};
+\node[lab,text width=3.7cm] at (13.2,13.55)
+  {交换前状态同时读取\\随后残差相加};
+\snNote{这里的 Dual 指音视频两个生成分支；每个分支内再以 MMDiT 联合处理文本与媒体。视频分支采用空间 MMDiT 与视觉时空层交替的候选组织；音频分支按时间序列处理。具体组合属于推测。Norm 不指定是否自适应；各模态 QKV、输出投影与 MLP 的权重独立，位置旋转只作用于 Q/K。}
+\end{tikzpicture}

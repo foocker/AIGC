@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('all', 'seedance', 'full')]
+    [ValidateSet('all', 'seedance', 'theory', 'full')]
     [string]$Target = 'all'
 )
 $ErrorActionPreference = 'Stop'
@@ -7,6 +7,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $repoRoot
 try {
     $jobs = @()
+    if ($Target -in @('all', 'theory')) { $jobs += 'AIGCTheory' }
     if ($Target -in @('all', 'seedance')) { $jobs += 'Seedance25' }
     if ($Target -in @('all', 'full')) { $jobs += 'StabelDiffusion' }
     foreach ($bookName in $jobs) {

@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-24",
+  "status": "passed",
+  "random_cases": 100,
+  "seed": 20261124,
+  "maximum_absolute_residuals": {
+    "vae_gap": 7.105427357601002e-15,
+    "ebm_negative_phase": 5.747178288828536e-10,
+    "second_tweedie": 2.886579864025407e-15,
+    "logsnr_weight": 1.7763568394002505e-15,
+    "linear_flow_sde_reconstruction": 1.5543122344752192e-15,
+    "linear_meanflow_identity": 1.5543122344752192e-15,
+    "linear_meanflow_map": 8.881784197001252e-16,
+    "state_dependent_probability_flow": 6.245004513516506e-17,
+    "tilted_path_residual": 8.881784197001252e-16,
+    "edm_residual_scaling": 4.440892098500626e-16,
+    "dpm_second_order_integral": 8.881784197001252e-16,
+    "dpmpp_second_order_integral": 7.91033905045424e-16,
+    "progressive_distillation_target": 2.220446049250313e-16,
+    "ou_euler_stationarity": 8.881784197001252e-16,
+    "ctm_meanflow_error": 1.7763568394002505e-15,
+    "ctm_residual_error": 1.7763568394002505e-15,
+    "hutchinson_rademacher": 0.0,
+    "discrete_reverse_mixture": 1.1102230246251565e-16,
+    "ctmc_reverse_clock": 5.551115123125783e-17,
+    "consistency_conditional_variance": 1.7763568394002505e-15,
+    "mask_unmask_rate": 2.2582095500212063e-06,
+    "discrete_flow_conditional_current": 5.551115123125783e-17
+  },
+  "scope": "Numerical substitutions and finite-state enumerations for new formulas; no general theorem proof, model training or inference."
+}

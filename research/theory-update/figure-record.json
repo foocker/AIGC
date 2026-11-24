@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-24",
+  "kind": "original analytic teaching figures",
+  "ou_random_seed": 20261124,
+  "ou_transition": "exact Gaussian OU transition",
+  "neural_model_run": false,
+  "figures": [
+    "same-marginals.pdf",
+    "gaussian-path.pdf",
+    "solver-error.pdf"
+  ],
+  "solver_steps": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "solver_errors": {
+    "Euler": [
+      1.0,
+      0.5,
+      0.28,
+      0.14917824221453269,
+      0.07729577594022807,
+      0.03938571603063434,
+      0.019885668352616848,
+      0.009992129607172218
+    ],
+    "Heun": [
+      0.5,
+      0.0625,
+      0.01000000000000012,
+      0.0012939029025649251,
+      0.00016303650691307237,
+      2.0419258145776276e-05,
+      2.5536292165284635e-06,
+      3.192415136687998e-07
+    ]
+  }
+}

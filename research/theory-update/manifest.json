@@ -1,0 +1,64 @@
+{
+  "checked_on": "2026-11-24",
+  "main_reference": "https://arxiv.org/abs/2510.21890v3",
+  "book_version": "v3, 2026-08-27",
+  "book_pdf_pages": 522,
+  "website": "https://the-principles-of-diffusion-models.github.io/",
+  "download_records": [
+    {
+      "id": "book-abstract",
+      "requested_url": "https://arxiv.org/abs/2510.21890",
+      "resolved_url": "https://arxiv.org/abs/2510.21890",
+      "status": 200,
+      "sha256": "8917b4234f481b348601c25ab93ae0bbdbb6b9a9faf0413a990d4d95788bda32",
+      "bytes": 44700,
+      "last_modified": "Fri, 28 Aug 2026 00:49:12 GMT"
+    },
+    {
+      "id": "errata",
+      "requested_url": "https://the-principles-of-diffusion-models.github.io/assets/errata.pdf",
+      "resolved_url": "https://the-principles-of-diffusion-models.github.io/assets/errata.pdf",
+      "status": 200,
+      "sha256": "3f6c99d3f951d8ac009d8e9411b2ba1167ceb8e5859773b9b9a337b0980ff625",
+      "bytes": 137297,
+      "last_modified": "Fri, 28 Aug 2026 03:22:09 GMT"
+    },
+    {
+      "id": "blog",
+      "requested_url": "https://iclr-blogposts.github.io/2026/blog/2026/tracing-principles-behind-modern-diffusion-models/",
+      "resolved_url": "https://iclr-blogposts.github.io/2026/blog/2026/tracing-principles-behind-modern-diffusion-models/",
+      "status": 200,
+      "sha256": "3deb292e5d13bdd0b85686df85f52c3cca19b7aa5b7b9ca234ef65acd0ef56c8",
+      "bytes": 99605,
+      "last_modified": "Tue, 20 Oct 2026 15:39:33 GMT"
+    },
+    {
+      "id": "book-pdf",
+      "requested_url": "https://arxiv.org/pdf/2510.21890",
+      "resolved_url": "https://arxiv.org/pdf/2510.21890",
+      "status": 200,
+      "sha256": "222dd85adc24ed24db79c86caf502f0c45018288539abcfebae5950d92a6cf32",
+      "bytes": 19745365,
+      "last_modified": "Fri, 28 Aug 2026 01:11:08 GMT"
+    }
+  ],
+  "errata_status": "Downloaded PDF contains placeholder examples; not used as a confirmed correction list.",
+  "archived_theory_sha256": "1830595e2e0788b8a8704e1af070a74d551474334f368d56a1df788382a56e57",
+  "source_archive": "examples/legacy-theory-20261124.tex",
+  "scope": "Retain v0.4 theory body and in-place additions unchanged; append six detailed chapters addressing theory gaps in reference chapters 2-12 and appendices. Seedance and operations source unchanged.",
+  "book_locator_convention": "Printed page n corresponds to PDF page n+5 in v3; chapter titles, not old website anchors, are authoritative.",
+  "book_pdf_fixed_version_url": "https://arxiv.org/pdf/2510.21890v3",
+  "book_version_identity_checked": "PDF cover states arXiv:2510.21890v3, 27 Aug 2026; abstract revision history agrees.",
+  "current_source": "chapters/theory/contents.tex",
+  "preservation_record": "research/theory-update/restoration.json",
+  "supplement_sources": [
+    "chapters/theory/supplements/01-generative-objectives.tex",
+    "chapters/theory/supplements/02-flow-and-equivalence.tex",
+    "chapters/theory/supplements/03-transport-and-bridges.tex",
+    "chapters/theory/supplements/04-guidance-and-alignment.tex",
+    "chapters/theory/supplements/05-solvers-and-flow-maps.tex",
+    "chapters/theory/supplements/06-discrete-and-errors.tex"
+  ],
+  "coverage_document": "docs/theory-gaps.md",
+  "coverage_record": "research/theory-update/coverage-v05.json"
+}

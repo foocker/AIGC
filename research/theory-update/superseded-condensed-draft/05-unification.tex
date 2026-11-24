@@ -1,0 +1,130 @@
+\chapter{统一高斯路径：参数化、信噪比与训练权重}
+\label{th:unification}
+
+\section{一条累积路径，三种描述}
+
+考虑可微的高斯路径
+\begin{equation}\label{th:affine-path}
+X_t=a_tX_0+b_t\epsilon,\qquad \epsilon\sim\mathcal N(0,I).
+\end{equation}
+在本篇时间方向下，$a_0=1,b_0=0$，终点 $a_T$ 为0或接近0。
+条件路径导数为 $\dot a_tX_0+\dot b_t\epsilon$，其边缘条件平均是
+\begin{equation}\label{th:marginal-velocity}
+u_t(x)=\dot a_t\E[X_0\mid X_t=x]+\dot b_t\E[\epsilon\mid X_t=x].
+\end{equation}
+它把条件路径的运动变为概率密度的运动。
+
+当 $a_t\ne0$，代入 Tweedie 公式：
+\begin{equation}\label{th:velocity-score}
+u_t(x)=\frac{\dot a_t}{a_t}x+
+ \left(\frac{\dot a_t}{a_t}b_t^2-b_t\dot b_t\right)s_t(x).
+\end{equation}
+若存在相应线性 SDE，设 $f(x,t)=f_t x$，则
+\[
+f_t=\dot a_t/a_t,\qquad
+g_t^2=2b_t\dot b_t-2f_tb_t^2.
+\]
+此时式\eqref{th:velocity-score} 正是概率流速度 $f_tx-g_t^2s_t/2$。
+只有 $g_t^2\geq0$ 的路径可据此解释为实值扩散的正向 SDE；
+一般流匹配路径不必对应这种 SDE。
+
+\section{四种预测目标的可逆换算}
+
+固定 $t$ 后，把样本与条件速度写成线性方程组：
+\[
+\begin{pmatrix}x_t\\u_t^{\rm cond}\end{pmatrix}
+=\begin{pmatrix}a_t&b_t\\\dot a_t&\dot b_t\end{pmatrix}
+\begin{pmatrix}x_0\\\epsilon\end{pmatrix}.
+\]
+令 $\Delta_t=a_t\dot b_t-b_t\dot a_t$。
+在 $\Delta_t\ne0$ 的区间内，预测速度可换为
+\begin{equation}\label{th:velocity-conversion}
+\hat x_{0,\theta}=\frac{\dot b_tx_t-b_tu_\theta}{\Delta_t},
+\qquad
+\epsilon_\theta=\frac{-\dot a_tx_t+a_tu_\theta}{\Delta_t}.
+\end{equation}
+直接从噪声或干净预测换算则有
+\[
+\hat x_{0,\theta}=\frac{x_t-b_t\epsilon_\theta}{a_t},\quad
+s_\theta=-\epsilon_\theta/b_t,\quad
+u_\theta=\dot a_t\hat x_{0,\theta}+\dot b_t\epsilon_\theta.
+\]
+所有除法均有适用区间，不能在 $a_t=0$ 或 $b_t=0$ 的端点机械代入。
+输出形式由训练选定；仅在推理时改 scheduler 的 prediction type 不会自动改变权重含义。
+
+\section{旋转 v 预测不是所有时间下的速度}
+
+若 $a_t^2+b_t^2=1$，常定义
+\[
+v_{\rm rot}=a_t\epsilon-b_tx_0.
+\]
+于是 $x_0=a_tx_t-b_tv_{\rm rot}$，$\epsilon=b_tx_t+a_tv_{\rm rot}$。
+令 $a_t=\cos\varphi(t),b_t=\sin\varphi(t)$，真正路径速度为
+\begin{equation}\label{th:rot-v}
+\dot x_t=\dot\varphi(t)v_{\rm rot}.
+\end{equation}
+只有以角度为时间、$\dot\varphi=1$ 的特殊约定下二者相等。
+线性流匹配的 $u=\epsilon-x_0$ 也不能直接当作这一旋转参数化。
+文献与代码常都使用字母 $v$，应检查标签表达式而非变量名。
+
+\section{MSE 换算会改变损失权重}
+
+在相同 $x_t$ 下，噪声预测误差与干净预测误差满足
+\[
+\epsilon_\theta-\epsilon=-\frac{a_t}{b_t}(\hat x_{0,\theta}-x_0),\qquad
+\|\epsilon_\theta-\epsilon\|^2
+=\mathrm{SNR}(t)\|\hat x_{0,\theta}-x_0\|^2,
+\]
+其中 $\mathrm{SNR}=a_t^2/b_t^2$。
+同理 $\|s_\theta-s^{\rm cond}\|^2=\|\epsilon_\theta-\epsilon\|^2/b_t^2$。
+对旋转参数化，$\epsilon_\theta-\epsilon=a_t(v_\theta-v_{\rm rot})$。
+这些关系在输出被一致线性换算时逐样本成立。
+
+因此不带权重的四种 MSE 具有相同的理想条件均值联系，
+却不具有相同的有限容量、共享参数优化过程。
+SNR 截断、Min-SNR 一类重权重用于改变时间任务间的梯度分配，
+需要按预测目标推导，不能把某个公式当作通用的“更合理 ELBO”。
+
+\section{时间采样、变量替换与信噪比}
+
+若希望优化 $\int_0^T W(t)\ell(t)\mathrm dt$，
+实际用密度 $\rho(t)$ 采样时，无偏估计应为
+$\E_{t\sim\rho}[W(t)\ell(t)/\rho(t)]$。
+故时间采样分布与 loss 权重共同定义训练测度。
+
+半对数信噪比为 $\lambda_t=\log(a_t/b_t)$。
+有人把 $\log(a_t^2/b_t^2)=2\lambda_t$ 也记为 log-SNR，
+导数和积分系数会相差2。
+以 $\lambda$ 采样时还需考虑 $|\mathrm dt/\mathrm d\lambda|$ 的 Jacobian。
+在给定端点与可逆重参数化条件下，同一理想几何路径可以用不同时间速度穿过；
+有限步求解器和有限训练资源对这种重参数化并不不变。
+
+\section{VP、VE、线性流与 EDM 的位置}
+
+VP SDE 取 $f=-\beta(t)x/2,g=\sqrt{\beta(t)}$，
+$a_t=e^{-\frac12\int_0^t\beta(r)\mathrm dr}$，$b_t^2=1-a_t^2$。
+VE 常取 $a_t=1$、$g_t^2=\mathrm d b_t^2/\mathrm dt$，
+要求 $b_t^2$ 不减。若 $b_0>0$，起点是已经平滑的数据而非完全干净分布。
+线性流取 $a_t=1-t,b_t=t$，在 $0<t<1$ 上
+$u^*=\E[\epsilon-x_0\mid x_t]$。
+
+EDM 将去噪器、噪声参数化、预条件、损失与采样设计分开讨论。
+在 $y=x_0+\sigma\epsilon$、数据标准差估计为 $\sigma_d$ 的设定下，
+常用去噪器表达为
+\begin{align}
+D_\theta(y,\sigma)&=c_{\rm skip}y+c_{\rm out}
+ F_\theta(c_{\rm in}y,c_{\rm noise}),\\
+c_{\rm skip}&=\frac{\sigma_d^2}{\sigma^2+\sigma_d^2},\quad
+c_{\rm out}=\frac{\sigma\sigma_d}{\sqrt{\sigma^2+\sigma_d^2}},\\
+c_{\rm in}&=(\sigma^2+\sigma_d^2)^{-1/2},\quad
+c_{\rm noise}=\tfrac14\log\sigma.
+\end{align}
+相应去噪损失可取 $1/c_{\rm out}^2$ 权重来平衡网络输出尺度。
+这些系数依赖该噪声定义与数据尺度，不是任意 latent 模型可直接套用的公式。
+
+\begin{theorytakeaway}
+统一来自固定路径上的线性关系与条件均值，而非把所有目标都叫 MSE。
+对齐模型时要同时记录路径、时间测度、输出、权重、端点和采样器。
+\end{theorytakeaway}
+\threading{主参考第4--6章\cite{theorybook}；预条件与设计空间参见 EDM\cite{edm}。
+特别区分旋转参数化和路径速度，避免原稿的同名概念混用。}

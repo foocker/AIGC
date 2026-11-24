@@ -1,0 +1,158 @@
+\chapter{快速生成：从蒸馏到一致性、CTM 与 MeanFlow}
+\label{th:fast}
+
+\section{学习瞬时速度与学习有限时间位移}
+
+设 ODE 解映射为 $\Phi_{s\to t}(x)$，它满足
+\begin{align}
+\Phi_{s\to s}(x)&=x,\\
+\Phi_{u\to t}(\Phi_{s\to u}(x))&=\Phi_{s\to t}(x).
+\label{th:flow-composition}
+\end{align}
+这是非自治流的二参数复合性质，常统称为半群式一致性。
+普通扩散学习瞬时向量场后做积分；快速模型直接近似一个或多个有限时间映射。
+大步生成的误差变成映射学习误差，不再只是某个低阶积分器的截断误差。
+
+\section{轨迹蒸馏与渐进蒸馏}
+
+轨迹蒸馏给定初始噪声，用教师积分结果作学生标签。
+教师2步结果可监督学生1步，逐阶段压缩网格即渐进蒸馏。
+它保留具体噪声与输出的对应关系，并继承教师、时间表和引导约定。
+每轮减少步数不等于总训练成本更低，也不保证一次压缩后可在任意步数稳定推理。
+
+若学生仍输出噪声或数据预测，要由自己的采样更新式反解出监督目标。
+直接拿教师终点作为“噪声标签”会产生量纲错误。
+固定教师的数值误差也进入标签，不能把蒸馏结果与精确 ODE 解画等号。
+
+\section{分布蒸馏：DMD 与 DMD2}
+
+分布蒸馏不要求同一噪声的输出逐样本匹配。
+令学生 $x=G_\theta(z)$，在若干噪声级构造 $y=a_tx+b_t\epsilon$，
+把学生平滑分布 $q_{\theta,t}$ 与教师目标 $p_t$ 比较。
+在可微和积分交换条件下，反向 KL 的生成器梯度可表示为
+\begin{equation}\label{th:dmd-gradient}
+\nabla_\theta\KL(q_{\theta,t}\Vert p_t)
+=\E\left[a_t\big(s_{q_{\theta,t}}(y)-s_{p_t}(y)\big)^\top
+ \nabla_\theta G_\theta(z)\right].
+\end{equation}
+这里既需要真实/教师分数，也需要学生分布的 fake 分数。
+只靠教师分数把每个样本推向高密度区，缺少学生分布项，容易缩减多样性。
+实际 fake critic 要随学生更新，目标并非一成不变。
+
+DMD2 通过双时间尺度更新、引入真实数据的对抗信号等改进训练，
+并减少对昂贵成对回归数据的依赖。
+这些改进解释了学生可能在某些指标上超越不完美教师；
+它不是对所有任务的质量保证，更不等于训练不需要数据或辅助网络。
+
+\section{一致性模型：同一轨迹映到同一端点}
+
+取小的干净截断时刻 $\varepsilon>0$，一致性函数为
+$F(x_t,t)=\Phi_{t\to\varepsilon}(x_t)$。
+沿同一 ODE 轨迹有
+\begin{equation}\label{th:cm-pde}
+\partial_tF(x,t)+D_xF(x,t)u_t(x)=0,
+\qquad F(x,\varepsilon)=x.
+\end{equation}
+这个边界排除所有输入都映到同一常量的退化解。
+它学习的是轨迹端点，不是一般的后验均值 $\E[X_0\mid X_t]$。
+
+离散一致性蒸馏先用教师从 $t$ 走到相邻较干净时刻 $s$，
+得到 $\hat x_s$，再最小化
+\[
+\E\,w(t,s)\,d\big(F_\theta(x_t,t),
+ \sg[F_{\theta^-}(\hat x_s,s)]\big).
+\]
+停止梯度使目标分支不被同一次回归直接追动。
+EMA、噪声网格、距离函数与边界参数化需作为算法的一部分规定。
+不能把不同论文中的目标网络更新规则任意拼接。
+
+直接一致性训练可用同一 $x_0,\epsilon$ 构造相邻噪声对。
+它们处于同一条件扰动路径，有限时间下通常不恰好在同一条边缘 ODE 轨迹上；
+无穷小极限的关系与实际离散训练应区分。
+Improved Consistency Training 对权重、噪声分布和目标构造作了系统改进，
+说明“有一个一致性损失”不足以决定训练性质。
+
+\section{一致性采样不只是重复输出干净图}
+
+从大噪声直接应用 $F_\theta$ 可做一步生成。
+多步形式可在预测端点后按指定噪声级重新加噪再预测，
+必须匹配训练的扰动坐标和 $\varepsilon$ 边界。
+反复映到干净端点再加噪，会重新改变语义与耦合；
+这与沿同一确定性 ODE 切成更多小步不是一回事。
+增加步数也不必对所有一致性模型单调改善质量。
+
+\section{CTM：从任意时刻到任意时刻}
+
+CTM 将 $F(x,s)$ 扩展成 $G(x,s,t)\approx\Phi_{s\to t}(x)$。
+例如在适当坐标中可写
+\[
+G_\theta(x,s,t)=\frac ts x+\left(1-\frac ts\right)g_\theta(x,s,t),\quad s>0.
+\]
+它在 $t=s$ 自动等于 $x$；$t=0$ 对应 CM 的特殊端点映射。
+这是流映射参数化，不是说 $g_\theta$ 在任意路径下都必须等于干净样本。
+
+CTM 通过中间时刻的映射复合构造一致性监督，
+可加入局部扩散回归与对抗损失。学习全映射增加了灵活性，
+也增加训练目标、时间对采样与误差传播的设计。
+教师辅助与自诱导教师是不同训练路线，不能仅据名字认定从零训练或必须蒸馏。
+
+\section{MeanFlow：平均速度的恒等式}
+
+定义从 $s$ 到 $t$ 的平均速度
+\begin{equation}\label{th:meanflow-definition}
+U(x,s,t)=\frac{\Phi_{s\to t}(x)-x}{t-s},\qquad t\ne s.
+\end{equation}
+它是沿解轨迹的平均，不是端点两次瞬时速度的算术平均。
+取对角极限有 $U(x,s,s)=u_s(x)$。
+在保持目的时刻 $t$ 固定、沿起始时刻轨迹移动时，终点不变：
+$[\partial_s+u_s\cdot\nabla_x]\Phi_{s\to t}(x)=0$。
+代入 $\Phi=x+(t-s)U$，得到
+\begin{equation}\label{th:meanflow-identity}
+U(x,s,t)=u_s(x)-(s-t)
+ \left[\partial_sU(x,s,t)+D_xU(x,s,t)u_s(x)\right].
+\end{equation}
+因此可以构造停止梯度目标
+\[
+U_{\rm target}=\sg\left[\tilde u_s-(s-t)
+ \big(\partial_sU_{\theta^-}+D_xU_{\theta^-}\tilde u_s\big)\right],
+\quad \mathcal L=\E w\|U_\theta-U_{\rm target}\|^2.
+\]
+Jacobian--vector product 的方向为 $(\tilde u_s,1,0)$，
+而不是只对输入 $x$ 求导后遗漏时间导数。
+$\tilde u_s$ 可来自教师，也可来自条件路径速度；
+以停止梯度目标网络固定为前提，条件速度的条件平均给出边缘速度的联系。
+这仍是自举训练目标，不等于已经知道真实平均速度标签。
+这里 $\theta^-$ 只表示该次求目标时固定的参数，
+可以直接使用当前参数并停止目标梯度，并不要求 MeanFlow 必须采用 EMA 教师。
+JVP 本身仍需计算；停止梯度避免对该目标再做一次高阶反传。
+
+推理使用 $x_t=x_s+(t-s)U_\theta(x_s,s,t)$。
+若训练能准确覆盖整段，可少步或一步；
+质量来自学到有限时间映射，而非把普通流匹配速度直接乘一个大步长。
+
+\Needspace{23\baselineskip}
+\section{等价的是理想对象，不是所有训练细节}
+
+若 CTM 的 $g=x-sU$，则其流映射
+$(t/s)x+(1-t/s)g=x+(t-s)U$。
+两个参数化描述同一理想映射，对应平方误差只差时间尺度。
+但 CTM 的复合/积分代理与 MeanFlow 的微分自举代理并不相同。
+相同表达能力不能推出有限数据、优化轨迹与稳定性等价。
+
+\begin{longtable}{@{}p{0.19\linewidth}p{0.35\linewidth}p{0.39\linewidth}@{}}
+\toprule 方法 & 主要学习对象 & 不能省略的代价或条件 \\ \midrule\endhead
+高阶求解器 & 给定瞬时场的数值积分 & 不新增生成训练，仍受模型误差限制 \\
+渐进蒸馏 & 教师的短段/完整轨迹映射 & 教师求解与分阶段训练 \\
+DMD/DMD2 & 学生与目标分布的匹配 & fake 分数、辅助训练与质量权衡 \\
+CM/iCT & 任意时刻到固定端点 & 边界、自举目标与噪声课程 \\
+CTM & 任意时刻到任意时刻 & 映射复合、局部监督与代理误差 \\
+MeanFlow & 区间平均速度 & JVP、停止梯度及时间对覆盖 \\
+\bottomrule
+\end{longtable}
+
+\begin{theorytakeaway}
+一步生成是一项重新定义并训练映射的工作。
+条件去噪、瞬时速度、轨迹端点和区间平均速度应分别定义。
+\end{theorytakeaway}
+\threading{主参考第10--11章\cite{theorybook}；重点核对
+\cite{cm,ict,ctm,meanflow,dmd2}。本章不复制论文的特定 FID 数字作为普遍优势。}

@@ -1,0 +1,44 @@
+这里把“具体解”展开，看看哪些部分是精确积分，哪些部分仍需近似。
+沿用 $x_t=a_tx_0+b_t\epsilon$，令半对数信噪比
+$\lambda_t=\log(a_t/b_t)$。高斯扩散的概率流 ODE 可写成
+\[
+\frac{\mathrm dx}{\mathrm dt}=\frac{\dot a_t}{a_t}x
+ -b_t\dot\lambda_t\epsilon_\theta(x_t,t).
+\]
+先除去已知的线性尺度 $a_t$，便有
+\[
+\mathrm d(x_t/a_t)=-e^{-\lambda}\epsilon_\theta(x_\lambda,\lambda)\,\mathrm d\lambda.
+\]
+因此从高噪声 $t$ 到低噪声 $s<t$，得到精确的积分表示
+\[
+x_s=\frac{a_s}{a_t}x_t-a_s\int_{\lambda_t}^{\lambda_s}
+ e^{-\lambda}\epsilon_\theta(x_\lambda,\lambda)\,\mathrm d\lambda.
+\]
+网络在积分区间内的值未知，所以这还不是无需迭代的闭式解。
+若把网络输出冻结为起点值，令 $h=\lambda_s-\lambda_t$，可积分为
+\[
+x_s=\frac{a_s}{a_t}x_t-b_s(e^h-1)\epsilon_\theta(x_t,t).
+\]
+将前面的 $\hat x_0$ 代入确定性 DDIM 更新，整理后就是同一个式子。
+高阶 DPM-Solver 则继续近似积分中网络输出随 $\lambda$ 的变化，
+而不是近似已经能够精确处理的线性部分。\cite{dpm}
+
+DPM-Solver++ 改用干净样本预测 $D_\theta$ 表达积分。
+同一条 ODE 也满足 $\mathrm d(x/b)=e^\lambda D_\theta\,\mathrm d\lambda$，
+于是对应的一阶更新为
+\[
+x_s=\frac{b_s}{b_t}x_t+a_s(1-e^{-h})D_\theta(x_t,t).
+\]
+这也解释了为什么它不是简单在原求解器上加一个 guidance scale。
+参数化、数值展开与大引导下的稳定性需要一起考虑。\cite{dpmpp}
+
+再补上 EDM 对这件事的观察：时间网格、网络输入输出的尺度、损失权重与求解器，
+都会影响最终采样。以加性噪声 $x=x_0+\sigma\epsilon$ 为例，常用去噪器写为
+\[
+D_\theta(x,\sigma)=c_{\rm skip}(\sigma)x+
+ c_{\rm out}(\sigma)F_\theta(c_{\rm in}(\sigma)x,c_{\rm noise}(\sigma)).
+\]
+这些系数用于改善不同噪声级的数值尺度，不是另一个前向扩散定律。
+比较速度时也应记录网络调用数 NFE：一次 Heun 步通常需要两次速度求值，
+多步方法则会复用历史值，名义上的“步数”不一定代表相同计算成本。
+降低数值误差的求解器还受制于模型误差，不能保证步数越多生成就必然越好。\cite{edm}

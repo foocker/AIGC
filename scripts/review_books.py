@@ -1,6 +1,7 @@
 """Render final PDFs and record structural / layout checks for local review."""
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from pathlib import Path
@@ -12,8 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--books', nargs='+', default=['AIGCTheory', 'StabelDiffusion', 'Seedance25'])
+    args = parser.parse_args()
     summary = {}
-    for name in ("Seedance25", "StabelDiffusion"):
+    for name in args.books:
         output = ROOT / "build/review" / name
         output.mkdir(parents=True, exist_ok=True)
         for pattern in ("page-*.png", "contact-*.png"):
@@ -24,7 +28,8 @@ def main():
         log = (ROOT / "build" / name / (name + ".log")).read_text(encoding="utf-8", errors="replace")
         report = {
             "pages": len(pdf), "bytes": (ROOT / (name + ".pdf")).stat().st_size,
-            "module_presence": {f"M{i:02d}": f"M{i:02d}" in text for i in range(28)},
+            "module_presence": ({f"M{i:02d}": f"M{i:02d}" in text for i in range(28)}
+                                if name != 'AIGCTheory' else {}),
             "errors": re.findall(r"^.*(?:LaTeX Error|Undefined control sequence).*$", log, re.M),
             "undefined_references": re.findall(r"^.*(?:LaTeX Warning:.*undefined|multiply defined).*$", log, re.M),
             "missing_glyphs": re.findall(r"^Missing character:.*$", log, re.M),
@@ -49,7 +54,8 @@ def main():
                 if "lines" not in block:
                     continue
                 for line in block["lines"]:
-                    box = fitz.Rect(line["bbox"])
+                    # Text coordinates are unrotated; page.rect follows /Rotate.
+                    box = fitz.Rect(line["bbox"]) * page.rotation_matrix
                     if box.x0 < -1 or box.y0 < -1 or box.x1 > page.rect.width+1 or box.y1 > page.rect.height+1:
                         report["text_outside_page"].append({"page": i+1, "bbox": list(box)})
         for first in range(0, len(thumbs), 20):

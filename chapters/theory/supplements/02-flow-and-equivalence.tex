@@ -1,0 +1,226 @@
+\chapter{流匹配的构造、条件技巧与训练等价}
+\label{supp:flow}
+
+原稿 Rectified Flow 小节已经写了直线插值和条件平均，这里继续处理一般情况。
+问题是：只要人为画出一条从数据到噪声的分布路径，就一定知道怎样训练吗？
+同一个路径对应的速度是不是唯一的？噪声预测、分数预测和速度预测又在什么意义下等价？
+这几件事在参考书第5、6章中是分开推导的，不能只用一个“等价”统称。\cite{theorybook,fm,flow-guide}
+
+\section{条件回归的共同基础}
+\subsection{先证明一个平方损失的分解}
+设 $X$ 是网络输入，$Y$ 是可以采到、但对同一个输入未必唯一的监督标签。
+记 $m(X)=\mathbb E[Y\mid X]$，对任意可测预测函数 $h$，有
+\begin{align}
+\|h(X)-Y\|^2
+ &=\|h(X)-m(X)\|^2+\|Y-m(X)\|^2\\
+ &\quad-2(h(X)-m(X))^\top(Y-m(X)).
+\end{align}
+条件于 $X$ 时，最后一项的期望为零，因为
+$\mathbb E[Y-m(X)\mid X]=0$。故
+\[
+\mathbb E\|h(X)-Y\|^2
+=\mathbb E\|h(X)-m(X)\|^2
+ +\mathbb E\|Y-m(X)\|^2.
+\label{supp:regression-projection}
+\]
+第二项与网络无关，所以用随机标签回归，和用不可直接计算的条件平均回归，
+有相同的总体最优解；目标值却相差一个常数。
+即使网络已经达到这个最优解，原始训练损失也可能不为零，
+剩下的是同一输入对应多种标签所带来的条件方差。
+
+将 $X$ 换成 $(X_t,t)$，这个结论同时适用于 DSM、噪声预测、干净样本预测与 CFM。
+它要求的是标签的条件平均正确，不要求每个训练标签都等于生成时应该使用的确定速度。
+有限数据、有限网络容量和实际优化当然还会带来额外误差。
+
+\subsection{条件分数与条件速度为什么分别成立}
+设条件变量为 $C$，条件密度是 $p_t(x\mid c)$，且
+$p_t(x)=\int p_t(x\mid c)\,q(\mathrm dc)$。
+在能够交换积分与微分、且 $p_t(x)>0$ 时，
+\begin{align}
+\nabla\log p_t(x)
+ &=\frac{\int\nabla p_t(x\mid c)q(\mathrm dc)}{p_t(x)}\\
+ &=\mathbb E[\nabla\log p_t(X_t\mid C)\mid X_t=x].
+\end{align}
+这是分数的条件技巧。对速度，要从每个条件路径自己的连续性方程开始：
+\[
+\partial_tp_t(x\mid c)=-\nabla\cdot[p_t(x\mid c)u_t(x\mid c)].
+\]
+对 $c$ 积分，得到
+\begin{align}
+\partial_tp_t(x)
+ &=-\nabla\cdot\int p_t(x\mid c)u_t(x\mid c)q(\mathrm dc)\\
+ &=-\nabla\cdot[p_t(x)v_t(x)],\quad
+v_t(x)=\mathbb E[u_t(X_t\mid C)\mid X_t=x].
+\label{supp:conditional-velocity}
+\end{align}
+再用式\eqref{supp:regression-projection}，就可以训练可计算的条件速度，而不必计算边缘速度。
+前一个恒等式来自密度求导，后一个来自概率通量相加；这就是二者形式类似的原因。
+
+\section{一般高斯路径的条件速度}
+设 $X_0\sim p_{\rm data}$、$Z\sim\mathcal N(0,I)$ 独立，定义
+\[
+X_t=a_tX_0+b_tZ,\quad t\in[0,1],\quad
+a_0=1,b_0=0,a_1=0,b_1=1.
+\]
+这里沿用原稿“0为数据、1为噪声”的方向，生成时反向积分。
+条件于 $X_0=x_0$，这是一个均值 $a_tx_0$、标准差 $b_t$ 的高斯路径。
+若在 $0<t<1$ 上 $b_t>0$，则相应条件速度为
+\begin{align}
+u_t(x\mid x_0)
+ &=\dot a_tx_0+\dot b_t\frac{x-a_tx_0}{b_t}\\
+ &=\frac{\dot b_t}{b_t}x+
+ \left(\dot a_t-\frac{\dot b_ta_t}{b_t}\right)x_0.
+\label{supp:affine-conditional}
+\end{align}
+因为沿同一个条件轨迹，高斯坐标 $Z$ 不变，对插值直接求导即可。
+也可以固定两端 $(X_0,Z)$，使用标签 $\dot a_tX_0+\dot b_tZ$。
+二者的条件平均产生相同边缘速度，但每条条件路径耦合的含义不同。
+
+结合高斯条件分数
+$s_t(x\mid x_0)=-(x-a_tx_0)/b_t^2$，可解出
+\[
+\mathbb E[X_0\mid X_t=x]
+=\frac{x+b_t^2s_t(x)}{a_t}.
+\]
+将它代回条件速度的平均，得到
+\[
+v_t(x)=\frac{\dot a_t}{a_t}x+
+ \left(\frac{\dot a_t}{a_t}b_t^2-b_t\dot b_t\right)s_t(x).
+\label{supp:affine-marginal}
+\]
+端点处可能出现 $a_t$ 或 $b_t$ 为零，所以这些除法形式先在内部时间成立，
+端点需要用极限或另一种不奇异的参数化处理。
+直线路径取 $a_t=1-t,b_t=t$，就回到了原稿的 $Z-X_0$ 标签。
+
+\subsection{路径、耦合和真实 ODE 轨迹是三个对象}
+两端边缘并不规定联合分布。独立采样、按条件标签配对、最优传输配对，
+都可能具有相同的两端边缘，却给出不同的中间分布。
+给定一种端点耦合 $\gamma(x_0,z)$，再给定插值函数 $I_t(x_0,z)$，
+才确定了训练用的随机路径及其边缘。
+最后对条件速度取平均得到的 ODE 轨迹，又未必就是原先每一对端点的插值线。
+多条条件路径在同一个时空点相遇时，网络只能输出它们的平均速度。
+因此“用直线训练”本身不能保证“ODE 轨迹逐条都是直线”。
+
+\section{一个能完全算完的 Flow Matching 例子}
+为看清条件平均的影响，取一维独立高斯
+$X_0\sim\mathcal N(0,\sigma_0^2)$、$Z\sim\mathcal N(0,\sigma_1^2)$。
+令 $X_t=(1-t)X_0+tZ$，则
+\[
+c_t=\operatorname{Var}(X_t)=(1-t)^2\sigma_0^2+t^2\sigma_1^2.
+\]
+高斯条件均值给出
+\begin{align}
+v_t(x)&=\mathbb E[Z-X_0\mid X_t=x]\\
+ &=\frac{t\sigma_1^2-(1-t)\sigma_0^2}{c_t}x
+ =\frac{\dot c_t}{2c_t}x.
+\end{align}
+ODE 因此可以直接积分：
+\[
+\frac{\mathrm dx_t}{x_t}=\frac12\mathrm d\log c_t,
+\qquad x_t=\sqrt{\frac{c_t}{c_s}}x_s.
+\]
+若从 $t=1$ 的噪声反向积分到0，就得到方差 $\sigma_0^2$ 的数据分布。
+但是每一对独立训练端点之间的直线一般不服从这个比例关系。
+训练配对与生成配对不同，边缘分布却能一致，这正是条件技巧的用途。
+
+\section{相同边缘为什么不唯一确定速度}
+已知 $p_t$，若 $v_t$ 满足连续性方程，再取满足
+$\nabla\cdot(p_tw_t)=0$ 的场，则 $v_t+w_t$ 产生同一个密度演化。
+例如二维标准高斯不随时间变化，$v=0$ 可以保持它；
+取反对称矩阵
+$K=\left(\begin{smallmatrix}0&-\omega\\\omega&0\end{smallmatrix}\right)$，
+$w(x)=Kx$ 也可以保持它。因为
+\[
+\nabla\cdot(pKx)=\nabla p^\top Kx+p\operatorname{tr}K
+=-p\,x^\top Kx+0=0.
+\]
+前一组粒子原地不动，后一组持续旋转；每一时刻的总体分布相同，端点映射却不同。
+所以“训练正确边缘速度”还包含我们选择哪一种条件路径和哪一个速度代表的问题。
+最优传输接下来会在这些可能性中再加入代价准则。
+
+\section{信噪比、时间重参数与目标权重}
+\subsection{似然权重与对数信噪比}
+若高斯路径来自线性 SDE
+$\mathrm dX=f(t)X\mathrm dt+g(t)\mathrm dW$，则
+\[
+\dot a=fa,\qquad \frac{\mathrm d}{\mathrm dt}b^2=2fb^2+g^2.
+\]
+定义对数信噪比 $\ell_t=\log(a_t^2/b_t^2)$，直接求导：
+\[
+\dot\ell_t=2\dot a_t/a_t-\frac{2b_t\dot b_t}{b_t^2}
+=-\frac{g(t)^2}{b_t^2}.
+\]
+又因分数与噪声预测差一个 $-1/b_t$，路径 KL 的误差项变为
+\begin{align}
+\frac12\int g(t)^2\mathbb E\|s_\theta-s_t\|^2\mathrm dt
+ &=\frac12\int[-\dot\ell_t]
+ \mathbb E\|\epsilon_\theta-\hat\epsilon_t\|^2\mathrm dt.
+\end{align}
+如果 $\ell$ 单调，这就是在对数信噪比坐标上的噪声预测误差积分。
+均匀采样 $t$ 并使用无权噪声 MSE，通常与这个权重不同。
+原稿中“简化损失是一种重新加权”，在这里就有了连续时间的具体表达。
+
+\subsection{换时钟与重新分配训练资源}
+设 $t=\psi(r)$，$\psi$ 单调增加。若只是给同一条 ODE 换时钟，则
+\[
+\frac{\mathrm dx}{\mathrm dr}=\psi'(r)v(x,\psi(r)).
+\]
+速度必须乘上 $\psi'$。对前向 SDE，扩散尺度还要乘 $\sqrt{\psi'}$，
+因为布朗增量的方差与时间增量成正比。
+但若只改变训练抽样的时间密度 $q(t)$，却保持样本路径和标签不变，
+改变的是训练资源分配。要无偏估计原来 $\int w(t)L_t\mathrm dt$，应使用
+\[
+\mathbb E_{t\sim q}\left[\frac{w(t)}{q(t)}L_t\right],\qquad q(t)>0
+\ \text{在目标权重非零处成立}.
+\]
+不补这个权重，就变成另一个目标。它可能训练得更好，但不是同一个积分的无偏估计。
+
+\section{给同一条概率路径加入随机性}
+前面概率流从 SDE 走到 ODE；也可以反过来。
+设 $v_t$ 已经使 $p_t$ 满足连续性方程，取只依赖时间的 $\eta(t)\geq0$，定义
+\[
+\mathrm dX_t=\left[v_t(X_t)+\frac{\eta(t)^2}{2}s_t(X_t)\right]\mathrm dt
+ +\eta(t)\mathrm dW_t.
+\label{supp:same-marginal-family}
+\]
+代入 Fokker--Planck，额外两项为
+$-\tfrac12\eta^2\nabla\cdot(p_ts_t)+\tfrac12\eta^2\Delta p_t=0$。
+因此在精确分数、匹配初始分布和适当正则性下，它仍具有相同的 $p_t$。
+反向增加时钟下的漂移则是 $-v_t+\tfrac12\eta^2s_t$。
+
+这给出一个共同边缘下的 ODE/SDE 采样族，但它们的路径联合分布不同。
+模型分数、速度都只有近似值时，前面的抵消也只有近似意义；
+不能保证随意增加随机性就一定改善样本质量。
+同理，标签换算、相同总体最优解、相同边缘、相同端点配对、相同路径分布，
+分别是不同层次的关系；每次说“等价”之前都需要说明正在比较哪一层。\cite{theorybook}
+
+\section{给定扰动核，怎样恢复一个前向 SDE}
+前面从线性 SDE 算出了 $a_t,b_t$，现在反过来。
+假设只规定条件核 $p_t(x\mid x_0)=\mathcal N(a_tx_0,b_t^2I)$，
+想找 $\mathrm dX=f(t)X\mathrm dt+g(t)\mathrm dW$ 实现这组核。
+由条件均值和方差的演化方程可解出
+\[
+f(t)=\frac{\dot a_t}{a_t},\qquad
+g(t)^2=2b_t\dot b_t-2\frac{\dot a_t}{a_t}b_t^2
+=-b_t^2\dot\ell_t.
+\]
+因此内部时间上必须有 $g(t)^2\geq0$，即信噪比沿前向时间不增加。
+不是任意两条光滑系数曲线都能在这个方向上构成实值线性 Itô 扩散。
+恢复出来的过程给这些边缘核增加了一种 Markov 路径耦合；
+训练时各时刻独立采噪声，并不表示整条训练随机路径已经按这条 SDE 耦合。
+
+例如 VE 取 $a_t=1$、$b_t^2=\sigma(t)^2$，则
+$f=0$、$g^2=\mathrm d\sigma^2/\mathrm dt$。
+VP 的 $a_t^2+b_t^2=1$ 则给出 $g^2=-2\dot a_t/a_t$，
+对应原稿 $f=-\beta/2$、$g^2=\beta$。
+
+再取直线路径 $a_t=1-t,b_t=t$，内部时间给出
+\[
+f(t)=-\frac1{1-t},\qquad g(t)^2=\frac{2t}{1-t}.
+\]
+条件方差的确满足
+$\frac{\mathrm d}{\mathrm dt}t^2=2f(t)t^2+g(t)^2=2t$。
+但系数在 $t\to1$ 时发散，说明相同的仿射边缘路径在确定性插值表述中很简单，
+在这一线性 SDE 表述中却可能有奇异端点。
+实际需要在内部区间讨论，或另选时间尺度、终端近似与采样方式。
+这也解释了为什么代数上能换算，不表示所有表述在数值上同样方便。

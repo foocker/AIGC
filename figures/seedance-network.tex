@@ -1,0 +1,46 @@
+% Five coordinated diagrams of the Seedance 2.5 inferred design.
+% Historical evidence and candidate choices are distinguished in figure notes.
+% This is separate from the LTX implementation contract (M19/M21).
+\definecolor{snAttention}{HTML}{D7E8F3}
+\definecolor{snFFN}{HTML}{F4E5BB}
+\definecolor{snNorm}{HTML}{DCEBDD}
+\definecolor{snEmbed}{HTML}{F0D7D9}
+\definecolor{snCond}{HTML}{E6DFF0}
+\definecolor{snFrame}{HTML}{F7F7F7}
+\definecolor{snInk}{HTML}{252525}
+\tikzset{
+  sn/.style={x=1cm,y=1cm,font=\fontsize{10}{11.5}\selectfont,text=snInk},
+  box/.style={draw=snInk,line width=.65pt,rounded corners=1.5pt,
+    align=center,minimum height=.65cm,text width=3.2cm,inner sep=3pt,fill=white},
+  attn/.style={box,fill=snAttention},
+  ff/.style={box,fill=snFFN},
+  norm/.style={box,fill=snNorm,minimum height=.37cm,inner ysep=2pt,
+    font=\fontsize{9}{10}\selectfont},
+  embed/.style={box,fill=snEmbed},
+  cond/.style={box,fill=snCond},
+  candidate/.style={dashed},
+  wire/.style={-{Stealth[length=2mm,width=1.4mm]},line width=.7pt},
+  cw/.style={wire,dashed,draw=snInk!75},
+  skip/.style={wire,rounded corners=2pt},
+  plus/.style={circle,draw=snInk,fill=white,minimum size=4.6mm,
+    inner sep=0pt,font=\fontsize{12}{12}\selectfont},
+  dot/.style={circle,fill=snInk,minimum size=1.5mm,inner sep=0pt},
+  lab/.style={font=\fontsize{9}{10.5}\selectfont,align=center},
+  heading/.style={font=\bfseries\fontsize{12}{14}\selectfont,align=center},
+  frame/.style={draw=snInk!60,fill=snFrame,line width=.7pt,rounded corners=3pt}
+}
+\newcommand{\snPage}[3]{%
+  \path[use as bounding box] (-.4,-1.8) rectangle (27.6,16.55);
+  \node[font=\bfseries\fontsize{16}{18}\selectfont] at (13.6,16.05) {#2};
+  \node[lab,text=snInk!75] at (13.6,15.38) {#3};
+  \node[lab,anchor=south east] at (27.2,-1.58) {#1 / 5};
+}
+\newcommand{\snNote}[1]{%
+  \draw[snInk!25,line width=.45pt] (0,-.55)--(27.2,-.55);
+  \node[lab,anchor=north west,text width=26.1cm,align=left] at (0,-.76) {#1};
+}
+\input{figures/seedance-network-01-overview}
+\input{figures/seedance-network-02-dual-mmdit}
+\input{figures/seedance-network-03-conditions}
+\input{figures/seedance-network-04-causal-vae}
+\input{figures/seedance-network-05-inference}

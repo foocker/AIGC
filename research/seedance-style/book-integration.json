@@ -1,0 +1,174 @@
+{
+  "date": "2026-11-24",
+  "scope": "Integrate the reviewed bottom-to-top vector diagrams into the corresponding chapters of both book editions.",
+  "insertions": [
+    {
+      "plate": 1,
+      "chapter_source": "chapters/seedance/architecture.tex",
+      "action": "replace overall diagram; retain original label"
+    },
+    {
+      "plate": 2,
+      "chapter_source": "chapters/seedance/architecture.tex",
+      "action": "replace joint-block diagram; retain original label"
+    },
+    {
+      "plate": 3,
+      "chapter_source": "chapters/seedance/m17.tex",
+      "action": "insert condition injection plate; original body unchanged"
+    },
+    {
+      "plate": 4,
+      "chapter_source": "chapters/seedance/m01.tex",
+      "action": "insert causal VAE plate; original body unchanged"
+    },
+    {
+      "plate": 5,
+      "chapter_source": "chapters/seedance/m19.tex",
+      "action": "insert joint inference plate; original body unchanged"
+    }
+  ],
+  "layout": "Landscape vector plates with figure captions and internal destinations. Original bottom-to-top diagram direction retained.",
+  "local_text_alignment": "Only architecture chapter wording that contradicted the approved diagrams was aligned; distinguish Seedance hypothesis from LTX alternative implementation, and explain standalone plate indices.",
+  "changed_baseline_files": [
+    "Seedance25.pdf",
+    "StabelDiffusion.pdf",
+    "chapters/seedance/architecture.tex",
+    "chapters/seedance/m01.tex",
+    "chapters/seedance/m17.tex",
+    "chapters/seedance/m19.tex",
+    "scripts/review_books.py",
+    "tex/seedance-preamble.tex"
+  ],
+  "unchanged_baseline_files": 228,
+  "module_prose_unchanged_except_figure_insertions": true,
+  "architecture_display_equations_preserved": true,
+  "review_script_adjustment": "Compare text bounds in rotated page coordinates to support the new landscape pages.",
+  "book_diagram_asset": "assets/seedance/figures/seedance25-inferred-network.pdf",
+  "diagram_asset_byte_identical_to_reviewed_standalone": true,
+  "books": {
+    "Seedance25": {
+      "pages": 139,
+      "bytes": 4016239,
+      "module_presence": {
+        "M00": true,
+        "M01": true,
+        "M02": true,
+        "M03": true,
+        "M04": true,
+        "M05": true,
+        "M06": true,
+        "M07": true,
+        "M08": true,
+        "M09": true,
+        "M10": true,
+        "M11": true,
+        "M12": true,
+        "M13": true,
+        "M14": true,
+        "M15": true,
+        "M16": true,
+        "M17": true,
+        "M18": true,
+        "M19": true,
+        "M20": true,
+        "M21": true,
+        "M22": true,
+        "M23": true,
+        "M24": true,
+        "M25": true,
+        "M26": true,
+        "M27": true
+      },
+      "errors": [],
+      "undefined_references": [],
+      "missing_glyphs": [],
+      "overfull_boxes": [],
+      "broken_internal_links": [],
+      "text_outside_page": [],
+      "rendered_pages": 139,
+      "contact_sheets": [
+        "build/review/Seedance25/contact-001-020.png",
+        "build/review/Seedance25/contact-021-040.png",
+        "build/review/Seedance25/contact-041-060.png",
+        "build/review/Seedance25/contact-061-080.png",
+        "build/review/Seedance25/contact-081-100.png",
+        "build/review/Seedance25/contact-101-120.png",
+        "build/review/Seedance25/contact-121-139.png"
+      ],
+      "sha256": "a5bd6aa7a0e9133fefe41967cb9090724cdaff07c26f1f9dc6496c6cf8e1b85d",
+      "figure_file_pages": {
+        "overall": 14,
+        "dual_mmdit": 16,
+        "causal_vae": 20,
+        "condition_injection": 38,
+        "joint_inference": 83
+      }
+    },
+    "StabelDiffusion": {
+      "pages": 205,
+      "bytes": 5653249,
+      "module_presence": {
+        "M00": true,
+        "M01": true,
+        "M02": true,
+        "M03": true,
+        "M04": true,
+        "M05": true,
+        "M06": true,
+        "M07": true,
+        "M08": true,
+        "M09": true,
+        "M10": true,
+        "M11": true,
+        "M12": true,
+        "M13": true,
+        "M14": true,
+        "M15": true,
+        "M16": true,
+        "M17": true,
+        "M18": true,
+        "M19": true,
+        "M20": true,
+        "M21": true,
+        "M22": true,
+        "M23": true,
+        "M24": true,
+        "M25": true,
+        "M26": true,
+        "M27": true
+      },
+      "errors": [],
+      "undefined_references": [],
+      "missing_glyphs": [],
+      "overfull_boxes": [],
+      "broken_internal_links": [],
+      "text_outside_page": [],
+      "rendered_pages": 205,
+      "contact_sheets": [
+        "build/review/StabelDiffusion/contact-001-020.png",
+        "build/review/StabelDiffusion/contact-021-040.png",
+        "build/review/StabelDiffusion/contact-041-060.png",
+        "build/review/StabelDiffusion/contact-061-080.png",
+        "build/review/StabelDiffusion/contact-081-100.png",
+        "build/review/StabelDiffusion/contact-101-120.png",
+        "build/review/StabelDiffusion/contact-121-140.png",
+        "build/review/StabelDiffusion/contact-141-160.png",
+        "build/review/StabelDiffusion/contact-161-180.png",
+        "build/review/StabelDiffusion/contact-181-200.png",
+        "build/review/StabelDiffusion/contact-201-205.png"
+      ],
+      "sha256": "2580c607d1ead6b2fa06eb3544a95d0fd53beb92a90653eb08c7b8765b4dbe7f",
+      "figure_file_pages": {
+        "overall": 79,
+        "dual_mmdit": 81,
+        "causal_vae": 85,
+        "condition_injection": 103,
+        "joint_inference": 148
+      }
+    }
+  },
+  "visual_review": "All final pages rendered and automatically checked. Five standalone-edition landscape plates and their adjacent transitions inspected; integrated-edition overview/inference and shared layout inspected. No clipping, overlap or unresolved references observed.",
+  "commit_created": false,
+  "push_performed": false
+}

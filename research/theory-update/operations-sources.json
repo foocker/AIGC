@@ -1,0 +1,27 @@
+{
+  "checked_on": "2026-11-24",
+  "sources": [
+    {
+      "id": "vllm",
+      "url": "https://raw.githubusercontent.com/vllm-project/vllm/main/README.md",
+      "checked_on": "2026-11-24",
+      "sha256": "ba4998a8520051250ec81c60187203745e6bc0b9c197af6e1b6a73143f5e575e",
+      "scope": "Official README capability description only; no model or performance test."
+    },
+    {
+      "id": "sglang",
+      "url": "https://raw.githubusercontent.com/sgl-project/sglang/main/README.md",
+      "checked_on": "2026-11-24",
+      "sha256": "8aebfb101fa473f3842483d03c14b140c546c39ae2af464c0cd49d14b22be90f",
+      "scope": "Official README capability description only; no model or performance test."
+    },
+    {
+      "id": "vllm-omni",
+      "url": "https://raw.githubusercontent.com/vllm-project/vllm-omni/main/README.md",
+      "checked_on": "2026-11-24",
+      "sha256": "cd0b18670d46589b569c76c08efe9ba17e6723e1129ba8b5687e0844e430e9a6",
+      "scope": "Official README capability description only; no model or performance test."
+    }
+  ],
+  "application_scope": "Design, short-video and short-drama workflows; platform examples follow user direction, no claim of platform admission or financial performance."
+}

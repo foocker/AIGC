@@ -3,6 +3,7 @@
 \usepackage{fvextra,needspace}
 \usepackage{xurl}
 \usepackage{adjustbox}
+\usepackage{pdflscape}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit}
 \IfFontExistsTF{Consolas}{\setmonofont{Consolas}[Scale=0.88]}{\setmonofont{Latin Modern Mono}[Scale=0.88]}
@@ -19,11 +20,10 @@
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \newcommand{\codepath}[1]{{\small\nolinkurl{#1}}}
 \newcommand{\moduleinfo}[3]{%
-  \begin{tcolorbox}[colback=structurecolor!4,colframe=structurecolor!30,
-    boxrule=0.4pt,arc=1mm,left=7pt,right=7pt,top=5pt,bottom=5pt]
-  \small\textbf{模块 #1}\quad #2\par
-  来源：#3。来源版本与支持范围见本专题末尾的来源登记。\par
-  \end{tcolorbox}}
+  \par\smallskip\noindent
+  {\small\textbf{材料 #1}\quad #2。\par
+  参考：#3。固定版本与适用范围见末尾来源登记。\par}
+  \medskip}
 \newcommand{\sourceentry}[4]{%
   \par\medskip\phantomsection\label{src-#1}%
   \noindent\textbf{\texttt{#1}}\quad #2\par
@@ -36,3 +36,15 @@
 \setlength{\emergencystretch}{2em}
 \hypersetup{unicode=true,breaklinks=true}
 \pdfstringdefDisableCommands{\def\codepath#1{#1}}
+% Shared, full-page landscape plates from the reviewed vector diagram set.
+\newcommand{\seedancenetworkfigure}[3]{%
+  \clearpage
+  \begin{landscape}
+  \thispagestyle{plain}
+  \begin{figure}[p]
+    \centering
+    \includegraphics[page=#1,width=\linewidth,height=0.94\textheight,keepaspectratio]{assets/seedance/figures/seedance25-inferred-network.pdf}
+    \caption{#2}\label{#3}
+  \end{figure}
+  \end{landscape}
+  \clearpage}

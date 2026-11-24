@@ -1,0 +1,54 @@
+\begin{tikzpicture}[sn]
+\snPage{5}{联合推理：固定条件、当前状态与采样回路}
+  {网络在每个噪声时间读取当前音视频状态；更新 latent，直到干净端再解码}
+\node[box,text width=2.8cm] (state) at (1.8,10.8) {Current State\\$z_{t_i}^v,z_{t_i}^a$};
+\node[embed,text width=2.8cm] (proj) at (6.0,10.8) {Input Projections};
+\node[attn,text width=3.6cm,minimum height=1.05cm] (net) at (10.9,10.8)
+  {Dual-MMDiT\\+ AV Joint Modules};
+\node[ff,text width=2.8cm] (head) at (15.9,10.8) {Output Heads\\$\hat u_i^v,\hat u_i^a$};
+\node[box,text width=3.0cm] (step) at (20.6,10.8) {Sampler Step\\$z_{t_{i+1}}=z_{t_i}+\Delta t_i\hat u_i$};
+\node[box,text width=2.4cm] (next) at (25.4,10.8) {Next State\\$z_{t_{i+1}}^v,z_{t_{i+1}}^a$};
+\foreach \a/\b in {state/proj,proj/net,net/head,head/step,step/next}{
+\draw[wire] (\a.east)--(\b.west);
+}
+\draw[skip] (next.south)--(25.4,8.55)--(1.8,8.55)--(state.south);
+\node[lab,fill=white,inner sep=2pt] at (13.6,8.55)
+  {重复网络求值；只更新活动目标，固定源 / 参考 / 保留音轨不作噪声目标};
+\node[cond,text width=3.9cm] (fixed) at (5.0,13.8) {Text / Reference\\Source：固定条件编码};
+\node[box,text width=2.6cm] (time) at (10.9,13.8) {噪声时间 $t_i$};
+\node[box,text width=3.3cm] (pos) at (15.7,13.8) {坐标与可见性\\MM-RoPE / Binding $B$};
+\draw[wire] (fixed.south)--(net.north west);
+\draw[cw] (time.south)--(net.north);
+\draw[wire] (pos.south)--(net.north east);
+\node[embed,text width=3.2cm] (decode) at (21.0,13.8) {Video Decoder\\Audio Decoder};
+\node[lab,text width=2.5cm] (out) at (25.5,13.8) {视频与声音\\可选精修 / 合成};
+\draw[wire] (step.north)--node[left,lab] {$t\to0$}(decode.south);
+\draw[wire] (decode.east)--(out.west);
+
+\node[heading] at (6.3,7.05) {(a) 长叙事：镜头、文本与媒体共同定位};
+\node[heading] at (21.0,7.05) {(b) 因果续写派生版：另行训练的连接};
+\draw[snInk!20] (13.5,0)--(13.5,7.55);
+\foreach \sx/\shotid/\shotTime in {.6/1/\tau_1,6.85/2/\tau_2}{
+  \draw[snInk!55,rounded corners=2pt] (\sx,2.25) rectangle ++(5.65,3.15);
+  \node[heading] at (\sx+2.825,4.90) {Shot \shotid};
+  \node[cond,text width=1.15cm] at (\sx+1.0,3.65) {$c_{\shotid}$};
+  \node[attn,text width=1.15cm] at (\sx+2.825,3.65) {$v_{\shotid}$};
+  \node[attn,text width=1.15cm] at (\sx+4.65,3.65) {$a_{\shotid}$};
+  \node[lab] at (\sx+2.825,2.73) {主体 / 角色 / $\shotTime$ / 空间坐标};
+}
+\draw[wire] (6.25,3.65)--(6.85,3.65);
+\node[box,text width=10.4cm] at (6.55,1.1)
+  {Multishot MM-RoPE + 条件可见性 $B$\\整段联合去噪时不自动获得跨步历史 KV 缓存};
+
+\node[cond,text width=2.5cm] (h1) at (16.4,5.25) {Clean History\\$H_1$};
+\node[cond,text width=2.5cm] (h2) at (20.65,5.25) {Clean History\\$H_2$};
+\node[attn,text width=2.5cm] (ct) at (24.9,5.25) {Noisy Current\\$C_t$};
+\node[attn,text width=7.4cm] (cur) at (21.0,2.95)
+  {Current-block Attention\\读干净历史 + 当前块；两流使用相同时间边界};
+\draw[wire] (h1.south)--(cur.north west);
+\draw[wire] (h2.south)--(cur.north);
+\draw[wire] (ct.south)--(cur.north east);
+\node[lab,text width=10.5cm] at (21.0,1.1)
+  {块内可双向，块间不读未来；历史提交前按干净状态重算\\改变提示、参考或过去内容时重建受影响的缓存};
+\snNote{第1--4页描述同一候选网络，第5页说明调用顺序。基础方案先整段联合去噪；右下角是后文另行讨论的因果续写派生版，不能直接当成原基座的推理开关。固定 latent 与可缓存的隐藏特征也不同：声音流一旦读取当前视频，深层声音特征仍可能每步变化。}
+\end{tikzpicture}

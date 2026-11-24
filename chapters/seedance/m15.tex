@@ -1,11 +1,12 @@
 % Imported from docs/code-paths.md
-\chapter{M15 机制代码与真实工程路线}\label{seedance-m15}
+\chapter{机制代码与真实工程路线}\label{seedance-m15}
 \moduleinfo{M15}{增量路线与工程阅读；未运行教学代码}{\hyperref[src-wan21-code]{\texttt{wan21-code}}、\hyperref[src-diffsynth-code]{\texttt{diffsynth-code}}、\hyperref[src-phantom-code]{\texttt{phantom-code}}、\hyperref[src-longlive-code]{\texttt{longlive-code}}、\hyperref[src-vincie-code]{\texttt{vincie-code}}、\hyperref[src-ltx-code]{\texttt{ltx-code}}、\hyperref[src-dancegrpo-code]{\texttt{dancegrpo-code}}、\hyperref[src-tarsier-code]{\texttt{tarsier-code}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-vace-code]{\texttt{vace-code}}、\hyperref[src-videocof-code]{\texttt{videocof-code}}}
 
+两种候选路线都已有位置，下面把局部机制与实际仓库入口逐项对应。
 
-理解一个视频模块时，几十行代码往往比完整训练框架更清楚；真正制作数据、训练和生成时，则应使用已经组织好模型加载、调度、分布式和输出流程的工程。这两种代码各有用途，不需要把教学片段扩写成另一个大型框架。
+公式和真实工程之间，还需要把调用顺序对上。几十行机制代码容易看清一个运算，真正训练与生成却还要模型加载、调度、分布式和输出流程。两者各自回答不同问题：前者便于推导依赖，后者便于实施，不必把前者扩成另一套大框架。
 
-这里把十六份本地机制示例与十个上游仓库对应起来，其中 LTX 原系列与当前版本分别固定。仓库版本、源码入口和许可证已经查阅，未运行模型或训练，也不据此承诺它们满足某个具体业务的效果与硬件条件。
+下面将十六份本地机制示例与十个上游仓库对应，LTX 原系列和当前版本另外固定。这里已查阅版本、源码入口与许可证，未运行模型或训练；表中入口用于找到计算链，不据此承诺具体业务效果或硬件条件。
 
 \section{用极简代码理解一件事}\label{seedance-m15-ux7528ux6781ux7b80ux4ee3ux7801ux7406ux89e3ux4e00ux4ef6ux4e8b}
 
@@ -49,7 +50,7 @@
 \end{longtable}
 }
 
-示例的约束写在各文件开头：有的省略多头，有的要求每个 query 至少有一个有效参考，有的只支持整除的空间窗口。它们解释依赖关系，不负责补齐生产环境中的所有分支，也不能直接加载这些仓库的 checkpoint。
+先读各示例开头的假设。有的只写单头，有的要求每行至少有一个可读参考，有的要求窗口整除。这些约束让局部公式有明确输入，却没有覆盖生产中的全部分支，所以也不能直接拿来加载上游 checkpoint。
 
 \section{从 Wan 建立基础生成链路}\label{seedance-m15-ux4ece-wan-ux5efaux7acbux57faux7840ux751fux6210ux94feux8def}
 
@@ -85,7 +86,7 @@
   \href{https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_inference/Wan2.1-T2V-1.3B.py}{1.3B 推理样例}：模型加载与 pipeline 调用。
 \end{itemize}
 
-真实实施可先沿用这个训练框架，再增加业务数据和所需条件路径。现成 LoRA 能调整模型行为，但不会自动获得角色绑定、任意参考数量或时间戳编辑；这些能力还依赖对应模型接口与数据任务。
+实施时可以沿用这个训练框架，再补业务数据与相应条件路径。LoRA 能调整行为，但角色绑定、任意参考数量和时间戳编辑，还各有输入和监督要求。只看到框架支持 LoRA，尚不能把这些能力都算作已有。
 
 \section{用 Phantom-Wan 研究主体参考}\label{seedance-m15-ux7528-phantom-wan-ux7814ux7a76ux4e3bux4f53ux53c2ux8003}
 
@@ -101,7 +102,7 @@
   \href{https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/phantom_wan/modules/model.py}{model.py}：参考条件怎样进入主干。
 \end{itemize}
 
-该版本提供参考推理，README 的训练代码项目仍未勾选。因此它适合作为参考生成和结构阅读入口，不能直接称为可用的完整训练仓库。公开的 Phantom-Wan 与论文内部基座也需要区分。
+这里再看代码是否已经提供。固定版本 README 里训练代码仍未勾选，现有内容可用于参考推理与结构阅读，还不能称作完整可用的训练仓库。公开 Phantom-Wan 的实现，也要与论文内部基座分别理解。
 
 \section{从 LongLive1.0 阅读长视频训练与缓存}\label{seedance-m15-ux4ece-longlive1.0-ux9605ux8bfbux957fux89c6ux9891ux8badux7ec3ux4e0eux7f13ux5b58}
 
@@ -119,7 +120,7 @@
   \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/wan/modules/causal_model.py}{causal\_model.py}：\codepath{CausalWanSelfAttention} 和缓存数据路径。
 \end{itemize}
 
-这里的价值是读取``模型、训练分布、缓存''怎样配套，而不是把缓存类单独移植到任意双向扩散模型。它也不是 Seedance 已确认的内部实现。
+读这条路线时，应把模型依赖、训练历史和推理缓存连起来看。若只取一个 cache 类放进普通双向模型，原来成立的依赖条件可能已经不成立；它也不能用来证明 Seedance 内部采用了同样做法。
 
 \section{从 VINCIE 阅读多轮编辑与交错序列}\label{seedance-m15-ux4ece-vincie-ux9605ux8bfbux591aux8f6eux7f16ux8f91ux4e0eux4ea4ux9519ux5e8fux5217}
 
@@ -137,7 +138,7 @@
   \href{https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/models/dit/rope.py}{rope.py}：多模态位置编码。
 \end{itemize}
 
-它直接处理的是多轮图像编辑，不能把这个生成入口当成通用视频时间戳编辑。图像上下文方法怎样传播到时间连续的视频，是另一层任务和实现。
+这个入口处理多轮图像编辑。图像上下文怎样沿视频时间传播、怎样保持动作连续，是进一步的问题，因此不能把生成入口直接改称通用时间戳视频编辑器。
 
 \section{用 LTX 阅读可实现的联合音视频}\label{seedance-m15-ux7528-ltx-ux9605ux8bfbux53efux5b9eux73b0ux7684ux8054ux5408ux97f3ux89c6ux9891}
 
@@ -195,7 +196,7 @@
   \href{https://github.com/ali-vilab/VACE/blob/48eb44f1c4be87cc65a98bff985a26976841e9f3/vace/vace_wan_inference.py}{vace\_wan\_inference.py}：条件、checkpoint与Wan采样链路怎样配合。
 \end{itemize}
 
-这是可用视觉控制工程的入口，但不同基座分支有各自权重和条件层。即使目录中出现LTX分支，也不代表能直接加载到这里固定的LTX-2原系列。
+这些入口能帮助理解视觉控制如何落地，但每个基座分支仍有自己的权重与条件层。目录中出现 LTX 分支，也不能直接推出它与本文固定的 LTX-2 原系列兼容。
 
 \section{从 VideoCoF 阅读区域中间表示}\label{seedance-m15-ux4ece-videocof-ux9605ux8bfbux533aux57dfux4e2dux95f4ux8868ux793a}
 
@@ -211,7 +212,7 @@
   \href{https://github.com/knightyxp/VideoCoF/blob/f45b8009616b3ef8e2024a7da585249b4c74fc2b/videox_fun/pipeline/pipeline_wan.py}{pipeline\_wan.py}：条件与去噪执行路径。
 \end{itemize}
 
-区域与目标联合去噪是一种具体建模选择。候选设计为了可检查性先定位再编辑，执行图和训练数据组织都要相应修改；不能只把这个采样入口改名就视为完成迁移。
+区域和目标一起去噪，是一种具体建模选择。本文候选改成先定位、再编辑，执行图与训练数据也要对应改变。不能只换一个采样入口的名字，就当作已经迁移了这个机制。
 
 \section{从 DanceGRPO 看完整视觉策略优化}\label{seedance-m15-ux4ece-dancegrpo-ux770bux5b8cux6574ux89c6ux89c9ux7b56ux7565ux4f18ux5316}
 
@@ -243,13 +244,13 @@
   \href{https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/models/modeling_tarsier.py}{模型封装} 与 \href{https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/evaluation/evaluate.py}{评价入口}：描述模型怎样被调用与评价。
 \end{itemize}
 
-选 checkpoint 时同时匹配 Tarsier/Tarsier2 的 processor 和配置。描述生成完成后，仍应抽检动作遗漏、时序和事实；自动生成文本不等于获得无误差监督。
+checkpoint 还要同时匹配 Tarsier/Tarsier2 的 processor 和配置。得到描述文本之后，再检查动作是否遗漏、顺序是否正确、有没有虚构事实；自动产出了文字，还不等于得到了无误差监督。
 
 \section{实际选型时怎样组合}\label{seedance-m15-ux5b9eux9645ux9009ux578bux65f6ux600eux6837ux7ec4ux5408}
 
 基础推理可从 Wan 开始，业务微调可用 DiffSynth；已有主体参考需求可先看 Phantom-Wan 的推理结构，长视频单独研究 LongLive；多轮图像编辑看 VINCIE，统一视频条件看 VACE，区域中间表示看 VideoCoF，联合音视频另选配套的 LTX 路线；数据生产由描述工具支持，策略优化放在基础数据和目标稳定之后。
 
-它们可以共享任务规格、素材和评价方法，但训练入口、权重、scheduler 和条件接口并不自动兼容。只有明确需要修改的接口时，才把某个机制迁入另一个基座。
+所以任务规格、素材和评价可以共享，训练入口、权重、scheduler 与条件接口却要分别核对。只有明确某个基座缺哪条连接、另一方法怎样补上它，迁移才有具体含义。
 
 10个仓库的11份固定版本记录与57个代码/配置入口登记在 \href{https://github.com/foocker/multimodal-journey/blob/0f1b6bb86d609d75d8c2582063d85707d0180d39/sources/code.json}{sources/code.json}。需要阅读固定版本时，可以使用以下形式获取源码；安装、权重与启动参数以相应版本的说明为准：
 

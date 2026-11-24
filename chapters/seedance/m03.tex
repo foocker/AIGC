@@ -1,15 +1,16 @@
 % Imported from algorithms/diffusion-transformers/README.md
-\chapter{M03 时空 DiT 与多模态注意力}\label{seedance-m03}
+\chapter{时空 DiT 与多模态注意力}\label{seedance-m03}
 \moduleinfo{M03}{基础方法与机制解释}{\hyperref[src-seedance-1.0]{\texttt{seedance-1.0}}、\hyperref[src-dit]{\texttt{dit}}、\hyperref[src-video-dit-scaling-laws]{\texttt{video-dit-scaling-laws}}、\hyperref[src-wan-2.1]{\texttt{wan-2.1}}、\hyperref[src-wan21-code]{\texttt{wan21-code}}、\hyperref[src-vincie-code]{\texttt{vincie-code}}}
 
+位置有了定义，再看主干内部的时空注意力怎样组织序列与文本交互。
 
-视频生成主干接收的通常不是 RGB 像素，而是 VAE 压缩后的带噪潜变量。它要完成两种关联：画面中的物体应与文本要求一致，同一个物体在连续时间里也应保持合理运动。空间与时间解耦的 DiT，把这两种关联拆到交替执行的注意力层中，以降低全时空建模的成本。
+速度回归的目标已经确定，接下来才是用什么网络表示它。主干读入 VAE 的带噪潜变量，一方面要让画面符合文本，另一方面要让同一物体沿时间连续运动。若把所有时空位置一次全部相连，成本很高；空间与时间解耦的 DiT 就把这两种交互拆到交替执行的注意力层中。
 
 \section{潜变量怎样进入 Transformer}\label{seedance-m03-ux6f5cux53d8ux91cfux600eux6837ux8fdbux5165-transformer}
 
 设视觉潜变量形状为 \codepath{B×C×T×H×W}。将每个网格位置投影到隐藏维度 \(d\)，得到 \codepath{B×T×H×W×d}，再按注意力层需要组织成序列。文本经过编码器后也投影到可交互的特征空间。
 
-有的模型先把多个潜空间位置合成一个 patch，有的直接把每个位置作为 token。没有 patchification 仍然需要输入投影，不能把潜变量通道数直接当成全部注意力头的维度。
+这里先分清 token 和通道。有的模型把多个潜位置拼成 patch，有的直接把一个位置当一个 token；后者仍要做输入投影。VAE 给出每个位置存什么，投影决定主干用多宽的特征计算，不能直接把潜通道数当成所有注意力头的维度。
 
 \begin{figure}
 \centering
@@ -17,27 +18,29 @@
 \caption{空间层与时间层交替组成的视频生成主干 （论文示意，来源：seedance-1.0）}
 \end{figure}
 
-图中空间块同时处理视觉和文本，时间块处理视觉序列。两者的分工让语义约束能够在空间层进入画面，再通过后续时空交互影响运动。
+按图中的顺序，空间块先让视觉与文本发生交互，时间块再沿视觉序列传播信息。于是文本的语义约束可以先进入画面，随后通过交替的时空计算影响运动。这里的分工来自具体计算图，不能只从“DiT”这个名称判断。
 
 \section{空间层怎样融合文字与画面}\label{seedance-m03-ux7a7aux95f4ux5c42ux600eux6837ux878dux5408ux6587ux5b57ux4e0eux753bux9762}
 
-MMDiT 为视觉与文本保留各自的归一化、QKV 投影和前馈网络，再把两种模态的 Q、K、V 沿 token 维拼接：
+MMDiT 再把文本也看成可更新的流。视觉与文本各自先经过归一化、QKV 投影和前馈网络，随后沿 token 维拼接，得到：
 
 \[
 Q=[Q_v;Q_c],\qquad K=[K_v;K_c],\qquad V=[V_v;V_c].
 \]
 
-联合自注意力计算为：
+拼接后，两种模态的 query 都能读取联合的 key/value，因此一次自注意力写为：
 
 \[
 Y=\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_h}}+A\right)V.
 \]
 
+从这个式子还可以按行拆回视觉与文本输出。两种模态都给 query，就都取得更新；它们的参数仍可各自独立。因此“特征先分路、注意力时拼接”和“所有层都共享参数”不是同一个意思。
+
 \(d_h\) 是单头维度，\(A\) 是可见性掩码。视觉 query 可以读取文本 key/value，文本 query 也能读取视觉 key/value；输出再拆回两种模态，各自经过投影、残差和前馈网络。
 
-这与单向文本交叉注意力不同。后者通常只由视觉生成 query，文本提供 key/value，输出仍是视觉序列。不能把``文本是条件''统一解释成``文本永远只出 K/V''。
+从输出的 query 行就能看出区别。单向文本 cross-attention 通常由视觉给 query，文本只给 key/value，因此只返回视觉序列；联合自注意力则也返回文本对应的更新。说“文本作为条件”还不够，必须继续说明文本在这次计算中究竟是哪一种角色。
 
-梯度也不会按``先 Q、再 K、最后 V''的固定顺序决定谁更重要。它沿整个计算图对各条路径求导；参数是否更新，取决于路径是否可达以及是否被冻结。Q/K normalization 则是控制注意力数值尺度的一种手段。
+反向传播也沿这整张计算图进行，不存在先看 Q、再看 K、最后看 V 的重要性排序。哪些参数更新，要看梯度路径和冻结设置。Q/K normalization 另用于控制注意力的数值尺度，与文本是否产生 query 是两个问题。
 
 \section{时间层存在两种不同的组织方式}\label{seedance-m03-ux65f6ux95f4ux5c42ux5b58ux5728ux4e24ux79cdux4e0dux540cux7684ux7ec4ux7ec7ux65b9ux5f0f}
 
@@ -72,7 +75,7 @@ Y=\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_h}}+A\right)V.
 
 \section{复杂度为什么要乘回帧数和位置数}\label{seedance-m03-ux590dux6742ux5ea6ux4e3aux4ec0ux4e48ux8981ux4e58ux56deux5e27ux6570ux548cux4f4dux7f6eux6570}
 
-只考虑每个注意力头的 token 连接数，四种结构的成本分别为：
+下面暂时不计投影和前馈，只数一个注意力头中的 token 连接。把每种序列有多长、重复几组写出来，成本就比较清楚了：
 
 \[
 \begin{aligned}
@@ -99,7 +102,7 @@ C_{\mathrm{window}}&=\frac{P}{m}(Tm)^2=PT^2m.
 
 线性层作用于最后的特征维度 \(d\)，权重不含 token 数 \(N\)。增加分辨率主要增加 token 行数，因此参数形状可以保持不变；LayerNorm 的参数同样沿特征维度定义。
 
-形状合法却不等于质量可靠。更大的位置范围、不同宽高比、物体在窗口间移动和长序列训练分布，都可能改变生成效果。扩展模型时，应分别检查张量是否合法、算力是否可承受、生成是否仍然正确，而不能只因为前向没有报错就认为完成了分辨率适配。
+不过，参数形状能复用，只回答了网络能否计算。位置范围变大、宽高比改变、物体跨窗口移动，以及长序列训练分布不同，都还会影响生成。因而分辨率适配要接着看算力与结果质量，前向不报错只是其中一步。
 
 \section{从极简代码到真实实现}\label{seedance-m03-ux4eceux6781ux7b80ux4ee3ux7801ux5230ux771fux5b9eux5b9eux73b0}
 

@@ -4,7 +4,7 @@
 \author{Sisyphes}
 \institute{AIGC 技术笔记}
 \date{2026年11月24日}
-\version{0.2 · 本地审阅稿}
+\version{0.6 · 结构与行文修订稿}
 \logo{logo-blue.png}
 \cover{cover.jpg}
 \definecolor{customcolor}{RGB}{32,178,170}
@@ -26,8 +26,9 @@
 本文候选结构与算术示例分别说明；精确的 LTX 配置不能解读为 Seedance 的内部参数。
 所有未披露的 Seedance 2.5 实现仍是推测，组合方案尚未进行训练或业务验证。
 
-先读数学导读与 M01--M05 可掌握基本链路；希望先了解整体方案，可读 M27，
-再回到 M19--M26 检查模块、数据与执行细节。模块编号与来源仓库保持一致。
+先读第一章的整体网络和联合块结构图，再按表示、条件、主干、目标与采样的顺序阅读各模块。
+数据训练、替代实现与最终方案放在后面；M00--M27 保留为来源索引，不代表正文先后。
+正文按基础理论部分的写法展开问题、定义与计算关系，原公式、数据表、代码与出处继续保留。
 \tableofcontents
 \mainmatter
 \input{chapters/seedance/contents}

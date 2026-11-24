@@ -1,0 +1,1609 @@
+\part{扩散模型基础}
+\chapter{零}
+\section{符号说明}
+\begin{itemize}
+    \item 采样步数 $s$
+    \item 噪声 $z$
+    \item 参数 $\theta$
+    \item 原始样本 $x_0$
+    \item  扰动核： $p_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}):=\mathcal{N}\left(\tilde{\mathbf{x}} ;\mathbf{x}, \sigma^2 \mathbf{I}\right)$
+    \item 扰动数据分布：$p_\sigma(\tilde{\mathbf{x}}):=\int p_{\text {data }}(\mathbf{x})p_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) \mathbf{d} \mathbf{x}$
+    \item 扰动数据的分布分数：$\nabla_{\mathbf{x}} \log p_{\alpha_i}(\mathbf{x})$
+    \item 噪声条件网络优化目标：$\boldsymbol{\theta}^*=\underset{\boldsymbol{\theta}}{\arg \min } \sum_{i=1}^N \sigma_i^2 \mathbb{E}_{p_{\mathbf{data}}(\mathbf{x})} \mathbb{E}_{p_{\sigma_i}(\tilde{\mathbf{x}} \mid \mathbf{x})}\left[\left\|\mathbf{s}_{\boldsymbol{\theta}}\left(\tilde{\mathbf{x}}, \sigma_i\right)-\nabla_{\tilde{\mathbf{x}}} \log p_{\sigma_i}(\tilde{\mathbf{x}} \mid \mathbf{x})\right\|_2^2\right]$
+    \item  原始数据分布: $p_x$， 先验分布 $p_T$
+    \item 连续采样步数：$t \in [0, T]$
+    \item 连续扩散过程的变量：${x(t)}_{t=0}^{T}$
+    \item 离散扩散过程变量：$x_0,x_1,\ldots,x_T$。
+    \item Itô SDE：$\mathbf{d} \mathbf{x}=\mathbf{f}(\mathbf{x}, t) \mathbf{d} t+g(t) \mathbf{d} \mathbf{w}$
+    \item  前向SDE：$\mathbf{d} \mathbf{x}=\mathbf{f}(\mathbf{x}, t) \mathbf{d} t+g(t) \mathbf{d} \mathbf{w}$
+    \item $x(t)$的drift coefficient：$\mathbf{f}(\cdot, t): \mathbb{R}^d \rightarrow \mathbb{R}^d$
+    \item $x(t)$的diffusion coefficient：$g(\cdot):\mathbb{R} \rightarrow \mathbb{R}$
+    \item 反向SDE：$\mathbf{d} x=\left[f(x, t)-g^2(t) \nabla_x \log p_t(x)\right] \mathbf{d} t+g(t) \mathbf{d} \bar{w}$，其中$\bar{w}$是标准维纳过程，时间从$T$到$0$，$dt$也是负向。
+    \item standard Wiener proces(Brownian motion)：$\boldsymbol{w}$
+    \item $\mathbf{x}(s)$到$\mathbf{x}(t)$的转移核：$p_{s t}(\mathbf{x}(t) \mid \mathbf{x}(s)),0 \leqslant s<t \leqslant T$
+    \item probability flow ODE：与指定前向 SDE 共享逐时边缘密度的确定性流，见连续版 Score SDE。
+    \item ELBO：证据下界，最大化它；若作为损失最小化，则使用它的负值。
+
+\end{itemize}
+\section{一些废话}
+不重复生产，因此部分使用了两个博客的原文部分内容，和一些研究者的见解，在统一符号上做了一些调整。另外我发现，知乎用户
+\href{https://www.zhihu.com/people/bai-e-ji-wan-qi}{Hammour Yue}很早开始写了，写得比较系统，在得到他同意的情况下，后面有些文章
+我会cp他的原文，或做部分修改(公式细节上存在错误)。
+\subsection{无中生有}
+。
+\subsection{翻译}
+将问题翻译为计算机数学语言，将计算机数学语言翻译为数学语言，将代数翻译为几何，将模糊翻译为半模糊，
+将清晰翻译为模糊，将模糊翻译为模糊，将模糊翻译为清晰，将公式翻译为比喻，将公式翻译为代码，
+将代码翻译为业务代码，将论文翻译为项目，将项目翻译为产品部分...
+
+\chapter{总体介绍}
+
+\begin{itemize}
+  \item 模板官网：\href{https://elegantlatex.org/}{elegantlatex.org}
+  \item 模板GitHub 地址：\href{https://github.com/ElegantLaTeX/}{ElegantLaTeX}
+  \item 项目地址：\href{https://github.com/foocker/AIGC}{Sisyphes}
+  \item 作图工具：\href{https://www.geogebra.org/?lang=en}{geogebra}
+\end{itemize}
+
+\section{基本介绍}
+
+\input{chapters/theory/additions/intro}
+
+
+
+
+\section{学术进展}
+\begin{enumerate}
+  \item \href{https://lilianweng.github.io/posts/2021-07-11-diffusion-models/}{什么是扩散模型}
+  \item \href{http://yang-song.net/blog/2021/score/}{什么是分数生成模型}
+  \item \href{https://arxiv.org/abs/1907.05600}{NCSN Yang, Ermon, 2019}
+  \item \href{https://arxiv.org/abs/2006.11239}{DDPM; Ho et al. 2020}
+  \item \href{https://www.stats.ox.ac.uk/~teh/research/compstats/WelTeh2011a.pdf}{stochastic gradient Langevin dynamics Welling , Teh 2011}
+  \item \href{http://www.iro.umontreal.ca/~vincentp/Publications/smdae_techreport.pdf}{denoising/slice score matching 2011}
+  \item \href{https://arxiv.org/abs/1503.03585}{Deep Unsupervised Learning using Nonequilibrium Thermodynamics 2015}
+  \item \href{https://arxiv.org/abs/2102.09672}{Improved Denoising Diffusion Probabilistic Models 2021}
+  \item \href{https://arxiv.org/abs/2112.10752}{High-Resolution Image Synthesis with Latent Diffusion Models 2022}
+  \item \href{https://openreview.net/forum?id=qw8AKxfYbI}{Classifier-Free Diffusion Guidance 2021}
+  \item \href{https://sassafras13.github.io/ReparamTrick/}{Reparameterization Trick}
+  \item \href{https://kexue.fm/archives/6705}{漫谈重参数：从正态分布到Gumbel Softmax}
+  \item \href{https://github.com/YangLing0818/Diffusion-Models-Papers-Survey-Taxonomy}{SD综述和应用}
+  \item \href{https://github.com/facebookincubator/AITemplate/tree/main/examples/05_stable_diffusion}{AIT-SD}
+  \item \href{https://github.com/NVIDIA/TensorRT/tree/release/8.6/demo/Diffusion}{TRT-SD}
+  \item \href{https://github.com/Oneflow-Inc/diffusers}{Oneflow-SD}
+  \item \href{https://github.com/huggingface/peft}{PEFT}
+\end{enumerate}
+
+\chapter{数学基础}
+
+\section{高斯分布、熵，KL散度、重参数}
+
+\href{https://en.wikipedia.org/wiki/Evidence_lower_bound}{Evidence lower bound}
+定义：设$X, Z$ 是随机变量，其联合分布为$p_{\theta}$.比如$p_{\theta}(X)$是关于$X$的边缘分布，$p_{\theta}(Z|X)$是给定$X$关于$Z$的条件分布。于是有，对于样本$x \sim p_{\theta}$,对任意分布$q_{\phi}$，其ELBO定义为：
+\begin{equation}
+L(\phi, \theta ; x):=\mathbb{E}_{z \sim q_\phi(\cdot \mid x)}\left[\ln \frac{p_\theta(x, z)}{q_\phi(z \mid x)}\right]
+\end{equation}
+等价形式为：
+
+\begin{equation}
+\begin{aligned}
+L(\phi, \theta ; x) & 
+=\mathbb{E}_{z \sim q_\phi(\cdot \mid x)}\left[\ln p_\theta(x, z)
+\right]+H\left[q_\phi(z \mid x)\right] \\ & 
+=\ln p_\theta(x)-D_{K L}\left(q_\phi(z \mid x) \| p_\theta(z \mid x)\right) .
+\end{aligned}
+\end{equation}
+
+其中$H$表示熵，$\ln p_{\theta}$为$x$的证据，而KL散度非负，因此
+$\ln p_{\theta} \geq \mathbb{E}_{z \sim q_\phi(\cdot \mid x)}
+\left[\ln \frac{p_\theta(x, z)}{q_\phi(z \mid x)}\right]
+$
+
+\href{https://github.com/janishar/mit-deep-learning-book-pdf}{deeplearningbook 2016} 或者
+\href{https://www.deeplearningbook.org/contents/autoencoders.html}{deeplearningbook 2016 autoencoders} 
+这里要核对的是目标的符号：ELBO 是对数似然的下界；本文后面最小化的 $L_{\rm VLB}$ 是负 ELBO，即负对数似然的上界。VLB 的命名在不同资料中并不完全统一。
+\href{https://github.com/goodfeli/dlbook_notation}{dlbook notation 2016}
+
+\href{https://www.inf.ed.ac.uk/teaching/courses/fmcs1/slides/lecture25.pdf}{Evidence lower bound 讲义}
+\href{https://en.wikipedia.org/wiki/Entropy\_(information\_theory)}{Entropy information theory }
+
+\begin{equation}
+\mathbf{H}(X):=-\sum_{x \in \mathcal{X}} p(x) \log p(x)
+\end{equation}
+
+\href{https://planetmath.org/shannonsentropy}{shannonsentropy}。
+
+两个一元高斯分布的KL散度公式：
+\begin{equation}
+K L\left(\mathcal{N}\left(\mu_1, \sigma_1^2\right)|| 
+\mathcal{N}\left(\mu_2, \sigma_2^2\right)\right)=
+\log \frac{\sigma_2}{\sigma_1}-\frac{1}{2}+\frac{\sigma_1^2+
+\left(\mu_1-\mu_2\right)^2}{2 \sigma_2^2}
+\end{equation}
+
+多元的参考:\href{https://mr-easy.github.io/2020-04-16-kl-divergence-between-2-gaussian-distributions/}{kl-divergence-between-2-gaussian-distributions}
+
+重参数技巧：\href{https://lilianweng.github.io/posts/2018-08-12-vae/#reparameterization-trick}{reparameterization-trick}
+
+\input{chapters/theory/additions/gaussian-reparam}
+
+
+\section{贝叶斯定理}
+关于先验，后验，极大似然，似然函数等
+
+\input{chapters/theory/additions/bayes}
+
+
+\section{Fisher score 、Stein score}
+Fisher score
+\href{https://zh.wikipedia.org/wiki/%E8%B4%B9%E5%B8%8C%E5%B0%94%E4%BF%A1%E6%81%AF}{费希尔信息}
+
+Stein score 
+\href{https://projecteuclid.org/ebooks/berkeley-symposium-on-mathematical-statistics-and-probability/Proceedings-of-the-Sixth-Berkeley-Symposium-on-Mathematical-Statistics-and/chapter/A-bound-for-the-error-in-the-normal-approximation-to/bsmsp/1200514239}{A bound for the error in the normal approximation to
+the distribution of a sum of dependent random variables. 1972}
+\href{http://proceedings.mlr.press/v48/chwialkowski16.pdf}{A Kernel Test of Goodness of Fit 2016}
+\href{https://arxiv.org/pdf/1602.03253.pdf}{A Kernelized Stein Discrepancy for Goodness-of-fit Tests 2016}
+定义2.1给出了概率分布$p$的Stein score function。该定义从Stein 1972年写的一篇文章中抽取出来，相关内容可参考\href{https://en.wikipedia.org/wiki/Stein%27s_method}{Stein's method}。
+
+\input{chapters/theory/additions/score-definitions}
+
+
+
+\section{Markov chain Monte Carlo}
+\href{https://zhuanlan.zhihu.com/p/37121528}{马尔可夫链蒙特卡罗算法（MCMC）}
+\href{https://web.math.ucsb.edu/~atzberg/pmwiki_intranet/uploads/AtzbergerHomePage/Atzberger_MonteCarlo.pdf}{The Monte-Carlo Method}
+\href{https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo}{Markov chain Monte Carlo}
+
+\input{chapters/theory/additions/mcmc}
+
+
+\section{证据下界或变分下界}
+对于给定前向过程，
+$q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)=\mathcal{N}\left(\mathbf{x}_t ; \sqrt{1-\beta_t} \mathbf{x}_{t-1}, 
+\beta_t \mathbf{I}\right) \quad q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)=
+\prod_{t=1}^T q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)$，
+逆向过程用$p_{\theta}$表示，
+$p_\theta\left(\mathbf{x}_{0: T}\right)=p\left(\mathbf{x}_T\right) 
+\prod_{t=1}^T p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right) \quad p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)=
+\mathcal{N}\left(\mathbf{x}_{t-1} ; 
+\boldsymbol{\mu}_\theta\left(\mathbf{x}_t, t\right), \mathbf{\Sigma}_\theta\left(\mathbf{x}_t, t\right)\right)
+$，
+数据的负对数似然为$-\log p_{\theta}(x_0)$，$x_0$属于训练数据空间中的元素，一种常见的变分下界推导方式是给负对数似然增加一个非负的 KL 项，
+关于在给定数据的情况下，过程数据的条件联合分布函数 从正向和反向两个角度得到，他们的KL散度值。加上这个项，整个就能训练了，因此可叫训练项目。
+\begin{equation}
+  \begin{aligned}
+    -\log p_\theta\left(\mathbf{x}_0\right) 
+    & \leq-\log p_\theta\left(\mathbf{x}_0\right)+D_{\mathbf{KL}}\left(q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right) \| p_\theta\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)\right) \\ 
+    & =-\log p_\theta\left(\mathbf{x}_0\right)+\mathbb{E}_{\mathbf{x}_{1: T} \sim q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)}\left[\log \frac{q\left(\mathbf{x}_{1: T} 
+    \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{0: T}\right) / p_\theta\left(\mathbf{x}_0\right)}\right] \\ 
+    & =-\log p_\theta\left(\mathbf{x}_0\right)+\mathbb{E}_q\left[\log \frac{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{0: T}\right)}+\log p_\theta\left(\mathbf{x}_0\right)\right] \\ 
+    & =\mathbb{E}_q\left[\log \frac{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{0: T}\right)}\right] \\ \text { Let } L_{\mathbf{VLB}} & =\mathbb{E}_{q\left(\mathbf{x}_{0: T}\right)}
+    \left[\log \frac{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{0: T}\right)}\right] 
+    \geq-\mathbb{E}_{q\left(\mathbf{x}_0\right)} \log p_\theta\left(\mathbf{x}_0\right)
+  \end{aligned}
+\end{equation}
+
+从交叉熵的角度，根据Jensen's不等式，也能得出变分下界：
+\begin{equation}
+  \begin{aligned} L_{\mathbf{CE}} 
+    & =-\mathbb{E}_{q\left(\mathbf{x}_0\right)} \log p_\theta\left(\mathbf{x}_0\right) \\ 
+    & =-\mathbb{E}_{q\left(\mathbf{x}_0\right)} \log \left(\int p_\theta\left(\mathbf{x}_{0: T}\right) d \mathbf{x}_{1: T}\right) \\ 
+    & =-\mathbb{E}_{q\left(\mathbf{x}_0\right)} \log \left(\int q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right) \frac{p_\theta\left(\mathbf{x}_{0: T}\right)}{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)} d \mathbf{x}_{1: T}\right) \\ 
+    & =-\mathbb{E}_{q\left(\mathbf{x}_0\right)} \log \left(\mathbb{E}_{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)} \frac{p_\theta\left(\mathbf{x}_{0: T}\right)}{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)}\right) \\ 
+    & \leq-\mathbb{E}_{q\left(\mathbf{x}_{0: T}\right)} \log \frac{p_\theta\left(\mathbf{x}_{0: T}\right)}{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)} \\ 
+    & =\mathbb{E}_{q\left(\mathbf{x}_{0: T}\right)}\left[\log \frac{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{0: T}\right)}\right]=L_{\mathbf{VLB}}
+  \end{aligned}
+\end{equation}
+通过一步一步的推导，多步变分下界 可以写为 多个KL散度和熵的和。这一过程，原因在于扩散扩散的一条马尔科夫链。
+整个过程是比较简单的，核心在等式第五行的一个贝叶斯转换，转换的原因在于给定扩散过程，逆向转移在给定$x_0$的基础上，能被具体的计算出来。
+
+\input{chapters/theory/additions/elbo-bridge}
+
+
+
+
+
+
+
+\section{SDE}
+本小节的\href{https://zhuanlan.zhihu.com/p/619188621}{摘录源}，并作了少量细节修改，和补充内容。
+
+\begin{definition}
+  设随机变量序列$\left\{X_n, n=1,2, \ldots\right\}$和随机变量$ X$的二阶矩有限，若均方极限：
+  \begin{equation}
+    \lim _{n \rightarrow \infty} E\left|X_n-X\right|^2=0
+  \end{equation}
+ 则称为$X_n$ 均方收敛于$X$ ，记作  $\mathrm{l.i.m}_{n \rightarrow \infty} X_n=X$或者$X_n \xrightarrow{m . s} X$。
+ 其中记号 l.i.m代表Limit in mean square。
+\end{definition}
+
+\begin{theorem}
+  若$\mathrm{l.i.m}_{n \rightarrow \infty} X_n=X$，则：
+  \begin{equation}
+    \lim _{n \rightarrow \infty} E\left(X_n\right)=E\left(\text { l.i. } \mathrm{m}_{n \rightarrow \infty} X_n\right)
+  \end{equation}
+\end{theorem}
+
+\begin{proof}
+  因为$D(Y)=E Y^2-E^2 Y$，所以$E^2Y = EY^2 - D(Y) \leq EY^2$，故：
+  \begin{equation}
+    \left|E\left(X_n-X\right)\right| \leq \sqrt{E\left|X_n-X\right|^2}
+  \end{equation}
+  当$n->\infty$时，由条件已$\lim _{n \rightarrow \infty} E\left|X_n-X\right|^2=0$，也即
+  $\lim _{n \rightarrow \infty} E X_n=E X=E\left(\right.$ l.i. $\left.\mathrm{m}_{n \rightarrow \infty} X_n\right)$
+\end{proof}
+定理3.1说明了，若均方极限存在，那么普通极限和均方极限在期望下可以交换位置。
+
+\begin{theorem}
+  若$\mathrm{l.i.m}_{n \rightarrow \infty} X_n=X$，则 $X_n$依概率收敛于 $X$。
+\end{theorem}
+
+\begin{proof}
+  对非负随机变量 $|X_n-X|^2$ 使用 Markov 不等式可知：
+  $$
+  \forall \varepsilon>0, P\left(\left|X_n-X\right|>\varepsilon\right) \leq \frac{E\left|X_n-X\right|^2}{\varepsilon^2}
+  $$
+  由于$\lim _{n \rightarrow \infty} E\left|X_n-X\right|^2=0$，由定理3.1可知，$\lim _{n \rightarrow \infty} E\left|X_n-X\right|=0$，
+  所以$\lim _{n \rightarrow \infty} P\left(\left|X_n-X\right|>\varepsilon\right) \rightarrow 0$，即$X_n$依概率收敛于$X$。
+\end{proof}
+
+\begin{definition}
+  如果随机过程 $\{X(t), t\in T\}$满足下式，对于$t_0, t_0 + \Delta t \in T $，有：
+  $$
+\lim _{\Delta t \rightarrow 0} E\left|X\left(t_0+\Delta t\right)-X\left(t_0\right)\right|^2=0
+$$
+也即：
+$$
+\operatorname{l.i.m}_{\Delta t\to0} X\left(t_0+\Delta t\right)=X\left(t_0\right)
+$$
+则称$X(t)$在$t_0$处均方连续。若 $X(t)$在每一点 $t \in T$处均方连续，则称 $X(t)$在$T$上均方连续。
+\end{definition}
+由定理3.2可知，均方收敛则依概率收敛，故$\Delta t \rightarrow 0, \forall \varepsilon, \forall \eta, P\left(\left|X\left(t_0+\Delta t\right)-X\left(t_0\right)\right|>\varepsilon\right)<\eta$。
+这说明当时间做出微小的扰动$\Delta t$时，$X(t_0 + \Delta t) - X(t_0)$的偏差大于$\epsilon$的事件几乎不可能出现，这也是随机过程中连续性的统计物理意义。
+
+\begin{definition}
+  若随机过程 $\{ X(t), t \in T \}$ 在$t_0$处下，均方极限：
+  \begin{equation}
+    \operatorname{l.i.m}_{\Delta t\to0}\frac{X(t_0+\Delta t)-X(t_0)}{\Delta t}=Y
+    \end{equation}
+  存在，则称此极限为$X(t)$在$t_0$处的均方导数，记作$X^{\prime}(t_0)$或$\left.\frac{d X(t)}{d t}\right|_{t=t_0}$，
+  也称$X(t)$在$t_0$处均方可导。
+
+  若$X(t)$在每一点$t \in T$处均方可导，则称$X(t)$在$T$上均方可导或均方可微，记作$X^{\prime}(t)$或
+  $\frac{d X(t)}{d t}$ ，是一个新的随机过程。
+\end{definition}
+
+均方导数具有普通导数的类似性质：
+
+\begin{property}
+  \begin{itemize}
+    \item[1.]  均方可导则均方连续；
+    \item[2.]  若$X(t)$和$Y(t)$都在$T$上均方可导，$a, b$为常数，则$[a X(t)+b Y(t)]^{\prime}=a X^{\prime}(t)+b Y^{\prime}(t)$；
+    \item[3.]  $X(t)$均方导数的均值函数为$E(X^{\prime}(t))=\frac{d}{dt}E(X(t))$ ，前者对随机过程求导，后者对普通函数求导。
+  \end{itemize}
+\end{property}
+类似的可以定义$n$阶均方导数为：
+\begin{equation}
+  X^{(n)}(t)=\text { l.i.m }_{\Delta t \rightarrow 0} \frac{X^{(n-1)}\left(t_0+\Delta t\right)-X^{(n-1)}\left(t_0\right)}{\Delta t}, n=1,2, \ldots
+  \end{equation}
+
+\begin{definition}
+  设随机过程$\{X(t), t \in T =[a, b] \}$，$f(t)$为任意普通函数。将$[a, b]$分成$n$个子区间，分点为$a=t_0 < t_1 < ... < t_n = b$，
+  记：
+  $Delta t = max(t_k - t_{k-1}) = max \Delta t_k, k \in [1, n]$作和式：
+  \begin{equation}
+    \begin{array}{rlr}
+    Y_n & =\sum_{k=1}^n f\left(\xi_k\right) X\left(\xi_k\right)\left(t_k-t_{k-1}\right) & \\
+    & =\sum_{k=1}^n f\left(\xi_k\right) X\left(\xi_k\right) \Delta t_k & \xi_k \in\left[t_{k-1}, t_k\right]
+    \end{array}
+  \end{equation}
+如果在$\Delta t \rightarrow 0$时，$Y_n$均方收敛于$Y$，$Y$是一个不依赖子区间和$\xi_k$取法，则称$f(t)X(t)$
+在$T=[a, b]$上均方可积，并称$Y_n$的极限$Y$为$f(t)X(t)$在$T=[a, b]$上的均方积分，记为：
+\begin{equation}
+  \begin{aligned}
+  Y & =\int_a^b f(t) X(t) d t \\
+  & =\operatorname{li.}_{\Delta t \rightarrow 0} \sum_{k=1}^n f\left(\xi_k\right) X\left(\xi_k\right) \Delta t_k \quad \xi_k \in\left[t_{k-1}, t_k\right]
+  \end{aligned}
+  \end{equation}
+\end{definition}
+均方积分具有普通积分类似的性质，例如唯一性、线性可加性等。
+
+\begin{theorem}
+  若$X(t)$在$[a, b]$ 上均方连续，则：
+  \begin{equation}
+    \left[\int_a^t X(s) d s\right]^{\prime}=X(t)
+  \end{equation}
+\end{theorem}
+
+\begin{theorem}[牛顿-莱布尼茨公式]
+  设$X(t)$在$[a, b]$上均方可导，且$X^{\prime}(t)$在$[a, b]$上均方连续，则：
+  \begin{equation}
+    \int_a^b X^{\prime}(t) d t=X(b)-X(a)
+  \end{equation}
+\end{theorem}
+
+\begin{theorem}
+  若$X(t)$在$[a, b]$ 上均方可积，则：
+  \begin{equation}
+    E\left[\int_a^b X(t) d t\right]=\int_a^b E[X(t)] d t
+  \end{equation}
+\end{theorem}
+
+如同高等数学(数学分析)中的微分方程一样，在均方可导的意义下，同样具有所谓的随机微分方程的求解问题，其定义类似普通函数的微分方程。
+
+\begin{definition}
+  设随机过程$\{X(t), t \in T =[a, b] \}$与$\{Y(t), t \in T =[a, b] \}$，$Y(t)$的$n$阶均方导数$Y^{n}(t)$存在，$a_k(1 \leq k \leq n)$
+  为随机变量或常数，则称：
+  \begin{equation}
+    a_n Y^{(n)}(t)+a_{n-1}Y^{(n-1)}(t)+\ldots+a_1 Y^{\prime}(t)+a_0 Y(t)=X(t)
+  \end{equation}
+  为$n$阶线性随机微分方程。
+\end{definition}
+那么一阶线性随机微分方程就可以写成：
+\begin{equation}
+  dY = f(X, Y) dt
+\end{equation}
+
+\textbf{小结}：这一节简要介绍了均方微积分的定义和性质，其中最关键的是给出了均方极限的定义，有了极限就可以定义连续性、可微性和可积性了。
+疑惑的是，从高等数学的角度出发，应该对应的是定义均值极限或者期望极限 $\lim_{n\rightarrow \infty}E|X_n - X|$，
+而为什么在随机分析中要定义均方极限呢？一个直观的理解角度是，因为随机变量具有期望和方差的数字特征，均值极限只考虑了期望，
+而均方收敛考虑了不仅考虑了期望，还考虑了方差，给出了更严格的收敛条件，这种收敛性质对于研究随机过程的稳定性和渐进性质非常有用。
+很多公式并没有给出严格的证明，严格证明是建立在测度论上的，这里侧重点是科普和实际应用，所以省去了纯数的非常严格的处理方式。
+介绍这些一方面说明了目前AI论文的一些基础在以实际应用为背景，或工科理论的严格性的前提下，需要做的理论上的工作，
+另一方面也可以给实际工程工作中，带来对相关知识的理解和更好的直觉的可能。
+
+\subsection{布朗运动}
+考虑一条直线上的简单的，对称的随机游动。假设质点每经过$\Delta t$时间，随机地向左或者右移动$\Delta x$个单位，向左向右移动的概率均为
+$1/2$，且每次移动互相独立，记：
+\begin{equation}
+  X_i= \begin{cases}1, & \text { 质点第 } i \text { 次向右移动 } \\ -1, & \text { 质点第 } \boldsymbol{i} \text { 次向左移动 }\end{cases}
+\end{equation}
+若$X(t)$表示时间$t$时刻质点的位置，则$X(t)=\Delta x(X_1 + X_2 + \dots + X_{[\frac{t}{\Delta t}]})$，其中$[x]$表示不超过$x$
+的最大整数。有：
+
+$EX_i = 0, DX_i = EX^2_i - E^2X_i = 1, E[X(t)]=0, D[X(t)]=[\frac{t}{\Delta t}](\Delta x)^2$
+
+考虑$\Delta \rightarrow 0$，那么$\Delta x \rightarrow 0$，要使$D[X(t)]$收敛且数值稳定，一般令$\Delta x=c\sqrt{\Delta t}$。
+此时$D[X(t)]=c^2t$。另外，$X(t)$可以看做$X(t_i) - X(t_{i-1})$独立同分布随机变量之和，故由中心极限定理可知：
+\begin{equation}
+  \lim _{\Delta t \rightarrow 0} P\left\{\frac{\sum_{i=0}^{\left[\frac{t}{\Delta t}\right]} \Delta x X_i-0}{\sqrt{c^2 t}} \leq x\right\}=\Phi(x)
+\end{equation}
+也即：
+\begin{equation}
+  \lim _{\Delta t \rightarrow 0} P\left\{\frac{X(t)}{\sqrt{c^2 t}} \leq x\right\}=\Phi(x)=\frac{1}{\sqrt{2 \pi}} \int_{-\infty}^x e^{-\frac{u^2}{2}} d u
+\end{equation}
+所以$X(t)$趋向正态分布，即$\Delta t \rightarrow 0, X(t) \sim N(0, c^2t)$。
+
+\begin{definition}
+  若一个随机过程$\{X(t), t \geq 0 \}$满足
+  \begin{itemize}
+    \item[1.] $X(t)$是独立增量过程；
+    \item[2.] $\forall s, t>0, X(s+t)-X(s) \sim N\left(0, c^2 t\right)$；
+  \end{itemize}
+  则称随机过程$\{X(t), t \geq 0 \}$为\textbf{布朗运动}记为$B(t)$，或\textbf{维纳过程}记为$W(t)$。
+  后续统称用$W(t)$表示。
+  若$c=1$，则称为标准布朗运动$B(t)\sim N(0, t)$。
+
+\input{chapters/theory/additions/brownian-conditions}
+
+\end{definition}
+
+\textbf{小结}：这一节通过随机游走过程导出了布朗运动的定义。从微观的角度来看，给定一个位置，时间间隔$\Delta t$
+非常小的情况下，质点下次出现的地点距离原始的距离服从$N(0, \Delta t)$；从宏观角度看，在经过 
+$t$时间后，质点出现的地点服从 $N(0, t)$，所以经过的时间越长，最后质点出现的地点越不好预测。
+\subsection{Itô积分}
+$W(t) - W(s)$表示布朗运动在两个时间节点$s$到$t$移动的矢量距离，至于在区间 $(s, t]$ 内如何移动是不能
+反映的。然后布朗运动在$(s, t]$内移动曲线长度是我们关心的量，因为它在布朗运动的积分中具有重要作用。
+在随机过程中，可以采用有界变差来描述随机运动的路径长度： 
+
+将时间区间 $[0, T]$ 进行划分: $0=t_0<t_1<\ldots<t_n=T$ ，那么在布朗运动 $\{W(t), t \geq 0\}$ 的每个小区间 $\left(t_i, t_{i+1}\right]$ 上的矢量距离为 $W\left(t_{i+1}\right)-W\left(t_i\right)$ ，所以曲线长度可以近似的表示为: $\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|$ 。那么总距离可以近似为:
+$$
+\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|
+$$
+
+当 $\delta=\max _{0 \leq i \leq n-1}\left\{t_{i+1}-t_i\right\} \rightarrow 0$ 时，布朗运动 $\{W(t), t \geq 0\}$ 的有界变差 $W V(T)$为:
+$$
+W V(T)=1 . \mathrm{i} . \mathrm{m}_{\delta \rightarrow 0} \sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|
+$$
+
+但遗憾的是，布朗运动的有界变差并不存在，利用布朗运动的概率密度函数可以得到 $E[W V(T)]=\infty$ 。
+
+因此自然地可以定义二阶变差 $[W, W]([0, T])$ :
+$$
+[W, W]([0, T])=\text { l.i.m } \mathrm{m}_{\delta \rightarrow 0} \sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2
+$$
+
+幸运的是布朗运动的二阶变差存在，且 $[W, W]([0, T])=T$ 。
+\begin{proof}
+  由于：
+  \begin{equation}
+    \begin{aligned}
+      E\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2\right] & =\sum_{i=0}^{n-1} E\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2 \\
+      & =\sum_{i=0}^{n-1} E^2\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)+\sum_{i=0}^{n-1} D\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right) \\
+      & =0+\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right) \\
+      & =T
+    \end{aligned}
+  \end{equation}
+  而：
+  \begin{equation}
+  \begin{aligned}
+    D\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2\right] & =\sum_{i=0}^{n-1} D\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2 \\
+    & =\sum_{i=0}^{n-1} 2\left(t_{i+1}-t_i\right)^2  \qquad(*)\\
+    & \leq 2 \delta \sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right) \\
+    & =2 \delta T
+  \end{aligned}
+\end{equation}
+上式(*)：设随机变量$X \sim N(\mu. \sigma^2)$，则矩母函数
+
+$$
+\begin{aligned}
+M(t) & =E\left[e^{t x}\right] \\
+& =\int e^{t x} f(x) d x \\
+& =\int e^{t x} \frac{e^{-\frac{(x-\mu)^2}{2\sigma^2}}}{\sqrt{2 \pi} \sigma} d x \\
+& =e^{\mu t+\frac{\sigma^2 t^2}{2}}
+\end{aligned}
+$$
+
+因此二阶矩 $E\left(X^2\right)=M^{\prime \prime}(0)=\mu^2+\sigma^2$ ，
+四阶矩 $E\left(X^4\right)=M^{(4)}(0)=3\sigma^4+6\mu^2\sigma^2+\mu^4$ ，所以:
+$$
+\begin{aligned}
+D\left(X^2\right) & =E\left[X^2-E\left(X^2\right)\right]^2 \\
+& =E\left[X^4-2 X^2 E\left(X^2\right)+E^2\left(X^2\right)\right] \\
+& =E\left(X^4\right)-E^2\left(X^2\right) \\
+& =2\sigma^4+4\mu^2\sigma^2
+\end{aligned}
+$$
+
+最后将 $\mu=0, \sigma^2=t_{i+1}-t_i$ 带入即可。
+所以：
+$$
+\begin{aligned}
+& \lim _{\delta \rightarrow 0} E\left|\sum_{i=0}^{n-1}\right| W\left(t_{i+1}\right)-\left.W\left(t_i\right)\right|^2-\left.T\right|^2 \\
+& =\lim _{\delta \rightarrow 0} E^2\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2-T\right]+\lim _{\delta \rightarrow 0} D\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2-T\right] \\
+& =0+\lim _{\delta \rightarrow 0} D\left[\sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2\right] \\
+& \leq\lim _{\delta \rightarrow 0} 2 \delta T=0
+\end{aligned}
+$$
+
+因为 $\delta \rightarrow 0$ ，所以 $n \rightarrow \infty$ ，最后:
+$$
+\lim _{\delta \rightarrow 0} E\left|\sum_{i=0}^{n-1}\right| W\left(t_{i+1}\right)-\left.W\left(t_i\right)\right|^2-\left.T\right|^2\leq\lim _{\delta \rightarrow 0} 2 \delta T=0
+$$
+
+根据均方极限的定义有:
+\begin{equation}
+  \text { l.i. } \mathrm{m}_{\delta \rightarrow 0} \sum_{i=0}^{n-1}\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|^2=T
+\end{equation}
+
+因此，布朗运动的二阶变差存在且为 $T$。
+\end{proof}
+
+上面的二次变差等式右边可写成 $\int_0^T\mathrm dt$。将增量 $W(t_{i+1})-W(t_i)$ 记为 $\mathrm dW$，便得到积分意义下的运算规则：
+\begin{equation}
+  dW dW = dt
+\end{equation}
+又 
+$$
+\begin{aligned}
+E\left[\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] & \leq \delta E\left[\sum_{i=0}^{n-1}\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] \\
+& =0
+\end{aligned}
+$$
+
+和:
+$$
+\begin{aligned}
+D\left[\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] & \leq \delta^2 D\left[\sum_{i=0}^{n-1}\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] \\
+& =\delta^2 T
+\end{aligned}
+$$
+
+因此:
+$$
+\begin{aligned}
+\lim _{\delta \rightarrow 0} E\left|\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right|^2 & =\lim _{\delta \rightarrow 0} D\left[\sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left(W\left(t_{i+1}\right)-W\left(t_i\right)\right)\right] \\
+& \leq \lim _{\delta \rightarrow 0} \delta^2 T \\
+& =0
+\end{aligned}
+$$
+即：
+$$
+\text { l.i. } \mathrm{m}_{\delta \rightarrow 0} \sum_{i=0}^{n-1}\left(t_{i+1}-t_i\right)\left|W\left(t_{i+1}\right)-W\left(t_i\right)\right|=0
+$$
+于是有：
+\begin{equation}
+  dt dW = 0
+\end{equation}
+
+\begin{definition}[Itô积分]
+  设被积过程 $g(X(t),t)$ 对布朗运动的滤过适应，并满足 $\mathbb E\int_0^T|g(X(t),t)|^2\,\mathrm dt<\infty$，若积分:
+  \begin{equation}
+    I=\int_0^T g(X(t), t) d W
+  \end{equation}
+  存在，即:
+$$
+\sum_{t=0}^{n-1} g\left(X\left(t_i\right), t_i\right)\left[W\left(t_{i+1}\right)-W\left(t_i\right)\right] \xrightarrow{m . s} I
+$$
+则称积分$I$为Itô积分。
+\end{definition}
+
+\begin{property}
+  \begin{equation}
+    E\left[\int_S^T g(X(t), t) d W\right]=0
+    \end{equation}
+\end{property}
+
+将均方微积分和Itô微积分结合一下：
+\begin{definition}[Itô随机微分方程]
+  形如
+  \begin{equation}
+    X(T)-X(0)=\int_0^T f(X(t), t) d t+\int_0^T g(X(t), t) d W
+  \end{equation}
+  的方程称为积分形式Itô随机微分方程。
+\end{definition}
+
+\begin{definition}[扩散方程]
+  形如
+  \begin{equation}
+    d X(t)=f(X(t), t) d t+g(X(t), t) d W
+  \end{equation}
+  的方程称为微分形式Itô随机微分方程或Itô过程或漂移布朗运动或者扩散方程。
+\end{definition}
+关于扩散方程的理解，可以分两块来看。一方面， $d X(t)=f(X(t), t) d t$ 
+是一阶均方微分方程，给出了下一时刻分布 $X(t+d t)$ 和当前时刻分布 $X(t)$ 之间的一个确定的关系，
+所以 $X(t)$能被唯一确定。另一方面， $d W$ 的含义就是在 $d t$ 内质点布朗运动的距离，这个距离服从 
+$N(0, d t)$ 的分布，所以 $g(X(t), t) d W$ 相当于噪声项。总的来看，在添加噪声项后，意味着下一时刻
+分布 $X(t+d t)$ 和当前时刻分布 $X(t)$ 之间的关系含有噪声， $X(t)$ 不能被唯一确定。
+
+\begin{lemma}[Itô引理]
+  设 $X_t$ 是Itô过程， $f\left(t, X_t\right)$ 关于 $t$ 一阶可微，关于 $X_t$ 二阶可微，则:
+\begin{equation}
+  d f\left(t, X_t\right)=\frac{\partial f\left(t, X_t\right)}{\partial t} d t+\frac{\partial f\left(t, X_t\right)}{\partial X_t} d X_t+\frac{1}{2} \frac{\partial^2 f\left(t, X_t\right)}{\left(\partial X_t\right)^2}\left(d X_t\right)^2
+\end{equation}
+\end{lemma}
+直观地看，上面的 Itô 引理就是 $f(t,X_t)$ 的二元 Taylor 展开；保留二次项，是因为布朗增量的平方在积分极限下仍有贡献，
+高阶项在积分下均为0。
+
+\textbf{小结}：为了研究布朗运动的运动轨迹性质，导出了二阶变差的概念，进而导出对布朗运动微分概念，引出Itô积分，最后和均方微分方程综合，
+得到含有布朗运动微分的Itô随机微分方程和扩散方程。
+
+\input{chapters/theory/additions/ito-bridge}
+
+
+\subsection{Fokker-Planck方程}
+\href{https://zhuanlan.zhihu.com/p/535688931}{什么是Fokker-Planck方程？}
+简称FP方程。定义3.9的扩散方程的FP方程为：
+\begin{equation}
+  \frac{\partial p\left(x_t\right)}{\partial t}=-\nabla_{x_t} \cdot\left[f\left(x_t, t\right) p\left(x_t\right)\right]+\frac{1}{2} g^2(t) \nabla_{x_t} \nabla_{x_t} p\left(x_t\right)
+\end{equation}
+
+Fokker-Planck方程，又叫Kolmogorov前向方程，是一个描述随机过程（stochastic process）的PDF（概率密度函数）的PDE（偏微分方程）。
+在统计力学（statistical mechanics）中，Fokker-Planck方程被用来描述粒子在
+随机力的作用下的速度的PDF。与Fokker-Planck方程（Kolmogorov前向方程）联系紧密的是Kolmogorov后向方程，
+它是一个描述随机过程的函数期望的PDE，
+并且和Fokker-Planck方程构成对偶性（duality）关系。在本文中，我们介绍Fokker-Planck方程的推导和例子。
+
+考虑一维扩散过程（diffusion process）
+$$
+d X_t=\mu\left(t, X_t\right) d t+\sigma\left(t, X_t\right) d W_t
+$$
+
+这里 $W_t$ 是标准布朗运动 (standard Brownian motion) 。令 $p(t, x)$ 为 $X_t$ 在 $t$ 时的PDF。固定 $t_1<t_2$ ，
+并定义函数 $F(t, x)$ ，使其满足 $F\left(t_1, x\right)=F\left(t_2, x\right)=0$ ，
+且当 $x \rightarrow \pm \infty$ ， $F(t, x), F_x(t, x) \rightarrow 0$ 。比如，我们可以选择 $f(x)$ ，
+其满足当 $x \rightarrow \pm \infty$ ，
+$f(x), f^{\prime}(x) \rightarrow 0$ ，并定义 $F(t, x)=\left(t-t_1\right)\left(t-t_2\right) f(x)$ 。
+根据伊藤引理（Ito's lemma），我们有
+$$
+\begin{gathered}
+d F\left(t, X_t\right)=F_t d t+F_x d X_t+\frac{1}{2} F_{x x}\left(d X_t\right)^2 \\
+\quad=\left(F_t+F_x \mu+\frac{1}{2} F_{x x} \sigma^2\right) d t+F_x \sigma d W_t
+\end{gathered}
+$$
+
+等式两边同时取期望，我们有
+$$
+\begin{gathered}
+\mathbb{E}\left[d F\left(t, X_t\right)\right]=\mathbb{E}\left[\left(F_t+F_x \mu+\frac{1}{2} F_{x x} \sigma^2\right) d t\right] \\
+=\int_{-\infty}^{\infty}\left(F_t+F_x \mu+\frac{1}{2} F_{x x} \sigma^2\right) p(t, x) d t d x
+\end{gathered}
+$$
+
+等式两边同时从 $t_1$ 积分到 $t_2$ ，由于 $F\left(t_1, x\right)=F\left(t_2, x\right)=0$ ，我们有
+$$
+\begin{aligned}
+& 0=\mathbb{E}\left[F\left(t_2, x\right)-F\left(t_1, x\right)\right]=\int_{-\infty}^{\infty} 
+\int_{t_1}^{t_2}\left(F_t+F_x \mu+\frac{1}{2} F_{x x} \sigma^2\right) p(t, x) d t d x=I_1 \\
+& +I_2+I_3
+\end{aligned}
+$$
+
+通过分部积分 (integration by parts)，并根据 $F\left(t_1, x\right)=F\left(t_2, x\right)=0$ 和Fubini定理，我们可以得到
+$$
+\begin{gathered}
+I_1=\int_{-\infty}^{\infty} \int_{t_1}^{t_2} \frac{\partial F}{\partial t} p(t, x) d t d x \\
+=\int_{-\infty}^{\infty}\left(F\left(t_2, x\right)-F\left(t_1, x\right)-\int_{t_1}^{t_2} F 
+\frac{\partial}{\partial t} p(t, x) d t\right) d x \\
+=-\int_{t_1}^{t_2} \int_{-\infty}^{\infty} F \frac{\partial}{\partial t} p(t, x) d x d t
+\end{gathered}
+$$
+
+同理，我们计算得到
+$$
+\begin{gathered}
+I_2=-\int_{t_1}^{t_2} \int_{-\infty}^{\infty} F \frac{\partial}{\partial x}(\mu p(t, x)) d x d t \\
+I_3=\int_{t_1}^{t_2} \int_{-\infty}^{\infty} F \frac{\partial^2}{\partial x^2}\left(\frac{1}{2} \sigma^2 p(t, x)\right) d x d t
+\end{gathered}
+$$
+
+由于
+
+$$
+\begin{gathered}
+0=I_1+I_2+I_3=\int_{t_1}^{t_2} \\
+\int_{-\infty}^{\infty} F\left[-\frac{\partial}{\partial t} p(t, x)-\frac{\partial}{\partial x} 
+(\mu p(t, x))+\frac{\partial^2}{\partial x^2}\left(\frac{1}{2} \sigma^2 p(t, x)\right)\right] d x d t
+\end{gathered}
+$$
+
+，且 $F$ 是任意选取的，我们得到
+$$
+\frac{\partial}{\partial t} p(t, x)=-\frac{\partial}{\partial x}(\mu p(t, x))+\frac{\partial^2}{\partial x^2}\left(\frac{1}{2} \sigma^2 p(t, x)\right)
+$$
+
+这就是一维Fokker-Planck方程，又叫一维Kolmogorov前向方程。
+
+对偶性
+
+考虑$n$维扩散过程（diffusion process）
+$$
+d X_t=\mu\left(X_t\right) d t+\sigma\left(X_t\right) d W_t
+$$
+
+给定函数 $f: \mathbb{R}^n \rightarrow \mathbb{R}$ ，定义 $X_t$ 的生成算子 (generator) 为
+$$
+L f(x)=\lim _{t \downarrow 0} \frac{\mathbb{E}_x\left[f\left(X_t\right)\right]-f(x)}{t}
+$$
+
+这里 $\mathbb{E}_x\left[f\left(X_t\right)\right]=\mathbb{E}\left[f\left(X_t\right) \mid X_0=x\right]$ 。对 $f\left(X_t\right)$ 
+应用伊藤引理，我们可以通过计算得到
+$$
+L f(x)=\sum_i \mu_i(x) \frac{\partial}{\partial x_i} f(x)+\frac{1}{2} \sum_i \sum_j\left(\sigma \sigma^{\top}\right)_{i, j}(x) \frac{\partial^2}{\partial x_i \partial x_j} f(x)
+$$
+
+定义 $u(t, x)=\mathbb{E}_x\left[f\left(X_t\right)\right]$ 和 $g(x)=u(t, x)$ 。由于 $u(t, x)$ 关于 $t$ 可导，
+根据tower性质 $\mathbb{E}[X]=\mathbb{E}[\mathbb{E}[X \mid \mathcal{F}]]$ ，我们有
+
+$$
+\begin{gathered}
+\frac{\mathbb{E}_x\left[g\left(X_s\right)\right]-g(x)}{s}=\frac{1}{s} \mathbb{E}_x\left[\mathbb{E}_{X_s}\left[f\left(X_t\right)\right]-\mathbb{E}_x\left[f\left(X_t\right)\right]\right] \\
+=\frac{1}{s} \mathbb{E}_x\left[\mathbb{E}_x\left[f\left(X_{t+s}\right) \mid \mathcal{F}_s\right]-\mathbb{E}_x\left[f\left(X_t\right) \mid \mathcal{F}_s\right]\right] \\
+=\frac{1}{s} \mathbb{E}_x\left[f\left(X_{t+s}\right)-f\left(X_t\right)\right]=\frac{u(t+s, x)-u(t, x)}{s}
+\end{gathered}
+$$
+
+当 $s \downarrow 0$，$\frac{\mathbb{E}_x\left[g\left(X_s\right)\right]-g(x)}{s}=L u=\frac{\partial u}{\partial t}$。这样，我们就得到了给定初始条件Kolmogorov后向方程。如果我们把变量 $t$ 转换为 $T-t$，
+我们可以得到更常见的给定终止条件的Kolmogorov后向方程 $-\partial_t u=L u$ ，即
+$$
+-\frac{\partial}{\partial t} u(t, x)=\sum_i \mu_i(x) \frac{\partial}{\partial x_i} u(t, x)+\frac{1}{2} \sum_i \sum_j\left(\sigma \sigma^{\top}\right)_{i, j}(x) \frac{\partial^2}{\partial x_i \partial x_j} u(t, x)
+$$
+
+给定定义 $L_2$ 内积 (inner product) $\langle q, g\rangle=\int q(x) g(x) d x$ ，我们可以定义生成算子 $L$ 的
+伴随算子 (adjoint operator) $L^*$，使得对于每一个函数对 $q,g$，$\left\langle L^* q, g\right\rangle=\langle q, L g\rangle$，
+即 $L$和 $L^*$ 构成对偶性。使用和在1.1中用分部积分进行的推导类似的计算过程，我们可以得到
+$$
+L^* q(x)=-\sum_i \frac{\partial}{\partial x_i}\left[\mu_i(x) q(x)\right]+\frac{1}{2} \sum_i \sum_j \frac{\partial^2}{\partial x_i \partial x_j}\left[\left(\sigma \sigma^{\top}\right)_{i, j}(x) q(x)\right]
+$$
+
+根据之前提到的 $t$ 到 $T-t$ 的变量变换， $u(t,x)=\mathbb E[f(X_T)\mid X_t=x]$，且 $u(T,x)=f(x)$ 。给定函数 $f: \mathbb{R}^n \rightarrow \mathbb{R}$ ，根据tower性质，我们知道 $\mathbb{E}\left[f\left(X_T\right)\right]=\int p(t, x) u(t, x) d x \forall t \in[0, T]$ 。由于 $\mathbb{E}\left[f\left(X_T\right)\right]$ 与 $t$ 无关，在根据莱布尼茨法则 (Leibniz rule) 和对偶性，我们得到
+$$
+\begin{gathered}
+0=\frac{d}{d t}\langle p, u\rangle=\left\langle\partial_t p, u\right\rangle+\left\langle p, \partial_t u\right\rangle \\
+=\left\langle\partial_t p, u\right\rangle-\langle p, L u\rangle=\left\langle\partial_t p, u\right\rangle-\left\langle L^* p, u\right\rangle \\
+=\left\langle\partial_t p-L^* p, u\right\rangle
+\end{gathered}
+$$
+
+由于 $f$ 是任意选取的，由任意测试函数的弱形式可得 Kolmogorov 前向方程 $\partial_t p-L^*p=0$ ，即
+$$
+\frac{\partial}{\partial t} p(t, x)=-\sum_i \frac{\partial}{\partial x_i}\left[\mu_i(x) p(t, x)\right]+
+\frac{1}{2} \sum_i \sum_j \frac{\partial^2}{\partial x_i \partial x_j}
+\left[\left(\sigma \sigma^{\top}\right)_{i, j}(x) p(t, x)\right]
+$$
+可以看出，两种推导Fokker-Planck方程的方法框架是十分类似的，都是通过伊藤引理和分部积分作为主要步骤，
+而相比第一种推导方法，第二种方法体现了Fokker-Planck方程和后向方程的对偶性。
+
+稳定密度分布
+
+考虑这样的一维扩散过程 $d X_t=\mu\left(X_t\right) d t+\sigma\left(X_t\right) d W_t$ ，其中漂移项和扩散项与时间无关，且存在稳定密分布度 (stationary density distribution) $p(x)$ 。那么Fokker-Planck方程写作
+$$
+0=-\frac{d}{d x}(\mu p(x))+\frac{d^2}{d x^2}\left(\frac{1}{2} \sigma^2 p(x)\right)
+$$
+
+根据边界条件，当 $x \rightarrow \pm\infty$，$p(x),p^{\prime}(x)\rightarrow0$，等式两边关于 $x$ 积分后得到
+$$
+0=-\mu(x) p(x)+\left(\frac{1}{2} \sigma^2(x) p(x)\right)^{\prime}
+$$
+
+令 $q(x)=\sigma^2(x) p(x)$ ，解常微分方程 (ODE) $\frac{q^{\prime}}{q}=\frac{2 \mu}{\sigma^2}$ ，我们得到 $q(x)=\exp \left(\int \frac{2 \mu(x)}{\sigma(x)^2} d x\right)$ ，因此稳定密分布度是
+$$
+p(x)=\frac{1}{\sigma(x)^2} \exp \left(\int \frac{2 \mu(x)}{\sigma^2(x)} d x\right)
+$$
+
+\input{chapters/theory/additions/stationary-normalizer}
+
+
+在一定条件下， $p(t, x)$ 一定会收敛于稳定密分布度 $p(x)$ 。
+
+布朗运动
+
+顺时方差为 $\sigma^2$ 的布朗运动 $X_t$ 的动态是
+$$
+d X_t=\sigma d W_t
+$$
+
+终止时间为 $T$ 的布朗运动的后向方程是
+$$
+\partial_t u+\frac{1}{2} \sigma^2 \partial_x^2 u=0, t<T
+$$
+
+起始时间为 0 的布朗运动的Fokker-Planck方程是
+$$
+\partial_t p-\frac{1}{2} \sigma^2 \partial_x^2 p=0, t>0
+$$
+
+Fokker-Planck方程的解是正态分布
+$$
+p(t, x)=\frac{1}{\sigma \sqrt{2 \pi t}} \exp \left(-\frac{x^2}{2 \sigma^2 t}\right)
+$$
+
+带漂移项的布朗运动
+
+起始值为 $x_0$ ，漂移项为 $\mu$ 且顺时方差为 $\sigma^2$ 的布朗运动 $X_t$ 的动态是
+$$
+\begin{gathered}
+d X_t=\mu d t+\sigma d W_t \\
+X_0=x_0
+\end{gathered}
+$$
+$X_t$ 的Fokker-Planck方程是
+$$
+\begin{gathered}
+\partial_t p(t, x)=-\mu \partial_x p(t, x)+\frac{1}{2} \sigma^2 \partial_x^2 p(t, x) \\
+p(0, x)=\delta\left(x-x_0\right)
+\end{gathered}
+$$
+
+Fokker-Planck方程的解是正态分布
+$$
+p(t, x)=\frac{1}{\sigma \sqrt{2 \pi t}} \exp \left(-\frac{\left(x-x_0-\mu t\right)^2}{2 \sigma^2 t}\right)
+$$
+
+几何布朗运动
+
+起始值为 $x_0$ 的几何布朗运动 (geometric Brownian motion) $X_t$ 的动态是
+$$
+\begin{gathered}
+d X_t=\mu X_t d t+\sigma X_t d W_t \\
+X_0=x_0
+\end{gathered}
+$$
+$X_t$ 的Fokker-Planck方程是
+$$
+\begin{gathered}
+\partial_t p(t, x)=-\mu \partial_x(x p(t, x))+\frac{1}{2} \sigma^2 \partial_x^2\left(x^2 p(t, x)\right) \\
+p(0, x)=\delta\left(x-x_0\right)
+\end{gathered}
+$$
+
+Fokker-Planck方程的解是对数正态分布
+$$
+p(t, x)=\frac{1}{x \sigma \sqrt{2 \pi t}} \exp \left(-\frac{\left(\ln \left(x / x_0\right)-\left(\mu-\sigma^2 / 2\right) t\right)^2}{2 \sigma^2 t}\right)
+$$
+
+如果几何布朗运动 $X_t$ 带有漂移项 $q>0$ ，即其动态是
+$$
+d X_t=\left(\mu X_t+q\right) d t+\sigma X_t d W_t
+$$
+$X_t$ 在 $\alpha=1-2\mu/\sigma^2>0$ 时的稳定密度为逆伽马分布 (inverse gamma distribution)
+$$
+p(x)=\frac{\beta^\alpha}{\Gamma(\alpha)} x^{-\alpha-1} \exp \left(-\frac{\beta}{x}\right)
+$$
+
+这里 $\alpha=1-2\mu/\sigma^2$，$\beta=2q/\sigma^2>0$，且 $\Gamma(x)=\int_0^{\infty}t^{x-1}e^{-t}dt$。
+
+Ornstein-Uhlenbeck过程
+
+起始值为 $x_0$ 的Ornstein-Uhlenbeck过程 $X_t$ 的动态是
+$$
+\begin{gathered}
+d X_t=-\mu X_t d t+\sigma d W_t \\
+X_0=x_0
+\end{gathered}
+$$
+$X_t$ 的Fokker-Planck方程是
+$$
+\begin{gathered}
+\partial_t p(t, x)=\mu \partial_x(x p(t, x))+\frac{1}{2} \sigma^2 \partial_x^2 p(t, x) \\
+p(0, x)=\delta\left(x-x_0\right)
+\end{gathered}
+$$
+
+Fokker-Planck方程的解是正态分布
+$$
+p(t,x\mid x_0)=\frac{1}{\sqrt{2\pi v_t}}
+\exp\left(-\frac{(x-x_0 e^{-\mu t})^2}{2v_t}\right),
+\qquad v_t=\frac{\sigma^2}{2\mu}(1-e^{-2\mu t}),\quad\mu>0.
+$$
+
+而当 $t\rightarrow\infty$，$X_t$ 的稳定密度分布是 $N\left(0,\frac{\sigma^2}{2\mu}\right)$，其中 $\mu>0$。
+
+% \section{SDE 和ODE}
+% 简单介绍下。
+
+% 概率流常微分的迹，
+% 随机微分方程的边缘概率密度，以及这两者的关系。
+% 从同样的数据分布采样，迹有同样的边缘分布？
+% 概率流常微分的半边结构。
+
+
+
+\chapter{扩散模型}
+
+\section{整体认识}
+这些条目保留了阅读早期论文时的摘录和疑问。关于训练与似然、连续与离散、采样步数的表述，后文会逐项补充适用条件；其中的实验步数和硬件记录应按当时设置理解。
+\begin{itemize}
+  % \item \href{}{}
+  \item  Fisher divergence $\mathbb{E}_{p(\mathbf{x})}\left[\left\|\nabla_{\mathbf{x}} \log p(\mathbf{x})-\mathbf{s}_\theta(\mathbf{x})\right\|_2^2\right]=\int p(\mathbf{x})\left\|\nabla_{\mathbf{x}} \log p(\mathbf{x})-\mathbf{s}_\theta(\mathbf{x})\right\|_2^2 \mathbf{~d} \mathbf{x}$
+  \item score matching
+  \item  Langevin dynamics
+  \item \href{c}{Correlation functions and computer simulations 1981}
+  \item \href{c}{Correlation functions and computer simulations 1994}
+  \item \href{c}{A Kernel Test of Goodness of Fit 2016}
+  \item \href{c}{A kernelized Stein discrepancy for goodness-of-fit tests 2016}
+  \item $\mathbf{x}_{i+1} \leftarrow \mathbf{x}_i+\epsilon \nabla_{\mathbf{x}} \log p(\mathbf{x})+\sqrt{2 \epsilon} \mathbf{z}_i, \quad i=0,1, \cdots, K$, 从任意分布$\mathbf{x}_0 \sim \pi(\mathbf{x})$出发，其中$z_i$服从标准正太分布，
+  $\epsilon \rightarrow 0, K \rightarrow \infty$,分数模型的MCMC采样(郎之万动力)，收敛到$p(\mathbf{x})$。分数模型$\mathbf{s}_\theta(\mathbf{x}) \approx \nabla_{\mathbf{x}} \log p(\mathbf{x})$是通过score-matching(分数匹配算法)得到，
+  不需要难处理的常数化因子，核心是优化Fisher divergence，score-matching规避了对 Stein score function的具体计算。
+  通过score matching去训练一个 score-based model，然后使用Langevin dynamics采样得到服从目标分布的数据。但是这种理论上的逻辑，
+  在实际操作中，会有分数模型在低密度区精度很差(从积分公式上看到，率密度权重因子)，另外分数模型是对高维张量的求导，因此在实际处理中需要做计算量的简化。
+  解决方案是用噪声扰动数据点，并在噪声数据点上训练基于分数的模型。当噪声强度足够大的时候，噪声可以填充低数据密度区域，以提高估计分数的准确性。
+  论文参考。
+  $p_{\sigma_i}(\mathbf{x})=\int p(\mathbf{y}) \mathcal{N}\left(\mathbf{x} ; \mathbf{y}, \sigma_i^2 I\right) \mathbf{d} \mathbf{y}$，
+  从$p(\mathbf{x})$中采样，然后使用重参数得到$p_{\sigma_i}(\mathbf{x})$中的样本，其中$\sigma_i$是噪声方差，且递增。
+  \item \href{c}{Generative Modeling by Estimating Gradients of the Data Distribution 2019}
+  \item \href{c.c}{Sliced score matching: A scalable approach to density and score estimation 2020}
+  \item \href{c}{Improved Techniques for Training Score-Based Generative Models 2020}
+  \item \href{c}{Score-Based Generative Modeling through Stochastic Differential Equations 2021} 训练目标变
+  为：$\mathbf{s}_\theta(\mathbf{x}, i) \approx \nabla_{\mathbf{x}} \log p_{\sigma_i}(\mathbf{x})$ 
+  for all $i=1,2, \cdots, L$, $\sum_{i=1}^L \lambda(i) \mathbb{E}_{p_{\sigma_i}(\mathbf{x})}
+  \left[\left\|\nabla_{\mathbf{x}} \log p_{\sigma_i}(\mathbf{x})-\mathbf{s}_\theta(\mathbf{x}, i)
+  \right\|_2^2\right]$，噪声$\mathcal{N}\left(0, \sigma_i^2 I\right), i=1,2, \cdots, L
+  $上面式子使用score-matching来训练。log-likelihood(对数似然)的计算，
+  这里先验是$p_T(\mathbf{x})$，利用n.c, s.c中的定理1和等式4，可以利用ODE的数值求解，在先验概率密度$p_T$已知的情况下，
+  计算未知数据$\mathbf{x}$的概率密度$p_0$，得到数据的对数似然。这里和贝叶斯中的似然函数，有区别。在上面的设定中，
+  似然函数是$p(\mathbf{x}|\mathbf{\epsilon})$，其中$\mathbf{\epsilon}$是标准正太分布的噪声，
+  而对数似然是根据数据得到的带参数$\theta$的关于数据的概率密度函数，在某些情况下，你可以把这里的$\mathbf{\epsilon}$看
+  做参数$\theta$，但这里还是有区别的。
+  \item \href{c.c}{Maximum Likelihood Training of Score-Based Diffusion Models 2021}
+  
+  \item \href{B.D}{Reverse-time diffusion equation models 1982}
+  \item \href{c.c}{A connection between score matching and denoising autoencoders 2011} 
+  \item \href{n.c}{Neural Ordinary Differential Equations 2018}
+  \item \href{s.c}{Scalable Reversible Generative Models with Free-form Continuous Dynamics 2019}
+  \item variational dequantization to obtain likelihoods on discrete images
+  \item 求关于不好计算的东西的的其他变量的导数，将不好计算的量消去，变为从导数的角度来刻画该问题。
+  \item 生成模型的逆向问题，或者贝叶斯推理问题：设随机变量$\mathbf{x}, \mathbf{y}$，设计
+  好前向$\mathbf{x} \rightarrow \mathbf{y}$，于是其转移概率$p(\mathbf{y}|\mathbf{x})$已知，逆向
+  问题是计算$p(\mathbf{x}|\mathbf{y})$。根据贝叶斯法则：$p(\mathbf{x} \mid \mathbf{y})=p(\mathbf{x}) p(\mathbf{y} 
+  \mid \mathbf{x}) / \int p(\mathbf{x}) p(\mathbf{y} \mid \mathbf{x}) \mathbf{d} \mathbf{x}$。设$\mathbf{x}$为先验，
+  则后验若按照贝叶斯法则，但积分项难于计算，若两边对$\mathbf{x}$求导，即$\nabla_{\mathbf{x}} \log p(\mathbf{x} \mid \mathbf{y})=\nabla_{\mathbf{x}} \log p(\mathbf{x})+\nabla_{\mathbf{x}} \log p(\mathbf{y} \mid \mathbf{x})$，容易看到利用score matching 和Langevin-type采样能直接得到后验分数函数值。
+  \item 公式翻译，理论和应用间的近似和区别，模糊地方的经验法则，代码上的并行考虑，部署上的性能考虑，应用上的扩展性，资源的考虑。
+  \item 分数模型是从分数匹配和郎之万动力采样中得到的，而扩散模型是有证据下界ELBO和解码模型采样得到的。
+  而ELBO训练的扩散模型和分数模型是等价的。这个是在2020年提出DDPM之后，2021年宋飏等证明的，并提出了SDE的统一架构。
+  这种不同角度对同一任务的描述，类似量子力学中的波函数角度和矩阵力学角度最终被证明是等价的类似，来个更简单点的，
+  单位圆盘上的有理数点的无穷性和本原勾股数的无穷性是等价的。
+  \item 基于分数模型的成功关键：
+  (1)使用多个噪声尺度的扰动数据，并为每个噪声尺度训练基于分数的模型；
+  (2)使用U-Net架构(我们使用RefineNet，因为它是现代版本的基于分数的模型；
+  (3)将朗之万MCMC应用于每个噪声尺度，并将它们链接在一起。
+  \item 上述使用空间梯度的分数模型直接作用于连续变量；若处理离散数据，一种做法是先利用VAE将其映射到连续的隐空间中，
+  然后训练分数模型，最后解码。对于分数模型采样速度慢的问题，可以利用ODE的快速求解，来克服。 
+  \item 基于分数的生成模型或扩散模型：数据生成，密度估计，逆问题求解。
+  \item ELBO或VLB(两者是同种东西的不同说法)，分别叫证据下界，变分下界。变分下界来自VAE模型的说法，
+  而且扩散模型本身，也可以看成多步VAE模型。但实际上，这里面存在一些正负符号的区别，有误用嫌疑。
+  
+  \item \href{https://arxiv.org/abs/2112.10752}{LDM 2022} 
+  
+  \item \href{https://arxiv.org/pdf/2206.00364.pdf}{Elucidating the Design Space of Diffusion-Based Generative Models }
+  对当前的几种diffusion model做了一个统一的框架。解决了diffusion ODE的生成效果一直都不如diffusion SDE，效果反而更好。
+  但，实际上是个大杂烩(这点我和Baof观点相同)。
+  \item \href{https://arxiv.org/abs/2201.06503}{Analytic-DPM}
+  “DDPM的均值实际上是对diffusion SDE的maximum likelihood SDE solver，并且最优方差有解析形式，且可以被score function唯一确定。
+  最优方差也可以用score model来近似。”
+  \item \href{https://github.com/LuChengTHU/dpm-solver}{dpm-solver}， 
+  \href{https://arxiv.org/pdf/2211.01095.pdf}{DPM-SOLVER++}
+  “证明了DDIM是diffusion ODE的一阶ODE solver，并且提出了二阶、三阶solver，可以做到10步采样质量很不错，20步几乎收敛。
+  不需要任何额外训练，任给一个pretrained model都可以直接用。 DDIM对应了diffusion ODE的1阶ODE solver，它的加速效果
+  好是因为它考虑了ODE的半线性结构，而DPM-Solver给出了对应的更高阶的solver，可以让10步左右的采样达到与DDPM的1000步的采样相当。”
+  \item \href{https://arxiv.org/pdf/2206.08265.pdf}{Maximum Likelihood Training for Score-Based Diffusion ODEs by High-Order Denoising Score Matching} 
+  “从理论角度彻底分析出了Diffusion SDE与Diffusion ODE的最大似然训练的联系和区别，并且提出了新的二阶、三阶denoising score matching算法来
+  解决了diffusion ODE的最大似然训练问题。结论就是，之前训练diffusion model的“去噪”方法其实是一阶score matching，相应似然加权目标可控制 diffusion SDE 的分布误差，但不能直接将同一个误差保证套到 diffusion ODE 上。想要对diffusion ODE做最大似然估计，可采用上面提出的方法来改善理论控制。”
+  \item “深度生成模型除了可以生成数据以外，还有一类核心任务是估计数据的概率密度（可以用模型计算的数据似然（likelihood）来刻画）。GAN被诟病的一点就是无法计算似然，因为它是隐式生成模型（implicit generative model），这导致GAN无法被用来数据压缩等领域。而VAE只能计算数据似然的一个下界，也不太令人满意。”
+  \item “DDPM与上文提到的连续版本的reverse SDE可以称为diffusion SDE（也叫Score-based SDE），它们都是基于SDE（离散版本为条件高斯分布）定义的生成模型。然而，这类模型与VAE一样，无法计算精确的数据似然（likelihood），而只能计算ELBO。Diffusion model的另一个优势是，只要训练了score model（上文提到的三种等价形式都可以转换为score model），那么就可以导出一个Neural ODE，它是一类continuous normalizing flow，可以精确计算数据的似然。”
+
+  \item "然后说说我认为diffusion model的美妙之处。它把困难的数据生成，拆分成了若干个相对简单的任务，每个任务即对应一次去噪。这种拆分有坏处（即推断慢，但我们的工作一定程度上解决了这个问题），也有好处（更加可控的生成）。"
+
+  \item 一个东西，有一些框架，发展到一定时候，会出现新的框架。
+  \item \href{https://ml.cs.tsinghua.edu.cn/~fanbao/Application-DPM.pdf}{PPT}
+  \item 问题，NCSN是如何训练的？ 和DDPM训练有啥区别？
+  \item DDIM是使用的NCSN或变分去噪的训练方式，但论文公式推导是使用的$V\_LB$思路
+  \item Analysis-DPM是在DDIM的基础上分析了其其实可以计算出中间的最优均值和方差
+  \item DPM-solver是将SDE对应推出来的ODE的常微分方程，做了具体的计算，加速了推理采样速度，
+  但是中间公式的推导却使用的是DDPM原始的表示，而非分数模型，虽然做了两者的等价变换。
+  \item DPM-solver++是在DPM-solver的基础上，对guide 做了分析，但是在公式推导过程中，
+  做了DDPM模型的$x_0$替换，使得最终表示出来的微分方程，在高阶部分的展开不同。不过这个替
+  换的核心原因，似乎是来自Photorealistic text-to-image diffusion models with deep 
+  language understanding 2022b这篇文章的启发，该文章实验出，对输入变量的尺度变换，能有效
+  抑制数据的边界范围溢出的情况，而且采样生成的数据效果确实更好了。从直观上，论文也做了两点分析，主要是$s$因子，
+  带来的尺度上的变化。
+  \item 我比较好奇的是，使用的是DDPM的建模思路，但具体公式推导上采用的是SDE的模型表示，或者反之，做一些替换，前
+  者建模是从贝叶斯，极大似然，的思路，做变分界的推导，后者是从分数模型对应的SDE的逆向推导，虽然两者得到的模型在效
+  果上等价的，刻画了原始数据的分布，但是，彼此互换，就能解决不同的问题，有点迷。
+  \item 分数模型SGM的训练是预测噪声除以方差，同DDPM差不多，不过SGM设置添加的噪声服从高斯分布，但没假设其满足马尔
+  科夫性。NCSN 主要使用去噪分数匹配；sliced score matching 是另一种估计方法。推理使用nnealed Langevin dynamics。
+  \item 分数模型的建模思路和DDPM的建模思路不同，前者通过分数匹配优化，郎之万动力采样，后者通过贝叶斯，极大似然的变
+  分下界 优化，"逆向"采样。 但二者的连续版本 被SDE 统一。而SDE有对应的ODE，其解能保持SDE的所有边缘分布，从而对OD
+  E的求解，能极大提高推理的速度。
+  \item 连续化 DDPM 与 SGM 后得到的 Itô 扩散仍具有马尔可夫性；虽然DDIM也是去掉了DDPM的前向的马尔科夫性假设，但
+  同时假设了与 DDPM设定前向为马尔科夫性之后，推导出的逆向中条件后验分布为高斯分布 同等形式的 高斯分布。DDIM是通过
+  什么，带来的推理加速(逆向采样几乎一样，多了一个$\sigma^2_{t}$，在附录C.1中说明了是通过DDPM的逆采样的子序列采样
+  得到)？ 但是奇怪的是，DDIM的训练，竟然是变分去噪或者分数模型。其实差不多，这点需要代码上确认下区别。在实际中，DDIM
+  的效果并不怎么样，后续的SDE均比它好很多。
+  \item It is well-known that maximizing the log-likelihood of a probabilistic model is equivalent to m
+  inimizing the KL divergence from the data distribution to the model distribution.
+  \item 在特殊的权重因子上，极小化SDE的分布与数据分布的KL散度的上界，其上界是和分数匹配相关的损失，从而达到优化
+  分数模型来提高数据的似然函数值的精度。并且，优化组合分数匹配损失，并不能直接得到数据的对数似然函数，通过概率流模
+  型continuous normalizing flows (CNFs)优化SGM能得到SGM的极大似然值，并且提高其似然函数值的准确性。ScoreFlow。
+  \item 通常的扩散 SDE 不直接提供闭式数据似然，概率流 ODE 则可通过散度积分计算模型似然。仅优化一阶分数损失不自动保证 ODE 似然准确；相关界涉及
+  ODE的一阶，二阶，三阶分数误差所控制。因此一种高阶的去噪分数匹配算法能达到更精确的似然估计。具体来说和SDE类似的计
+  算了模型和数据的散度，并在ODE这块，得到了类似的优化界。SDE被$J_{SM}$控制，ODE被$J_{SM}, J_{Fisher}$两者控制。
+  这里有个具体的方格例子，可以测试下。ScoreODEs。 问题，似然函数的具体计算，意味着啥？这里也是隐含计算的，并且只
+  针对连续值，实际的值需要做量化处理，量化处理靠谱吗？经过仔细分析了吗？可以分析还是类似于以前分类网络的感知损失这
+  种参考评估?
+  \item sliced  score matching：分数模型的估计在参数估计不一致，估计方差较大，实现繁琐，三方面的改进。提出了投影
+  分数函数到随机向量然后做比较的方法。从而能处理更高维的数据，更复杂的分布。核心思路是拟合高维函数在不同方向上的投影。
+  文章也做了理论分析，在一些正则条件下，能做到一致的和渐近正态的参数估计，是一个良定义的统计估计标准。(能量)密度估计
+  和分数估计。整个文章可以理解为：对2005年文章Hyvärinen (2005))中，梯度迹的估计。但是仍然要前向$n$次。理论上是这样，
+  但是实际上sliced  score matching的损失还是非常不稳定的，若增加了噪声，就稳定多了。
+  \item 极大似然对unnormalized  models的优化，存在难以处理的归一化分母$Z_\theta$，对其做关于$x$的微分，则消除了该
+  问题，于是问题转化为拟合被称为分数函数的问题，但同时也带来了计算复杂的问题，黑塞矩阵(Hessian)，论文思路启发自
+  Sliced Wasserstein distance (Rabin et al., 2012),
+  \item Denoising Score Matching(2011)彻底克服了需要计算Hessian的问题。但是论文只是考虑了一次加噪声，后续论文NCSN
+  是做了多次加噪。相关对分数匹配在高维上的优化，还有Approximate Backpropagation，Curvature  Propagation等不同
+  类型文章。Denoising Score Matching是估计扰动后的数据的分数。sliced score matching是对未扰动的数据的分数估计，
+  但是计算量大了几倍。
+  \item NCSN, 郎之万动力采样：从分数模型中采样得到符合原始数据分布的数据。数据本身是嵌入在高维流形中的低维流形，
+  而分数函数是在原始空间高维流形中计算梯度的，当数据被限制在低维流形中时，该微分是无定义的，其次分数匹配的优化目标
+  能优化出一个一致性分数估计的前提是，数据分布的支撑集得是整个空间，当数据集中在低维流形时，该估计是不一致的。低密
+  度区域的数据，不仅导致分数的估计偏差，而且使得郎之万动力采样结果不准确。因此添加噪声，不仅能保证数据集的支撑是整个
+  空间，而且更大的噪声，能减少低密度区域的出现。使得分数估计定义良好，且估计准确，采样准确。通过添加多尺度的噪声，
+  使得噪声扰动分布逼近到真实数据分布。这将通过，训练一个拟合所有尺度噪声的模型。采样从大尺度噪声逐渐过渡到小尺度噪声。
+  前向加噪从小尺度走向大尺度，生成采样才从大噪声走向小噪声。
+
+\end{itemize}
+
+\subsection{问题}
+\begin{itemize}
+    \item 马尔科夫过程对任意分布都能变换的定理
+    \item 分数模型的训练
+    \item SMLD,DDPM的 SDE化细节
+    \item  Langevin MCMC
+    \item 前向SDE的逆向由什么定理得到
+    \item 条件逆过程
+    \item progressive distillation
+    \item classifier-free guidance(CFG)
+\end{itemize}
+
+
+\section{离散版DDPM等}
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.15]{image/DDPM.png}
+\caption{DDPM}
+\label{fig:DDPM}
+\end{figure}
+
+真实数据分布$\mathbf{x}_0 \sim q (\mathbf{x})$，这里的$x_0$可能是$512*512*3$大小的图像集合，也可能是$\mathbb{R}^{n}$中的向量，比如动画BVH解析出的数据表示。
+
+前向扩散过程定义为$T$步的马尔科夫过程，转移概率为$q(\mathbf{x}_t|\mathbf{x}_{t-1}), t \in \mathbb{N}$。对于给定数据$\mathbf{x}_0$，向其添加同维度的高斯样本(微小扰动)，然后递推。设置好每一步添加样本的均值和方差，使得输入样本$x_0$变为标准正太分布的样本，如图4.1所示。比如序列$\left\{\beta_t \in(0,1)\right\}_{t=1}^T, \beta_1 < \beta_2 < \cdots < \beta_T\}$，将转移概率(条件概率)定义为$q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)=\mathcal{N}\left(\mathbf{x}_t ; \sqrt{1-\beta_t} \mathbf{x}_{t-1}, \beta_t \mathbf{I}\right)$ 当累积信号系数 $\bar\alpha_T\to0$ 时，终端边缘 $q(\mathbf x_T)$ 才趋近标准高斯；单步转移核并不因此变成标准高斯。
+
+令
+\begin{equation}
+\alpha_t = 1 - \beta_t, \bar{\alpha_{t}} = \prod_{i=1}^{t}\alpha_i.
+\end{equation}
+对于$q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)$，由重参数化得
+$\mathbf{x}_t =\sqrt{\alpha_t} \mathbf{x}_{t-1}+\sqrt{1-\alpha_t} \epsilon_{t-1}$，
+又由高斯分布的叠加特性，可得
+$\mathbf{x_0} \rightarrow \mathbf{x_t}$的转化：
+\begin{equation}
+\begin{array}{rlr}
+\mathbf{x}_t & =\sqrt{\alpha_t} \mathbf{x}_{t-1}+\sqrt{1-\alpha_t} \epsilon_{t-1} & \quad ;  \epsilon_{t-1}, \epsilon_{t-2}, \cdots \sim \mathcal{N}(\mathbf{0}, \mathbf{I}) \\
+& =\sqrt{\alpha_t \alpha_{t-1}} \mathbf{x}_{t-2}+\sqrt{1-\alpha_t \alpha_{t-1}} \bar{\epsilon}_{t-2}  \\
+& =\cdots & \\
+& =\sqrt{\bar{\alpha}_t} \mathbf{x}_0+\sqrt{1-\bar{\alpha}_t} \boldsymbol{\epsilon}
+\end{array}
+\end{equation}
+其中合并的高斯分布$\bar{\epsilon}_{t-2} = [\sqrt{\alpha_t(1-\alpha_{t-1})}\epsilon_{t-2}+\sqrt{1-\alpha_t}\epsilon_{t-1}]/\sqrt{1-\alpha_t\alpha_{t-1}}$，归一化后仍为标准高斯。
+于是得到
+\begin{equation}
+q\left(\mathbf{x}_t \mid \mathbf{x}_0\right)=\mathcal{N}\left(\mathbf{x}_t ; \sqrt{\bar{\alpha}_t} \mathbf{x}_0,\left(1-\bar{\alpha}_t\right) \mathbf{I}\right)
+\end{equation}
+根据变换关系，有$\bar{\alpha_1} > \cdots > \bar{\alpha_T}$。
+
+前向过程：人为设计一个马尔科夫扩散过程，将任意分布(有限维度)，在有限步数之内，逼近一个标准正太分布。
+
+关于DL的建模，可以简单理解为将目标转化特定的语言体系，然后在该体系中构建一个闭环，而且需要梳理一下闭环中的链接关系，并在优化中把这些关系体现出来。
+
+这里的任务是生成训练数据对应空间的样本，由贝叶斯定理，
+只要知道$q(\mathbf{x}_t \mid \mathbf{x}_{t-1}), t=1,\cdots, T$整个链条闭环就有了。首先数据的分布$q(\mathbf{x}_0)$是未知的，
+且数据分布是我们的目标，但我们会准备很多数据，所以可以假想$q(\mathbf{x}_0)$已知，又前向是已知的，于是，整个链条中，
+只剩下反向$q(\mathbf{x}_{t-1} \mid \mathbf{x}_t)$，可用参数模型$\mathcal{N}\left(\mathbf{x}_{t-1} ;
+ \boldsymbol{\mu}_\theta\left(\mathbf{x}_t, t\right), \boldsymbol{\Sigma}_\theta\left(\mathbf{x}_t, t\right)\right)$来表示。
+
+前向和反向的闭环，前向：
+\begin{equation}
+q\left(\mathbf{x}_0, \mathbf{x}_1, \cdots, \mathbf{x}_T\right)=q(\mathbf{x}_{0:T}):=q\left(\mathbf{x}_0\right) \prod_{t=1}^T q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)
+\end{equation}
+反向：
+\begin{equation}
+p_\theta\left(\mathbf{x}_0, \mathbf{x}_1, \cdots, \mathbf{x}_T\right)=p_\theta(\mathbf{x}_{0:T}):=p\left(\mathbf{x}_T\right) \prod_{t=1}^T p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)
+\end{equation}
+这两者都定义了整条轨迹的联合分布，但并不会自动相等；学习的目标是让反向模型尽量逼近前向过程所定义的联合分布。
+要优化这两分布，就要找一个刻画两分布的距离的函数。其中KL散度，交叉熵，Stein's score函数均可。
+对于KL散度，有
+\begin{equation}
+\label{orig:path-kl}
+\begin{aligned}
+& \quad \mathbf{KL}\left(q\left(\mathbf{x}_0, \mathbf{x}_1, \cdots, \mathbf{x}_T\right) \| p_\theta\left(\mathbf{x}_0, \mathbf{x}_1, \cdots, \mathbf{x}_T\right)\right) \\
+& \stackrel{(i)}{=}-\mathbb{E}_{q\left(\mathbf{x}_0, \mathbf{x}_1, \cdots, \mathbf{x}_T\right)}\left[\log p_\theta\left(\mathbf{x}_0, \mathbf{x}_1, \cdots, \mathbf{x}_T\right)\right]+\mathbf{const} \\
+& \stackrel{(i i)}{=} \underbrace{\mathbb{E}_{q\left(\mathbf{x}_0, \mathbf{x}_1, \cdots, \mathbf{x}_T\right)}\left[-\log p\left(\mathbf{x}_T\right)-\sum_{t=1}^T \log \frac{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}{q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)}\right]}_{:=L_{\mathbf{VLB}}}+\mathbf{const} \\
+& \stackrel{(i i i)}{\geq} \mathbb{E}\left[-\log p_\theta\left(\mathbf{x}_0\right)\right]+\text { const, }
+\end{aligned}
+\end{equation}
+
+这里仍沿用前文的符号约定：最大化 ELBO，等价于最小化负 ELBO；后者在下面记为 $L_{\rm VLB}$。阅读其它资料时，应以具体公式的正负号为准。
+
+从式\eqref{orig:path-kl}的推导中看到
+\begin{equation}
+\log \frac{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}{q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)}
+\end{equation}
+是关键。这里前向$q(\mathbf{x}_t \mid \mathbf{x}_{t-1})$均值、方差已知，而逆向我们假设也满足高斯分布，
+利用网络$\mathbf{s}_\theta(\mathbf{x}_t, t)$来表示它。当前情况可以做优化，但是实际没有选择这个，而是考虑到前向的马尔可夫性，
+有$q(\mathbf{x}_t \mid \mathbf{x}_{t-1})=q(\mathbf{x}_t \mid \mathbf{x}_{t-1}, x_0)$，然后利用贝叶斯法则，
+将三元组$(\mathbf{x}_0, \mathbf{x}_t, \mathbf{x}_{t-1})$做个逆向变形，得到$q(\mathbf{x}_{t-1} \mid \mathbf{x}_t,\mathbf{x}_0)$
+的具体计算表达式。然后相关的式子都有表达式，于是可以对$q(\mathbf{x}_t \mid \mathbf{x}_{t-1}, x_0)=q(\mathbf{x}_t \mid \mathbf{x}_{t-1})$
+做等量替换。细节如下：
+\begin{equation}
+\begin{aligned}
+q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t, \mathbf{x}_0\right) & =q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}, \mathbf{x}_0\right) \frac{q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_0\right)}{q\left(\mathbf{x}_t \mid \mathbf{x}_0\right)} \\
+& \propto \exp \left(-\frac{1}{2}\left(\frac{\left(\mathbf{x}_t-\sqrt{\alpha_t} \mathbf{x}_{t-1}\right)^2}{\beta_t}+\frac{\left(\mathbf{x}_{t-1}-\sqrt{\bar{\alpha}_{t-1}} \mathbf{x}_0\right)^2}{1-\bar{\alpha}_{t-1}}-\frac{\left(\mathbf{x}_t-\sqrt{\bar{\alpha}_t} \mathbf{x}_0\right)^2}{1-\bar{\alpha}_t}\right)\right) \\
+& =\exp \left(-\frac{1}{2}\left(\frac{\mathbf{x}_t^2-2 \sqrt{\alpha_t} \mathbf{x}_t \mathbf{x}_{t-1}+\alpha_t \mathbf{x}_{t-1}^2}{\beta_t}+\frac{\mathbf{x}_{t-1}^2-2 \sqrt{\bar{\alpha}_{t-1}} \mathbf{x}_0 \mathbf{x}_{t-1}+\bar{\alpha}_{t-1} \mathbf{x}_0^2}{1-\bar{\alpha}_{t-1}}-\frac{\left(\mathbf{x}_t-\sqrt{\bar{\alpha}_t} \mathbf{x}_0\right)^2}{1-\bar{\alpha}_t}\right)\right) \\
+& =\exp \left(-\frac{1}{2}\left(\left(\frac{\alpha_t}{\beta_t}+\frac{1}{1-\bar{\alpha}_{t-1}}\right) \mathbf{x}_{t-1}^2-\left(\frac{2 \sqrt{\alpha_t}}{\beta_t} \mathbf{x}_t+\frac{2 \sqrt{\bar{\alpha}_{t-1}}}{1-\bar{\alpha}_{t-1}} \mathbf{x}_0\right) \mathbf{x}_{t-1}+C\left(\mathbf{x}_t, \mathbf{x}_0\right)\right)\right)
+\end{aligned}
+\end{equation}
+其中$C\left(\mathbf{x}_t, \mathbf{x}_0\right)$是和$\mathbf{x}_{t-1}$无关的量，$\propto $表示前面的比例项去掉了，从上面看到，对于逆向的某一步，增加初始数据$\mathbf{x}_0$的条件下，仍然是一个高斯分布，且能计算。
+也即
+\begin{equation}
+q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t, \mathbf{x}_0\right)=\mathcal{N}\left(\mathbf{x}_{t-1} ; \tilde{\boldsymbol{\mu}}\left(\mathbf{x}_t, \mathbf{x}_0\right), \tilde{\beta}_t \mathbf{I}\right)
+\end{equation}
+其中$\tilde{\beta}_t=1 /\left(\frac{\alpha_t}{\beta_t}+\frac{1}{1-\bar{\alpha}_{t-1}}\right)=1 /\left(\frac{\alpha_t-\bar{\alpha}_t+\beta_t}{\beta_t\left(1-\bar{\alpha}_{t-1}\right)}\right)=\frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_t} \cdot \beta_t$
+
+\begin{equation}
+\begin{aligned}
+\tilde{\boldsymbol{\mu}}_t\left(\mathbf{x}_t, \mathbf{x}_0\right) & =\left(\frac{\sqrt{\alpha_t}}{\beta_t} \mathbf{x}_t+\frac{\sqrt{\bar{\alpha}_{t-1}}}{1-\bar{\alpha}_{t-1}} \mathbf{x}_0\right) /\left(\frac{\alpha_t}{\beta_t}+\frac{1}{1-\bar{\alpha}_{t-1}}\right) \\
+& =\left(\frac{\sqrt{\alpha_t}}{\beta_t} \mathbf{x}_t+\frac{\sqrt{\bar{\alpha}_{t-1}}}{1-\bar{\alpha}_{t-1}} \mathbf{x}_0\right) \frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_t} \cdot \beta_t \\
+& =\frac{\sqrt{\alpha_t}\left(1-\bar{\alpha}_{t-1}\right)}{1-\bar{\alpha}_t} \mathbf{x}_t+\frac{\sqrt{\bar{\alpha}_{t-1}} \beta_t}{1-\bar{\alpha}_t} \mathbf{x}_0
+\end{aligned}
+\end{equation}
+将前向过程$\mathbf{x}_0$和$\mathbf{x}_t$的关系代入，得到
+\begin{equation}
+\begin{aligned}
+\tilde{\boldsymbol{\mu}}_t & =\frac{\sqrt{\alpha_t}\left(1-\bar{\alpha}_{t-1}\right)}{1-\bar{\alpha}_t} \mathbf{x}_t+\frac{\sqrt{\bar{\alpha}_{t-1}} \beta_t}{1-\bar{\alpha}_t} \frac{1}{\sqrt{\bar{\alpha}_t}}\left(\mathbf{x}_t-\sqrt{1-\bar{\alpha}_t} \epsilon_t\right) \\
+& =\frac{1}{\sqrt{\alpha_t}}\left(\mathrm{x}_t-\frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \epsilon_t\right)
+\end{aligned}
+\end{equation}
+
+而这个时候，只需要将优化目标\eqref{orig:path-kl}的 $ii$ 项中的$q(\mathbf{x}_t \mid \mathbf{x}_{t-1})$
+通过贝叶斯公式改写为含 $q(\mathbf{x}_{t-1}\mid\mathbf{x}_t,\mathbf{x}_0)$ 的项，并将边缘比值连乘相消，即得到最终可计算的优化目标。
+
+具体如下：
+\begin{equation}
+\begin{aligned}
+& L_{\mathrm{VLB}}=\mathbb{E}_{q\left(\mathbf{x}_{0: T}\right)}\left[\log \frac{q\left(\mathbf{x}_{1: T} \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{0: T}\right)}\right] \\
+& =\mathbb{E}_q\left[\log \frac{\prod_{t=1}^T q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)}{p_\theta\left(\mathbf{x}_T\right) \prod_{t=1}^T p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}\right] \\
+& =\mathbb{E}_q\left[-\log p_\theta\left(\mathbf{x}_T\right)+\sum_{t=1}^T \log \frac{q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)}{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}\right] \\
+& =\mathbb{E}_q\left[-\log p_\theta\left(\mathbf{x}_T\right)+\sum_{t=2}^T \log \frac{q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)}{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}+\log \frac{q\left(\mathbf{x}_1 \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_0 \mid \mathbf{x}_1\right)}\right] \\
+& =\mathbb{E}_q\left[-\log p_\theta\left(\mathbf{x}_T\right)+\sum_{t=2}^T \log \left(\frac{q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t, \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)} \cdot \frac{q\left(\mathbf{x}_t \mid \mathbf{x}_0\right)}{q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_0\right)}\right)+\log \frac{q\left(\mathbf{x}_1 \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_0 \mid \mathbf{x}_1\right)}\right] \\
+& =\mathbb{E}_q\left[-\log p_\theta\left(\mathbf{x}_T\right)+\sum_{t=2}^T \log \frac{q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t, \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}+\sum_{t=2}^T \log \frac{q\left(\mathbf{x}_t \mid \mathbf{x}_0\right)}{q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_0\right)}+\log \frac{q\left(\mathbf{x}_1 \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_0 \mid \mathbf{x}_1\right)}\right] \\
+& =\mathbb{E}_q\left[-\log p_\theta\left(\mathbf{x}_T\right)+\sum_{t=2}^T \log \frac{q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t, \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}+\log \frac{q\left(\mathbf{x}_T \mid \mathbf{x}_0\right)}{q\left(\mathbf{x}_1 \mid \mathbf{x}_0\right)}+\log \frac{q\left(\mathbf{x}_1 \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_0 \mid \mathbf{x}_1\right)}\right] \\
+& =\mathbb{E}_q\left[\log \frac{q\left(\mathbf{x}_T \mid \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_T\right)}+\sum_{t=2}^T \log \frac{q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t, \mathbf{x}_0\right)}{p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)}-\log p_\theta\left(\mathbf{x}_0 \mid \mathbf{x}_1\right)\right] \\
+& =\mathbb{E}_q[\underbrace{D_{\mathrm{KL}}\left(q\left(\mathbf{x}_T \mid \mathbf{x}_0\right) \| p_\theta\left(\mathbf{x}_T\right)\right)}_{L_T}+\sum_{t=2}^T \underbrace{D_{\mathrm{KL}}\left(q\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t, \mathbf{x}_0\right) \| p_\theta\left(\mathbf{x}_{t-1} \mid \mathbf{x}_t\right)\right)}_{L_{t-1}} \underbrace{-\log p_\theta\left(\mathbf{x}_0 \mid \mathbf{x}_1\right)}_{L_0}] \\
+&
+\end{aligned}
+\end{equation}
+看起来比较长，其实非常简单，核心就是第4个等式到第5个等式的变换，变换是根据建模的基本假设来做的，容易想到。上面的KL散度是
+关于两个高斯分布的散度，且取了对数，容易得到，损失函数是关于高斯分布均值的平方差的式子(令方差为常数)。
+从DL的角度来说，只需让模型预测每一步的均值即可，也即
+\begin{equation}
+p_\theta(\mathbf x_{t-1}\mid\mathbf x_t)=\mathcal{N}\left(\mathbf{x}_{t-1} ; \frac{1}{\sqrt{\alpha_t}}\left(\mathbf{x}_t-\frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \boldsymbol{\epsilon}_\theta\left(\mathbf{x}_t, t\right)\right), \mathbf{\Sigma}_\theta\left(\mathbf{x}_t, t\right)\right)
+\end{equation}
+其中$\boldsymbol{\epsilon}_\theta\left(\mathbf{x}_t, t\right)$表示神经网络。
+进一步选择重新加权的简化训练目标，得到
+\begin{equation}
+\begin{aligned}
+L_t^{\text {simple }} & =\mathbb{E}_{t \sim[1, T], \mathbf{x}_0, \epsilon_t}\left[\left\|\boldsymbol{\epsilon}_t-\boldsymbol{\epsilon}_\theta\left(\mathbf{x}_t, t\right)\right\|^2\right] \\
+& =\mathbb{E}_{t \sim[1, T], \mathbf{x}_0, \epsilon_t}\left[\left\|\boldsymbol{\epsilon}_t-\boldsymbol{\epsilon}_\theta\left(\sqrt{\bar{\alpha}_t} \mathbf{x}_0+\sqrt{1-\bar{\alpha}_t} \epsilon_t, t\right)\right\|^2\right]
+\end{aligned}
+\end{equation}
+从中可以看到，只需要预测所有前向步骤所添加的噪声。最终得到训练和推理算法如下：
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.3]{image/DDPM-algo.png}
+\caption{DDPM algo}
+\label{fig:DDPM-algo}
+\end{figure}
+
+\input{chapters/theory/additions/ddpm-loss}
+
+
+\section{NCSN}
+
+% \begin{itemize}
+%     \item Langevin MCMC 
+%     \item  ancestral sampling
+%     \item  
+% \end{itemize}
+
+% generalize  Perturbing data with multiple noise scales to infinite number of noise scales,
+% 把系列离散扰动数据的分布连续化为能用随机微分方程来刻画。
+
+% 把任意数据分布映射到先验分布（高斯分布）。
+
+% SMLD的离散化：
+
+% DDPM的离散化：
+
+% 如何训练一个时间相关的分数模型：
+
+% \begin{equation}
+% \boldsymbol{\theta}^*=\underset{\boldsymbol{\theta}}{\arg \min } \mathbb{E}_t\left\{\lambda(t) \mathbb{E}_{\mathbf{x}(0)} \mathbb{E}_{\mathbf{x}(t) \mid \mathbf{x}(0)}\left[\left\|\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}(t), t)-\nabla_{\mathbf{x}(t)} \log p_{0 t}(\mathbf{x}(t) \mid \mathbf{x}(0))\right\|_2^2\right]\right\}
+% \end{equation}
+
+% 概率流联系常微分的数值解：reverse-time SDE存在一个对应的ODE数值解法。对任意的扩散过程，存在一个确定的过程，其迹和SDE的边缘概率密度分布一致。该确定过程能用如下ODE刻画：
+% \begin{equation}
+% \mathbf{d} \mathbf{x}=\left[\mathbf{f}(\mathbf{x}, t)-\frac{1}{2} g(t)^2 \nabla_{\mathbf{x}} \log p_t(\mathbf{x})\right] \mathbf{d} t
+% \end{equation}
+% 该方程被称为：probability flow ODE。
+% 该常微分方程的解迹在$t$处的采样样本的概率密度为$p_{t}(x)$。
+
+% 令$\mathbf{f}(\mathbf{x}, t)=\mathbf{0}, g(t)=\sqrt{2t}$，(此时，$p_t(\mathbf{x})=p_{\text {data }}(\mathbf{x}) \otimes \mathcal{N}\left(\mathbf{0}, t^2 \boldsymbol{I}\right)$，其中$\otimes$表示卷积，分数模型$s_\phi(\mathbf{x}, t) \approx \nabla \log p_t(\mathbf{x})$)，
+% 得到 经验 PF ODE：
+
+% \begin{equation}
+% \frac{\mathbf{d} \mathbf{x}_t}{\mathbf{~d} t}=-t s_\phi\left(\mathbf{x}_t, t\right)
+% \end{equation}
+% $X_T$初始化，用欧拉或Heun法求解得到解迹：$\left\{\hat{\mathbf{x}}_t\right\}_{t \in[0, T]}$。$t=0$符合$p_{data}(\mathbf{x})$。 将图像映射到$[-1,1]$后，设置$T=80, s=0.002$，$s$是采样步长。
+
+% 条件逆扩散：
+% \begin{equation}
+% \mathbf{d} \mathbf{x}=\left\{\mathbf{f}(\mathbf{x}, t)-g(t)^2\left[\nabla_{\mathbf{x}} \log p_t(\mathbf{x})+\nabla_{\mathbf{x}} \log p_t(\mathbf{y} \mid \mathbf{x})\right]\right\} \mathbf{d} t+g(t) \mathbf{d} \overline{\mathbf{w}}
+% \end{equation}
+
+数据样本$\left\{\mathbf{x}_i \in \mathbb{R}^D\right\}_{i=1}^N$ 满足独立同分布，数据的分布用$p_{data}(\mathbf{x})$表示，概率密度$p(\mathbf{x})$的分数定义为$\nabla_{\mathbf{x}} \log p(\mathbf{x})$，分数网络score network $s_{\theta}:\mathbb{R}^D \rightarrow \mathbb{R}^D$，其中$\theta$表示网络参数。用分数网络来刻画数据分布，因为若概率密度的分数已知，则可以利用郎之万动力采样，其采样出的数据符合数据原始分布。 因此基于分数的生成模型的核心，就是分数匹配和郎之万动力采样。
+
+能量模型定义为：
+\begin{equation}
+p_m(\mathbf{x} ; \boldsymbol{\theta})=\frac{\tilde{p}_m(\mathbf{x} ; \boldsymbol{\theta})}{Z_{\boldsymbol{\theta}}}, \quad Z_{\boldsymbol{\theta}}=\int \tilde{p}_m(\mathbf{x} ; \boldsymbol{\theta}) \mathrm{d} \mathbf{x}
+\end{equation}
+其分数则为：
+\begin{equation}
+\mathbf{s}_m(\mathbf{x} ; \boldsymbol{\theta}) \triangleq \nabla_{\mathbf{x}} \log p_m(\mathbf{x} ; \boldsymbol{\theta})=\nabla_{\mathbf{x}} \log \tilde{p}_m(\mathbf{x} ; \boldsymbol{\theta}), \quad  \mathbf{s}_d(\mathbf{x} ; \boldsymbol{\theta}) \triangleq \nabla_{\mathbf{x}} \log p_d(\mathbf{x} ; \boldsymbol{\theta})
+\end{equation}
+消去了$Z_{\boldsymbol{\theta}}$，其中$p_d$是$p_{data}$的简写。
+
+\input{chapters/theory/additions/energy-note}
+
+
+上述分数匹配于2005(Hyvärinen, 2005)年被提出，主要用来解决基于能量的概率密度估计(极大似然建模)分母归一化因子难处理的问题，原始优化目标为：
+\begin{equation}
+\frac{1}{2} \mathbb{E}_{p_{\text {data }}}\left[\left\|\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x})-\nabla_{\mathbf{x}} \log p_{\text {data }}(\mathbf{x})\right\|_2^2\right]
+\end{equation}
+该论文得出其等价形式：
+\begin{equation}
+\label{orig:score-loss}
+J(\boldsymbol{\theta}) \triangleq \mathbb{E}_{p_d}\left[\operatorname{tr}\left(\nabla_{\mathbf{x}} \mathbf{s}_m(\mathbf{x} ; \boldsymbol{\theta})\right)+\frac{1}{2}\left\|\mathbf{s}_m(\mathbf{x} ; \boldsymbol{\theta})\right\|_2^2\right],
+\end{equation}
+其中$tr$表示矩阵的迹，上述公式需要计算 log-density的Hessian矩阵，计算量非常大。
+
+在数学上，1981年就有了相关定理。参考数学基础部分。
+
+Sliced Score Matching一文对(Hyvärinen, 2005)做了改进，
+得出
+\begin{equation}
+\mathbb{E}_{p_{\mathbf{v}}} \mathbb{E}_{p_{\text {data }}}\left[\mathbf{v}^{\top} \nabla_{\mathbf{x}} \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}) \mathbf{v}+\frac{1}{2}\left\|\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x})\right\|_2^2\right]
+\end{equation}
+其中$p_{\mathbf{v}}$是一个简单分布的随机向量，比如多元标准高斯分布。该结论表明，将原始高维矩阵关于随机向量做投影，去逼近式\eqref{orig:score-loss}中的迹，能减少计算量的同时，保持无偏估计。
+
+另外，2011年的文章 A Connection Between Score Matching and Denoising Autoencoders 提出的去噪分数匹配，避免了损失中对分数网络输入求导的迹计算；网络参数仍需正常反向传播。它估计的是扰动后的数据分数。具体来说，定义扰动后的数据分布为：
+\begin{equation}
+q_\sigma(\tilde{\mathbf{x}}) \triangleq \int q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) p_{\text {data }}(\mathbf{x}) \mathrm{d} \mathbf{x}
+\end{equation}
+于是优化目标
+\begin{equation}
+\frac{1}{2} \mathbb{E}_{q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x}) p_{\text {data }}(\mathbf{x})}\left[\left\|\mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}})-\nabla_{\tilde{\mathbf{x}}} \log q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x})\right\|_2^2\right]
+\end{equation}
+的最优解$\mathbf{s}_{\boldsymbol{\theta}^*}(\mathbf{x})$当扰动很小的时候，有：
+\begin{equation}
+\mathbf{s}_{\boldsymbol{\theta}^*}(\mathbf{x})=\nabla_{\mathbf{x}} \log q_\sigma(\mathbf{x}) \approx \nabla_{\mathbf{x}} \log p_{\text {data }}(\mathbf{x})
+\end{equation}
+
+朗之万动力学在已知分数函数$\nabla_{\mathbf{x}} \log p(\mathbf{x})$的情况下，可以采样出概率密度为$p(\mathbf{x})$的样本。
+具体来说：
+\begin{equation}
+\label{orig:langevin}
+\tilde{\mathbf{x}}_t=\tilde{\mathbf{x}}_{t-1}+\frac{\epsilon}{2} \nabla_{\mathbf{x}} \log p\left(\tilde{\mathbf{x}}_{t-1}\right)+\sqrt{\epsilon} \mathbf{z}_t
+\end{equation}
+其中$\epsilon$表示固定的步长大小，$\tilde{\mathbf{x}}_0 \sim \pi(\mathbf{x})$是一个先验分布，$z_t \sim \mathcal{N}(0, I)$。当$\epsilon \rightarrow 0, T \rightarrow \infty$，在一些正则条件下，$
+\tilde{\mathbf{x}}_T \sim p(\mathbf{x})$。
+具体分析见：
+\href{https://www.stats.ox.ac.uk/~teh/research/compstats/WelTeh2011a.pdf}{Bayesian Learning via Stochastic Gradient Langevin Dynamics 2011}。
+
+NCSN是在以上基础上提出的，作者分析了基于分数的生成模型的两个问题。基于一些基础实验，1：Sliced score matching在原始数据上的迭代损失曲线没添加噪声后的迭代平稳，而且前者是极度不平稳，上下波动很大，对此作者给出了基于流形假设的分析；2.通过分数匹配的方法，去做一个混合高斯分布的分数估计，发现在低密度区域匹配的很不准确，同时混合模型的权重因子失效严重，在混合区域，使用郎之万动力采样，是极度缓慢才能收敛到实际情况，因为分数函数关于不同混合密度的支撑集上的函数值，是和混合因子无关的，导致优化很难处理混合模型各自的连接区域的密度情况，以至于采样不准确。
+
+基于这些基本观察，分析，作者提出了带尺度的扰动分数模型：Noise Conditional Score Networks。一来解决了高低密度不均匀难以优化，导致采样不准的问题，二来解决了数据在高维空间的低维嵌入的普遍现象导致的分数模型无法正确优化的问题。因为将数据不断扰动，能使其充满整个空间，同时，低密度区域得到了有效填充，另外不同尺度，从极小扰动到不断增幅扰动因子，使得一个分数模型在全空间中去拟合不同尺度的扰动，得到非常充分的训练，因此其逆向采样，能更好的近似到原始分布。
+
+称$\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)$为Noise Conditional Score Network (NCSN)是指：
+设扰动因子$\{\sigma_i\}_{i=1}^{L}$满足$\frac{\sigma_1}{\sigma_2}=\dots=\frac{\sigma_{L-1}}{\sigma_L}>1 $，
+定义扰动尺度为$\sigma$的数据分布
+\begin{equation}
+q_\sigma(\tilde{\mathbf{x}}) \triangleq \int p_{\text {data }}(\mathbb{t}) \mathcal{N}(\tilde{\mathbf{x}} \mid \mathbb{t}, \sigma^2I)\,\mathrm d\mathbb t
+\end{equation}
+训练一个
+\begin{equation}
+\forall \sigma \in\left\{\sigma_i\right\}_{i=1}^L: \mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}, \sigma) \approx \nabla_{\mathbf{x}} \log q_\sigma(\tilde{\mathbf{x}})
+\end{equation}
+的网络，其中$ \mathbf{x} \in \mathbb{R}^{D}, \mathbf{s}_{\boldsymbol{\theta}} \in \mathbb{R}^{D}$。
+
+因$q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x})=\mathcal{N}\left(\tilde{\mathbf{x}} \mid \mathbf{x}, \sigma^2 I\right)$，有$\nabla_{\tilde{\mathbf{x}}} \log q_\sigma(\tilde{\mathbf{x}} \mid \mathbf{x})=-(\tilde{\mathbf{x}}-\mathbf{x}) / \sigma^2$，于是对于给定的尺度$\sigma$，其去噪分数匹配损失为：
+\begin{equation}
+\ell(\boldsymbol{\theta} ; \sigma) \triangleq \frac{1}{2} \mathbb{E}_{p_{\text {data }}(\mathbf{x})} \mathbb{E}_{\tilde{\mathbf{x}} \sim \mathcal{N}\left(\mathbf{x}, \sigma^2 I\right)}\left[\left\|\mathrm{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}, \sigma)+\frac{\tilde{\mathbf{x}}-\mathrm{x}}{\sigma^2}\right\|_2^2\right]
+\end{equation}
+对于所有尺度$\forall \sigma \in\left\{\sigma_i\right\}_{i=1}^L$得到最终的优化目标：
+\begin{equation}
+\mathcal{L}\left(\boldsymbol{\theta} ;\left\{\sigma_i\right\}_{i=1}^L\right) \triangleq \frac{1}{L} \sum_{i=1}^L \lambda\left(\sigma_i\right) \ell\left(\boldsymbol{\theta} ; \sigma_i\right)
+\end{equation}其中$ \lambda\left(\sigma_i\right)>0$，为依赖于$\sigma_i$的系数函数。
+
+该目标函数的最优解$\mathbf{s}_{\boldsymbol{\theta}^*}(\mathbf{x}, \sigma)$满足
+$\forall i \in \{1, 2, \cdots, L \}, \mathbf{s}_{\boldsymbol{\theta}^*}\left(\mathbf{x}, \sigma_i\right)=\nabla_{\mathbf{x}} \log q_{\sigma_i}(\mathbf{x})$。$\lambda(\cdot)$选择使得所有尺度因子的数量级一致，经验得知，一个训练好的分数模型，其范数正比于尺度的倒数，又$\frac{\tilde{\mathbf{x}}-\mathbf{x}}{\sigma} \sim \mathcal{N}(0, I)$，因此，选择$\lambda(\sigma)=\sigma^2$，使得$\left\|\sigma \mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}, \sigma)\right\|_2 \propto 1$。
+
+最后论文提出了annealed Langevin dynamics采样算法（对比式\eqref{orig:langevin}）：
+将原始步长$\epsilon$改进为$\epsilon \cdot \sigma^2_i / \sigma^2_L$。
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.9]{image/NCSNLD.jpg}
+\caption{NCSN annealed Langevin dynamics}
+\label{fig:NCSN}
+\end{figure}
+
+\subsection{score matching}
+
+\input{chapters/theory/additions/score-matching}
+
+
+\subsection{极大似然的计算}
+Yang Song继其SGM模型，给出了SDE解的边缘分布同数据的分布的KL散度与SM模型优化对象的存在一个不等关系，说明在指定权重与正则条件下，分数匹配误差可控制反向 SDE 的数据分布误差。这个界本身不是逐样本似然的计算公式。
+
+具体来讲：
+\begin{equation}
+D_{\mathrm{KL}}\left(p \| p_{\boldsymbol{\theta}}^{\mathrm{SDE}}\right) \leq \mathcal{J}_{\mathrm{SM}}\left(\boldsymbol{\theta} ; g(\cdot)^2\right)+D_{\mathrm{KL}}\left(p_T \| \pi\right)
+\end{equation}
+这里的训练对象仍是分数网络；概率流 ODE 是由它进一步构造的。
+
+在此基础上Cheng Lu等人，给出了扩散对应的ODE的似然函数的上界。
+\begin{equation}
+\mathcal{J}_{\mathrm{ODE}}(\theta) \leq \sqrt{\mathcal{J}_{\mathrm{SM}}(\theta)} \cdot \sqrt{\mathcal{J}_{\text {Fisher }}(\theta)}
+\end{equation}
+
+相关分析表明，一阶分数匹配误差本身不足以无条件控制 ODE 的似然误差；在相应假设下，高阶分数误差也进入控制关系，由此提出高阶去噪分数匹配训练。似然改善与样本质量仍应分别评估。
+
+\input{chapters/theory/additions/likelihood}
+
+
+\section{连续版Score SDE}
+
+\input{chapters/theory/additions/sde-notation}
+
+SDE中的噪声尺度因子，和NCSN的写法就大小比较在指标上是相反的，原因在于使用DDPM的方式，重新定义了NCSN中的优化目标，得到
+\begin{equation}
+\label{orig:discrete-score}
+\boldsymbol{\theta}^*=\underset{\boldsymbol{\theta}}{\arg \min } \sum_{i=1}^N\left(1-\alpha_i\right) \mathbb{E}_{p_{\text {data }}(\mathbf{x})} \mathbb{E}_{p_{\alpha_i}(\tilde{\mathbf{x}} \mid \mathbf{x})}\left[\left\|\mathbf{s}_{\boldsymbol{\theta}}(\tilde{\mathbf{x}}, i)-\nabla_{\tilde{\mathbf{x}}} \log p_{\alpha_i}(\tilde{\mathbf{x}} \mid \mathbf{x})\right\|_2^2\right] .
+\end{equation}
+和逆向马尔科夫链(采样)
+\begin{equation}
+\mathbf{x}_{i-1}=\frac{1}{\sqrt{1-\beta_i}}\left(\mathbf{x}_i+\beta_i \mathbf{s}_{\boldsymbol{\theta}^*}\left(\mathbf{x}_i, i\right)\right)+\sqrt{\beta_i} \mathbf{z}_i, \quad i=N, N-1, \cdots, 1
+\end{equation}
+论文中将其称为ancestral sampling。
+
+问题是式\eqref{orig:discrete-score}能通过ELBO推导出来？通过ELBO推导出来，优化的是均值，而转移概率为高斯，对数求导后，差不多也是均值。仔细检查下，应该就是通过ELBO得到式\eqref{orig:discrete-score}所示的分数表达形式。
+
+两者的分数表达形式和采样形式差别不大，将其连续化，并做形式上的推广，得到$It\hat{o}$ SDE方程：
+\begin{equation}
+\mathrm{d} \mathbf{x}=\mathbf{f}(\mathbf{x}, t) \mathrm{d} t+g(t) \mathrm{d} \mathbf{w}
+\end{equation}
+而Anderson (1982) 的论文表示，其逆向也是扩散过程， reverse-time SDE为：
+\begin{equation}
+\mathrm{d} \mathbf{x}=\left[\mathbf{f}(\mathbf{x}, t)-g(t)^2 \nabla_{\mathbf{x}} \log p_t(\mathbf{x})\right] \mathrm{d} t+g(t) \mathrm{d} \overline{\mathbf{w}}
+\end{equation}
+其对应的优化目标可写为：
+\begin{equation}
+\boldsymbol{\theta}^*=\underset{\boldsymbol{\theta}}{\arg \min } \mathbb{E}_t\left\{\lambda(t) \mathbb{E}_{\mathbf{x}(0)} \mathbb{E}_{\mathbf{x}(t) \mid \mathbf{x}(0)}\left[\left\|\mathbf{s}_{\boldsymbol{\theta}}(\mathbf{x}(t), t)-\nabla_{\mathbf{x}(t)} \log p_{0 t}(\mathbf{x}(t) \mid \mathbf{x}(0))\right\|_2^2\right]\right\} .
+\end{equation}
+其中$\lambda:[0, T] \rightarrow \mathbb{R}_{>0}, t\in [0, T], \mathbf{x}(0) \sim p_0(\mathbf{x}), \mathbf{x}_t \sim p_{0t}(\mathbf{x}(t) \mid \mathbf{x}(0))$
+其解$\mathbf{s}_{\boldsymbol{\theta}^*}\left(\mathbf{x}, t\right)=\nabla_{\mathbf{x}} \log p_{t}(\mathbf{x})$对几乎所有$\mathbf{x}, t$成立。
+另外需要注意的是，对这里预先规定的前向过程，若$\mathbf{f}(\cdot, t)$是仿射的，则转移核是高斯分布。均值和方差能通过相应方程计算出来，参考( Arno Solin 2019)Applied stochastic differential equations。
+
+这里需要注意的是，论文2.1节指出，NCSN尺度上的逆向描述被简写为SMLD(DENOISING SCORE MATCHING WITH LANGEVIN  DYNAMICS)，另外在3.4节，对其做连续化SDE推导的时候，扩散过程也是满足马尔可夫性的。这点和NCSN中从大到小尺度添加噪声训练分数匹配模型NCSN是不同的，其扰动核没有马尔可夫性假设，但是蕴含了马尔科夫性。
+具体来说，$p_{\sigma_i}(\mathbf{x} \mid \mathbf{x_0})$对应的$\mathbf{x}_i$满足如下的马尔科夫链：
+\begin{equation}
+\mathbf{x}_i=\mathbf{x}_{i-1}+\sqrt{\sigma_i^2-\sigma_{i-1}^2} \mathbf{z}_{i-1}, \quad i=1, \cdots, N
+\end{equation}
+这里方差是$\sigma_i^2-\sigma_{i-1}^2$的原因在于SMLD并不是DDPM那样递归的定义，而是在$\mathbf{x}_0$上，逐级的增加扰动噪声$\mathbf{x}_{\sigma_i}=\mathbf{x}_0+\sigma_i z$，$z\sim\mathcal N(0,I)$。上式连续化得到
+\begin{equation}
+\mathrm{d} \mathbf{x}=\sqrt{\frac{\mathrm{d}\left[\sigma^2(t)\right]}{\mathrm{d} t}} \mathrm{~d} \mathbf{w} .
+\end{equation}
+表达了$\{\mathbf{x}(t)\}^{1}_{t=0}$的前向过程的SDE形式。
+
+DDPM的扰动核$\left\{p_{\alpha_i}\left(\mathbf{x} \mid \mathbf{x}_0\right)\right\}_{i=1}^N$
+对应的离散马尔科夫链：
+\begin{equation}
+\mathbf{x}_i=\sqrt{1-\beta_i} \mathbf{x}_{i-1}+\sqrt{\beta_i} \mathbf{z}_{i-1}, \quad i=1, \cdots, N
+\end{equation}
+当$N \rightarrow \infty$时，收敛到如下SDE：
+
+\begin{equation}
+\mathrm{d} \mathbf{x}=-\frac{1}{2} \beta(t) \mathbf{x} \mathrm{d} t+\sqrt{\beta(t)} \mathrm{d} \mathbf{w}
+\end{equation}
+
+论文称SMLD的SDE为Variance Exploding (VE) SDE， 称DDPM的SDE为Variance Preserving (VP) SDE， 并给出了 sub-VP SDE：
+\begin{equation}
+\mathrm{d} \mathbf{x}=-\frac{1}{2} \beta(t) \mathbf{x} \mathrm{d} t+\sqrt{\beta(t)\left(1-e^{-2 \int_0^t \beta(s) \mathrm{d} s}\right)} \mathrm{d} \mathbf{w}
+\end{equation}其在似然函数的计算上更加准确。
+
+当得到分数模型后，就可以利用reverse-time SDE 采样得到生成样本。数值求解器也可以提供来自SDEs的近似轨迹，比如Euler-Maruyama，Runge-Kutta methods等方法，可以用来求解reverse-time SDE，获得生成样本。
+另外DDPM的祖先采样法，不能用在VE SDE，作者这里提出了reverse diffusion samplers，具体分析细节可看附录E部分。因为这里有训练好的分数模型，有利于求解，而分数模型有对应的郎之万MCMC采样，因此作者综合考虑这些特性，给出了Predictor-Corrector(PC) samplers 采样器，其结合了分数模型的采样特点，也考虑了SDE的数值求解，同时也考虑了DDPM等的采样方法。
+细节见附录部分。
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.5]{image/PredictorCorrector.jpg}
+\caption{SDE Predictor Corrector}
+\label{fig:PC}
+\end{figure}
+
+另外SDE有对应的常微分方程，
+\begin{equation}
+\mathrm{d} \mathbf{x}=\left[\mathbf{f}(\mathbf{x}, t)-\frac{1}{2} g(t)^2 \nabla_{\mathbf{x}} \log p_t(\mathbf{x})\right] \mathrm{d} t
+\end{equation}
+该常微分方程的解，保持SDE所有边缘分布，且构成是确定的。作者将其称为probability flow ODE。当分析模型得到恰当的训练后，它就是一个neural network(Neural Ordinary Differential Equations)，且能用来精确的计算数据(在量化的意义下)的似然值。这块内容在“极大似然的计算”章节中细讲。
+% \subsection{stochastic gradient Langevin dynamics}
+
+\input{chapters/theory/additions/probability-flow}
+
+\input{chapters/theory/additions/parameterizations}
+
+
+
+\section{一些理论结果}
+分数匹配的误差在什么条件下能控制生成分布的误差？先看前面提到的这个界：
+\begin{equation}
+  \begin{aligned} \mathbf{KL}\left(p_0(\mathbf{x}) \| p_\theta(\mathbf{x})\right) \leq \frac{T}{2} \mathbb{E}_{t \in \mathcal{U}(0, T)} \mathbb{E}_{p_t(\mathbf{x})}\left[\lambda(t) \| \nabla_{\mathbf{x}} \log p_t(\mathbf{x})-\right. 
+    & \left.\mathbf{s}_\theta(\mathbf{x}, t) \|_2^2\right] \\ + 
+    & \operatorname{KL}\left(p_T \| \pi\right)
+  \end{aligned}
+\end{equation}
+\input{chapters/theory/additions/guarantees}
+
+
+\section{采样加速}
+\subsection{DDIM}
+
+\input{chapters/theory/additions/ddim-notation}
+
+将DDPM的前向马尔科夫链推广为非马尔科夫过程。
+$$
+q_\sigma\left(x_{1: T} \mid x_0\right):=q_\sigma\left(x_T \mid x_0\right) \prod_{t=2}^T q_\sigma\left(x_{t-1} \mid x_t, x_0\right)
+$$
+where $q_\sigma\left(\boldsymbol{x}_T \mid \boldsymbol{x}_0\right)=\mathcal{N}\left(\sqrt{\alpha_T} \boldsymbol{x}_0,\left(1-\alpha_T\right) \boldsymbol{I}\right)$ and for all $t>1$,
+$$
+q_\sigma\left(x_{t-1} \mid x_t, x_0\right)=\mathcal{N}\left(\sqrt{\alpha_{t-1}} x_0+\sqrt{1-\alpha_{t-1}-\sigma_t^2} \cdot \frac{x_t-\sqrt{\alpha_t} x_0}{\sqrt{1-\alpha_t}}, \sigma_t^2 \boldsymbol{I}\right) .
+$$
+
+The mean function is chosen to order to ensure that $q_\sigma\left(x_t \mid x_0\right)=\mathcal{N}\left(\sqrt{\alpha_t} x_0,\left(1-\alpha_t\right) \boldsymbol{I}\right)$ for all $t$ (see Lemma 1 of Appendix B), so that it defines a joint 
+inference distribution that matches the "marginals" as desired. The forward process ${ }^3$ can be derived from Bayes' rule:
+$$
+q_\sigma\left(x_t \mid x_{t-1}, x_0\right)=\frac{q_\sigma\left(x_{t-1} \mid x_t, x_0\right) q_\sigma\left(x_t \mid x_0\right)}{q_\sigma\left(x_{t-1} \mid x_0\right)}
+$$
+因为这篇文章是在SGM之后，所以也做了ODE的分析。推导过程和ELBO一致，不赘述。
+
+后续文章ANALYTIC-DPM证明了DDPM，DDIM论文中轨迹中的最优均值和最优方差，均可解析解到，但是，解是用分数函数来表达的，其实就相当于没有，因为分数模型的训练就是DDPM模型的训练。ANALYTIC-DPM一文的前向是DDIM的模式，但是在推导过程中，作者把均值用DDIM模型表达的式子替换为理论上等价的分数模型，因分数模型有具体的表达式，因此整个计算能走下去。
+
+\input{chapters/theory/additions/ddim}
+
+
+\subsection{ODE求解:dpm++等}
+DPM-Solver是用SDE的思路，写出DDPM的reverse time SDE 和diffusion  ODE，并利用变量替换法精确积分已知的线性部分，剩余网络积分再作数值近似，从而用更少的网络调用达到加速效果。
+
+DPM-Solver++是在DPM-Solver的基础上，考虑了引导因子(guide scale)$s$，并在多阶展开逼近上，给出了较DPM-Solver更具体的多阶求解器，同时证明了DDIM是其一阶求解器。另外考虑引导因子，是因为扩散模型训练中发现增加无分类器引导（classifier-free guidance），能带来更好的生成效果。
+
+因为算法本身和训练无关，只用在采样生成样本中，因此法只需要不多的代码，就能实现，而且在实际中成为比较好的加速版的采样求解器。
+
+\input{chapters/theory/additions/solvers}
+
+\subsection{蒸馏}
+
+\input{chapters/theory/additions/distillation}
+
+
+
+\section{一致性模型}
+PF ODE将数据光滑的映射到噪声，一致性模型将ODE的迹上的任意点$x_{t^{\prime}}, x_T$映射到初始点$x_0$。这些所有映射被称为一致性模型，因为其在一个迹上的输出都被映射到迹中初始点了。 A notable property of our model is self-consistency: points on the same trajectory map to the same initial point.
+
+这里的一致性主要为了加速采样的。
+两种训练方式：需要一个扩散模型+对应的ODE，在PF ODE的迹上生成成对的相邻点。最小化这些成对点关于模型的输出的差(L1/L2)值。二种方式是单独训练一致性模型。
+蒸馏训练：
+
+$$\begin{aligned} & \mathcal{L}_{C D}^N\left(\boldsymbol{\theta}, \boldsymbol{\theta}^{-} ; \boldsymbol{\phi}\right):= \\ & \quad \mathbb{E}\left[\lambda\left(t_n\right) d\left(\boldsymbol{f}_{\boldsymbol{\theta}}\left(\mathbf{x}_{t_{n+1}}, t_{n+1}\right), \boldsymbol{f}_{\boldsymbol{\theta}^{-}}\left(\hat{\mathbf{x}}_{t_n}^\phi, t_n\right)\right)\right]\end{aligned}$$
+
+蒸馏方式可以将扩散模型蒸馏到一次采样。
+
+独立训练基础：
+
+$\text { Lemma 1. Let } \mathbf{x} \sim p_{\text {data }}(\mathbf{x}), \mathbf{x}_t \sim \mathcal{N}\left(\mathbf{x}, t^2 \boldsymbol{I}\right)$ \text {, and }  $p_t\left(\mathbf{x}_t\right)=p_{\text {data }}(\mathbf{x}) \otimes \mathcal{N}\left(\mathbf{0}, t^2 \boldsymbol{I}\right) $ \text {. We have } 
+\begin{equation} 
+  \nabla_{\mathbf x_t}\log p_t(\mathbf{x}_t)=-\mathbb{E}\left[\frac{\mathbf{x}_t-\mathbf{x}}{t^2} \mid \mathbf{x}_t\right] \text {. }
+\end{equation}
+
+一个随便的网络作为一致性函数的逼近表达：
+$\boldsymbol{f}_{\boldsymbol{\theta}}(\mathbf{x}, t)=c_{\text {skip }}(t) \mathbf{x}+c_{\text {out }}(t) F_{\boldsymbol{\theta}}(\mathbf{x}, t)$
+
+\subsection{LCM}
+自编码$(\mathcal{E}, \mathcal{D})$：$z=\mathcal{E}(x), \bar{x}=\mathcal{D}(z)$将图像压缩到隐变量空间，在隐变量空间中，逆向扩散过程的PF-ODE为：
+\begin{equation}
+\frac{\mathbf{d} \boldsymbol{z}_t}{\mathbf{~d} t}=f(t) \boldsymbol{z}_t+\frac{g^2(t)}{2 \sigma_t} \boldsymbol{\epsilon}_\theta\left(\boldsymbol{z}_t, \boldsymbol{c}, t\right), \quad \boldsymbol{z}_T \sim \mathcal{N}\left(\mathbf{0}, \tilde{\sigma}^2 \boldsymbol{I}\right)
+\end{equation}
+其中$\boldsymbol{\epsilon}_\theta\left(\boldsymbol{z}_t, \boldsymbol{c}, t\right)$表示噪声预测模型，$\boldsymbol{c}$是条件因子，比如文本。
+
+定义一致性函数：$f_{\boldsymbol{\theta}}:\left(z_{\boldsymbol{t}}, \boldsymbol{c}, t\right) \mapsto z_0$
+
+\begin{equation}
+\boldsymbol{f}_{\boldsymbol{\theta}}(\boldsymbol{z}, \boldsymbol{c}, t)=c_{\text {skip }}(t) \boldsymbol{z}+c_{\mathbf{out}}(t)\left(\frac{\boldsymbol{z}-\sigma_t \hat{\boldsymbol{\epsilon}}_\theta(\boldsymbol{z}, \boldsymbol{c}, t)}{\alpha_t}\right)
+\end{equation}
+其中$c_{skip}(0)=1, c_{out}(0)=0$, $\boldsymbol{\bar{\epsilon}}_\theta\left(\boldsymbol{z}_t, \boldsymbol{c}, t\right)$ 为一预训练扩散模型作为初始化的网络。
+
+这里常微分的边缘解，用了DPM++这种数值解方式。
+容易给出一致性蒸馏损失：
+\begin{equation}
+\mathcal{L}_{\mathcal{C D}}\left(\boldsymbol{\theta}, \boldsymbol{\theta}^{-} ; \Psi\right)=\mathbb{E}_{\boldsymbol{z}, \boldsymbol{c}, n}\left[d\left(\boldsymbol{f}_{\boldsymbol{\theta}}\left(\boldsymbol{z}_{t_{n+1}}, \boldsymbol{c}, t_{n+1}\right), \boldsymbol{f}_{\boldsymbol{\theta}^{-}}\left(\hat{\boldsymbol{z}}_{t_n}^{\Psi}, \boldsymbol{c}, t_n\right)\right)\right]
+\end{equation}
+
+其中$\hat{\boldsymbol{z}}_{t_n}^{\Psi}$表示使用ODE解$\Psi$ 从$t_{n+1} \rightarrow t_n$：
+\begin{equation}
+\hat{z}_{t_n}^{\Psi}-z_{t_{n+1}}=\int_{t_{n+1}}^{t_n}\left(f(t) z_t+\frac{g^2(t)}{2 \sigma_t} \epsilon_\theta\left(z_t, \boldsymbol{c}, t\right)\right) \mathbf{d} t \approx \Psi\left(z_{t_{n+1}}, t_{n+1}, t_n, \boldsymbol{c}\right)
+\end{equation}
+
+增加CFG对文字图像对齐，以及生成质量提高都能带来好处， 在原始扩散模型中，CFG使用如下：
+\begin{equation}
+\tilde{\boldsymbol{\epsilon}}_\theta\left(z_t, \omega, \boldsymbol{c}, t\right):=(1+\omega) \boldsymbol{\epsilon}_\theta\left(z_t, \boldsymbol{c}, t\right)-\omega \boldsymbol{\epsilon}_\theta\left(z_t, \varnothing, t\right)
+\end{equation}
+其中$\omega$称为guidance scale。
+将此式作为替换项即可。
+同时为了能使用DDIM, DPM++来解PF-ODE, 对替换后的式子需做如下简化：
+\begin{equation}
+\begin{aligned}
+\hat{\boldsymbol{z}}_{t_n}^{\Psi, \omega}-\boldsymbol{z}_{t_{n+1}} & =\int_{t_{n+1}}^{t_n}\left(f(t) \boldsymbol{z}_t+\frac{g^2(t)}{2 \sigma_t} \tilde{\boldsymbol{\epsilon}}_\theta\left(\boldsymbol{z}_t, \omega, \boldsymbol{c}, t\right)\right) \mathbf{d} t \\
+& =(1+\omega) \int_{t_{n+1}}^{t_n}\left(f(t) \boldsymbol{z}_t+\frac{g^2(t)}{2 \sigma_t} \boldsymbol{\epsilon}_\theta\left(\boldsymbol{z}_t, \boldsymbol{c}, t\right)\right) \mathbf{d} t-
+\omega \int_{t_{n+1}}^{t_n}\left(f(t) \boldsymbol{z}_t+\frac{g^2(t)}{2 \sigma_t} \boldsymbol{\epsilon}_\theta\left(\boldsymbol{z}_t, \varnothing, t\right)\right) \mathbf{d} t \\
+& \approx(1+\omega) \Psi\left(\boldsymbol{z}_{t_{n+1}}, t_{n+1}, t_n, \boldsymbol{c}\right)-\omega \Psi\left(\boldsymbol{z}_{t_{n+1}}, t_{n+1}, t_n, \varnothing\right) .
+\end{aligned}
+\end{equation}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=\linewidth]{image/LCD.jpg}
+\caption{Latent Consistency Distillation}
+\label{fig:LCD}
+\end{figure}
+
+\input{chapters/theory/additions/consistency-updates}
+
+
+\subsection{角色一致性}
+
+\input{chapters/theory/additions/identity}
+
+\input{chapters/theory/additions/discrete}
+
+
+
+\section{应用}
+
+\input{chapters/theory/additions/historical-applications}
+
+\begin{itemize}
+    \item 1千万文本对数据，模型参数22M ：DeepSpeed ZeRO-2 +  8 V100 + 1M steps + bs=8 per GPU
+    \item 5千万图文对+1千万高质量人数据：48 NVIDIA H800 GPUs (80GB) + 2 per GPU ( InstantID)
+    \item 3百万图文对数据，模型参数1431.6M(367M)： 10 epochs using 8 Tesla A100 GPUs+progressive 
+    \item 百万数据+万ID+caption：8 A100 GPUs + two weeks + bs=48
+    \item 256-coreTPU-v3 pod, training DiT-L takes 12 hours.
+    \item 通常是128*60=48*180：沉没成本比较大
+    \item 组合思路难度小，混杂的库太多，数据集制作繁杂，比较占资源(意义不大)
+    \item 优点：1d 扩散，simplify unet, only one bvh(400+frames) data, any topology,  4GGPU memory, 1 hour training cost, 5 infer applications，long frames generator
+\end{itemize}
+
+\subsection{多模态}
+
+排列组合+卡+数据，太多了。
+
+\subsubsection{VAE、CLIP、U-Net、U-ViT、DiT等模块}
+
+\input{chapters/theory/additions/modules}
+
+\begin{equation}
+  \begin{aligned} & 
+    \text { Attention }(\mathbf{Q}, \mathbf{K}, \mathbf{V})=\operatorname{softmax}\left(\frac{\mathbf{Q K}^{\top}}{\sqrt{d}}\right) \cdot \mathbf{V} \\ 
+    & \text { where } \mathbf Q=\varphi_i(\mathbf z_i)\mathbf W_Q^{(i)},\quad\mathbf K=\tau_\theta(y)\mathbf W_K^{(i)},\quad\mathbf V=\tau_\theta(y)\mathbf W_V^{(i)} \\ 
+    & \text { and } \mathbf W_Q^{(i)}\in\mathbb R^{d_c^i\times d},\quad\mathbf W_K^{(i)},\mathbf W_V^{(i)}\in\mathbb R^{d_r\times d}, \varphi_i\left(\mathbf{z}_i\right) \in \mathbb{R}^{N \times d_c^i}, \tau_\theta(y) \in \mathbb{R}^{M \times d_r}
+  \end{aligned}
+\end{equation}
+
+
+\subsection{Rectified Flow}
+
+\input{chapters/theory/additions/flow}
+
+\subsubsection{条件控制}
+
+\input{chapters/theory/additions/guidance}
+
+\subsection{变大}
+\subsubsection{SDXL}
+
+\input{chapters/theory/additions/scaling}
+
+\subsection{Finetune}
+\subsubsection{LORA}
+
+\input{chapters/theory/additions/lora}
+
+\subsection{3D重建}
+
+\input{chapters/theory/additions/geometry}
+
+\subsection{动画动作生成}
+\subsubsection{SinMDM}
+
+\input{chapters/theory/additions/motion}
+
+
+\section{框架实现}
+\subsection{Diffusers、SCEPTER}
+
+\input{chapters/theory/additions/frameworks}
+
+\subsection{ComfyUI、WebUI、Fooocus}
+
+\input{chapters/theory/additions/workflows}
+
+
+
+
+

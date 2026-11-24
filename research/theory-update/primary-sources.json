@@ -1,0 +1,280 @@
+[
+  {
+    "id": "ddpm",
+    "arxiv_id": "2006.11239",
+    "version": "v2",
+    "url": "https://arxiv.org/abs/2006.11239v2",
+    "title": "Denoising Diffusion Probabilistic Models",
+    "authors": [
+      "Ho, Jonathan",
+      "Jain, Ajay",
+      "Abbeel, Pieter"
+    ],
+    "history": "Submission history From: Jonathan Ho [ view email ] [v1] Fri, 19 Jun 2020 17:24:44 UTC (9,134 KB) [v2] Wed, 16 Dec 2020 21:15:05 UTC (9,137 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "sde",
+    "arxiv_id": "2011.13456",
+    "version": "v2",
+    "url": "https://arxiv.org/abs/2011.13456v2",
+    "title": "Score-Based Generative Modeling through Stochastic Differential Equations",
+    "authors": [
+      "Song, Yang",
+      "Sohl-Dickstein, Jascha",
+      "Kingma, Diederik P.",
+      "Kumar, Abhishek",
+      "Ermon, Stefano",
+      "Poole, Ben"
+    ],
+    "history": "Submission history From: Yang Song [ view email ] [v1] Thu, 26 Nov 2020 19:39:10 UTC (32,781 KB) [v2] Wed, 10 Feb 2021 18:17:04 UTC (56,849 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "ddim",
+    "arxiv_id": "2010.02502",
+    "version": "v4",
+    "url": "https://arxiv.org/abs/2010.02502v4",
+    "title": "Denoising Diffusion Implicit Models",
+    "authors": [
+      "Song, Jiaming",
+      "Meng, Chenlin",
+      "Ermon, Stefano"
+    ],
+    "history": "Submission history From: Jiaming Song [ view email ] [v1] Tue, 6 Oct 2020 06:15:51 UTC (7,441 KB) [v2] Thu, 4 Nov 2021 03:52:44 UTC (10,989 KB) [v3] Thu, 9 Jun 2022 04:19:30 UTC (10,153 KB) [v4] Wed, 5 Oct 2022 20:19:21 UTC (10,153 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "fm",
+    "arxiv_id": "2210.02747",
+    "version": "v2",
+    "url": "https://arxiv.org/abs/2210.02747v2",
+    "title": "Flow Matching for Generative Modeling",
+    "authors": [
+      "Lipman, Yaron",
+      "Chen, Ricky T. Q.",
+      "Ben-Hamu, Heli",
+      "Nickel, Maximilian",
+      "Le, Matt"
+    ],
+    "history": "Submission history From: Yaron Lipman [ view email ] [v1] Thu, 6 Oct 2022 08:32:20 UTC (23,746 KB) [v2] Wed, 8 Feb 2023 15:46:05 UTC (37,148 KB)",
+    "checked_on": "2026-11-24",
+    "pdf_url": "https://arxiv.org/pdf/2210.02747v2",
+    "pdf_sha256": "5eeb39ba516396924aba4787452f9d0abdee88467a4d0c264d9f66cad0c5ee14",
+    "pdf_pages": 28
+  },
+  {
+    "id": "rf",
+    "arxiv_id": "2209.03003",
+    "version": "v1",
+    "url": "https://arxiv.org/abs/2209.03003v1",
+    "title": "Flow Straight and Fast: Learning to Generate and Transfer Data with Rectified Flow",
+    "authors": [
+      "Liu, Xingchao",
+      "Gong, Chengyue",
+      "Liu, Qiang"
+    ],
+    "history": "Submission history From: Xingchao Liu [ view email ] [v1] Wed, 7 Sep 2022 08:59:55 UTC (16,160 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "edm",
+    "arxiv_id": "2206.00364",
+    "version": "v2",
+    "url": "https://arxiv.org/abs/2206.00364v2",
+    "title": "Elucidating the Design Space of Diffusion-Based Generative Models",
+    "authors": [
+      "Karras, Tero",
+      "Aittala, Miika",
+      "Aila, Timo",
+      "Laine, Samuli"
+    ],
+    "history": "Submission history From: Samuli Laine [ view email ] [v1] Wed, 1 Jun 2022 10:03:24 UTC (13,278 KB) [v2] Tue, 11 Oct 2022 13:20:30 UTC (16,001 KB)",
+    "checked_on": "2026-11-24",
+    "pdf_url": "https://arxiv.org/pdf/2206.00364v2",
+    "pdf_sha256": "0cf53de9ac234366fdba08d472afa236d46edd8202fda340f579aa2db866087a",
+    "pdf_pages": 47
+  },
+  {
+    "id": "dpm",
+    "arxiv_id": "2206.00927",
+    "version": "v3",
+    "url": "https://arxiv.org/abs/2206.00927v3",
+    "title": "DPM-Solver: A Fast ODE Solver for Diffusion Probabilistic Model Sampling in Around 10 Steps",
+    "authors": [
+      "Lu, Cheng",
+      "Zhou, Yuhao",
+      "Bao, Fan",
+      "Chen, Jianfei",
+      "Li, Chongxuan",
+      "Zhu, Jun"
+    ],
+    "history": "Submission history From: Cheng Lu [ view email ] [v1] Thu, 2 Jun 2022 08:43:16 UTC (14,786 KB) [v2] Mon, 8 Aug 2022 08:44:09 UTC (14,955 KB) [v3] Thu, 13 Oct 2022 12:04:36 UTC (14,955 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "dpmpp",
+    "arxiv_id": "2211.01095",
+    "version": "v3",
+    "url": "https://arxiv.org/abs/2211.01095v3",
+    "title": "DPM-Solver++: Fast Solver for Guided Sampling of Diffusion Probabilistic Models",
+    "authors": [
+      "Lu, Cheng",
+      "Zhou, Yuhao",
+      "Bao, Fan",
+      "Chen, Jianfei",
+      "Li, Chongxuan",
+      "Zhu, Jun"
+    ],
+    "history": "Submission history From: Yuhao Zhou [ view email ] [v1] Wed, 2 Nov 2022 13:14:30 UTC (10,729 KB) [v2] Sat, 6 May 2023 17:15:37 UTC (9,895 KB) [v3] Mon, 19 May 2025 07:56:56 UTC (9,895 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "cm",
+    "arxiv_id": "2303.01469",
+    "version": "v2",
+    "url": "https://arxiv.org/abs/2303.01469v2",
+    "title": "Consistency Models",
+    "authors": [
+      "Song, Yang",
+      "Dhariwal, Prafulla",
+      "Chen, Mark",
+      "Sutskever, Ilya"
+    ],
+    "history": "Submission history From: Yang Song [ view email ] [v1] Thu, 2 Mar 2023 18:30:16 UTC (44,064 KB) [v2] Wed, 31 May 2023 06:17:10 UTC (28,910 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "ict",
+    "arxiv_id": "2310.14189",
+    "version": "v1",
+    "url": "https://arxiv.org/abs/2310.14189v1",
+    "title": "Improved Techniques for Training Consistency Models",
+    "authors": [
+      "Song, Yang",
+      "Dhariwal, Prafulla"
+    ],
+    "history": "Submission history From: Yang Song [ view email ] [v1] Sun, 22 Oct 2023 05:33:38 UTC (26,022 KB)",
+    "checked_on": "2026-11-24",
+    "pdf_url": "https://arxiv.org/pdf/2310.14189v1",
+    "pdf_sha256": "2c77b5ae689be478b2afe9f3a8149b4e4755a357c67be0a0c96fa06ac0d45b31",
+    "pdf_pages": 20
+  },
+  {
+    "id": "ctm",
+    "arxiv_id": "2310.02279",
+    "version": "v3",
+    "url": "https://arxiv.org/abs/2310.02279v3",
+    "title": "Consistency Trajectory Models: Learning Probability Flow ODE Trajectory of Diffusion",
+    "authors": [
+      "Kim, Dongjun",
+      "Lai, Chieh-Hsin",
+      "Liao, Wei-Hsiang",
+      "Murata, Naoki",
+      "Takida, Yuhta",
+      "Uesaka, Toshimitsu",
+      "He, Yutong",
+      "Mitsufuji, Yuki",
+      "Ermon, Stefano"
+    ],
+    "history": "Submission history From: Dongjun Kim [ view email ] [v1] Sun, 1 Oct 2023 05:07:17 UTC (4,289 KB) [v2] Wed, 13 Mar 2024 04:50:56 UTC (2,657 KB) [v3] Sat, 30 Mar 2024 06:29:48 UTC (2,657 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "meanflow",
+    "arxiv_id": "2505.13447",
+    "version": "v1",
+    "url": "https://arxiv.org/abs/2505.13447v1",
+    "title": "Mean Flows for One-step Generative Modeling",
+    "authors": [
+      "Geng, Zhengyang",
+      "Deng, Mingyang",
+      "Bai, Xingjian",
+      "Kolter, J. Zico",
+      "He, Kaiming"
+    ],
+    "history": "Submission history From: Zhengyang Geng [ view email ] [v1] Mon, 19 May 2025 17:59:42 UTC (4,051 KB)",
+    "checked_on": "2026-11-24",
+    "pdf_url": "https://arxiv.org/pdf/2505.13447v1",
+    "pdf_sha256": "322ba9244ad2c72382038e421fe0ffa92510c51d4f9c740bd7282b36bfc25206",
+    "pdf_pages": 16
+  },
+  {
+    "id": "dmd2",
+    "arxiv_id": "2405.14867",
+    "version": "v2",
+    "url": "https://arxiv.org/abs/2405.14867v2",
+    "title": "Improved Distribution Matching Distillation for Fast Image Synthesis",
+    "authors": [
+      "Yin, Tianwei",
+      "Gharbi, Michaël",
+      "Park, Taesung",
+      "Zhang, Richard",
+      "Shechtman, Eli",
+      "Durand, Fredo",
+      "Freeman, William T."
+    ],
+    "history": "Submission history From: Tianwei Yin [ view email ] [v1] Thu, 23 May 2024 17:59:49 UTC (15,816 KB) [v2] Fri, 24 May 2024 17:08:32 UTC (21,566 KB)",
+    "checked_on": "2026-11-24",
+    "pdf_url": "https://arxiv.org/pdf/2405.14867v2",
+    "pdf_sha256": "305b961cb554d394fc6683a3b14aef60e4f31c57f9435017b3f8df519e31046f",
+    "pdf_pages": 26
+  },
+  {
+    "id": "sedd",
+    "arxiv_id": "2310.16834",
+    "version": "v3",
+    "url": "https://arxiv.org/abs/2310.16834v3",
+    "title": "Discrete Diffusion Modeling by Estimating the Ratios of the Data Distribution",
+    "authors": [
+      "Lou, Aaron",
+      "Meng, Chenlin",
+      "Ermon, Stefano"
+    ],
+    "history": "Submission history From: Aaron Lou [ view email ] [v1] Wed, 25 Oct 2023 17:59:12 UTC (1,210 KB) [v2] Wed, 21 Feb 2024 01:00:33 UTC (2,170 KB) [v3] Thu, 6 Jun 2024 21:06:44 UTC (2,173 KB)",
+    "checked_on": "2026-11-24",
+    "pdf_url": "https://arxiv.org/pdf/2310.16834v3",
+    "pdf_sha256": "1f3a135a52346270ef4b0872d52f17954af7ea0fa53d0a0b31a9183599ec976e",
+    "pdf_pages": 30
+  },
+  {
+    "id": "mdlm",
+    "arxiv_id": "2406.07524",
+    "version": "v2",
+    "url": "https://arxiv.org/abs/2406.07524v2",
+    "title": "Simple and Effective Masked Diffusion Language Models",
+    "authors": [
+      "Sahoo, Subham Sekhar",
+      "Arriola, Marianne",
+      "Schiff, Yair",
+      "Gokaslan, Aaron",
+      "Marroquin, Edgar",
+      "Chiu, Justin T",
+      "Rush, Alexander",
+      "Kuleshov, Volodymyr"
+    ],
+    "history": "Submission history From: Subham Sekhar Sahoo [ view email ] [v1] Tue, 11 Jun 2024 17:51:40 UTC (412 KB) [v2] Sun, 10 Nov 2024 20:34:34 UTC (345 KB)",
+    "checked_on": "2026-11-24"
+  },
+  {
+    "id": "flow-guide",
+    "arxiv_id": "2412.06264",
+    "version": "v1",
+    "url": "https://arxiv.org/abs/2412.06264v1",
+    "title": "Flow Matching Guide and Code",
+    "authors": [
+      "Lipman, Yaron",
+      "Havasi, Marton",
+      "Holderrieth, Peter",
+      "Shaul, Neta",
+      "Le, Matt",
+      "Karrer, Brian",
+      "Chen, Ricky T. Q.",
+      "Lopez-Paz, David",
+      "Ben-Hamu, Heli",
+      "Gat, Itai"
+    ],
+    "history": "Submission history From: Itai Gat [ view email ] [v1] Mon, 9 Dec 2024 07:22:38 UTC (16,417 KB)",
+    "checked_on": "2026-11-24"
+  }
+]

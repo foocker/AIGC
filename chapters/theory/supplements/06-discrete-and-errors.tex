@@ -1,0 +1,275 @@
+\chapter{离散扩散的训练、采样与误差控制}
+\label{supp:discrete}
+
+原稿新增的离散状态小节已经给出主方程与反向跳率，但还没有回答怎么训练和怎么采样。
+下面对应参考书12.2节及其中的离散扩散文献，
+把有限状态的变分、比值学习、掩码损失和跳跃模拟接起来。
+最后再将连续、离散方法中的几类误差放在各自可以成立的界里讨论。
+\cite{theorybook,sedd,mdlm}
+
+\section{转移矩阵与可计算的条件后验}
+设状态集合为 $\{1,\ldots,K\}$，本章统一使用行向量概率，
+$Q_k(i,j)=P(X_k=j\mid X_{k-1}=i)$，每一行和为1。
+定义累积转移矩阵 $\bar Q_k=Q_1\cdots Q_k$，则
+\[
+q(X_k=i\mid X_0=l)=\bar Q_k(l,i).
+\]
+若当前带噪状态为 $i$、干净状态为 $l$，由 Bayes 公式，
+\[
+q(X_{k-1}=j\mid X_k=i,X_0=l)
+=\frac{Q_k(j,i)\bar Q_{k-1}(l,j)}{\bar Q_k(l,i)}.
+\label{supp:discrete-posterior}
+\]
+分母正的地方这个式子是精确的。
+这与 DDPM 的“增加 $x_0$ 条件后，后验可计算”是同一个思路，
+区别是现在通过矩阵乘法与归一化得到类别概率，不再对高斯指数配方。
+
+对均匀替换，可取 $Q_k=(1-\beta_k)I+\beta_k\mathbf1\pi$，
+$\pi$ 是一个行概率向量。当 $\pi$ 固定，$\bar Q_k$ 仍具有
+$\bar\alpha_kI+(1-\bar\alpha_k)\mathbf1\pi$ 的形式，
+$\bar\alpha_k=\prod_{r=1}^k(1-\beta_r)$。
+对吸收掩码过程则把参考状态设为 $\mathtt M$，状态一旦变成掩码就不再正向离开。
+两个核的可达结构不同，因此反向模型的支撑也要随之改变。
+
+\section{离散变分目标与干净 token 预测}
+给定正向链和反向模型
+$p_\theta(x_{0:K})=\pi(x_K)\prod_{k=1}^Kp_\theta(x_{k-1}\mid x_k)$，
+与 DDPM 一样，负 ELBO 分解为
+\begin{align}
+\mathcal L_{\rm VLB}
+ &=\mathbb E_{x_0}D_{\rm KL}(q(x_K\mid x_0)\|\pi)\\
+ &\quad+\sum_{k=2}^K\mathbb E_{x_0,x_k}
+ D_{\rm KL}(q(x_{k-1}\mid x_k,x_0)\|p_\theta(x_{k-1}\mid x_k))\\
+ &\quad-\mathbb E_{x_0,x_1}\log p_\theta(x_0\mid x_1).
+\end{align}
+中间的 KL 可以由式\eqref{supp:discrete-posterior}逐类别求和。
+去掉目标分布自身的熵后，它成为交叉熵，不能直接换成连续高斯噪声的 MSE。
+
+一种参数化让网络先预测干净状态分布
+$\pi_\theta(l\mid i,k)\approx P(X_0=l\mid X_k=i)$，再定义
+\[
+p_\theta(j\mid i)=\sum_l
+q(X_{k-1}=j\mid X_k=i,X_0=l)\pi_\theta(l\mid i,k).
+\]
+预测若精确，就由全概率公式恢复真实边缘逆核。
+对于不可达的 $l$，应限制预测支撑或定义相应的安全核，不能对零分母直接计算。
+单独训练干净 token 交叉熵也有同一个干净后验的总体最优预测，
+但是否等于原负 ELBO、对应什么时间权重，要根据具体核另外推导。
+
+序列上的状态可以是整个 token 配置。
+前向核逐位置独立，并不意味着边缘数据分布逐位置独立；
+网络仍需通过上下文估计全局依赖。
+一次并行预测多个位置的反向核，通常又引入条件独立参数化的近似。
+
+\section{连续时间跳跃过程及其反向率}
+为避免与离散步矩阵混淆，将连续时间生成矩阵记为 $A_t$。
+对 $i\ne j$，$A_t(i,j)\geq0$，且
+$A_t(i,i)=-\sum_{j\ne i}A_t(i,j)$。
+短步转移为 $I+hA_t+o(h)$，于是
+\[
+\partial_tp_t=p_tA_t,\qquad
+\partial_tp_t(j)=\sum_{i\ne j}p_t(i)A_t(i,j)
+ -p_t(j)\sum_{i\ne j}A_t(j,i).
+\]
+第一项流入、第二项流出，逐状态求和为零。
+若正时钟的边缘为 $p_t$，反向增加时钟的跳率为
+\[
+\bar A_t(j,i)=A_t(i,j)\frac{p_t(i)}{p_t(j)},\quad i\ne j.
+\label{supp:reverse-rates}
+\]
+对角项再按行和为零补齐。
+正向从 $i$ 到 $j$ 的边，反向对应从 $j$ 到 $i$；
+比值的分母必须是当前反向状态的概率。
+这是离散空间中“已知正向系数加上未知分数信息”的对应物。
+
+\section{SEDD：正比值怎样通过损失学出来}
+设当前状态是 $x$，邻居是 $y$，需要估计
+$r_t(x,y)=p_t(y)/p_t(x)>0$。
+定义正输出 $s_\theta(x,t,y)$，考虑逐边损失
+\[
+\ell(s;r)=s-r\log s+r\log r-r.
+\]
+其导数为 $1-r/s$，二阶导为 $r/s^2>0$，
+所以最优值在 $s=r$，且损失为0。
+按反向边所对应的正向率加权，得到一种边缘形式的 score entropy：
+\[
+\mathcal L_t=\mathbb E_{x\sim p_t}
+ \sum_{y\ne x}A_t(y,x)\ell(s_\theta(x,t,y);r_t(x,y)).
+\]
+训练问题仍是 $r_t$ 未知。
+若条件扰动核 $q_t(x\mid x_0)$ 在相关状态上严格为正，则
+\begin{align}
+\mathbb E\left[\frac{q_t(y\mid X_0)}{q_t(x\mid X_0)}\middle|X_t=x\right]
+ &=\sum_{x_0}\frac{p_0(x_0)q_t(x\mid x_0)}{p_t(x)}
+  \frac{q_t(y\mid x_0)}{q_t(x\mid x_0)}\\
+ &=\frac{p_t(y)}{p_t(x)}.
+\end{align}
+因为损失中与模型有关的 $-r\log s$ 对 $r$ 是线性的，
+可用条件比值替换它；被省掉的 $r\log r-r$ 与网络无关。
+网络使用指数或其它正值参数化，再代回式\eqref{supp:reverse-rates}构造逆过程。
+\cite{sedd}
+
+如果条件核有零支撑，不能在上式里随意取消零分母。
+需要依据可达边和条件分布重新推导目标。
+掩码过程恰好具有这种特殊支撑，下面的交叉熵化简比直接套全正比值式更合适。
+
+\section{掩码扩散的时间权重与交叉熵}
+先考虑一个位置。令 $\alpha_t$ 是原 token 到 $t$ 仍保留的概率，
+$\alpha_0=1$ 且随时间下降，其余概率为吸收掩码 $\mathtt M$。
+对 $s<t$，若当前已被遮蔽，逆向显露原 token 的概率为
+\[
+q_{t,s}=\frac{\alpha_s-\alpha_t}{1-\alpha_t}.
+\]
+令 $s=t-h$，展开 $\alpha_{t-h}=\alpha_t-h\dot\alpha_t+o(h)$，
+得反向解遮蔽速率
+\[
+\kappa_t=-\frac{\dot\alpha_t}{1-\alpha_t}.
+\]
+若真实干净 token 是 $l$，真实恢复率向量为 $\kappa_t\delta_l$；
+模型恢复率向量为 $\kappa_t\pi_\theta(\cdot\mid x_t,t)$。
+总离开率相同，短步路径 KL 中的率差部分相消，
+剩下每单位时间的误差为 $\kappa_t[-\log\pi_\theta(l\mid x_t,t)]$。
+所以相应的去噪交叉熵积分具有形式
+\[
+\mathcal L_{\rm mask}=\int
+\frac{-\dot\alpha_t}{1-\alpha_t}
+\mathbb E\left[\mathbf1_{\{X_t=\mathtt M\}}
+ (-\log\pi_\theta(X_0\mid X_t,t))\right]\mathrm dt.
+\label{supp:masked-loss}
+\]
+掩码事件概率为 $1-\alpha_t$，抵消了权重中的一部分奇异性；
+这不等于可以在任意采样分布下直接删掉时间权重。
+换成对数保留率或掩码率抽样，还需按变量替换和重要性权重处理。
+序列上通常对遮蔽位置求和，并让预测器读取全部已知上下文。
+\cite{mdlm,theorybook}
+
+采样时还要规定每步揭示多少位置、如何抽 token、是否允许重遮蔽。
+若多个位置在同一粗步里同时揭示，它们未必能使用彼此本步的新信息，
+这会与逐跳精确逆过程形成差异。并行解码能力不能单独消除这种有限步近似。
+
+\section{离散 Flow Matching：直接学习概率通量}
+前面从一个固定正向过程出发求逆率。离散流匹配也可以像连续 CFM 一样，
+先规定一组条件概率路径，再把条件生成矩阵平均成边缘生成矩阵。
+此处用 $r$ 从参考端0走向数据端1，条件变量 $C$ 可以包含两端样本。
+假设每个条件路径满足
+\[
+\partial_rp_r(j\mid C)=\sum_i p_r(i\mid C)A_r^C(i,j).
+\]
+对 $C$ 积分，若 $p_r(i)>0$，定义
+\[
+A_r(i,j)=\mathbb E[A_r^C(i,j)\mid X_r=i].
+\]
+则
+\begin{align}
+\partial_rp_r(j)
+ &=\sum_i\mathbb E_C[p_r(i\mid C)A_r^C(i,j)]
+ =\sum_i p_r(i)A_r(i,j).
+\end{align}
+非对角元素的非负性及行和为零也在条件平均后保留。
+这就是离散版的通量相加，而不是把类别编号当连续坐标求一个速度向量。
+
+看一个具体构造。给定参考状态 $a$ 和数据状态 $b$，若 $a\ne b$，令
+$p_r(\cdot\mid a,b)=(1-r)\delta_a+r\delta_b$。
+只允许从 $a$ 跳到 $b$，并取
+\[
+A_r^{a,b}(a,b)=\frac1{1-r},\quad
+A_r^{a,b}(a,a)=-\frac1{1-r},\quad r<1.
+\]
+因为当前在 $a$ 的条件质量是 $1-r$，每单位时间流向 $b$ 的质量恰好为1，
+所以确实得到上述概率路径。若 $a=b$，条件过程保持不动即可。
+从训练端点对采 $C$、再采 $X_r$，就有可计算的条件率标签。
+对非负率使用 $q-V\log q$ 一类适当目标，其条件期望的最优输出是 $\mathbb E[V\mid X_r]$；
+也可以在具有共同总率的参数化下回归目标类别的交叉熵。
+
+若参考是全掩码，单位置的边缘逆向生成率就变成
+$A_r(\mathtt M,j)=P(X_1=j\mid X_r=\mathtt M,\text{上下文})/(1-r)$。
+已揭示位置可以保持不动，网络则预测剩余 token 的条件分布。
+端点率在 $r\to1$ 时可能发散，因此具体采样要处理终止时间与积分后的跳跃概率，
+不能将一个大 Euler 步产生的负自环概率硬作归一化后仍叫精确模拟。
+
+同一概率路径也不唯一确定离散率。
+若额外矩阵 $B_r$ 满足 $p_r(i)B_r(i,j)=p_r(j)B_r(j,i)$ 且行和为零，
+就有 $p_rB_r=0$。向 $A_r$ 加上合法的这种流量，可保持同一边缘，
+却增加粒子之间的往返跳跃。它对应前章连续速度场中不改变密度的流动自由度。
+因此离散流匹配同样要说明选择了什么条件路径和通量规则。\cite{theorybook}
+
+\section{跳跃模拟：等待时间、均匀化与 tau-leaping}
+若一个时间区间内生成矩阵固定，状态 $i$ 的总跳率为
+$\lambda_i=\sum_{j\ne i}A(i,j)$，等待时间服从 $\operatorname{Exp}(\lambda_i)$，
+跳到 $j$ 的条件概率为 $A(i,j)/\lambda_i$。
+这是逐事件模拟的基本形式。若速率随时间变，则等待生存概率改为
+$\exp[-\int\lambda_i(u)\mathrm du]$，不能一律使用当前时刻的指数等待时间当精确算法。
+
+对固定且有界的生成矩阵，取 $\Lambda\geq\max_i\lambda_i$，令
+$P=I+A/\Lambda$。它是合法转移矩阵，并有
+\[
+e^{hA}=e^{-\Lambda h}\sum_{n=0}^{\infty}
+ \frac{(\Lambda h)^n}{n!}P^n.
+\]
+所以先抽 $N\sim\operatorname{Poisson}(\Lambda h)$，再执行 $N$ 次 $P$ 转移，
+就得到精确的固定率转移；其中可能含自环。这叫均匀化。
+对时变、网络依赖的逆率，需要支配率、稀疏结构或分段近似来实现，成本未必低。
+
+tau-leaping 则在一个短区间冻结当前各类速率，并行近似各类跳跃次数。
+如果离开率很大、状态变化会明显改变下一次速率，粗步冻结会产生偏差。
+直接使用 $I+hA$ 也只有在对角项非负时才是概率矩阵，
+所以“把求解步数减少”仍需要检查非负性、归一化与允许的状态结构。
+
+\section{路径误差怎样变成端点误差}
+\subsection{离散链的 KL 链式法则}
+对相同时间网格上的两条 Markov 链，路径 KL 为
+\[
+D_{\rm KL}(P\|\tilde P)=D_{\rm KL}(p_{
+\rm start}\|\tilde p_{\rm start})
+ +\sum_k\mathbb E_P D_{\rm KL}(P_k(\cdot\mid X_k)\|\tilde P_k(\cdot\mid X_k)).
+\]
+证明只需将路径密度比拆成初始密度比和每步核的乘积，再取对数与期望。
+投影到最后状态时 KL 不增，因此一步一步的核误差可控制端点分布。
+但如果近似核在真实核有正质量的位置给出零概率，KL 可能直接无穷大，
+这说明支撑约束不是一个纯排版或实现细节。
+
+\subsection{连续跳跃率的路径 KL}
+若两个过程的允许跳边兼容、速率满足适当可积性，
+一条路径的似然包含“各次跳率的乘积”和“未跳跃的生存概率”。
+由此可得
+\begin{align}
+D_{\rm KL}(P\|\tilde P)
+ &=D_{\rm KL}(p_0\|\tilde p_0)\\
+ &\quad+\int_0^T\mathbb E_P\sum_{j\ne X_t}
+ \left[A_t(X_t,j)\log\frac{A_t(X_t,j)}{\tilde A_t(X_t,j)}
+ -A_t(X_t,j)+\tilde A_t(X_t,j)\right]\mathrm dt.
+\end{align}
+这与连续扩散的 Girsanov 平方漂移代价不同，不能用同一个噪声 MSE 公式代替。
+比值学习损失与反向率误差的联系，也由这种对数率比结构解释。
+
+\section{先验、学习、离散化与端点处理分别检查}
+用总变差距离 $\operatorname{TV}$ 作一个直接的误差分解。
+令 $p_\varepsilon$ 为真实正向路径在小正噪声的分布，
+$p_\varepsilon^\theta$ 为精确积分学习模型的分布，
+$\tilde p_\varepsilon^{\theta,h}$ 为实际有限步结果，则
+\begin{align}
+\operatorname{TV}(p_\varepsilon,\tilde p_\varepsilon^{\theta,h})
+ &\leq\operatorname{TV}(p_\varepsilon,p_\varepsilon^\theta)
+ +\operatorname{TV}(p_\varepsilon^\theta,\tilde p_\varepsilon^{\theta,h}).
+\end{align}
+第一项再由路径 KL 和 Pinsker 不等式
+$\operatorname{TV}(P,Q)\leq\sqrt{D_{\rm KL}(P\|Q)/2}$ 控制，
+其中已经包含终端先验与学习误差；第二项需要数值方法自己的分布误差分析。
+逐轨迹强误差、测试函数弱误差与总变差不是同一指标，不能直接互换。
+
+最后从 $\varepsilon$ 到干净数据端，还有去噪、解码或量化这一步。
+若真实数据支持在低维流形、加噪分布却有全空间密度，
+它们的总变差甚至可能始终为1，尽管 Wasserstein 距离或弱收敛很好。
+所以不能把“噪声很小”直接当作所有距离下的误差都很小。
+选择什么空间、什么概率模型与什么指标，应该在比较结果前说明。
+
+对离散像素观测也类似。连续模型密度 $p(x)$ 在某一点的值不等于该整数像素事件的概率。
+若 $u$ 在量化单元 $C_y$ 上均匀，体积为 $V$，则
+\[
+P(Y=y)=\int_{C_y}p(x)\mathrm dx
+=V\,\mathbb E_u p(y+u),\qquad
+\log P(Y=y)\geq\log V+\mathbb E_u\log p(y+u).
+\]
+这就是均匀去量化下的一个下界。
+比较 bits/dim、连续对数似然或潜空间似然时，需要先对齐量化尺度、维度与解码假设。
+它们与视觉质量有联系，但不存在由单个似然值无条件决定样本主观质量的结论。

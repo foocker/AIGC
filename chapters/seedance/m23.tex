@@ -1,11 +1,12 @@
 % Imported from topics/video-generation/seedance-2.5/av-editing-spec.md
-\chapter{M23 音视频编辑状态与四类掩码}\label{seedance-m23}
+\chapter{音视频编辑状态与四类掩码}\label{seedance-m23}
 \moduleinfo{M23}{候选设计与工程选型；组合效果待验证}{\hyperref[src-vace]{\texttt{vace}}、\hyperref[src-videocof]{\texttt{videocof}}、\hyperref[src-vincie-next]{\texttt{vincie-next}}、\hyperref[src-ltx-2]{\texttt{ltx-2}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-ltx-original-model]{\texttt{ltx-original-model}}}
 
+接着把源条件扩到音视频：分别决定哪条流、哪个区间需要更新，最终在哪个表示域保持原内容。
 
-``只改第三秒的外套''和``把一句台词换掉''都属于局部编辑，实际约束却不同。前者可能要求原声音逐采样保留，后者必须同时改变声音与嘴形。编辑系统应先把保留规则编译清楚，再决定让哪些目标参与生成。
+同样叫局部编辑，改外套与改台词需要更新的模态并不相同。前者可能要求声音逐采样保持；后者则要改变声音并让嘴形跟上。因此先定义保留规则，再决定视频和声音中哪些位置进入去噪，不能从“局部”二字直接推出同一种输入。
 
-这里使用同一联合音视频主干、新增干净源条件与区域支路，定义候选编辑协议。严格保持通过原内容合成实现；超出几何对齐范围的编辑使用语义验收。协议尚未经过实际训练。
+这里仍在同一音视频主干上增加干净源条件和区域支路。严格外区由最终合成保持，几何不再对齐的任务另按语义检查。下面把这个候选过程逐步写出，尚未经过实际训练。
 
 \section{一次编辑保存四类mask}\label{seedance-m23-ux4e00ux6b21ux7f16ux8f91ux4fddux5b58ux56dbux7c7bmask}
 
@@ -34,7 +35,7 @@
 \end{longtable}
 }
 
-四者可以由同一用户范围派生，但不能直接共用。VAE有时间感受野，目标工作区通常比交付替换区大；全生成目标也可以最终只合成一个小区域。
+四种 mask 虽可从同一用户范围派生，作用却不相同。VAE 有时间感受野，模型工作区往往比最终替换区大；甚至可以先生成整个目标，再只合成一个小区域。共用一份不加说明的 mask，就把这些区别抹掉了。
 
 \section{从时间戳到latent不是简单除八}\label{seedance-m23-ux4eceux65f6ux95f4ux6233ux5230latentux4e0dux662fux7b80ux5355ux9664ux516b}
 
@@ -42,11 +43,11 @@
 
 latent先保存原生位置网格边界，工作区选择与 \([a,b)\) 相交的token，再依据encoder、源塔与decoder的实际感受野扩张。位置网格只用于时间对应，不表示某个token只依赖或只影响这段像素。空间mask按主体跟踪传播，并考虑下采样与卷积覆盖；只取中心点可能漏掉边缘。
 
-原系列视频encoder具有时间因果性，但decoder配置可以读取未来邻域。不能据此假设``解码一块就与完整视频解码完全相同''。最稳妥的首版保存整段latent、统一解码后合成；分块解码需要halo和对应处理约定。
+还要看解码端的依赖。原系列视频 encoder 时间因果，并不推出 decoder 不读未来；直接逐块解码，未必等于整段解码。因此首版先保存完整 latent、统一解码再合成。若以后分块，还需按实际感受野安排 halo 和边界处理。
 
 \section{源条件保持干净，目标可以全部去噪}\label{seedance-m23-ux6e90ux6761ux4ef6ux4fddux6301ux5e72ux51c0ux76eeux6807ux53efux4ee5ux5168ux90e8ux53bbux566a}
 
-源视频拆出待变与保留内容，独立编码到条件支路；参考与目标也独立编码。目标首版在工作窗口内完整去噪，不强行将每个保留像素映射成一个已知latent。
+源条件先拆待变与保留部分，各自编码；参考与目标也独立编码。首版在工作窗口内对目标完整去噪，再在像素端处理严格保持，避免先假设每个保留像素都对应一个完全独立的已知 latent。
 
 已知区重噪覆盖是可选的第二种策略：
 
@@ -55,7 +56,7 @@ z_{\sigma}^{\mathrm{known}}=(1-\sigma)z_0^{\mathrm{source}}+
 \sigma\epsilon^{\mathrm{fixed}}.
 \]
 
-每步固定区域沿同一噪声路径覆盖，训练也出现相同策略。它不能代替干净源条件，更不能保证保留像素无损。部分区域共享同一latent时，候选首版将边界token纳入可生成工作区，再在像素端严格合成。
+若采用已知区覆盖，每步要沿同一条固定噪声路径，训练中也见过相同方式。它和干净源条件不同，仍不能保证像素无损。边界像素共享 latent 时，可先让边界 token 进入工作区，最后按允许区域合成。
 
 \section{先区分四种音轨任务}\label{seedance-m23-ux5148ux533aux5206ux56dbux79cdux97f3ux8f68ux4efbux52a1}
 
@@ -87,7 +88,7 @@ z_{\sigma}^{\mathrm{known}}=(1-\sigma)z_0^{\mathrm{source}}+
 \end{longtable}
 }
 
-改台词需要目标转录、speaker、时间预算与声音参考。新句子超过原时长时，要么重写台词、要么明确允许延长视频；不能静默截字或用任意拉伸冒充精确对白。
+台词任务还要给转录、speaker、时间预算和声音参考。新句子若长于原片段，就必须重写或明确允许延长；偷偷截掉字、任意拉伸声音，都没有满足原来的逐字与时间要求。
 
 \section{固定音频与局部音频怎样参加去噪}\label{seedance-m23-ux56faux5b9aux97f3ux9891ux4e0eux5c40ux90e8ux97f3ux9891ux600eux6837ux53c2ux52a0ux53bbux566a}
 
@@ -102,23 +103,23 @@ z_i^a=(1-\sigma_i^a)z_{0,i}^a+\sigma_i^a\epsilon_i^a.
 
 \(A_i\)表示音频工作区。它必须从codec覆盖区间派生，不能把每个40毫秒位置视为互不重叠的独立波形块。混响与卷积上下文也会跨过最终剪辑边界。
 
-极简状态构造见 \hyperref[code-condition-state]{condition\_state.py}。固定输入latent不意味着深层声音特征固定：AV交互仍读取当步视频。因此声音Transformer默认每步重算。
+状态构造的机制代码见 \hyperref[code-condition-state]{condition\_state.py}，仅作说明。这里再强调一个依赖：固定输入音频 latent 后，AV 交互仍读取每步的视频，所以深层声音特征不固定，默认仍逐步重算。
 
 \section{自动区域错误怎样回退}\label{seedance-m23-ux81eaux52a8ux533aux57dfux9519ux8befux600eux6837ux56deux9000}
 
 无用户mask时，先用指令定位、检测与跟踪产生候选区域。区域ID、置信度和目标主体槽一起进入第二阶段。定位错误与生成错误分别标注，低置信目标可退回关键帧修正。
 
-编辑训练既使用真值区域，也使用带可控腐蚀、膨胀、漂移的区域和真实预测区域。训练不能始终读完美mask、推理却面对错误mask。灰度区域生成与分割头是两种实现，首版固定其中一种，避免共享一个含义不清的输出。
+定位输出也有误差，生成阶段必须见过它。训练可混入可控腐蚀、膨胀、漂移以及真实预测区域，避免始终用完美 mask 训练。灰度区域生成和分割头是两种实现，首版先固定其一，使输出与监督含义对应。
 
 \section{遮挡、阴影与运动边界怎样定义}\label{seedance-m23-ux906eux6321ux9634ux5f71ux4e0eux8fd0ux52a8ux8fb9ux754cux600eux6837ux5b9aux4e49}
 
-换外套时，手和道具可能遮挡衣服。mask记录可见衣服、遮挡物归属和边界置信度；保护前景遮挡物时，可单独复用它的原始alpha。生成新姿态则需要重建被遮挡区域，严格外区保持范围必须随任务改变。
+例如手或道具挡住外套，mask 就还要记录衣服的可见部分、遮挡物归属和边界置信度。若遮挡物应保持，可单独复用原 alpha；若要生成新姿态，被遮住区域又可能必须重建。保持范围因此要随任务改变。
 
 颜色变化若需要改变反光和阴影，应显式增加允许影响区域。若用户只批准外套像素，输出可以严格局部合成，但不能同时保证全局光照物理一致。
 
 \section{交付合成的保证范围}\label{seedance-m23-ux4ea4ux4ed8ux5408ux6210ux7684ux4fddux8bc1ux8303ux56f4}
 
-视频在高质量工作帧上按alpha合成，音频在原采样率波形上按时间合成，再统一编码混流。外区复用保证的是编码前工作表示；有损视频重新编码后，文件字节和解码像素未必与源文件完全相同。
+合成放在高质量工作表示上：视频按 alpha 取源帧或生成帧，音频按原采样率和时间取相应波形，之后统一编码混流。这里保持的是编码前外区；有损重编码会再次改变表示，所以不能连带保证文件字节或最终解码像素完全相同。
 
 音频交界可以交叉淡化，淡化区必须包含在允许编辑时间内。声学连续性与逐采样外区保持冲突时，需要在任务规格中明确哪项优先，不能把淡化悄悄扩到禁止区间。
 
@@ -126,6 +127,6 @@ z_i^a=(1-\sigma_i^a)z_{0,i}^a+\sigma_i^a\epsilon_i^a.
 
 \section{怎样判断改对而不是没改}\label{seedance-m23-ux600eux6837ux5224ux65adux6539ux5bf9ux800cux4e0dux662fux6ca1ux6539}
 
-同时报告目标变化成功、外区保持、边界连续、身份、动作、台词、speaker与声画偏差。更低的保持误差可能来自完全复制源视频，所以不能把它单独当成编辑成功。
+评价时把目标变化与外区保持放在一起，再看边界、身份、动作、台词、speaker 和声画偏差。只让保持误差变小，复制整段源视频也能做到，因此它不能单独证明编辑有效。
 
 真实条件组织看 \href{https://github.com/ali-vilab/VACE}{VACE}，区域中间表示看 \href{https://github.com/knightyxp/VideoCoF}{VideoCoF}。已有LTX \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/training_strategies/video_to_video.py}{视频IC-LoRA策略} 是实现起点；上述音频状态、区域损失和最终合成需要另外接入。

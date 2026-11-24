@@ -1,0 +1,214 @@
+\chapter{潜变量、能量模型与连续概率流}
+\label{supp:objectives}
+
+前面已经沿 DDPM、NCSN 和 Score SDE 的顺序，把扩散模型的主要推导写了一遍。
+但这里还有几个问题没有展开：VAE 的编码器和解码器到底在共同优化什么？
+能量模型为什么需要负样本？既然 ODE 可以算似然，为什么还要使用分数匹配与流匹配？
+这些问题分别对应参考书第2、3、5章及附录C中的内容。下面从原来已经用过的公式继续推导，
+不再重新写一遍 DDPM 的配方过程。\cite{theorybook}
+
+\section{从联合分布看 VAE 的训练}
+\subsection{重建项和潜变量正则项是怎么分出来的}
+设生成联合分布为 $p_\theta(x,z)=p(z)p_\theta(x\mid z)$，
+编码器为 $q_\phi(z\mid x)$。前面已经有
+\[
+\mathcal L_{\rm ELBO}(x)=\mathbb E_{q_\phi(z\mid x)}
+ \log\frac{p_\theta(x,z)}{q_\phi(z\mid x)}.
+\]
+把联合分布拆开，而不是直接把这个式子叫作一个损失，就能看出两部分各自的作用：
+\begin{align}
+\mathcal L_{\rm ELBO}(x)
+ &=\mathbb E_q[\log p_\theta(x\mid z)+\log p(z)-\log q_\phi(z\mid x)]\\
+ &=\mathbb E_q\log p_\theta(x\mid z)
+   -D_{\rm KL}(q_\phi(z\mid x)\|p(z)).
+\label{supp:vae-decomposition}
+\end{align}
+第一项要求从编码结果恢复观测；第二项约束编码分布与生成时使用的先验之间的差异。
+只把训练样本编码后重建得很好，还不能推出从先验随机抽一个 $z$ 就能解码得很好。
+原因是训练时的 $z$ 来自 $q_\phi(z\mid x)$，生成时却来自 $p(z)$，这两个来源需要接起来。
+
+例如使用对角高斯编码器和固定方差高斯解码器：
+\[
+q_\phi(z\mid x)=\mathcal N(\mu_\phi(x),\operatorname{diag}\sigma_\phi^2(x)),
+\quad p_\theta(x\mid z)=\mathcal N(D_\theta(z),\tau^2I).
+\]
+取负对数，去掉与参数无关的常数，重建部分变成
+\[
+-\mathbb E_q\log p_\theta(x\mid z)
+=\frac1{2\tau^2}\mathbb E_q\|x-D_\theta(z)\|^2+\text{const}.
+\]
+若先验为标准高斯，KL 项进一步成为
+\[
+D_{\rm KL}(q_\phi\|p)
+=\frac12\sum_j\left(\mu_{\phi,j}^2+\sigma_{\phi,j}^2
+ -1-\log\sigma_{\phi,j}^2\right).
+\]
+于是得到常见的“重建误差加 KL”。它不是两个经验损失的任意拼接，
+而是相应概率假设下负 ELBO 的展开。
+若把 KL 的系数另设为 $\beta\ne1$，或者加入感知、对抗损失，
+则需要说明已经改变了这一原始目标，不能把修改后的全部目标仍当作同一个似然下界。
+
+\subsection{两个误差：生成模型误差与推断误差}
+定义数据与编码器组成的联合分布
+$q_\phi(x,z)=p_{\rm data}(x)q_\phi(z\mid x)$。直接展开联合 KL：
+\begin{align}
+D_{\rm KL}(q_\phi(x,z)\|p_\theta(x,z))
+ &=\mathbb E_{q_\phi}\log
+ \frac{p_{\rm data}(x)q_\phi(z\mid x)}{p_\theta(x)p_\theta(z\mid x)}\\
+ &=D_{\rm KL}(p_{\rm data}\|p_\theta)
+ +\mathbb E_{p_{\rm data}}D_{\rm KL}(q_\phi(z\mid x)\|p_\theta(z\mid x)).
+\end{align}
+这里第二项是近似后验与模型后验之间的误差，非负，所以联合 KL 控制了数据边缘的 KL。
+固定生成模型而只优化编码器时，确实是在缩小推断误差；
+同时优化两者时，模型后验也在变化，不能仅凭 ELBO 增大就说这两项都分别单调下降。
+
+还有一个容易忽略的点：即使编码网络足够深，输出仍若限定为单个对角高斯，
+它也不能表示任意多峰后验。增加网络层数改变了均值和方差如何依赖 $x$，
+没有把“单个高斯”的分布族限制消掉。使用层级潜变量、可逆变换或更复杂的后验族，
+处理的就是这个问题。把潜变量展开成 $x_1,\ldots,x_T$ 并固定前向加噪，
+又回到了前文 DDPM 的多层变分模型。
+
+\section{能量模型的极大似然与负相}
+前面已经写过 $p_\theta(x)=\exp[-E_\theta(x)]/Z_\theta$。
+对数据负对数似然求参数梯度，先不要把 $Z_\theta$ 丢掉：
+\begin{align}
+\nabla_\theta[-\log p_\theta(x)]
+ &=\nabla_\theta E_\theta(x)+\nabla_\theta\log Z_\theta,\\
+\nabla_\theta\log Z_\theta
+ &=\frac{\int-\nabla_\theta E_\theta(y)e^{-E_\theta(y)}\,\mathrm dy}{Z_\theta}
+ =-\mathbb E_{p_\theta(y)}\nabla_\theta E_\theta(y).
+\end{align}
+所以平均损失的梯度为
+\[
+\nabla_\theta\mathcal J
+=\mathbb E_{p_{\rm data}}\nabla_\theta E_\theta(X)
+ -\mathbb E_{p_\theta}\nabla_\theta E_\theta(Y).
+\label{supp:ebm-gradient}
+\]
+梯度下降降低真实数据的能量，同时相对提高模型当前产生的样本的能量。
+后一项称为负相，需要来自当前模型的样本，因此训练内部又嵌入了采样问题。
+使用短链 Langevin 代替平衡分布，会引入近似；不能把少走几步的负样本当作精确极大似然。
+
+而空间分数 $\nabla_x\log p_\theta=-\nabla_xE_\theta$ 不含 $Z_\theta$，
+所以 NCSN 的分数回归绕开了直接计算负相。这里有个边界：
+一个任意向量网络未必是某个全局标量能量的梯度。
+在光滑、单连通区域，梯度场的 Jacobian 应当对称；普通分数网络的参数化并未强制这一点。
+即便如此，它仍能作为反向 SDE 或 ODE 的系数使用，只是不能因此声称已经显式构造出一个归一化 EBM。
+
+若两个严格正密度在连通区域具有相同空间分数，则
+$\nabla\log(p/q)=0$，故 $p=Cq$，再由归一化得到 $C=1$。
+如果支撑集分成互不连通的几块，每一块却可以有不同的常数，
+局部分数本身不能决定各块之间的质量比例。
+高斯扰动让分布在整个空间为正，也就缓解了原稿提到的支撑与低密度连接问题。
+
+\section{Normalizing Flow：从映射恢复密度}
+\subsection{为什么要有 Jacobian 行列式}
+设 $Z\sim\pi$，$X=F_\theta(Z)$，$F_\theta:\mathbb R^d\to\mathbb R^d$
+可逆且 Jacobian 非奇异。局部体积满足
+$\mathrm dx=|\det D_zF_\theta|\mathrm dz$。
+同一小块的概率质量不变，因此
+\begin{align}
+p_\theta(x)\,\mathrm dx&=\pi(z)\,\mathrm dz,\\
+\log p_\theta(F_\theta(z))
+ &=\log\pi(z)-\log|\det D_zF_\theta(z)|.
+\end{align}
+例如 $x=az+b$，一维密度会除以 $|a|$。拉长区间的同时降低密度，
+才能保持总概率不变。它与前面的 VAE 不同：这里的编码是生成映射的精确逆，
+不用另设近似后验，但需要同维、可逆以及可计算的行列式。
+
+若 $F=F_K\circ\cdots\circ F_1$，则
+\[
+\log p(x_K)=\log\pi(x_0)
+ -\sum_{k=1}^K\log|\det D F_k(x_{k-1})|.
+\]
+这解释了常见可逆网络为什么设计三角 Jacobian 或耦合层。
+例如 $y_1=x_1$，$y_2=x_2\odot e^{a(x_1)}+b(x_1)$，
+其行列式为 $\exp[\sum_j a_j(x_1)]$，不必计算完整高维行列式。
+
+\subsection{连续极限、散度与 Hutchinson 迹估计}
+将一步映射改成 $x_{t+h}=x_t+h v_\theta(x_t,t)$，
+利用 $\log\det(I+hA)=h\operatorname{tr}A+O(h^2)$，得到
+\[
+\frac{\mathrm d}{\mathrm dt}\log p_t(x_t)
+=-\operatorname{tr}D_xv_\theta(x_t,t).
+\]
+这就是前文 ODE 似然公式的来源。若 $v$ 对空间局部 Lipschitz、轨迹在区间内不爆炸，
+其流具有相应的唯一性与反向求解性质。ODE 的可逆性不要求每个有限步 Euler 映射都自动可逆；
+离散数值方法还有自己的步长条件。
+
+高维时，显式构造 $D_xv$ 很贵。取独立随机向量 $\xi$，满足
+$\mathbb E[\xi\xi^\top]=I$，则
+\begin{align}
+\mathbb E_\xi[\xi^\top D_xv\,\xi]
+ &=\mathbb E_\xi\operatorname{tr}(D_xv\,\xi\xi^\top)
+ =\operatorname{tr}D_xv.
+\end{align}
+于是通过向量与 Jacobian 的乘积估计散度，而不是存储 $d\times d$ 矩阵。
+一次噪声向量给出的是随机估计，实际还叠加数值积分误差。
+因此“连续流有精确的密度变换公式”和“实现返回毫无误差的似然数值”需要分开。
+似然训练还须对 ODE 积分结果反向求导；后面的流匹配则用条件回归避免在训练循环里求解整条 ODE。
+
+\section{一般扩散矩阵与反向过程}
+原稿主要使用 $g(t)I$，这让分数前的系数很简洁。
+若扩散还依赖状态，设
+\[
+\mathrm dX_t=f(X_t,t)\mathrm dt+G(X_t,t)\mathrm dW_t,
+\quad A(x,t)=G(x,t)G(x,t)^\top.
+\]
+在密度和系数足够光滑的情形，前向方程为
+\[
+\partial_tp=-\sum_i\partial_i(f_ip)
+ +\frac12\sum_{i,j}\partial_i\partial_j(A_{ij}p).
+\]
+定义 $(\nabla\cdot A)_i=\sum_j\partial_j A_{ij}$，则概率流速度可取
+\[
+v=f-\frac12\nabla\cdot A-\frac12A\nabla\log p.
+\label{supp:general-pf}
+\]
+因为 $\sum_j\partial_j(A_{ij}p)=p(\nabla\cdot A)_i+(A\nabla p)_i$，
+把它代入 $-\nabla\cdot(pv)$，恰好恢复前向方程。
+
+用正向增加的反时钟 $r=T-t$，令 $Y_r=X_{T-r}$。
+相应逆扩散在适当时间反转条件下的漂移为
+\[
+\bar f(x,r)=-f(x,T-r)+(\nabla\cdot A)(x,T-r)
+ +A(x,T-r)\nabla\log p_{T-r}(x).
+\]
+扩散协方差仍为 $A(x,T-r)$。
+当 $A=g(t)^2I$ 时，空间散度消失，就退回原稿公式。
+因此状态依赖扩散的逆过程不能只把 $g^2$ 换成一个矩阵而漏掉散度项。
+同时，仅验证边缘方程还不充分证明完整路径时间反转；反向漂移的结论需要时间反转定理的条件。
+
+\section{Girsanov：分数误差界从哪里来}
+设两个过程使用相同、可逆的扩散矩阵 $G$，漂移分别为 $b$ 和 $\tilde b$。
+先假定初始分布相同，记 $u=G^{-1}(b-\tilde b)$。
+在相应绝对连续与指数可积条件下，以 $\tilde P$ 为参考路径测度，
+Girsanov 的密度比可写为
+\[
+\log\frac{\mathrm dP}{\mathrm d\tilde P}
+=\int_0^T u_t^\top\mathrm dW_t^{\tilde P}
+ -\frac12\int_0^T\|u_t\|^2\mathrm dt.
+\]
+在 $P$ 下，$\mathrm dW^{\tilde P}=\mathrm dW^P+u\mathrm dt$，
+所以再对 $P$ 取期望，零均值随机积分消失，得到
+\[
+D_{\rm KL}(P\|\tilde P)
+=\frac12\mathbb E_P\int_0^T
+ \|G^{-1}(b-\tilde b)\|^2\mathrm dt.
+\]
+若初始分布不同，路径 KL 的链式分解再加上初始 KL。
+将两个过程都写到增加的反时钟，精确逆漂移与模型逆漂移之差为
+$g(t)^2(\nabla\log p_t-s_\theta)$，再除以扩散尺度 $g(t)$，
+就得到原稿出现的 $g(t)^2$ 加权分数平方误差。
+\begin{align}
+D_{\rm KL}(P^{\rm rev}\|P_\theta)
+ &=D_{\rm KL}(p_T\|\pi)
+ +\frac12\int_0^Tg(t)^2\mathbb E_{p_t}
+  \|s_\theta-\nabla\log p_t\|^2\mathrm dt.
+\label{supp:path-kl}
+\end{align}
+再取生成端点这一边缘，KL 不增加，所以得到数据端的上界。
+这说明权重为什么不是任意的，也说明为什么这里不能直接比较 ODE 与 SDE 的路径 KL：
+确定性轨迹和非退化随机轨迹的路径测度通常不满足这套绝对连续条件。
+在零噪声附近，还需检查积分是否有限；若在 $\varepsilon>0$ 终止，
+上式先控制的是 $p_\varepsilon$，不是省略最后一步后的精确原始数据分布。\cite{theorybook,sde}

@@ -1,0 +1,640 @@
+[
+  {
+    "reason": "Complete empty symbol",
+    "old": "\\item 离散扩散过程变量：",
+    "new": "\\item 离散扩散过程变量：$x_0,x_1,\\ldots,x_T$。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Complete empty symbol",
+    "old": "\\item probability flow ODE",
+    "new": "\\item probability flow ODE：与指定前向 SDE 共享逐时边缘密度的确定性流，见连续版 Score SDE。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Complete empty symbol",
+    "old": "\\item ELBO ",
+    "new": "\\item ELBO：证据下界，最大化它；若作为损失最小化，则使用它的负值。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: intro",
+    "old": "\\section{基本介绍}",
+    "new": "\\section{基本介绍}\n\n\\input{chapters/theory/additions/intro}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "KL can equal zero",
+    "old": "KL散度恒大于0",
+    "new": "KL散度非负",
+    "occurrences": 1
+  },
+  {
+    "reason": "Distinguish ELBO and negative training objective",
+    "old": "从中了解到，VLB和ELBO在定义上存在一个正负符号只差。",
+    "new": "这里要核对的是目标的符号：ELBO 是对数似然的下界；本文后面最小化的 $L_{\\rm VLB}$ 是负 ELBO，即负对数似然的上界。VLB 的命名在不同资料中并不完全统一。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: gaussian-reparam",
+    "old": "重参数技巧：\\href{https://lilianweng.github.io/posts/2018-08-12-vae/#reparameterization-trick}{reparameterization-trick}",
+    "new": "重参数技巧：\\href{https://lilianweng.github.io/posts/2018-08-12-vae/#reparameterization-trick}{reparameterization-trick}\n\n\\input{chapters/theory/additions/gaussian-reparam}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: bayes",
+    "old": "关于先验，后验，极大似然，似然函数等",
+    "new": "关于先验，后验，极大似然，似然函数等\n\n\\input{chapters/theory/additions/bayes}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: score-definitions",
+    "old": "定义2.1给出了概率分布$p$的Stein score function。该定义从Stein 1972年写的一篇文章中抽取出来，相关内容可参考\\href{https://en.wikipedia.org/wiki/Stein%27s_method}{Stein's method}。",
+    "new": "定义2.1给出了概率分布$p$的Stein score function。该定义从Stein 1972年写的一篇文章中抽取出来，相关内容可参考\\href{https://en.wikipedia.org/wiki/Stein%27s_method}{Stein's method}。\n\n\\input{chapters/theory/additions/score-definitions}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: mcmc",
+    "old": "\\href{https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo}{Markov chain Monte Carlo}",
+    "new": "\\href{https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo}{Markov chain Monte Carlo}\n\n\\input{chapters/theory/additions/mcmc}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Nonnegative variational gap",
+    "old": "增加一个恒大于0的变量",
+    "new": "增加一个非负的 KL 项",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct likelihood notation",
+    "old": "数据的负对数似然为$-log_{p_{\\theta}}(x_0)$",
+    "new": "数据的负对数似然为$-\\log p_{\\theta}(x_0)$",
+    "occurrences": 1
+  },
+  {
+    "reason": "Move the unchanged cross-attention display to the original modules heading and the unchanged score-KL bound to the original theoretical-results heading.",
+    "moved_displays": 2
+  },
+  {
+    "reason": "Insert local supplement: elbo-bridge",
+    "old": "整个过程是比较简单的，核心在等式第五行的一个贝叶斯转换，转换的原因在于给定扩散过程，逆向转移在给定$x_0$的基础上，能被具体的计算出来。",
+    "new": "整个过程是比较简单的，核心在等式第五行的一个贝叶斯转换，转换的原因在于给定扩散过程，逆向转移在给定$x_0$的基础上，能被具体的计算出来。\n\n\\input{chapters/theory/additions/elbo-bridge}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct limit variable",
+    "old": "和随机变量$ X_n$的二阶矩有限",
+    "new": "和随机变量$ X$的二阶矩有限",
+    "occurrences": 1
+  },
+  {
+    "reason": "Use the valid uncentered second-moment bound",
+    "old": "由切比雪夫不等式可知：",
+    "new": "对非负随机变量 $|X_n-X|^2$ 使用 Markov 不等式可知：",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct probability bound",
+    "old": "\\frac{E\\left|X_n-X\\right|^2-E^2\\left|X_n-X\\right|}{\\varepsilon^2}",
+    "new": "\\frac{E\\left|X_n-X\\right|^2}{\\varepsilon^2}",
+    "occurrences": 1
+  },
+  {
+    "reason": "Repair mean-square continuity notation",
+    "old": "\\text { l.i.m } \\mathrm{m}_{\\Delta t 0}",
+    "new": "\\operatorname{l.i.m}_{\\Delta t\\to0}",
+    "occurrences": 1
+  },
+  {
+    "reason": "Time coordinate in continuity",
+    "old": "在$x_0$处均方连续",
+    "new": "在$t_0$处均方连续",
+    "occurrences": 1
+  },
+  {
+    "reason": "Restore missing difference quotient in derivative definition",
+    "old": "    \\Delta t \\rightarrow 0, \\forall \\varepsilon, \\forall \\eta, P\\left(\\left|X\\left(t_0+\\Delta t\\right)-X\\left(t_0\\right)\\right|>\\varepsilon\\right)<\\eta",
+    "new": "    \\operatorname{l.i.m}_{\\Delta t\\to0}\\frac{X(t_0+\\Delta t)-X(t_0)}{\\Delta t}=Y",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct repeated highest derivative",
+    "old": "a_n Y^{(n)}(t)+a_n Y^{(n)}(t)",
+    "new": "a_n Y^{(n)}(t)+a_{n-1}Y^{(n-1)}(t)",
+    "occurrences": 1
+  },
+  {
+    "reason": "Add sufficient continuity assumption to fundamental theorem",
+    "old": "若$X(t)$在$[a, b]$ 上均方可积，则：\n  \\begin{equation}\n    \\left[\\int_a^t X(s) d s\\right]^{\\prime}=X(t)",
+    "new": "若$X(t)$在$[a, b]$ 上均方连续，则：\n  \\begin{equation}\n    \\left[\\int_a^t X(s) d s\\right]^{\\prime}=X(t)",
+    "occurrences": 1
+  },
+  {
+    "reason": "Repair floor definition",
+    "old": "$X(t)$表示时间$t$时刻质点的位置，则$X(t)=\\Delta x(X_1 + X_2 + \\dots + X_{[\\frac{t}{\\Delta t}]})$，其中$[x]$表示的超过$x$",
+    "new": "$X(t)$表示时间$t$时刻质点的位置，则$X(t)=\\Delta x(X_1 + X_2 + \\dots + X_{[\\frac{t}{\\Delta t}]})$，其中$[x]$表示不超过$x$",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: brownian-conditions",
+    "old": "  若$c=1$，则称为标准布朗运动$B(t)\\sim N(0, t)$。",
+    "new": "  若$c=1$，则称为标准布朗运动$B(t)\\sim N(0, t)$。\n\n\\input{chapters/theory/additions/brownian-conditions}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Restore variance in Gaussian density",
+    "old": "e^{-\\frac{1}{2}(x-\\mu)^2}",
+    "new": "e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct Gaussian fourth moment",
+    "old": "3 \\sigma^4+\\mu \\sigma^2+5 \\mu^2+\\mu^4",
+    "new": "3\\sigma^4+6\\mu^2\\sigma^2+\\mu^4",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct variance of squared Gaussian",
+    "old": "2 \\sigma^4+\\left(\\mu-2 \\mu^2\\right) \\sigma^2+5 \\mu^2",
+    "new": "2\\sigma^4+4\\mu^2\\sigma^2",
+    "occurrences": 1
+  },
+  {
+    "reason": "Variance bound is an inequality",
+    "old": "& =\\lim _{\\delta \\rightarrow 0} 2 \\delta T",
+    "new": "& \\leq\\lim _{\\delta \\rightarrow 0} 2 \\delta T=0",
+    "occurrences": 1
+  },
+  {
+    "reason": "Use variance upper bound in quadratic variation conclusion",
+    "old": "\\right|^2-\\left.T\\right|^2=\\lim _{n \\rightarrow \\infty} 2 \\delta T=0",
+    "new": "\\right|^2-\\left.T\\right|^2\\leq\\lim _{\\delta \\rightarrow 0} 2 \\delta T=0",
+    "occurrences": 1
+  },
+  {
+    "reason": "Repair differential notation and stale equation reference",
+    "old": "式3.26中，将等式右边$T$看作$dt \\text{在}, [0, T]$上的积分，等式左边$W(t_{i+1} - W(t_i))$记为$dW \\text{或}dW_t$，则",
+    "new": "上面的二次变差等式右边可写成 $\\int_0^T\\mathrm dt$。将增量 $W(t_{i+1})-W(t_i)$ 记为 $\\mathrm dW$，便得到积分意义下的运算规则：",
+    "occurrences": 1
+  },
+  {
+    "reason": "Replace stale Ito references with actual reasoning",
+    "old": "直观的理解，（3.33）实际就是 $f(t, X_t)$的二元泰勒展开，只展开到这几项是因为根据（3.27,28）等几个结论，",
+    "new": "直观地看，上面的 Itô 引理就是 $f(t,X_t)$ 的二元 Taylor 展开；保留二次项，是因为布朗增量的平方在积分极限下仍有贡献，",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: ito-bridge",
+    "old": "得到含有布朗运动微分的Itô随机微分方程和扩散方程。",
+    "new": "得到含有布朗运动微分的Itô随机微分方程和扩散方程。\n\n\\input{chapters/theory/additions/ito-bridge}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "State adaptedness and square integrability for Ito integral",
+    "old": "  设$\\{X(t), t\\in [0, T] \\}$为随机过程，若积分:",
+    "new": "  设被积过程 $g(X(t),t)$ 对布朗运动的滤过适应，并满足 $\\mathbb E\\int_0^T|g(X(t),t)|^2\\,\\mathrm dt<\\infty$，若积分:",
+    "occurrences": 1
+  },
+  {
+    "reason": "Restore drift in FPE intermediate sum",
+    "old": "p(t, x)+\\frac{\\partial^2}{\\partial x^2}\\left(\\frac{1}{2} \\sigma^2 p(t, x)\\right)\\right] d x d t",
+    "new": "(\\mu p(t, x))+\\frac{\\partial^2}{\\partial x^2}\\left(\\frac{1}{2} \\sigma^2 p(t, x)\\right)\\right] d x d t",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct terminal conditional expectation",
+    "old": "$u(t, x)=\\mathbb{E}_x\\left[f\\left(X_T\\right)\\right]=\\mathbb{E}\\left[f\\left(X_t\\right) \\mid X_t=x\\right]$",
+    "new": "$u(t,x)=\\mathbb E[f(X_T)\\mid X_t=x]$，且 $u(T,x)=f(x)$",
+    "occurrences": 1
+  },
+  {
+    "reason": "Use terminal-value u consistently in duality argument",
+    "old": "0=\\frac{d}{d t}\\langle p, f\\rangle=\\left\\langle\\partial_t p, f\\right\\rangle+\\left\\langle p, \\partial_t f\\right\\rangle",
+    "new": "0=\\frac{d}{d t}\\langle p, u\\rangle=\\left\\langle\\partial_t p, u\\right\\rangle+\\left\\langle p, \\partial_t u\\right\\rangle",
+    "occurrences": 1
+  },
+  {
+    "reason": "Use terminal-value u consistently in duality argument",
+    "old": "=\\left\\langle\\partial_t p, f\\right\\rangle-\\langle p, L f\\rangle=\\left\\langle\\partial_t p, f\\right\\rangle-\\left\\langle L^* p, f\\right\\rangle",
+    "new": "=\\left\\langle\\partial_t p, u\\right\\rangle-\\langle p, L u\\rangle=\\left\\langle\\partial_t p, u\\right\\rangle-\\left\\langle L^* p, u\\right\\rangle",
+    "occurrences": 1
+  },
+  {
+    "reason": "Use terminal-value u consistently in duality argument",
+    "old": "=\\left\\langle\\partial_t p-L^* p, f\\right\\rangle",
+    "new": "=\\left\\langle\\partial_t p-L^* p, u\\right\\rangle",
+    "occurrences": 1
+  },
+  {
+    "reason": "Complete forward equation and weak-form conclusion",
+    "old": "我们得到Kolmogorov前向方程 $\\partial_t p-L^* p$",
+    "new": "由任意测试函数的弱形式可得 Kolmogorov 前向方程 $\\partial_t p-L^*p=0$",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: stationary-normalizer",
+    "old": "p(x)=\\frac{1}{\\sigma(x)^2} \\exp \\left(\\int \\frac{2 \\mu(x)}{\\sigma^2(x)} d x\\right)\n$$",
+    "new": "p(x)=\\frac{1}{\\sigma(x)^2} \\exp \\left(\\int \\frac{2 \\mu(x)}{\\sigma^2(x)} d x\\right)\n$$\n\n\\input{chapters/theory/additions/stationary-normalizer}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: energy-note",
+    "old": "其中$p_d$是$p_{data}$的简写。",
+    "new": "其中$p_d$是$p_{data}$的简写。\n\n\\input{chapters/theory/additions/energy-note}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Context for historical reading notes",
+    "old": "\\section{整体认识}",
+    "new": "\\section{整体认识}\n这些条目保留了阅读早期论文时的摘录和疑问。关于训练与似然、连续与离散、采样步数的表述，后文会逐项补充适用条件；其中的实验步数和硬件记录应按当时设置理解。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Do not exclude native discrete diffusion",
+    "old": "基于分数的生成模型，只能用在连续数据上，若离散数据，可先利用VAE将其映射到连续的隐空间中，",
+    "new": "上述使用空间梯度的分数模型直接作用于连续变量；若处理离散数据，一种做法是先利用VAE将其映射到连续的隐空间中，",
+    "occurrences": 1
+  },
+  {
+    "reason": "Avoid exclusive claim about ODE likelihood training",
+    "old": "需要采用上面提出的方法。”",
+    "new": "可采用上面提出的方法来改善理论控制。”",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct historical quotation with local qualified paraphrase",
+    "old": "它只适合训\n  练diffusion SDE的最大似然估计，但并不适合训练diffusion ODE的最大似然估计。",
+    "new": "相应似然加权目标可控制 diffusion SDE 的分布误差，但不能直接将同一个误差保证套到 diffusion ODE 上。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Distinguish likelihood computation from error control in historical note",
+    "old": "SDE的模型是不能计算似然值的，但是ODE是可以精确就算的。优化一阶分数损失并不能得到ODE的似然，负对数似然被",
+    "new": "通常的扩散 SDE 不直接提供闭式数据似然，概率流 ODE 则可通过散度积分计算模型似然。仅优化一阶分数损失不自动保证 ODE 似然准确；相关界涉及",
+    "occurrences": 1
+  },
+  {
+    "reason": "Distinguish DSM and SSM",
+    "old": "通过sliced score matching 训练NCSN，即去噪分数匹配。",
+    "new": "NCSN 主要使用去噪分数匹配；sliced score matching 是另一种估计方法。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Continuous diffusion is still Markov",
+    "old": "在连续化DDPM和SGM的时候，就去掉了DDPM的马尔科夫性的假设，",
+    "new": "连续化 DDPM 与 SGM 后得到的 Itô 扩散仍具有马尔可夫性；",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct training-path versus sampling direction",
+    "old": "添加也是从大噪声到小噪声，直到数据变为高斯分布。",
+    "new": "前向加噪从小尺度走向大尺度，生成采样才从大噪声走向小噪声。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct terminal convergence statement",
+    "old": "容易看到，当$T \\rightarrow \\infty$时，$q(\\mathbf{x}_t|\\mathbf{x}_{t-1})$趋近于标准状态分布。",
+    "new": "当累积信号系数 $\\bar\\alpha_T\\to0$ 时，终端边缘 $q(\\mathbf x_T)$ 才趋近标准高斯；单步转移核并不因此变成标准高斯。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Normalize combined Gaussian noise",
+    "old": "$\\bar{\\epsilon}_{t-2} = \\sqrt{\\alpha_{t}(1-\\alpha_{t-1})}\\epsilon_{t-2} + \\sqrt{1-\\alpha_t}\\epsilon_{t-1}$",
+    "new": "$\\bar{\\epsilon}_{t-2} = [\\sqrt{\\alpha_t(1-\\alpha_{t-1})}\\epsilon_{t-2}+\\sqrt{1-\\alpha_t}\\epsilon_{t-1}]/\\sqrt{1-\\alpha_t\\alpha_{t-1}}$，归一化后仍为标准高斯",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct reverse conditional direction",
+    "old": "只剩下反向$q(\\mathbf{x}_t \\mid \\mathbf{x}_{t-1})$",
+    "new": "只剩下反向$q(\\mathbf{x}_{t-1} \\mid \\mathbf{x}_t)$",
+    "occurrences": 1
+  },
+  {
+    "reason": "Do not assume learned and data joint distributions equal",
+    "old": "这两者相等，因为它们都是表示初始数据和中间数据的联合分布。",
+    "new": "这两者都定义了整条轨迹的联合分布，但并不会自动相等；学习的目标是让反向模型尽量逼近前向过程所定义的联合分布。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Consistent negative-ELBO loss sign",
+    "old": ":=-L_{\\mathbf{VLB}}\\left(\\mathbf{x}_0\\right)",
+    "new": ":=L_{\\mathbf{VLB}}",
+    "occurrences": 1
+  },
+  {
+    "reason": "Explain sign convention locally",
+    "old": "这里需要说明一下，很多地方说变分下界VLB和证据下界是一样的，包括Wikipedia，但实际上Wikipedia关于ELBO的定义和一些扩散论文对VLB的定义\n能看出来，两者差一个正负符号(这里面应该存在一些误用)。",
+    "new": "这里仍沿用前文的符号约定：最大化 ELBO，等价于最小化负 ELBO；后者在下面记为 $L_{\\rm VLB}$。阅读其它资料时，应以具体公式的正负号为准。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Explain posterior substitution and telescoping",
+    "old": "用式(4.8)中的$q(\\mathbf{x}_t \\mid \\mathbf{x}_{t-1},\\mathbf{x}_0)$替换一下即得到最终'可操作的'优化目标。",
+    "new": "通过贝叶斯公式改写为含 $q(\\mathbf{x}_{t-1}\\mid\\mathbf{x}_t,\\mathbf{x}_0)$ 的项，并将边缘比值连乘相消，即得到最终可计算的优化目标。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Use distribution rather than sample on Gaussian-density lhs",
+    "old": "\\mathbf{x}_{t-1}=\\mathcal{N}\\left(\\mathbf{x}_{t-1} ; \\frac{1}{\\sqrt{\\alpha_t}}",
+    "new": "p_\\theta(\\mathbf x_{t-1}\\mid\\mathbf x_t)=\\mathcal{N}\\left(\\mathbf{x}_{t-1} ; \\frac{1}{\\sqrt{\\alpha_t}}",
+    "occurrences": 1
+  },
+  {
+    "reason": "Simple loss is reweighting",
+    "old": "经过简化(将不影响优化的系数等删去等)，最终得到",
+    "new": "进一步选择重新加权的简化训练目标，得到",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: ddpm-loss",
+    "old": "\\label{fig:DDPM-algo}\n\\end{figure}",
+    "new": "\\label{fig:DDPM-algo}\n\\end{figure}\n\n\\input{chapters/theory/additions/ddpm-loss}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct DSM date and gradient claim",
+    "old": "另外2010年的一篇文章A Connection Between Score Matching and Denoising Autoencoders提出的Denoising score matching能做到0梯度计算(计算量更少了)达到等价的优化效果，但是是对扰动后的数据的密度估计。",
+    "new": "另外，2011年的文章 A Connection Between Score Matching and Denoising Autoencoders 提出的去噪分数匹配，避免了损失中对分数网络输入求导的迹计算；网络参数仍需正常反向传播。它估计的是扰动后的数据分数。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Complete Gaussian convolution integration measure",
+    "old": "\\mathcal{N}(\\tilde{\\mathbf{x}} \\mid \\mathbb{t}, \\sigma^2I)\n",
+    "new": "\\mathcal{N}(\\tilde{\\mathbf{x}} \\mid \\mathbb{t}, \\sigma^2I)\\,\\mathrm d\\mathbb t\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: score-matching",
+    "old": "\\subsection{score matching}",
+    "new": "\\subsection{score matching}\n\n\\input{chapters/theory/additions/score-matching}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Separate error bound from density evaluation",
+    "old": "使得优化SM模型，能得到SDE对应的数据边缘分布，也就是原始数据的似然函数值。",
+    "new": "说明在指定权重与正则条件下，分数匹配误差可控制反向 SDE 的数据分布误差。这个界本身不是逐样本似然的计算公式。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Resolve original training question",
+    "old": "论文的网络是使用概率流网络来训练的?。",
+    "new": "这里的训练对象仍是分数网络；概率流 ODE 是由它进一步构造的。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct ODE likelihood interpretation",
+    "old": "论文证明了一阶分数模型并不能得到扩散对应的ODE的似然，该似然被一阶，二阶，三阶分数匹配误差所控制，以此提出了一个高阶的分数去噪模型，能得到更好的原始数据的似然逼近，并同时能保证生成高质量数据。",
+    "new": "相关分析表明，一阶分数匹配误差本身不足以无条件控制 ODE 的似然误差；在相应假设下，高阶分数误差也进入控制关系，由此提出高阶去噪分数匹配训练。似然改善与样本质量仍应分别评估。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: likelihood",
+    "old": "似然改善与样本质量仍应分别评估。",
+    "new": "似然改善与样本质量仍应分别评估。\n\n\\input{chapters/theory/additions/likelihood}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: sde-notation",
+    "old": "\\section{连续版Score SDE}",
+    "new": "\\section{连续版Score SDE}\n\n\\input{chapters/theory/additions/sde-notation}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Noise draw is a vector rather than identity matrix",
+    "old": "$\\mathbf{x}_{\\sigma_i}=\\mathbf{x}_0+\\sigma_i \\mathbf{I}$",
+    "new": "$\\mathbf{x}_{\\sigma_i}=\\mathbf{x}_0+\\sigma_i z$，$z\\sim\\mathcal N(0,I)$",
+    "occurrences": 1
+  },
+  {
+    "reason": "Forward transition kernel is not an optimizer",
+    "old": "当转移核是优化目标(47)的解的时候，若",
+    "new": "对这里预先规定的前向过程，若",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct variance wording",
+    "old": "均值和方程能具体计算出来",
+    "new": "均值和方差能通过相应方程计算出来",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: probability-flow",
+    "old": "% \\subsection{stochastic gradient Langevin dynamics}",
+    "new": "% \\subsection{stochastic gradient Langevin dynamics}\n\n\\input{chapters/theory/additions/probability-flow}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: parameterizations",
+    "old": "\\input{chapters/theory/additions/probability-flow}",
+    "new": "\\input{chapters/theory/additions/probability-flow}\n\n\\input{chapters/theory/additions/parameterizations}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Move and explain original KL bound",
+    "old": "\\section{一些理论结果}",
+    "new": "\\section{一些理论结果}\n分数匹配的误差在什么条件下能控制生成分布的误差？先看前面提到的这个界：\n\\begin{equation}\n  \\begin{aligned} \\mathbf{KL}\\left(p_0(\\mathbf{x}) \\| p_\\theta(\\mathbf{x})\\right) \\leq \\frac{T}{2} \\mathbb{E}_{t \\in \\mathcal{U}(0, T)} \\mathbb{E}_{p_t(\\mathbf{x})}\\left[\\lambda(t) \\| \\nabla_{\\mathbf{x}} \\log p_t(\\mathbf{x})-\\right. \n    & \\left.\\mathbf{s}_\\theta(\\mathbf{x}, t) \\|_2^2\\right] \\\\ + \n    & \\operatorname{KL}\\left(p_T \\| \\pi\\right)\n  \\end{aligned}\n\\end{equation}\n\\input{chapters/theory/additions/guarantees}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: ddim-notation",
+    "old": "\\subsection{DDIM}",
+    "new": "\\subsection{DDIM}\n\n\\input{chapters/theory/additions/ddim-notation}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: ddim",
+    "old": "ANALYTIC-DPM一文的前向是DDIM的模式，但是在推导过程中，作者把均值用DDIM模型表达的式子替换为理论上等价的分数模型，因分数模型有具体的表达式，因此整个计算能走下去。",
+    "new": "ANALYTIC-DPM一文的前向是DDIM的模式，但是在推导过程中，作者把均值用DDIM模型表达的式子替换为理论上等价的分数模型，因分数模型有具体的表达式，因此整个计算能走下去。\n\n\\input{chapters/theory/additions/ddim}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Distinguish integral representation and closed-form solution",
+    "old": "并利用变量替换法，给出了ODE的具体解，具体解的形式在ODE的数值求解中有充分的研究，因此能避免成百次的迭代，达到加速的效果。",
+    "new": "并利用变量替换法精确积分已知的线性部分，剩余网络积分再作数值近似，从而用更少的网络调用达到加速效果。",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct CFG name",
+    "old": "增加分类引导(calssify-free guide)",
+    "new": "增加无分类器引导（classifier-free guidance）",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: solvers",
+    "old": "因为算法本身和训练无关，只用在采样生成样本中，因此法只需要不多的代码，就能实现，而且在实际中成为比较好的加速版的采样求解器。",
+    "new": "因为算法本身和训练无关，只用在采样生成样本中，因此法只需要不多的代码，就能实现，而且在实际中成为比较好的加速版的采样求解器。\n\n\\input{chapters/theory/additions/solvers}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: distillation",
+    "old": "\\subsection{蒸馏}",
+    "new": "\\subsection{蒸馏}\n\n\\input{chapters/theory/additions/distillation}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Evaluate score at the noisy coordinate",
+    "old": "\\nabla \\log p_t(\\mathbf{x})=-\\mathbb{E}",
+    "new": "\\nabla_{\\mathbf x_t}\\log p_t(\\mathbf{x}_t)=-\\mathbb{E}",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct Gaussian mean-covariance notation",
+    "old": "\\mathcal{N}\\left(\\mathbf{x} ; t^2 \\boldsymbol{I}\\right)",
+    "new": "\\mathcal{N}\\left(\\mathbf{x}, t^2 \\boldsymbol{I}\\right)",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct consistency output boundary",
+    "old": "$c_{skip}(0)=1, c_{skip}(0)=0$",
+    "new": "$c_{skip}(0)=1, c_{out}(0)=0$",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: consistency-updates",
+    "old": "\\label{fig:LCD}\n\\end{figure}",
+    "new": "\\label{fig:LCD}\n\\end{figure}\n\n\\input{chapters/theory/additions/consistency-updates}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: identity",
+    "old": "\\subsection{角色一致性}",
+    "new": "\\subsection{角色一致性}\n\n\\input{chapters/theory/additions/identity}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: discrete",
+    "old": "\\input{chapters/theory/additions/identity}",
+    "new": "\\input{chapters/theory/additions/identity}\n\n\\input{chapters/theory/additions/discrete}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: modules",
+    "old": "\\subsubsection{VAE、CLIP、U-Net、U-ViT、DiT等模块}",
+    "new": "\\subsubsection{VAE、CLIP、U-Net、U-ViT、DiT等模块}\n\n\\input{chapters/theory/additions/modules}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: attention-placeholder",
+    "old": "\\input{chapters/theory/additions/modules}",
+    "new": "\\input{chapters/theory/additions/modules}\n\n\\input{chapters/theory/additions/attention-placeholder}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: flow",
+    "old": "\\subsection{Rectified Flow}",
+    "new": "\\subsection{Rectified Flow}\n\n\\input{chapters/theory/additions/flow}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: guidance",
+    "old": "\\subsubsection{条件控制}",
+    "new": "\\subsubsection{条件控制}\n\n\\input{chapters/theory/additions/guidance}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: historical-applications",
+    "old": "\\section{应用}",
+    "new": "\\section{应用}\n\n\\input{chapters/theory/additions/historical-applications}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: scaling",
+    "old": "\\subsubsection{SDXL}",
+    "new": "\\subsubsection{SDXL}\n\n\\input{chapters/theory/additions/scaling}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: lora",
+    "old": "\\subsubsection{LORA}",
+    "new": "\\subsubsection{LORA}\n\n\\input{chapters/theory/additions/lora}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: geometry",
+    "old": "\\subsection{3D重建}",
+    "new": "\\subsection{3D重建}\n\n\\input{chapters/theory/additions/geometry}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: motion",
+    "old": "\\subsubsection{SinMDM}",
+    "new": "\\subsubsection{SinMDM}\n\n\\input{chapters/theory/additions/motion}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: frameworks",
+    "old": "\\subsection{Diffusers、SCEPTER}",
+    "new": "\\subsection{Diffusers、SCEPTER}\n\n\\input{chapters/theory/additions/frameworks}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Insert local supplement: workflows",
+    "old": "\\subsection{ComfyUI、WebUI、Fooocus}",
+    "new": "\\subsection{ComfyUI、WebUI、Fooocus}\n\n\\input{chapters/theory/additions/workflows}\n",
+    "occurrences": 1
+  },
+  {
+    "reason": "Consistent row-token matrix multiplication in original attention display",
+    "old": "\\mathbf{Q}=\\mathbf{W}_Q^{(i)} \\cdot \\varphi_i\\left(\\mathbf{z}_i\\right), \\mathbf{K}=\\mathbf{W}_K^{(i)} \\cdot \\tau_\\theta(y), \\mathbf{V}=\\mathbf{W}_V^{(i)} \\cdot \\tau_\\theta(y)",
+    "new": "\\mathbf Q=\\varphi_i(\\mathbf z_i)\\mathbf W_Q^{(i)},\\quad\\mathbf K=\\tau_\\theta(y)\\mathbf W_K^{(i)},\\quad\\mathbf V=\\tau_\\theta(y)\\mathbf W_V^{(i)}",
+    "occurrences": 1
+  },
+  {
+    "reason": "Correct projection shapes for row-token features",
+    "old": "\\mathbf{W}_Q^{(i)} \\in \\mathbb{R}^{d \\times d_e^i}, \\mathbf{W}_K^{(i)}, \\mathbf{W}_V^{(i)} \\in \\mathbb{R}^{d \\times d_r}",
+    "new": "\\mathbf W_Q^{(i)}\\in\\mathbb R^{d_c^i\\times d},\\quad\\mathbf W_K^{(i)},\\mathbf W_V^{(i)}\\in\\mathbb R^{d_r\\times d}",
+    "occurrences": 1
+  },
+  {
+    "reason": "Label an existing equation without changing the formula",
+    "label": "orig:path-kl"
+  },
+  {
+    "reason": "Label an existing equation without changing the formula",
+    "label": "orig:score-loss"
+  },
+  {
+    "reason": "Label an existing equation without changing the formula",
+    "label": "orig:langevin"
+  },
+  {
+    "reason": "Label an existing equation without changing the formula",
+    "label": "orig:discrete-score"
+  },
+  {
+    "reason": "Stable equation reference",
+    "old": "从式(4.6)的推导中看到",
+    "new": "从式\\eqref{orig:path-kl}的推导中看到",
+    "occurrences": 1
+  },
+  {
+    "reason": "Stable equation reference",
+    "old": "优化目标(4.6)$ii$式",
+    "new": "优化目标\\eqref{orig:path-kl}的 $ii$ 项",
+    "occurrences": 1
+  },
+  {
+    "reason": "Stable equation reference",
+    "old": "去逼近式$(33)$的迹",
+    "new": "去逼近式\\eqref{orig:score-loss}中的迹",
+    "occurrences": 1
+  },
+  {
+    "reason": "Stable equation reference",
+    "old": "采样算法(对比式(38))",
+    "new": "采样算法（对比式\\eqref{orig:langevin}）",
+    "occurrences": 1
+  },
+  {
+    "reason": "Stable equation reference",
+    "old": "问题是(43)式能通过ELBO推导出来？",
+    "new": "问题是式\\eqref{orig:discrete-score}能通过ELBO推导出来？",
+    "occurrences": 1
+  },
+  {
+    "reason": "Stable equation reference",
+    "old": "得到(43)所示的分数表达形式",
+    "new": "得到式\\eqref{orig:discrete-score}所示的分数表达形式",
+    "occurrences": 1
+  }
+]

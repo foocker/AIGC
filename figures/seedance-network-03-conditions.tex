@@ -1,0 +1,80 @@
+\begin{tikzpicture}[sn]
+\snPage{3}{条件注入：参考读取与源条件残差各走一条路径}
+  {文本条件的 MMDiT 联合注意力见第2页；本页展开后文提出的参考 / 编辑条件支路}
+\node[heading] at (6.7,14.15) {(a) 参考：独立记忆 + Attention 读取};
+\node[heading] at (21.3,14.15) {(b) 编辑：源条件塔 + 对齐残差};
+\draw[snInk!20] (14.1,0)--(14.1,14.6);
+
+\foreach \xx/\id/\mm in {4.2/v/v,10.1/a/a}{
+  \node[cond,text width=3.6cm,font=\fontsize{9}{10}\selectfont] (mem\id) at (\xx,4.95) {Reference Memory $R_{\mm}$\\role / subject\\shot / time};
+  \node[box] (kv\id) at (\xx,6.40) {$K_r=R_{\mm}W_K$\\$V_r=R_{\mm}W_V$};
+  \node[attn,text width=3.6cm] (read\id) at (\xx,8.65) {Reference Attention\\\fontsize{9}{10}\selectfont $\operatorname{Attn}(Q_{\mm},K_r,V_r;B)$};
+  \node[box,text width=3.2cm] (gate\id) at (\xx,10.25) {Output Linear\\$\times\,\tanh(g_{\mm})$};
+  \node[plus] (add\id) at (\xx,11.75) {$+$};
+  \node[lab] (out\id) at (\xx,12.75) {$h_{\mm}'$};
+  \draw[wire] (mem\id.north)--(kv\id.south);
+  \draw[wire] (kv\id.north)--node[right,lab] {$K,V$}(read\id.south);
+  \draw[wire] (read\id.north)--(gate\id.south);
+  \draw[wire] (gate\id.north)--(add\id.south);
+  \draw[wire] (add\id.north)--(out\id.south);
+}
+\node[lab] at (4.2,.85) {参考图 / 参考视频};
+\node[lab] at (10.1,.85) {音色 / 声音参考};
+\node[embed,text width=3.6cm] (ve) at (4.2,2.10) {3D Causal VAE\\+ Semantic Encoder};
+\node[embed] (ae) at (10.1,2.10) {Audio Codec / Encoder};
+\node[box,text width=3.6cm,font=\fontsize{9}{10}\selectfont] (vp) at (4.2,3.55) {投影、池化、绑定编码};
+\node[box,text width=3.6cm,font=\fontsize{9}{10}\selectfont] (ap) at (10.1,3.55) {投影、池化、speaker 绑定};
+\draw[wire] (4.2,1.13)--(ve.south);
+\draw[wire] (10.1,1.13)--(ae.south);
+\draw[wire] (ve.north)--(vp.south);
+\draw[wire] (ae.north)--(ap.south);
+\draw[wire] (vp.north)--(memv.south);
+\draw[wire] (ap.north)--(mema.south);
+\node[lab] (qv) at (1.05,8.65) {$h_v$};
+\node[lab] (qa) at (13.18,8.65) {$h_a$};
+\draw[wire] (qv.east)--node[above,lab] {$Q_v$}(readv.west);
+\draw[wire] (qa.west)--node[above,lab] {$Q_a$}(reada.east);
+\draw[skip] (1.05,8.65)--(1.05,11.75)--(addv.west);
+\draw[skip] (13.18,8.65)--(13.18,11.75)--(adda.east);
+\node[lab,text width=10.8cm] at (7.0,13.45)
+  {按主体、镜头与时间定义可见性 $B$；无可靠空间归属时不硬造 subject mask};
+
+% Source and mask are encoded separately, before channel concatenation.
+\node[lab] (source) at (18.6,.85) {源视频 $F$};
+\node[lab] (mask) at (25.4,.85) {编辑 mask $M$};
+\node[box,text width=7.4cm] (split) at (20.8,2.05)
+  {$F_c=F\odot M$，$F_k=F\odot(1-M)$};
+\draw[wire] (source.north)--(18.6,1.67);
+\draw[wire] (mask.north)--(25.4,1.40)--(24.1,1.40)--(24.1,1.67);
+\node[embed,text width=2.55cm] (ec) at (17.2,3.55) {$E_v(F_c)$\\3D Causal VAE};
+\node[embed,text width=2.55cm] (ek) at (21.3,3.55) {$E_v(F_k)$\\3D Causal VAE};
+\node[box,text width=2.55cm] (em) at (25.4,3.55) {$D(M)$\\网格对齐};
+\draw[wire] (17.2,2.43)--(ec.south);
+\draw[wire] (21.3,2.43)--(ek.south);
+\draw[wire,rounded corners=2pt] (mask.east)--(27.0,.85)--(27.0,2.65)--(25.4,2.65)--(em.south);
+\node[cond,text width=9.9cm] (cat) at (21.3,5.05)
+  {$S_0=P\,[E_v(F_c);E_v(F_k);D(M)]$\\沿通道拼接，保留时间与空间网格};
+\draw[wire] (ec.north)--(17.2,4.63);
+\draw[wire] (ek.north)--(21.3,4.63);
+\draw[wire] (em.north)--(25.4,4.63);
+\node[cond,text width=3.4cm] (tower) at (18.8,7.15) {Source Tower\\网格条件特征};
+\node[cond,text width=3.4cm] (geo) at (24.2,7.15) {Structure Projection\\depth / pose / camera};
+\draw[wire] (18.8,5.46)--(tower.south);
+\node[lab] (gin) at (24.2,6.0) {几何 / 相机 / 有效位};
+\draw[wire] (gin.north)--(geo.south);
+\node[cond,text width=6.9cm] (adapter) at (21.3,9.1)
+  {Context Adapter：对齐源条件与结构\\$r_S^{(\ell)}$};
+\draw[wire] (tower.north)--(adapter.south west);
+\draw[wire] (geo.north)--(adapter.south east);
+\node[box,text width=4.6cm] (g) at (21.3,10.65) {线性投影 $\times$ 门控 $g_S$};
+\node[plus] (addsrc) at (21.3,12.05) {$+$};
+\draw[wire] (adapter.north)--(g.south);
+\draw[wire] (g.north)--(addsrc.south);
+\node[lab] (hv) at (16.0,12.05) {目标流 $h_v$};
+\node[lab] (hvo) at (26.15,12.05) {$h_v'$};
+\draw[wire] (hv.east)--(addsrc.west);
+\draw[wire] (addsrc.east)--(hvo.west);
+\node[lab,text width=10cm] at (21.3,13.23)
+  {选定层接入；源条件保持干净，带噪目标另走主输入};
+\snNote{这两条支路对应 M07/M17/M19/M27 提出的候选连接：参考提供注意力 K/V，源与结构提供对齐残差。文本仍按第2页进入联合注意力。参考窗口动态拼接是另一种实现，不能与独立 reference reader 混称同一个模块；本图为清晰起见固定采用后文的独立读取方案。}
+\end{tikzpicture}

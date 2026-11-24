@@ -1,0 +1,95 @@
+\chapter{从概率演化理解生成：阅读路线与统一记号}
+\label{th:roadmap}
+
+扩散模型要学习的不是一张固定图片，也不是给任意噪声指定唯一的真实答案，
+而是一种把简单概率分布变成数据分布的机制。给定训练分布 $p_{\rm data}$，
+先构造一族容易采样的中间分布 $p_t$，再学习这些分布之间的逆向运动。
+DDPM 用反向条件概率描述它，分数模型用密度的空间导数描述它，
+流匹配用运输概率质量的速度描述它。快速生成模型则进一步学习一段运动的结果。
+
+本篇依照 \emph{The Principles of Diffusion Models} 的三种起源与统一框架重新编写，
+参考实际下载的 \codepath{arXiv:2510.21890v3}（2026年8月27日），并核对相关原论文。
+参考网站的部分页码链接仍指向早期版，本篇以 v3 的章节与印刷页码为准。
+截至2026年11月24日核查到的材料包括连续与离散概率演化、引导、求解器、
+分布蒸馏、一致性、CTM 和 MeanFlow。本篇按机制补足理论，
+不把某篇论文的实验排名当成普遍结论，也不声称穷尽核查日的全部新论文。
+
+\section{一条不依赖模型品牌的主线}
+
+\begin{enumerate}
+\item 定义状态与数据分布：像素、潜变量、连续向量或离散符号。
+\item 定义正向扰动或运输路径，使终点接近易采样的先验。
+\item 由概率守恒推导分布如何演化：连续性方程、Fokker--Planck 方程或主方程。
+\item 把未知的边缘量改写成可采样的条件监督，学习噪声、分数、速度或反向概率。
+\item 沿匹配的逆过程采样；需要加速时，区分改进数值积分与重新训练有限时间映射。
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\small,node distance=6mm,
+ box/.style={draw=structurecolor!60,fill=structurecolor!3,rounded corners,
+ align=center,text width=11.8cm,minimum height=9mm},
+ arr/.style={-{Stealth[length=2mm]},draw=structurecolor,thick}]
+\node[box] (a) {数据 $p_0$ $\longrightarrow$ 可采样的扰动路径 $p_t$ $\longrightarrow$ 先验 $p_T$};
+\node[box,below=of a] (b) {变分：反向条件 \quad 分数：$\nabla\log p_t$ \quad 流：边缘速度 $u_t$};
+\node[box,below=of b] (c) {条件回归技巧：难求的边缘对象 $\longleftarrow$ 可生成的带标签样本};
+\node[box,below=of c] (d) {生成：反向 SDE / 概率流 ODE / 离散反向跳变};
+\node[box,below=of d] (e) {快速生成：数值求解器，或学习有限时间流映射};
+\draw[arr](a)--(b);\draw[arr](b)--(c);\draw[arr](c)--(d);\draw[arr](d)--(e);
+\end{tikzpicture}
+\caption{本篇重新绘制的理论路线。分支之间存在有条件的等价，不表示所有算法可以混用。}
+\end{figure}
+
+\section{记号先固定，时间方向不暗中改变}
+
+本篇统一用 $t=0$ 表示数据，$t=T$ 表示噪声。正向扰动按 $t$ 增长，生成按 $t$ 递减。
+只有离散章节另用有限状态概率向量；其它章节默认连续状态 $x\in\R^d$。
+
+\begin{longtable}{@{}p{0.24\linewidth}p{0.69\linewidth}@{}}
+\toprule 记号 & 定义 \\ \midrule\endhead
+$x_0,\epsilon,x_t$ & 数据、标准高斯噪声、时刻 $t$ 的带噪状态 \\
+$q,p_t,p_\theta$ & 固定正向过程、其边缘密度、学习的生成模型；不是同一对象 \\
+$a_t,b_t$ & 累积信号与噪声标准差，使 $x_t=a_tx_0+b_t\epsilon$ \\
+$\alpha_k,\beta_k,\bar\alpha_k$ & DDPM 单步保留率、单步方差、累积保留率；$a_k=\sqrt{\bar\alpha_k}$ \\
+$s_t(x),u_t(x)$ & 数据密度的空间分数 $\nabla_x\log p_t(x)$、概率运输速度 \\
+$v_{\rm rot}$ & 归一化高斯路径上的旋转参数化，区别于一般时间速度 \\
+$f,g,A$ & SDE 漂移、扩散系数、扩散协方差 $A=GG^\top$ \\
+$\lambda_t$ & 半对数信噪比 $\log(a_t/b_t)$，不是损失权重 \\
+$w(t),\Phi_{s\to t}$ & 损失权重、ODE 从时刻 $s$ 到 $t$ 的解映射 \\
+$K,\mathrm{NFE}$ & 采样步数、网络求值次数；两者未必相同 \\
+\bottomrule
+\end{longtable}
+
+神经网络预测记为 $\hat x_{0,\theta},\epsilon_\theta,s_\theta,u_\theta$。
+真值函数或理想回归解用上标 $*$。真实样本 $x_0$ 与后验均值
+$\E[x_0\mid x_t]$ 必须区分：对多峰分布，后验均值可能处于两个模式之间。
+除非另有说明，平方范数对全部特征维求和；工程上按元素求平均会额外改变整体尺度。
+
+\section{三类等价，三类不能省略的条件}
+
+\textbf{参数化等价}：在固定 $a_t,b_t$、非奇异的时间区间内，
+可把噪声、分数、干净样本和速度预测互相换算。
+但要同时换算损失权重和采样器；同名 MSE 不保证同一训练目标。
+
+\textbf{分布等价}：在精确分数、同一起始分布和适当正则条件下，
+反向 SDE 与对应 ODE 可以具有相同的逐时边缘分布。
+它们的随机路径、端点耦合与条件轨迹一般不同。
+
+\textbf{数值等价}：有限步算法只有在具体离散式、噪声注入、模型输出和时间表相配时
+才能逐步对齐。连续极限相同不等于10步输出相同。
+
+\section{应先解开的四个误会}
+
+第一，单条加噪路径可为直线，边缘最优速度的积分轨迹仍可弯曲，
+所以流匹配不自动获得一步精确生成。第二，去噪器输出的是条件均值，
+不是所有情形下的 ODE 轨迹终点。第三，“概率流”不自动意味着最优运输；
+最优性要指定成本与端点约束。第四，“精确似然”指模型分布在理想积分下的密度计算，
+不等于模型已经拟合真实数据，也不等于有限精度代码没有误差。
+
+\begin{theorytakeaway}
+先问概率路径与时间约定，再问网络预测什么，最后问用什么采样。
+网络架构、训练目标和数值算法是三个不同的设计维度。
+本篇每种理论等价都附带成立范围，不由公式相似推断工程等价。
+\end{theorytakeaway}
+\threading{主参考第1、6、12章与附录B，尤其是“条件技巧”和概率运输的统一视角\cite{theorybook}。
+原稿的链接摘录与历史表述已独立归档，不再和新推导混排。}

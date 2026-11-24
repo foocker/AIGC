@@ -1,0 +1,56 @@
+\begin{tikzpicture}[sn]
+\snPage{4}{3D Causal VAE：视频怎样成为连续时空 latent}
+  {本页展开模块类别和因果关系；阶段数、通道数与步长不冒充 2.5 的公开参数}
+\node[heading] at (13.4,14.10) {Encoder：$x^v\ \longrightarrow\ q_\phi(z^v\mid x^v)$};
+\node[heading] at (13.4,8.75) {Decoder：$z^v\ \longrightarrow\ \hat x^v$};
+\node[embed,text width=2.2cm] (rgb) at (1.4,11.55) {RGB Frames\\$x^v$};
+\node[embed,text width=2.5cm] (conv) at (5.0,11.55) {Causal 3D Conv};
+\node[box,text width=2.6cm] (res) at (9.0,11.55) {3D ResBlocks};
+\node[embed,text width=2.9cm] (down) at (13.1,11.55) {Spatial / Temporal\\Downsampling};
+\node[box,text width=2.7cm] (post) at (17.2,11.55) {Posterior Heads\\$\mu,\log\sigma^2$};
+\node[box,text width=3.2cm] (rep) at (21.6,11.55) {Reparameterization\\$z=\mu+\sigma\odot\epsilon$};
+\node[embed,text width=2.25cm] (z) at (25.5,11.55) {Video Latent\\$z^v$};
+\foreach \a/\b in {rgb/conv,conv/res,res/down,down/post,post/rep,rep/z}{
+\draw[wire] (\a.east)--(\b.west);
+}
+\node[lab] (eps) at (21.6,13.15) {$\epsilon\sim\mathcal N(0,I)$};
+\draw[wire] (eps.south)--(rep.north);
+\draw[snInk!60,rounded corners=3pt] (7.25,10.55) rectangle (14.95,12.5);
+\node[lab] at (11.1,10.13) {多尺度阶段重复；具体层数由实现决定};
+\node[embed,text width=2.6cm] (dz) at (25.5,6.60) {Denoised Latent\\$z_0^v$};
+\node[box,text width=2.6cm] (dproj) at (21.6,6.60) {Latent Linear};
+\node[embed,text width=2.9cm] (up) at (17.2,6.60) {Spatial / Temporal\\Upsampling};
+\node[box,text width=2.6cm] (dres) at (13.1,6.60) {3D ResBlocks};
+\node[embed,text width=2.7cm] (dconv) at (9.0,6.60) {Causal 3D Conv};
+\node[embed,text width=2.6cm] (recon) at (5.0,6.60) {Reconstructed Frames\\$\hat x^v$};
+\foreach \a/\b in {dz/dproj,dproj/up,up/dres,dres/dconv,dconv/recon}{
+\draw[wire] (\a.west)--(\b.east);
+}
+\draw[snInk!60,rounded corners=3pt] (11.3,5.55) rectangle (19.05,7.58);
+\node[lab] at (15.2,5.13) {上采样与细节恢复};
+\draw[cw,rounded corners=2pt] (z.south)--(25.5,9.0)--(dz.north);
+\node[lab,fill=white,inner sep=2pt,text width=4cm] at (25.5,9.0)
+  {生成时由扩散主干提供 $z_0$\\训练重建时由 Encoder 提供};
+
+\node[heading] at (5.9,4.33) {时间因果：当前输出不读取未来帧};
+\node[box,text width=2.0cm] (cur) at (4.85,3.20) {输出 $h_j$};
+\foreach \xx/\ii in {1.1/0,3.0/1,4.9/2}{
+  \node[embed,text width=1.05cm] (x\ii) at (\xx,1.65) {$x_{\ii}$};
+  \draw[wire] (x\ii.north)--(cur.south);
+}
+\foreach \xx/\ii in {6.8/3,8.7/4}{
+  \node[box,text width=1.05cm,fill=gray!10,draw=gray!55] at (\xx,1.65) {$x_{\ii}$};
+}
+\draw[dashed,gray] (5.85,.85)--(5.85,2.8);
+\node[lab] at (8.0,.75) {未来};
+\node[lab] at (3.0,.75) {当前与历史};
+\node[lab] at (5.8,-.03) {$\max\operatorname{index}(\text{receptive field of }h_j)\le js$};
+\node[lab,text width=11.8cm,align=left] at (20.0,2.55)
+  {$x^v\in\mathbb R^{B\times3\times F\times H\times W}$\\[5pt]
+   $z^v\in\mathbb R^{B\times C\times T\times H'\times W'}$\\[5pt]
+   $T=1+(F-1)/r_t,\quad H'=H/r_h,\quad W'=W/r_w$\\[7pt]
+   首帧单独成组；图像是 $F=1$ 的特例。\\[5pt]
+   Seedance 1.0 的历史配置：$(r_t,r_h,r_w)=(4,16,16)$，$C=48$。\\
+   这些数字仅说明来源，不作为 2.5 的固定配置。};
+\snNote{Seedance 1.0 公开的是连续潜变量、时空压缩及编码/解码的因果卷积设计；本页沿此方向画 2.5 推测方案的视觉表示模块。VAE 的时间因果与生成主干是否采用因果 attention 是两个独立问题；普通整段联合生成无需因此被画成自回归生成。}
+\end{tikzpicture}

@@ -1,0 +1,24 @@
+上面的构造保留了每个时刻给定 $x_0$ 的边缘分布，
+所以训练时仍可直接构造 $x_t$，复用已经训练好的噪声预测网络。
+变化发生在怎样把这些时刻连接起来，而不是突然知道了每个样本的原始噪声。
+为避免与本小节沿用论文的 $\alpha_t$ 混淆，下面恢复前文的累积记号 $\bar\alpha_t$。
+对任意两个被选中的时刻 $s<t$，先用当前预测估计干净样本：
+\[
+\hat x_0=\frac{x_t-\sqrt{1-\bar\alpha_t}\epsilon_\theta(x_t,t)}
+ {\sqrt{\bar\alpha_t}}.
+\]
+再写出一步更新
+\[
+x_s=\sqrt{\bar\alpha_s}\hat x_0+
+ \sqrt{1-\bar\alpha_s-\sigma_{t\to s}^2}\epsilon_\theta(x_t,t)
+ +\sigma_{t\to s}z,
+\]
+其中 $z\sim\mathcal N(0,I)$。常用的随机性参数为
+\[
+\sigma_{t\to s}=\eta\sqrt{\frac{1-\bar\alpha_s}{1-\bar\alpha_t}}
+ \sqrt{1-\frac{\bar\alpha_t}{\bar\alpha_s}}.
+\]
+$\eta=0$ 时不再注入新噪声，给定起点后更新是确定的。
+加速来自只选取一部分时刻进行更新，例如直接从 $t$ 跳到较远的 $s$。
+跳得越远，网络预测与数值近似的误差也可能越明显，
+所以“训练目标可复用”并不保证任意少的步数都能保持质量。\cite{ddim}

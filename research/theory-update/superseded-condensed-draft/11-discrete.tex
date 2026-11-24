@@ -1,0 +1,108 @@
+\chapter{离散状态扩散：反向概率、跳变率与掩码生成}
+\label{th:discrete}
+
+\section{为什么不能把高斯公式直接四舍五入}
+
+文字、离散 latent、分子类别的状态空间是有限或可数集合。
+在它们上面没有通常的 $\nabla_x\log p(x)$，
+高斯加噪后再四舍五入也不自动获得想要的离散马尔可夫过程。
+需要直接定义合法转移，并学习概率质量的逆向运输。
+
+本章固定 $K$ 个状态，行随机矩阵 $P_k(i,j)$ 表示从 $i$ 到 $j$。
+边缘概率是列向量 $p_k$，于是
+\begin{equation}\label{th:discrete-forward}
+p_{k+1}=P_k^\top p_k.
+\end{equation}
+转移每一行非负且和为1，这保证总概率守恒。
+若采用列随机矩阵，所有转置规则会改变，不能混用。
+
+\section{反向核来自贝叶斯，而不是矩阵求逆}
+
+给定当前位置 $j$，上一时刻为 $i$ 的条件概率为
+\begin{equation}\label{th:discrete-reverse}
+q(X_k=i\mid X_{k+1}=j)=\frac{p_k(i)P_k(i,j)}{p_{k+1}(j)},
+\qquad p_{k+1}(j)>0.
+\end{equation}
+正向矩阵可能不可逆；概率反演仍由边缘与贝叶斯公式定义。
+它依赖未知数据分布，正是学习问题的来源。
+
+给定干净状态后，$q(X_{k-1}\mid X_k,X_0)$ 常可用矩阵乘积直接计算。
+变分训练再用交叉熵或分类 KL 学习反向转移，
+结构上对应 DDPM 的“已知干净数据的后验作为监督”。
+正向各位置独立扰动，不代表反向网络也必须逐位置独立。
+
+\section{连续时间马尔可夫链与主方程}
+
+若小步转移为 $P_{t,h}=I+hQ_t+o(h)$，
+生成矩阵满足 $Q_t(i,j)\geq0$（$i\ne j$），
+$Q_t(i,i)=-\sum_{j\ne i}Q_t(i,j)$。
+代入边缘推进并取极限得
+\begin{equation}\label{th:master}
+\dot p_t=Q_t^\top p_t,
+\qquad
+\dot p_t(j)=\sum_{i\ne j}p_t(i)Q_t(i,j)
+ -p_t(j)\sum_{i\ne j}Q_t(j,i).
+\end{equation}
+这是流入减流出的概率守恒。
+在反时钟 $r=T-t$ 下，当前位置 $i$ 到 $j$ 的反向非对角率为
+\begin{equation}\label{th:reverse-rates}
+\bar Q_r(i,j)=Q_t(j,i)\frac{p_t(j)}{p_t(i)},\qquad p_t(i)>0.
+\end{equation}
+对角项重新由行和为零定义，不可原样抄正向对角线。
+连续分数的角色在这里被密度比替代。
+
+\section{SEDD：学习离散概率比}
+
+SEDD 用正值网络近似 $p_t(j)/p_t(i)$，
+通过 score entropy 一类目标学习反向率需要的局部比值。
+一个具有正确比值极小点的基本项为
+$p_t(i)s(i,j)-p_t(j)\log s(i,j)$，
+对 $s>0$ 求导得到最优 $s=p_t(j)/p_t(i)$。
+实际目标还包含扰动结构、权重和可采样的去噪改写；
+这段局部推导用于说明概率比为何可学习，不替代完整算法。
+
+高维序列的“状态”本来是整条配置。
+局部跳变可只改变一个位置，但网络需读取全上下文来估计该跳变的比值。
+多位置并行更新、tau-leaping 或固定网格近似都有额外离散化与依赖误差。
+
+\section{吸收式掩码扩散与交叉熵}
+
+加入特殊状态 $m$，令 $a(t)$ 是 token 尚未被掩码的概率，
+$a(0)=1$ 且不增，已掩码后保持 $m$。
+给定干净符号 $x_0$，
+\[
+q_t(x_t\mid x_0)=a(t)\,\delta_{x_0}(x_t)+(1-a(t))\,\delta_m(x_t).
+\]
+当 $s<t$ 且当前 $x_t=m$，给定 $x_0$ 的反向概率为
+\[
+q(x_s=x_0\mid x_t=m,x_0)=\frac{a(s)-a(t)}{1-a(t)},\qquad
+q(x_s=m\mid x_t=m,x_0)=\frac{1-a(s)}{1-a(t)}.
+\]
+两者相加为1。MDLM 类型模型预测被掩码位置的原 token 分布。
+在相应吸收式模型和简化参数化下，连续时间目标可写成加权去噪交叉熵
+\begin{equation}\label{th:masked-loss}
+\int_0^T\frac{-a'(t)}{1-a(t)}
+ \E\left[\mathbf1_{\{X_t=m\}}
+ (-\log p_\theta(X_0\mid X_t,t))\right]\mathrm dt.
+\end{equation}
+端点权重可能看似奇异，需要连同掩码概率与数值采样分析。
+序列形式对受监督位置求和或平均，定义后不能再把缺监督位置当成零损失样本。
+
+\section{生成、编辑与自回归的关系}
+
+反向生成可从全掩码开始逐步揭示 token，也可保持已知位置做 infilling。
+任意揭示顺序下的正确联合采样需要正确条件分布，
+不能只因网络看全句就认为一次并行采样保留了所有依赖。
+已揭示 token 是否允许重采样取决于过程定义。
+
+自回归通过链式分解定义标准化的联合概率，
+离散扩散通过可逆概率过程与变分/比值目标建模。
+两者的训练并行性、采样延迟、似然口径与编辑能力不同。
+连续高斯流、离散跳变和 simplex 上的连续松弛也不是同一个状态空间上的等价算法。
+
+\begin{theorytakeaway}
+连续与离散的共同点是概率守恒及可学习的逆过程。
+离散模型应学习反向概率或密度比，不能把不存在的空间梯度硬套到类别索引上。
+\end{theorytakeaway}
+\threading{主参考 v3 新增的第12.2节\cite{theorybook}，以及 SEDD 和 MDLM\cite{sedd,mdlm}。
+本章是状态空间层面的基础补充，不讨论某一语言模型的产品能力。}

@@ -1,0 +1,103 @@
+\chapter{变分视角：DDPM 的正向过程、后验与训练目标}
+\label{th:ddpm}
+
+\section{从马尔可夫链得到一次采样的加噪公式}
+
+固定 $0<\beta_k<1$，定义 $\alpha_k=1-\beta_k$ 与
+$\bar\alpha_k=\prod_{j=1}^k\alpha_j$。正向链为
+\[
+q(x_k\mid x_{k-1})=\mathcal N(\sqrt{\alpha_k}x_{k-1},\beta_kI).
+\]
+反复代入并合并独立高斯噪声，得
+\begin{equation}\label{th:ddpm-forward}
+q(x_k\mid x_0)=\mathcal N(\sqrt{\bar\alpha_k}x_0,(1-\bar\alpha_k)I),
+\quad x_k=\sqrt{\bar\alpha_k}x_0+\sqrt{1-\bar\alpha_k}\epsilon.
+\end{equation}
+因此一次训练只需采样 $k,x_0,\epsilon$，无需顺次模拟全部 $k$ 次扰动。
+末端 $q(x_K)$ 只有在 $\bar\alpha_K$ 足够小等条件下才接近标准高斯，
+“加过噪”本身不保证先验完全匹配。
+
+\section{可计算的是给定干净数据的后验}
+
+对 $k\geq2$，用贝叶斯公式，把 $q(x_k\mid x_{k-1})q(x_{k-1}\mid x_0)$
+的两个高斯核相乘，配方可得
+\begin{align}
+q(x_{k-1}\mid x_k,x_0)&=\mathcal N(\tilde\mu_k,\tilde\beta_kI),\\
+\tilde\beta_k&=\frac{1-\bar\alpha_{k-1}}{1-\bar\alpha_k}\beta_k,\\
+\tilde\mu_k&=\frac{\sqrt{\bar\alpha_{k-1}}\beta_k}{1-\bar\alpha_k}x_0+
+ \frac{\sqrt{\alpha_k}(1-\bar\alpha_{k-1})}{1-\bar\alpha_k}x_k.
+\end{align}
+代入式\eqref{th:ddpm-forward} 中 $x_0$ 的表达式，等价地
+\begin{equation}\label{th:ddpm-posterior-mean}
+\tilde\mu_k=\frac1{\sqrt{\alpha_k}}
+ \left(x_k-\frac{\beta_k}{\sqrt{1-\bar\alpha_k}}\epsilon\right).
+\end{equation}
+这里 $\epsilon$ 是构造该训练对时的噪声标签。
+生成时不知道 $x_0$，所以未知的 $q(x_{k-1}\mid x_k)$ 一般不是单个高斯，
+不能把它与给定 $x_0$ 的上述后验混同。
+
+\section{负 ELBO 的三种项}
+
+生成链设为 $p_\theta(x_{0:K})=\pi(x_K)\prod_{k=1}^Kp_\theta(x_{k-1}\mid x_k)$。
+对整条正向链应用变分下界，再按后验重排：
+\begin{equation}\label{th:ddpm-elbo}
+\begin{aligned}
+\E[-\log p_\theta(x_0)]\leq\mathcal L_{\rm VLB}
+={}&\E\KL(q(x_K\mid x_0)\Vert\pi)\\
+&+\sum_{k=2}^K\E\KL(q(x_{k-1}\mid x_k,x_0)\Vert
+ p_\theta(x_{k-1}\mid x_k))\\
+&-\E\log p_\theta(x_0\mid x_1).
+\end{aligned}
+\end{equation}
+第一项衡量先验匹配；中间项学习逆转移；最后一项是数据重建似然。
+离散像素的最后一项要用相容的离散分布，不能直接用连续密度替代而不做解释。
+
+令 $p_\theta$ 的方差为固定 $\nu_k^2I$，并用噪声网络参数化均值：
+\[
+\mu_\theta(x_k,k)=\frac1{\sqrt{\alpha_k}}
+ \left(x_k-\frac{\beta_k}{\sqrt{1-\bar\alpha_k}}\epsilon_\theta(x_k,k)\right).
+\]
+由高斯 KL，每个中间项中与均值有关的部分为
+\begin{equation}\label{th:ddpm-weight}
+\E\left[\frac{\beta_k^2}{2\nu_k^2\alpha_k(1-\bar\alpha_k)}
+ \|\epsilon-\epsilon_\theta(x_k,k)\|^2\right].
+\end{equation}
+因此常用的无权重 $\mathcal L_{\rm simple}=\E\|\epsilon-\epsilon_\theta\|^2$
+是重加权目标，不能直接说它等于完整 ELBO。
+若时间步按 $\rho(k)$ 抽样，估计原加权和还需除以 $\rho(k)$。
+
+\section{生成一步究竟要做什么}
+
+从 $x_K\sim\pi$ 出发，按 $k$ 递减计算均值，然后采样
+\[
+x_{k-1}=\mu_\theta(x_k,k)+\nu_k z,
+\qquad z\sim\mathcal N(0,I).
+\]
+通常最后一步按模型约定不再注入额外噪声。
+训练时的噪声标签 $\epsilon$、网络的条件均值预测 $\epsilon_\theta$
+和采样新引入的 $z$ 是三个不同随机对象。
+用相同一个噪声张量替代所有随机量会改变生成链。
+
+\section{方差、调度与参数化需要共同选择}
+
+固定 $\beta_k$、$\tilde\beta_k$ 或学习逆方差，都会改变有限步链。
+学方差时必须保留相应 KL/似然项与数值约束，不能指望噪声 MSE 自动训练出正确方差。
+跳过时间步也需要新的转移式；不能把相邻步的 $\beta_k$ 直接套到跨度很大的区间。
+
+线性、余弦或零终端信噪比调度，改变了各时刻的信号尺度和监督重点。
+推理起始点若仍残留数据信号，而采样却从纯高斯开始，就有训练/推理分布偏差。
+不过零终端信号也会使某些 $x_0$ 换算公式包含除零，必须保留模型训练的端点约定。
+
+\section{一个标量核对例子}
+
+若某步 $\bar\alpha_k=0.64$，取 $x_0=2$、$\epsilon=-1$，则 $x_k=1$。
+知道标签时，$(1-0.6\times(-1))/0.8=2$ 可恢复原值。
+网络只见 $x_k$，最优预测通常是 $\E[\epsilon\mid x_k]$，
+所以训练标签可逆不意味着实际模型对每个带噪样本都能唯一找回原始 $x_0$。
+
+\begin{theorytakeaway}
+DDPM 的高斯后验依赖训练时已知的 $x_0$；完整变分目标含先验、逆转移和解码似然。
+简化噪声 MSE 与完整似然目标有明确的权重差别，采样链还必须指定方差。
+\end{theorytakeaway}
+\threading{主参考第2章与 DDPM 原论文\cite{theorybook,ddpm}。
+DDIM 的非马尔可夫构造与跳步更新在第\ref{th:solvers}章继续讨论。}

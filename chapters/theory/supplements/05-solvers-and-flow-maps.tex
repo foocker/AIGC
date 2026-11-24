@@ -1,0 +1,307 @@
+\chapter{数值求解与可学习的快速生成}
+\label{supp:fast}
+
+原稿已给出 DDIM 和 DPM 系列的一阶积分关系，也介绍了一致性与蒸馏。
+本章继续补上参考书第9--11章中尚未展开的部分：误差阶数、DEIS、多阶构造、
+时间并行、两步合一步的训练标签，以及一般流映射与平均速度如何训练。
+\cite{theorybook}
+
+\section{数值阶数、稳定性与生成质量}
+\subsection{局部误差为什么会累积成全局误差}
+暂用增加的生成时间 $r$，考虑 $\dot x=v(x,r)$。
+Euler 一步为 $x_{n+1}=x_n+h v(x_n,r_n)$。
+对精确解作 Taylor 展开，
+\[
+x(r+h)=x(r)+hv(x,r)+\frac{h^2}{2}
+ [\partial_rv+D_xv\,v]+O(h^3).
+\]
+所以从一个精确起点出发，一步局部截断误差为 $O(h^2)$。
+若速度对空间是 $L$-Lipschitz，则累积误差满足
+\[
+e_{n+1}\leq(1+Lh)e_n+Ch^2.
+\]
+对固定总时间求和，得到 $e_N=O(h)$，这就是 Euler 一阶的含义。
+Heun 先预测 $\tilde x=x_n+hv(x_n,r_n)$，再用
+\[
+x_{n+1}=x_n+\frac h2[v(x_n,r_n)+v(\tilde x,r_n+h)]
+\]
+修正，在相应光滑和稳定条件下为全局二阶。
+单步需要两次网络求值，所以比较速度时还要记录 NFE，而不是只数步数。
+
+阶数结论比较的是同一向量场的数值解与精确解。
+若向量场本身已有学习误差，更多步、更高阶只会更接近这个学习到的 ODE，
+不自动意味着更接近真实数据。强 CFG 还可能增大局部变化与刚性，使稳定性比形式阶数更先成为限制。
+
+\subsection{SDE 的强误差与弱误差}
+Euler--Maruyama 对 $\mathrm dX=b\mathrm dr+g\mathrm dW$ 的一步是
+$X_{n+1}=X_n+hb(X_n,r_n)+g(X_n,r_n)\sqrt hZ_n$。
+强误差比较使用同一布朗驱动的逐样本距离，弱误差比较
+$|\mathbb E\varphi(X_N)-\mathbb E\varphi(X(r_N))|$。
+对一般乘性噪声、满足相应光滑与增长条件的情形，常见结论是强阶 $1/2$、弱阶1；
+特殊加性噪声问题可有更好的性质，不能把一个阶数套到所有设置。
+
+以稳定 OU 过程 $\mathrm dX=-\kappa X\mathrm dr+\sigma\mathrm dW$ 为例，
+精确一步噪声方差为 $\sigma^2(1-e^{-2\kappa h})/(2\kappa)$，
+Euler 一步噪声方差却是 $\sigma^2h$。
+它的离散稳定方差由 $V=(1-\kappa h)^2V+\sigma^2h$ 给出：
+\[
+V_{\rm EM}=\frac{\sigma^2}{2\kappa-\kappa^2h},\qquad 0<\kappa h<2.
+\]
+有限步长下与真实 $\sigma^2/(2\kappa)$ 不同。
+这说明即使分数完全准确，离散采样仍可以引入分布偏差。
+
+\section{DEIS：历史预测怎样进入积分}
+沿用原稿 $a_t,b_t$ 和半对数信噪比 $\lambda=\log(a_t/b_t)$，
+从高噪声 $t$ 到较低噪声 $s$ 的积分式为
+\[
+x_s=\frac{a_s}{a_t}x_t-a_s\int_{\lambda_t}^{\lambda_s}
+ e^{-\lambda}\epsilon_\theta(x_\lambda,\lambda)\,\mathrm d\lambda.
+\]
+DDIM 将积分里的网络输出当常数。DEIS 类方法则存下已经完成的时刻预测
+$(\lambda_j,E_j)$，构造 Lagrange 多项式
+\[
+P_k(\lambda)=\sum_{j=0}^k L_j(\lambda)E_j,
+\qquad L_j(\lambda)=\prod_{m\ne j}\frac{\lambda-\lambda_m}{\lambda_j-\lambda_m}.
+\]
+在历史点上它是插值，向下一步区间使用时则是外推。
+代回积分，更新变成
+\[
+x_s\approx\frac{a_s}{a_t}x_t-a_s\sum_{j=0}^k B_jE_j,
+\qquad B_j=\int_{\lambda_t}^{\lambda_s}e^{-\lambda}L_j(\lambda)\,\mathrm d\lambda.
+\]
+系数只由调度和历史节点决定，可以预先计算；本步不用为每个历史锚点重新调用网络。
+在原始时间或其它坐标里也能构造相应的加权外推，
+这里用 $\lambda$ 说明共同的指数积分思想，不把不同坐标的系数混用。
+
+例如两点时，$P_1=E_n+(\lambda-\lambda_n)(E_n-E_{n-1})/(\lambda_n-\lambda_{n-1})$。
+它使用历史斜率估计下一段的变化。
+但第一步没有两点历史，需要先用低阶启动；之后逐渐提高阶数。
+锚点来自数值轨迹，本身含误差，所以插值多项式的精确性不等于真实网络轨迹的精确性。
+
+\section{DPM-Solver 二阶项的具体来历}
+记 $h=\lambda_s-\lambda_t>0$，
+$E(\lambda)=\epsilon_\theta(x_\lambda,\lambda)$，沿轨迹展开
+$E(\lambda_t+u)=E_t+uE_t'+O(u^2)$。
+两个需要的积分分别为
+\[
+\int_0^he^{-u}\mathrm du=1-e^{-h},\qquad
+\int_0^hue^{-u}\mathrm du=1-(1+h)e^{-h}.
+\]
+利用 $a_se^{-\lambda_t}=b_se^h$，得到
+\[
+x_s=\frac{a_s}{a_t}x_t-b_s(e^h-1)E_t
+ -b_s(e^h-h-1)E_t'+O(h^3).
+\]
+导数是沿轨迹的总导数，不是只对网络时间输入求偏导。
+可以选择内部点 $\lambda_m=\lambda_t+qh$，$0<q\leq1$，
+先做一阶预测
+\[
+x_m=\frac{a_m}{a_t}x_t-b_m(e^{qh}-1)E_t,
+\qquad E_t'\approx\frac{\epsilon_\theta(x_m,m)-E_t}{qh}.
+\]
+代回便得到一个二阶单步指数积分构造。
+它需要当前点与内部点两次网络求值；多步版本则改为用历史差商。
+$e^h-h-1$ 在 $h$ 很小时为 $h^2/2+O(h^3)$，实现宜用稳定的指数差或级数处理消减误差。
+\cite{dpm}
+
+DPM-Solver++ 对数据预测 $D(\lambda)$ 作展开，积分权重改为 $e^\lambda$。
+同样计算可得
+\[
+x_s=\frac{b_s}{b_t}x_t+a_s(1-e^{-h})D_t
+ +a_s(h-1+e^{-h})D_t'+O(h^3).
+\]
+换参数化后，精确 ODE 可以相同，但有限阶方法近似的函数不同，数值行为会改变。
+输出裁剪或动态阈值又是额外修改，不属于单纯的阶数推导。
+\cite{dpmpp}
+
+\section{EDM 预条件系数的一次推导}
+对加性扰动 $x=x_0+\sigma\epsilon$，假设数据单坐标方差为 $\sigma_d^2$，
+考虑 $D_\theta=c_{\rm skip}x+c_{\rm out}F_\theta(c_{\rm in}x,\cdot)$。
+使输入方差约为1，可取
+$c_{\rm in}=1/\sqrt{\sigma^2+\sigma_d^2}$。
+先求最优线性跳跃系数：
+\[
+c_{\rm skip}=\frac{\operatorname{Cov}(x_0,x)}{\operatorname{Var}(x)}
+=\frac{\sigma_d^2}{\sigma^2+\sigma_d^2}.
+\]
+残差 $x_0-c_{\rm skip}x$ 的方差为
+$\sigma_d^2\sigma^2/(\sigma_d^2+\sigma^2)$，故取
+\[
+c_{\rm out}=\frac{\sigma\sigma_d}{\sqrt{\sigma^2+\sigma_d^2}},
+\qquad w(\sigma)=\frac1{c_{\rm out}^2}
+=\frac{\sigma^2+\sigma_d^2}{\sigma^2\sigma_d^2}.
+\]
+于是网络回归的目标残差在不同噪声级有较接近的尺度。
+这些系数以二阶统计量作尺度设计，不是在假设所有真实图像都服从一个高斯。
+时间嵌入、噪声采样分布与噪声网格还分别需要设计。\cite{edm}
+
+\section{时间并行：Picard 迭代与 ParaDiGMs}
+固定噪声起点 $x_T$，ODE 的积分方程为
+$x_t=x_T+\int_T^t v(x_u,u)\mathrm du$。
+与逐步更新不同，可以先猜整条轨迹，再迭代
+\[
+x^{(k+1)}_t=x_T+\int_T^t v(x^{(k)}_u,u)\,\mathrm du.
+\]
+在递减网格 $t_j=T-jh$ 上，离散形式为
+\[
+x_j^{(k+1)}=x_T-h\sum_{i=0}^{j-1}v(x_i^{(k)},t_i).
+\]
+同一轮所有速度都依赖上一轮的轨迹，因此可以批量并行计算，再作前缀求和。
+若区间长度为 $H$、速度 Lipschitz 常数为 $L$，
+则连续 Picard 算子在一致范数下有 $\|\mathcal Tx-\mathcal Ty\|\leq LH\|x-y\|$。
+$LH<1$ 时给出直接的压缩映射条件；长区间可采用窗口推进和收敛检查。
+
+这里减少的是串行依赖的深度，不必然减少网络总调用或显存。
+对随机采样的相应迭代，通常需先固定每个时间区间的随机增量再迭代该条离散路径，
+不能每轮重新抽噪声却仍声称在收敛到同一个固定点。
+ParaDiGMs 利用的正是这类以额外并行资源换延迟的思路，而不是一步预测的学生模型。
+
+\section{渐进蒸馏：从两步结果解出监督标签}
+设确定性 DDIM 从 $t$ 到 $s<t$ 使用数据预测 $D$，可整理为
+\[
+x_s=\frac{b_s}{b_t}x_t+
+ \left(a_s-\frac{b_sa_t}{b_t}\right)D(x_t,t).
+\]
+现在教师从 $t$ 经 $m$ 两步走到 $s$，得到 $\tilde x_s$。
+要让学生一步落到同一位置，直接解上式即可：
+\[
+\tilde D=\frac{\tilde x_s-(b_s/b_t)x_t}
+ {a_s-b_sa_t/b_t}.
+\label{supp:pd-target}
+\]
+于是学生回归 $\operatorname{sg}(\tilde D)$，而不是简单把原干净样本当作同一个标签。
+分母接近零时需要检查时刻选择和参数化；两步教师误差也会进入这个标签。
+训练一轮后将时间步数减半，再把学生作为下一轮教师，逐步压缩采样过程。
+
+这种目标学习教师的逐样本映射，因此对应关系比较明确。
+它与下一节“只让整体分布相近”有不同的约束，不应混为同一个蒸馏损失。
+
+\section{分布匹配蒸馏的分数差梯度}
+设学生 $X_0=G_\theta(Z)$，加噪后边缘为 $q_t^\theta$，教师目标为 $p_t$。
+取 $t>0$ 保证适当的光滑性，考虑
+$\mathcal J_t=D_{\rm KL}(q_t^\theta\|p_t)$。
+把样本写成 $X_t=a_tG_\theta(Z)+b_t\epsilon$，路径求导得到
+\begin{align}
+\nabla_\theta\mathcal J_t
+ &=\mathbb E\left[a_tJ_G^\top(s_{q_t^\theta}(X_t)-s_{p_t}(X_t))\right]\\
+ &\quad+\mathbb E_{q_t^\theta}[\partial_\theta\log q_t^\theta(x)]_{x\,\rm fixed}.
+\end{align}
+最后一项是 $\int\partial_\theta q_t^\theta(x)\mathrm dx=0$，所以只剩分数差。
+这里既需要教师分数，也需要当前学生的分数。
+后者可以固定学生后，用学生产生的样本做 DSM 来训练一个辅助分数模型；
+更新学生时再固定两组分数网络，交替进行。\cite{dmd2,theorybook}
+
+如果直接把学生分数换成某个单独加噪高斯的条件分数，
+就从整体混合分布目标变成了前章讨论过的另一个目标。
+学生不停变化，辅助分数估计会有滞后；停止梯度只是定义更新方式，不代表辅助网络已经精确。
+
+还有一个理论事实：若一个内部噪声级 $a_t\ne0,b_t>0$ 上的两个加噪分布完全相同，
+则它们的干净分布也相同。因为特征函数满足
+\[
+\varphi_{X_t}(k)=\varphi_{X_0}(a_tk)e^{-b_t^2\|k\|^2/2},
+\]
+高斯因子处处不为零，可以消去。
+这是完全相等时的可识别性；高频信息被强烈抑制，故高噪声下很小的近似误差
+并不直接给出干净分布同样小的误差界。
+
+\section{一致性函数、流映射与连续时间方程}
+\subsection{固定端点映射为什么沿轨迹不变}
+设 $\Phi_{t\to s}(x)$ 是速度 $v$ 的精确流映射。
+固定终点 $\varepsilon$，定义 $F(x,t)=\Phi_{t\to\varepsilon}(x)$。
+沿原 ODE 轨迹，$F(x_t,t)$ 不变，所以
+\[
+\partial_tF+D_xF\,v=0,\qquad F(x,\varepsilon)=x.
+\label{supp:consistency-pde}
+\]
+离散的相邻轨迹点配对，是在有限差分意义下训练这个性质。
+边界条件排除常数解；轨迹配对还要与目标速度场一致。
+若用 $x_t=a_tx_0+b_t\epsilon$ 与 $x_s=a_sx_0+b_s\epsilon$ 共享噪声构造训练点，
+它们是同一条条件插值上的点，一般不是边缘 ODE 的精确轨迹点。
+从这种训练构造走向正确边缘一致性，需要相应极限或半梯度分析。
+
+为什么不能简单说“把未知 $v$ 换成随机条件速度就都等价”？
+令条件速度标签为 $V$，$\mathbb E[V\mid X_t]=v(X_t,t)$，则
+\begin{align}
+\mathbb E[\|\partial_tF+D_xF V\|^2\mid X_t]
+ &=\|\partial_tF+D_xF v\|^2\\
+ &\quad+\operatorname{tr}\left[D_xF\operatorname{Cov}(V\mid X_t)D_xF^\top\right].
+\end{align}
+新增项依赖网络的输入 Jacobian，不能作为与参数无关的常数删去。
+这就是连续时间一致性训练需要特别处理目标网络、停止梯度和切向项的原因。
+实际 CM、iCT、连续时间 CM 的目标构造不同，不能仅凭它们都涉及同一个 PDE，
+就声称其有限步训练算法完全相同。\cite{cm,ict,theorybook}
+
+\subsection{一般流映射的两个时间方向}
+令 $G(x,t,s)=\Phi_{t\to s}(x)$，除了半群性质
+$G(G(x,t,r),r,s)=G(x,t,s)$，还有
+\[
+\partial_sG(x,t,s)=v(G(x,t,s),s),\qquad
+\partial_tG(x,t,s)+D_xG(x,t,s)v(x,t)=0.
+\]
+第一式移动终点，第二式沿轨迹移动起点而保持终点。
+由 $G(x,t,t)=x$ 固定边界，CTM 可以学习不只到干净端的任意两时刻映射。
+“满足半群关系”单独还不足以识别目标速度；还要与目标动力学或相应训练监督联系起来。
+\cite{ctm}
+
+\section{MeanFlow 的训练目标与 CTM 的参数关系}
+沿用原稿定义
+$G(x,t,s)=x-(t-s)u(x,s,t)$，平均速度满足
+\[
+u=v-(t-s)(\partial_tu+D_xu\,v).
+\]
+固定一个用于构造目标的网络 $\bar u$，取条件速度标签 $V$，可构造
+\[
+Y=V-(t-s)(\partial_t\bar u+D_x\bar u\,V),\qquad
+\mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(Y)\|^2.
+\]
+给定 $(x_t,s,t)$，右边对 $V$ 是线性的，所以条件平均为
+$v-(t-s)(\partial_t\bar u+D_x\bar u\,v)$。
+这说明条件标签怎样进入半梯度目标。
+但目标会随网络更新而变化；它不是一个固定标签的普通监督问题，
+恒等式本身也没有证明任意优化过程都收敛到正确解。\cite{meanflow}
+
+计算导数项时，使用方向 $(V,1)$ 对 $(x,t)$ 做 JVP，$s$ 保持不变。
+当 $s=t$ 时，目标退回瞬时速度回归；非对角时间对则提供有限区间平均速度的监督。
+训练两类时间对的配比和权重会影响短程与长程预测能力。
+
+CTM 常用另一种参数化，在 $t>0$ 时写成
+\[
+G(x,t,s)=\frac stx+\frac{t-s}{t}g(x,t,s).
+\]
+与平均速度形式比较，有 $g=x-tu$，所以同一精确流映射下
+\[
+\|G-G^*\|^2=(t-s)^2\|u-u^*\|^2
+=\left(\frac{t-s}{t}\right)^2\|g-g^*\|^2.
+\]
+这给出参数化和理想回归误差的时间缩放关系。
+它没有把 CTM 的教师轨迹目标与 MeanFlow 的导数半梯度目标变成同一个算法。
+新参数化、训练目标、实际采样方式仍应分别检查。
+
+\subsection{一个能算完的平均速度与一步映射}
+取一维速度 $v(x,t)=kx$，原 ODE 的解为
+$x_s=e^{k(s-t)}x_t$。令 $\Delta=t-s>0$，则精确平均速度为
+\[
+u(x,s,t)=c(\Delta)x,\qquad c(\Delta)=\frac{1-e^{-k\Delta}}{\Delta}.
+\]
+代入更新，$x-\Delta u=e^{-k\Delta}x$，恰好得到完整区间的精确映射。
+而用瞬时速度做一个 Euler 步，只得到 $(1-k\Delta)x$。
+当区间很小时两者接近，大区间时其差异并不会因“网络很大”而自动消失。
+
+这个例子还能逐项验证平均速度恒等式。
+固定 $s$ 和输入 $x$，有
+\[
+\partial_tu=c'(\Delta)x,\qquad D_xu\,v=kc(\Delta)x,
+\]
+其中
+\[
+c'(\Delta)=\frac{k\Delta e^{-k\Delta}-1+e^{-k\Delta}}{\Delta^2}.
+\]
+整理得到 $c+\Delta(c'+kc)=k$，所以
+$u+\Delta(\partial_tu+D_xu\,v)=kx=v$。
+$\Delta\to0$ 时 $c\to k$，又恢复瞬时速度。
+这给出“学习整段平均”与“学习局部切向”的一个可直接比较的对象。
+
+还应区分精确理论流映射与学习到的有限步映射。
+任意网络 $x-\Delta u_\theta(x,s,t)$ 并不自动可逆，也未必满足半群关系。
+如果用其对角极限另外定义一个 ODE 来算似然，
+得到的是那条 ODE 诱导的密度，不能未经检验就当作任意有限步网络输出的同一个密度。

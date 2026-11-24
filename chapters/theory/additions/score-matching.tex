@@ -1,0 +1,34 @@
+上面已经列出了分数匹配与去噪分数匹配的目标，这里把它们等价的原因再写一步，
+否则容易误以为只是在两个损失之间换了个名字。
+
+先看原始分数匹配。将平方误差展开，唯一含有未知真实分数的交叉项是
+\[
+-\int p(x)s_\theta(x)^\top\nabla\log p(x)\,\mathrm dx
+=-\int s_\theta(x)^\top\nabla p(x)\,\mathrm dx.
+\]
+在边界项消失时，对每个坐标做分部积分，得到
+$\int p(x)\nabla\cdot s_\theta(x)\,\mathrm dx$。
+其它关于真实分数的平方项不依赖网络参数，因此得到前面写出的迹与分数平方目标。
+这里去掉的是与参数无关的常数，不是随意删掉含有 $\theta$ 的项。
+
+去噪分数匹配再向前走了一步。记扰动边缘为
+$q_\sigma(\tilde x)=\int q_\sigma(\tilde x\mid x)p_{\rm data}(x)\,\mathrm dx$，
+对 $\tilde x$ 求导并除以 $q_\sigma(\tilde x)$：
+\begin{align}
+\nabla_{\tilde x}\log q_\sigma(\tilde x)
+&=\int\frac{q_\sigma(\tilde x\mid x)p_{\rm data}(x)}{q_\sigma(\tilde x)}
+ \nabla_{\tilde x}\log q_\sigma(\tilde x\mid x)\,\mathrm dx\\
+&=\mathbb E[\nabla_{\tilde x}\log q_\sigma(\tilde X\mid X)\mid\tilde X=\tilde x].
+\end{align}
+也就是说，已知条件分数的条件平均，恰好等于我们想学的边缘分数。
+而平方回归的最优解正是标签在给定输入下的条件平均，
+所以用可计算的条件分数作监督，仍然能够学到未知的边缘分数。
+
+对高斯扰动，条件分数是 $-(\tilde x-x)/\sigma^2$，还可以整理为
+\[
+\mathbb E[X\mid\tilde X=\tilde x]
+=\tilde x+\sigma^2\nabla\log q_\sigma(\tilde x).
+\]
+这就是此设定下的 Tweedie 公式。分数模型、噪声预测与干净样本估计在这里接了起来。
+不过右边给出的是后验均值：噪声很大、一个观测可能对应多个原始样本时，
+均值并不一定是其中某个真实样本，更不能由它推断一步就能完成所有生成。\cite{theorybook}
