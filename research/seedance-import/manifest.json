@@ -1,0 +1,746 @@
+{
+  "imported_on": "2026-11-24",
+  "status": "draft",
+  "source_repository": "https://github.com/foocker/multimodal-journey",
+  "source_commit": "0f1b6bb86d609d75d8c2582063d85707d0180d39",
+  "source_worktree_dirty": false,
+  "aigc_base_commit": "0a5ee3d50e9fb6a6d1d3f0a44c1dc8364c9485d0",
+  "scope": "Editorial TeX import; existing evidence records reused, no fresh model experiment or online product verification.",
+  "counts": {
+    "math": 278,
+    "tables": 36,
+    "code_blocks": 24,
+    "images": 16
+  },
+  "modules": [
+    {
+      "id": "M00",
+      "path": "topics/video-generation/seedance-2.5/evidence.md",
+      "source_sha256": "6a3e1ddba7469ebc7f1ea5ec35a1ffe0ddb820b8d42e3fbc8d16388f2dc0470a",
+      "tex_path": "chapters/seedance/m00.tex",
+      "source_ids": [
+        "seedance-2.5-release",
+        "seedance-2.5-product",
+        "seedance-1.0",
+        "seedance-1.5-pro",
+        "seedance-2.0"
+      ]
+    },
+    {
+      "id": "M01",
+      "path": "algorithms/causal-video-vae/README.md",
+      "source_sha256": "1748ccf4433da5b6e4d7a886309c8f121d15cebdc8e1ffbb2998bc26daab22e8",
+      "tex_path": "chapters/seedance/m01.tex",
+      "source_ids": [
+        "seedance-1.0",
+        "magvit-v2",
+        "wan-2.1",
+        "wan21-code"
+      ]
+    },
+    {
+      "id": "M02",
+      "path": "algorithms/flow-matching/README.md",
+      "source_sha256": "a3df112de9924b36139713dad3ff9f1207755f980ac8f87a91c546869153c924",
+      "tex_path": "chapters/seedance/m02.tex",
+      "source_ids": [
+        "seedance-1.0",
+        "long-context-tuning",
+        "wan-2.1",
+        "wan21-code",
+        "diffsynth-code"
+      ]
+    },
+    {
+      "id": "M03",
+      "path": "algorithms/diffusion-transformers/README.md",
+      "source_sha256": "9391ec0782bd7ef7ead6398201024b2026dad9ba71a6238cd63adba32006af4f",
+      "tex_path": "chapters/seedance/m03.tex",
+      "source_ids": [
+        "seedance-1.0",
+        "dit",
+        "video-dit-scaling-laws",
+        "wan-2.1",
+        "wan21-code",
+        "vincie-code"
+      ]
+    },
+    {
+      "id": "M04",
+      "path": "algorithms/multimodal-position/README.md",
+      "source_sha256": "dda83ee7e7c336a2dde3d3e53fdeb5defe1d297ab5eaf1ef3fa589c83952cc09",
+      "tex_path": "chapters/seedance/m04.tex",
+      "source_ids": [
+        "rope",
+        "seedance-1.0",
+        "long-context-tuning",
+        "wan21-code",
+        "vincie-code"
+      ]
+    },
+    {
+      "id": "M05",
+      "path": "algorithms/audio-video-joint/README.md",
+      "source_sha256": "c6081943eb099c6f7a2a85c439bebdb4b6c0378bba68385417b994b14a31862c",
+      "tex_path": "chapters/seedance/m05.tex",
+      "source_ids": [
+        "seedance-1.5-pro",
+        "seedance-2.0",
+        "seedance-2.5-release",
+        "ltx-code",
+        "ltx-2",
+        "ltx-original-code"
+      ]
+    },
+    {
+      "id": "M06",
+      "path": "algorithms/long-video/README.md",
+      "source_sha256": "185f405c6f7ff4107fa013891ef587d9116c297c042b5bc1ad6fc60add411d8a",
+      "tex_path": "chapters/seedance/m06.tex",
+      "source_ids": [
+        "long-context-tuning",
+        "longlive",
+        "seedance-1.0",
+        "longlive-code"
+      ]
+    },
+    {
+      "id": "M07",
+      "path": "algorithms/reference-conditioning/README.md",
+      "source_sha256": "ff3acdf23608bec78181adffca1d1851cd7db06bb7bf3798dadbe9e6104d2f13",
+      "tex_path": "chapters/seedance/m07.tex",
+      "source_ids": [
+        "phantom",
+        "long-context-tuning",
+        "vincie",
+        "vincie-next",
+        "wan-2.1",
+        "phantom-code"
+      ]
+    },
+    {
+      "id": "M08",
+      "path": "algorithms/video-editing/README.md",
+      "source_sha256": "80d5153d6731f07013bbb453fcea8d0066609cec4c545d30fa4fae55bf55b816",
+      "tex_path": "chapters/seedance/m08.tex",
+      "source_ids": [
+        "seedance-1.0",
+        "vincie",
+        "vincie-next",
+        "seedance-2.5-release",
+        "vincie-code",
+        "ltx-code"
+      ]
+    },
+    {
+      "id": "M09",
+      "path": "algorithms/post-training/README.md",
+      "source_sha256": "bac5d1347f5a4d50fa17694cdfeed90d90cc47e3b62a020dd81b1fe17da3b0dc",
+      "tex_path": "chapters/seedance/m09.tex",
+      "source_ids": [
+        "seedance-1.0",
+        "tarsier2",
+        "dancegrpo",
+        "rewarddance",
+        "dancegrpo-code"
+      ]
+    },
+    {
+      "id": "M10",
+      "path": "algorithms/inference-optimization/README.md",
+      "source_sha256": "5e74da59bec16c00d6013c3785317db61007b87f3eac1c0261f6721208f2e604",
+      "tex_path": "chapters/seedance/m10.tex",
+      "source_ids": [
+        "seedance-1.0",
+        "seedance-1.5-pro",
+        "rayflow",
+        "adaspa",
+        "seaweed-apt",
+        "longlive",
+        "wan21-code",
+        "diffsynth-code",
+        "longlive-code"
+      ]
+    },
+    {
+      "id": "M11",
+      "path": "datasets/recipes/audio-video-production/README.md",
+      "source_sha256": "c4455e9d46e8355248da2b5792f05e05b71caf177570f595d5ce4dc2e836048c",
+      "tex_path": "chapters/seedance/m11.tex",
+      "source_ids": [
+        "seedance-1.0",
+        "tarsier2",
+        "phantom",
+        "vincie",
+        "long-context-tuning",
+        "tarsier-code",
+        "diffsynth-code",
+        "vincie-code"
+      ]
+    },
+    {
+      "id": "M12",
+      "path": "topics/video-generation/seedance-2.5/architecture.md",
+      "source_sha256": "23eb59669b2b3e4a26d11421ccb97558fcd8982828da540d55086e49e8fb7abb",
+      "tex_path": "chapters/seedance/m12.tex",
+      "source_ids": [
+        "wan-2.1",
+        "seedance-1.0",
+        "phantom",
+        "long-context-tuning",
+        "seedance-2.5-release",
+        "wan21-code",
+        "diffsynth-code",
+        "phantom-code",
+        "longlive-code",
+        "ltx-code"
+      ]
+    },
+    {
+      "id": "M13",
+      "path": "topics/video-generation/seedance-2.5/training.md",
+      "source_sha256": "07e700191a3b83a4098f8f7e1697fb7c7f90a7e316132304ae26f20ede09c213",
+      "tex_path": "chapters/seedance/m13.tex",
+      "source_ids": [
+        "seedance-1.0",
+        "seedance-1.5-pro",
+        "wan-2.1",
+        "long-context-tuning",
+        "dancegrpo",
+        "rewarddance",
+        "diffsynth-code",
+        "longlive-code",
+        "ltx-code",
+        "dancegrpo-code"
+      ]
+    },
+    {
+      "id": "M14",
+      "path": "applications/video-production/solutions.md",
+      "source_sha256": "ff95e3bae57514f5a49b87993e38971e7c1d14a1720e4589e6505c4e9a13f458",
+      "tex_path": "chapters/seedance/m14.tex",
+      "source_ids": [
+        "seedance-2.5-release",
+        "seedance-2.0",
+        "phantom",
+        "vincie",
+        "long-context-tuning",
+        "wan21-code",
+        "diffsynth-code",
+        "phantom-code",
+        "vincie-code",
+        "ltx-code"
+      ]
+    },
+    {
+      "id": "M15",
+      "path": "docs/code-paths.md",
+      "source_sha256": "b4d133ae06c07beb00e01830ecbf6241f9af090627add5c4208961847af1a30d",
+      "tex_path": "chapters/seedance/m15.tex",
+      "source_ids": [
+        "wan21-code",
+        "diffsynth-code",
+        "phantom-code",
+        "longlive-code",
+        "vincie-code",
+        "ltx-code",
+        "dancegrpo-code",
+        "tarsier-code",
+        "ltx-original-code",
+        "vace-code",
+        "videocof-code"
+      ]
+    },
+    {
+      "id": "M16",
+      "path": "topics/video-generation/seedance-2.5/reference-timeline.md",
+      "source_sha256": "434437b511f23a53c220a2c919d172b9b92ddee7d02edd66d9b0028df7ff90f6",
+      "tex_path": "chapters/seedance/m16.tex",
+      "source_ids": [
+        "alchemint",
+        "phantom",
+        "ltx-2",
+        "vace"
+      ]
+    },
+    {
+      "id": "M17",
+      "path": "topics/video-generation/seedance-2.5/editing-conditions.md",
+      "source_sha256": "036b684176136a821d3e5e2e9d3b73d3ccacf035e51549526df4fb65499e1a91",
+      "tex_path": "chapters/seedance/m17.tex",
+      "source_ids": [
+        "vace",
+        "videocof",
+        "vincie-next",
+        "ltx-2"
+      ]
+    },
+    {
+      "id": "M18",
+      "path": "topics/video-generation/seedance-2.5/geometry-control.md",
+      "source_sha256": "ea9bf80dc788bbbd3cfb89121b4d1586f00b157282e197c052c12c90ff0e446f",
+      "tex_path": "chapters/seedance/m18.tex",
+      "source_ids": [
+        "geometry-as-context",
+        "vace",
+        "ltx-2"
+      ]
+    },
+    {
+      "id": "M19",
+      "path": "topics/video-generation/seedance-2.5/integrated-design.md",
+      "source_sha256": "e83fcf3273d336513171ef77d297e207495ba3b55fd292c00faf5682f75ad559",
+      "tex_path": "chapters/seedance/m19.tex",
+      "source_ids": [
+        "ltx-2",
+        "alchemint",
+        "vace",
+        "videocof",
+        "vincie-next",
+        "geometry-as-context",
+        "long-context-tuning",
+        "longlive",
+        "ltx-original-code",
+        "vace-code",
+        "videocof-code",
+        "ltx-original-model"
+      ]
+    },
+    {
+      "id": "M20",
+      "path": "topics/video-generation/seedance-2.5/integrated-training.md",
+      "source_sha256": "a36a24f3081e2984247389ef9245c468e61fbc6dd092dd2c3f8bcb9c749fd9d8",
+      "tex_path": "chapters/seedance/m20.tex",
+      "source_ids": [
+        "ltx-2",
+        "vace",
+        "alchemint",
+        "videocof",
+        "vincie-next",
+        "long-context-tuning",
+        "longlive",
+        "rewarddance",
+        "ltx-original-code"
+      ]
+    },
+    {
+      "id": "M21",
+      "path": "topics/video-generation/seedance-2.5/adapter-contract.md",
+      "source_sha256": "ee2b5cc003495c036845d709b85e83bb74289bac9a2e230a618cd640cf13dc3b",
+      "tex_path": "chapters/seedance/m21.tex",
+      "source_ids": [
+        "ltx-2",
+        "ltx-original-code",
+        "ltx-original-model",
+        "vace"
+      ]
+    },
+    {
+      "id": "M22",
+      "path": "topics/video-generation/seedance-2.5/reference-binding-spec.md",
+      "source_sha256": "4f8176d1add92390ce195dfba26c016ce5e82df868ef79fe3fc1d6a930d78568",
+      "tex_path": "chapters/seedance/m22.tex",
+      "source_ids": [
+        "alchemint",
+        "phantom",
+        "ltx-2",
+        "ltx-original-code",
+        "vace"
+      ]
+    },
+    {
+      "id": "M23",
+      "path": "topics/video-generation/seedance-2.5/av-editing-spec.md",
+      "source_sha256": "0c5478c98f78f34e34c710a0b3f8c8dd7e0402659db50ebff69f2ebf359af3ca",
+      "tex_path": "chapters/seedance/m23.tex",
+      "source_ids": [
+        "vace",
+        "videocof",
+        "vincie-next",
+        "ltx-2",
+        "ltx-original-code",
+        "ltx-original-model"
+      ]
+    },
+    {
+      "id": "M24",
+      "path": "topics/video-generation/seedance-2.5/long-video-spec.md",
+      "source_sha256": "14555ab4f7571624b0356863d4d9ac925a99084e8927a83f1f4544548b93ae1b",
+      "tex_path": "chapters/seedance/m24.tex",
+      "source_ids": [
+        "long-context-tuning",
+        "longlive",
+        "longlive-code",
+        "ltx-2",
+        "ltx-original-code",
+        "ltx-original-model"
+      ]
+    },
+    {
+      "id": "M25",
+      "path": "topics/video-generation/seedance-2.5/data-training-spec.md",
+      "source_sha256": "2bfed20f53b91a25fcc9fb43f841a6f5c7962bc408ac72112958155b8c422cb8",
+      "tex_path": "chapters/seedance/m25.tex",
+      "source_ids": [
+        "ltx-2",
+        "ltx-original-code",
+        "tarsier2",
+        "tarsier-code",
+        "alchemint",
+        "vace",
+        "videocof",
+        "longlive"
+      ]
+    },
+    {
+      "id": "M26",
+      "path": "topics/video-generation/seedance-2.5/inference-delivery-spec.md",
+      "source_sha256": "76a004e33125ba7f8d9cd8be9146469924201ddf8b4cf88f76f712f41772bb37",
+      "tex_path": "chapters/seedance/m26.tex",
+      "source_ids": [
+        "ltx-2",
+        "ltx-original-code",
+        "ltx-original-model",
+        "rayflow",
+        "adaspa",
+        "longlive",
+        "seedance-1.0"
+      ]
+    },
+    {
+      "id": "M27",
+      "path": "topics/video-generation/seedance-2.5/speculative-plan.md",
+      "source_sha256": "a3301016537cc3979bc52579774322aa4367785cc76c4c3f5018866d484c13f6",
+      "tex_path": "chapters/seedance/m27.tex",
+      "source_ids": [
+        "seedance-2.5-release",
+        "seedance-2.5-product",
+        "seedance-1.0",
+        "seedance-1.5-pro",
+        "seedance-2.0",
+        "ltx-2",
+        "ltx-original-code",
+        "ltx-original-model",
+        "phantom",
+        "alchemint",
+        "vace",
+        "videocof",
+        "vincie-next",
+        "geometry-as-context",
+        "long-context-tuning",
+        "longlive",
+        "tarsier2",
+        "rayflow",
+        "adaspa"
+      ]
+    }
+  ],
+  "mechanisms": [
+    {
+      "path": "algorithms/examples/attention_layout.py",
+      "sha256": "35cc406d95d4c5ac319322607455bfad4d770dad871f0308bde635ff254b5e62"
+    },
+    {
+      "path": "algorithms/examples/audio_video_exchange.py",
+      "sha256": "299176f4ae00be5b542b8b4b0d8c51008c64c77f25010d64199791de579822d2"
+    },
+    {
+      "path": "algorithms/examples/block_causal_mask.py",
+      "sha256": "129faab9066e6e74cd71d27b11b3f72f4544d4259d6ebd1994e13916834f7538"
+    },
+    {
+      "path": "algorithms/examples/cache_context.py",
+      "sha256": "8ea84b988d071e79ea02cf0b8c67b4bfa3196099e77906f0f20d52241ce7ecfd"
+    },
+    {
+      "path": "algorithms/examples/camera_rays.py",
+      "sha256": "a33c1be608eb4f9b0e771a964a90f674fe68abae8308d7abd2b478d166299883"
+    },
+    {
+      "path": "algorithms/examples/causal_conv.py",
+      "sha256": "9da66f04a9ecfc6c08b480844de529556b3014336f90485b787bbc2c9a941f6c"
+    },
+    {
+      "path": "algorithms/examples/condition_state.py",
+      "sha256": "4be05fd492b6559a7efff2194a018294cf5a28b45633096b87cc49bbd8a603b4"
+    },
+    {
+      "path": "algorithms/examples/condition_unit.py",
+      "sha256": "6c6c3ae7366e20c6ef44612abd51aae413570bcc1dbbf4e683022c2949d49a42"
+    },
+    {
+      "path": "algorithms/examples/flow_matching.py",
+      "sha256": "6214bb51f264904dbcdb99d9a04970ea26eb8c511c274ec8cdf7559783ff1d96"
+    },
+    {
+      "path": "algorithms/examples/gated_condition.py",
+      "sha256": "7e4d377511f3fd2e94e63d9323cd7a22c5d198a558431ef8754783c9e38f2537"
+    },
+    {
+      "path": "algorithms/examples/local_edit.py",
+      "sha256": "04d74197140f4f90e82698a3e49fb0096f9bbbd0e234bc7830eab35e2ecef924"
+    },
+    {
+      "path": "algorithms/examples/masked_sample_loss.py",
+      "sha256": "37032395c598485c248467e0a5973b89dc4fed74093df1f63ecb951e3e113854"
+    },
+    {
+      "path": "algorithms/examples/preference_objectives.py",
+      "sha256": "3c2ebe5035c7833361ed3367b7c8925920dfda73155fa83d57153edd6dbe69e5"
+    },
+    {
+      "path": "algorithms/examples/reference_adapter.py",
+      "sha256": "e692764a76d33f05b781e890550e14338ee9ed77fccfa8715812c75ccb2f3659"
+    },
+    {
+      "path": "algorithms/examples/reference_timing.py",
+      "sha256": "2fe7fcb93c20fcfe8799596358d4fb5a62af2792096f52890685decfb2990172"
+    },
+    {
+      "path": "algorithms/examples/rope.py",
+      "sha256": "8ceba9c5dc11fa84777df5e7e1c1dcaea7414db4da6994e54eb054dcc2be4bba"
+    }
+  ],
+  "figures": [
+    {
+      "id": "causal-tokenizer",
+      "source_id": "magvit-v2",
+      "pdf_name": "magvit-v2-v3.pdf",
+      "pdf_sha256": "b393503a10d53239ff4ebc67124d99fcc96777e78e4d525b1dd17ba43a474537",
+      "pdf_page": 5,
+      "crop_points": [
+        105,
+        57,
+        507,
+        225
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/causal-tokenizer.png"
+    },
+    {
+      "id": "spatial-temporal-dit",
+      "source_id": "seedance-1.0",
+      "pdf_name": "seedance-1.0-v2.pdf",
+      "pdf_sha256": "e4ec66efd7e354bc7b3d25478fc1cb21709d0dc907f70cee7000ad2bf036fd13",
+      "pdf_page": 5,
+      "crop_points": [
+        65,
+        70,
+        547,
+        278
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/spatial-temporal-dit.png"
+    },
+    {
+      "id": "multishot-positions",
+      "source_id": "long-context-tuning",
+      "pdf_name": "long-context-tuning-v1.pdf",
+      "pdf_sha256": "2c301affc003325edf04177086e042c3a03b631084ea4ab02c041aeda76f0e1c",
+      "pdf_page": 5,
+      "crop_points": [
+        57,
+        55,
+        555,
+        199
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/multishot-positions.png"
+    },
+    {
+      "id": "audio-video-pipeline",
+      "source_id": "seedance-1.5-pro",
+      "pdf_name": "seedance-1.5-pro-v3.pdf",
+      "pdf_sha256": "b9ace4794ebe437adeb9e3b63bdf66b2d8ab496adb5d9f0b5696a5bcb46f40b6",
+      "pdf_page": 2,
+      "crop_points": [
+        65,
+        522,
+        545,
+        673
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/audio-video-pipeline.png"
+    },
+    {
+      "id": "streaming-cache",
+      "source_id": "longlive",
+      "pdf_name": "longlive-v2.pdf",
+      "pdf_sha256": "c02db70004d281be6f35b760052457b86860eebbb6356abd3044690a96b54905",
+      "pdf_page": 2,
+      "crop_points": [
+        105,
+        85,
+        507,
+        269
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/streaming-cache.png"
+    },
+    {
+      "id": "subject-reference",
+      "source_id": "phantom",
+      "pdf_name": "phantom-v2.pdf",
+      "pdf_sha256": "643e477719f256bfcbe254622858bb1531bd15703d3ad3c3d90bbf65f25cdf20",
+      "pdf_page": 4,
+      "crop_points": [
+        57,
+        60,
+        555,
+        246
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/subject-reference.png"
+    },
+    {
+      "id": "edit-data",
+      "source_id": "vincie",
+      "pdf_name": "vincie-v2.pdf",
+      "pdf_sha256": "ad7a382e905151b286cf0aadd15b20282c17ff9259941bd706384514c19eaa39",
+      "pdf_page": 4,
+      "crop_points": [
+        105,
+        65,
+        508,
+        264
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/edit-data.png"
+    },
+    {
+      "id": "generative-reward",
+      "source_id": "rewarddance",
+      "pdf_name": "rewarddance-v1.pdf",
+      "pdf_sha256": "c09a20debfcafb853a3db836614913bd25d54dc09fbdd9b06a8dca5c70ce917c",
+      "pdf_page": 5,
+      "crop_points": [
+        65,
+        65,
+        546,
+        368
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/generative-reward.png"
+    },
+    {
+      "id": "data-pipeline",
+      "source_id": "seedance-1.0",
+      "pdf_name": "seedance-1.0-v2.pdf",
+      "pdf_sha256": "e4ec66efd7e354bc7b3d25478fc1cb21709d0dc907f70cee7000ad2bf036fd13",
+      "pdf_page": 6,
+      "crop_points": [
+        65,
+        70,
+        546,
+        214
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/data-pipeline.png"
+    },
+    {
+      "id": "wan-block",
+      "source_id": "wan-2.1",
+      "pdf_name": "wan-2.1-v2.pdf",
+      "pdf_sha256": "ca859378a8296fe1a09fb5127680bcdc7e6499fb340e989a598c904720424e9c",
+      "pdf_page": 14,
+      "crop_points": [
+        345,
+        130,
+        506,
+        333
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/wan-block.png"
+    },
+    {
+      "id": "training-pipeline",
+      "source_id": "seedance-1.0",
+      "pdf_name": "seedance-1.0-v2.pdf",
+      "pdf_sha256": "e4ec66efd7e354bc7b3d25478fc1cb21709d0dc907f70cee7000ad2bf036fd13",
+      "pdf_page": 8,
+      "crop_points": [
+        65,
+        480,
+        546,
+        707
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/training-pipeline.png"
+    },
+    {
+      "id": "timed-reference",
+      "source_id": "alchemint",
+      "pdf_name": "alchemint-cvpr2026.pdf",
+      "pdf_sha256": "1657b4098352a2270c993764a9ab7d1d3408c5355d4eef4b179204e62aecede0",
+      "pdf_page": 4,
+      "crop_points": [
+        57,
+        57,
+        556,
+        252
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/timed-reference.png"
+    },
+    {
+      "id": "unified-context",
+      "source_id": "vace",
+      "pdf_name": "vace-v2.pdf",
+      "pdf_sha256": "951af6f6398929a8c3d5e992d0180899db24a6366b637bf8b767380b54281ce3",
+      "pdf_page": 4,
+      "crop_points": [
+        57,
+        55,
+        556,
+        211
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/unified-context.png"
+    },
+    {
+      "id": "reason-edit",
+      "source_id": "videocof",
+      "pdf_name": "videocof-cvpr2026.pdf",
+      "pdf_sha256": "f46af3ed9896877cff7c2f996f31f23f53552cd640d4d0f067f0d13318e51379",
+      "pdf_page": 3,
+      "crop_points": [
+        57,
+        55,
+        556,
+        276
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/reason-edit.png"
+    },
+    {
+      "id": "geometry-context",
+      "source_id": "geometry-as-context",
+      "pdf_name": "geometry-as-context-cvpr2026.pdf",
+      "pdf_sha256": "b2817bb1c656909fbb8ed927b9a3edda07b7c9c8be0d07d0a982ad7404a464d4",
+      "pdf_page": 5,
+      "crop_points": [
+        317,
+        357,
+        555,
+        626
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/geometry-context.png"
+    },
+    {
+      "id": "joint-av-block",
+      "source_id": "ltx-2",
+      "pdf_name": "ltx-2-v1.pdf",
+      "pdf_sha256": "6499eb067744ab8d2564888f22acc8ec8c11d4e2b50169619d70e7e0886091bf",
+      "pdf_page": 5,
+      "crop_points": [
+        106,
+        55,
+        506,
+        243
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/joint-av-block.png"
+    }
+  ]
+}

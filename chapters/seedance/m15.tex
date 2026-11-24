@@ -1,0 +1,259 @@
+% Imported from docs/code-paths.md
+\chapter{M15 机制代码与真实工程路线}\label{seedance-m15}
+\moduleinfo{M15}{增量路线与工程阅读；未运行教学代码}{\hyperref[src-wan21-code]{\texttt{wan21-code}}、\hyperref[src-diffsynth-code]{\texttt{diffsynth-code}}、\hyperref[src-phantom-code]{\texttt{phantom-code}}、\hyperref[src-longlive-code]{\texttt{longlive-code}}、\hyperref[src-vincie-code]{\texttt{vincie-code}}、\hyperref[src-ltx-code]{\texttt{ltx-code}}、\hyperref[src-dancegrpo-code]{\texttt{dancegrpo-code}}、\hyperref[src-tarsier-code]{\texttt{tarsier-code}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-vace-code]{\texttt{vace-code}}、\hyperref[src-videocof-code]{\texttt{videocof-code}}}
+
+
+理解一个视频模块时，几十行代码往往比完整训练框架更清楚；真正制作数据、训练和生成时，则应使用已经组织好模型加载、调度、分布式和输出流程的工程。这两种代码各有用途，不需要把教学片段扩写成另一个大型框架。
+
+这里把十六份本地机制示例与十个上游仓库对应起来，其中 LTX 原系列与当前版本分别固定。仓库版本、源码入口和许可证已经查阅，未运行模型或训练，也不据此承诺它们满足某个具体业务的效果与硬件条件。
+
+\section{用极简代码理解一件事}\label{seedance-m15-ux7528ux6781ux7b80ux4ee3ux7801ux7406ux89e3ux4e00ux4ef6ux4e8b}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1600}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+机制
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+本地示例
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+阅读重点
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+真实实现入口
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+因果时空卷积 & \hyperref[code-causal-conv]{causal\_conv.py} & 时间左 padding 与 stride/dilation & Wan VAE \\
+流匹配 & \hyperref[code-flow-matching]{flow\_matching.py} & noisy、速度目标、有效区损失、Euler & Wan 采样与 DiffSynth 训练 \\
+三维 RoPE & \hyperref[code-rope]{rope.py} & 按通道分轴旋转 Q/K & Wan / VINCIE / LTX RoPE \\
+空间与时间注意力 & \hyperref[code-attention-layout]{attention\_layout.py} & 哪些维合成 batch，哪些合成序列 & Wan block / VINCIE MM attention \\
+参考条件 & \hyperref[code-reference-adapter]{reference\_adapter.py} & query、reference K/V、绑定 mask、门控 & Phantom-Wan \\
+区间与区域编辑 & \hyperref[code-local-edit]{local\_edit.py} & 时间选择、已知区重噪、最终像素保留 & VINCIE 图像编辑 / LTX 条件流水线 \\
+联合音视频 & \hyperref[code-audio-video-exchange]{audio\_video\_exchange.py} & 双向读取更新前状态 & LTX AV Transformer \\
+偏好优化 & \hyperref[code-preference-objectives]{preference\_objectives.py} & DPO、组内优势、clipped objective & DanceGRPO \\
+缓存失效 & \hyperref[code-cache-context]{cache\_context.py} & 历史与条件不变才能复用 & LongLive 因果推理 \\
+参考时间门 & \hyperref[code-reference-timing]{reference\_timing.py} & 物理时间、软区间偏置；归属mask与null token另接 & 候选支路；不是WeRoPE复现 \\
+统一视觉条件 & \hyperref[code-condition-unit]{condition\_unit.py} & 待变/保留拆分、时间与空间编辑范围 & VACE条件与mask预处理 \\
+相机射线 & \hyperref[code-camera-rays]{camera\_rays.py} & camera-to-world、方向与矩、单位一致 & 结构条件投影由候选工程新增 \\
+候选参考残差 & \hyperref[code-gated-condition]{gated\_condition.py} & 输入/输出宽度、零门控、非零投影初始化 & LTX块循环需新增支路调用 \\
+干净条件与活动目标 & \hyperref[code-condition-state]{condition\_state.py} & 逐token sigma、逐样本Euler步长、已知区覆盖 & LTX训练strategy与采样器需新增任务状态 \\
+音视频块因果 & \hyperref[code-block-causal-mask]{block\_causal\_mask.py} & 视频/音频self和双向AV都限制未来 & LongLive机制；LTX四类调用需改造 \\
+逐样本有效损失 & \hyperref[code-masked-sample-loss]{masked\_sample\_loss.py} & 先对有效元素平均，排除没有监督的样本 & 自定义strategy；分布式计数另接 \\
+\end{longtable}
+}
+
+示例的约束写在各文件开头：有的省略多头，有的要求每个 query 至少有一个有效参考，有的只支持整除的空间窗口。它们解释依赖关系，不负责补齐生产环境中的所有分支，也不能直接加载这些仓库的 checkpoint。
+
+\section{从 Wan 建立基础生成链路}\label{seedance-m15-ux4ece-wan-ux5efaux7acbux57faux7840ux751fux6210ux94feux8def}
+
+\href{https://github.com/Wan-Video/Wan2.1}{Wan-Video/Wan2.1} 适合阅读和使用基础文生视频、图生视频、VAE 与 DiT。固定版本为 \codepath{9737cba9c1c3c4d04b33fcad41c111989865d315}。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/generate.py}{生成入口 generate.py}：参数、任务选择和结果输出。
+\item
+  \href{https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/text2video.py}{text2video.py}：文本、噪声、scheduler 和解码怎样衔接。
+\item
+  \href{https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/modules/vae.py}{vae.py}：\codepath{CausalConv3d}、上下采样、encoder/decoder 和缓存。
+\item
+  \href{https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/modules/model.py}{model.py}：\codepath{WanAttentionBlock}、\codepath{rope_apply} 与主干。
+\end{itemize}
+
+阅读顺序可先从 \codepath{generate.py} 跟进 \codepath{text2video.py}，再进入模块。只看 VAE 中的一个卷积类，无法推导完整视频采样流程。
+
+\section{用 DiffSynth-Studio 接入真实训练}\label{seedance-m15-ux7528-diffsynth-studio-ux63a5ux5165ux771fux5b9eux8badux7ec3}
+
+\href{https://github.com/modelscope/DiffSynth-Studio}{modelscope/DiffSynth-Studio} 提供 Wan 的推理、LoRA 和全参训练。固定版本为 \codepath{d32f72424cd22bc0ea8100cc57559149b4eac933}。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_training/train.py}{训练入口 train.py}：\codepath{WanTrainingModule}、数据参数和训练组件。
+\item
+  \href{https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_training/lora/Wan2.1-T2V-1.3B.sh}{1.3B LoRA 配方}：数据路径、模型组件、学习率、rank 与 target modules。
+\item
+  \href{https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_training/full/Wan2.1-T2V-1.3B.sh}{1.3B 全参配方}：与 LoRA 比较哪些参数进入训练。
+\item
+  \href{https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_inference/Wan2.1-T2V-1.3B.py}{1.3B 推理样例}：模型加载与 pipeline 调用。
+\end{itemize}
+
+真实实施可先沿用这个训练框架，再增加业务数据和所需条件路径。现成 LoRA 能调整模型行为，但不会自动获得角色绑定、任意参考数量或时间戳编辑；这些能力还依赖对应模型接口与数据任务。
+
+\section{用 Phantom-Wan 研究主体参考}\label{seedance-m15-ux7528-phantom-wan-ux7814ux7a76ux4e3bux4f53ux53c2ux8003}
+
+\href{https://github.com/Phantom-video/Phantom}{Phantom-video/Phantom} 的公开实现建立在 Wan 上，固定版本为 \codepath{bd84b602dcc949e23c89cbbf266b6f5975f2f025}。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/generate.py}{generate.py}：参考图片列表与主体生成参数。
+\item
+  \href{https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/phantom_wan/subject2video.py}{subject2video.py}：参考编码与采样编排。
+\item
+  \href{https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/phantom_wan/modules/model.py}{model.py}：参考条件怎样进入主干。
+\end{itemize}
+
+该版本提供参考推理，README 的训练代码项目仍未勾选。因此它适合作为参考生成和结构阅读入口，不能直接称为可用的完整训练仓库。公开的 Phantom-Wan 与论文内部基座也需要区分。
+
+\section{从 LongLive1.0 阅读长视频训练与缓存}\label{seedance-m15-ux4ece-longlive1.0-ux9605ux8bfbux957fux89c6ux9891ux8badux7ec3ux4e0eux7f13ux5b58}
+
+\href{https://github.com/NVlabs/LongLive}{NVlabs/LongLive} 固定版本为 \codepath{31c70d9071cd7851d82939806dc9fac645fcabe5}。仓库已同时包含多个后续项目，研究原始长视频框架应进入 \codepath{LongLive1.0/}。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/inference.py}{inference.py} 与 \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/train.py}{train.py}：整体入口。
+\item
+  \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/pipeline/causal_inference.py}{causal\_inference.py}：当前块去噪、历史缓存及窗口组织。
+\item
+  \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/pipeline/streaming_training.py}{streaming\_training.py}：流式训练如何使用历史。
+\item
+  \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/wan/modules/causal_model.py}{causal\_model.py}：\codepath{CausalWanSelfAttention} 和缓存数据路径。
+\end{itemize}
+
+这里的价值是读取``模型、训练分布、缓存''怎样配套，而不是把缓存类单独移植到任意双向扩散模型。它也不是 Seedance 已确认的内部实现。
+
+\section{从 VINCIE 阅读多轮编辑与交错序列}\label{seedance-m15-ux4ece-vincie-ux9605ux8bfbux591aux8f6eux7f16ux8f91ux4e0eux4ea4ux9519ux5e8fux5217}
+
+\href{https://github.com/ByteDance-Seed/VINCIE}{ByteDance-Seed/VINCIE} 固定版本为 \codepath{97cd2c5701e694dabcfea320c0cf59893d427fab}。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/generate.py}{generate.py}：\codepath{VINCIEGenerator} 多轮图像编辑入口。
+\item
+  \href{https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/configs/generate.yaml}{生成配置}：模型与采样配置。
+\item
+  \href{https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/models/dit/blocks/attention/mmattn.py}{mmattn.py}：联合多模态与窗口注意力。
+\item
+  \href{https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/models/dit/rope.py}{rope.py}：多模态位置编码。
+\end{itemize}
+
+它直接处理的是多轮图像编辑，不能把这个生成入口当成通用视频时间戳编辑。图像上下文方法怎样传播到时间连续的视频，是另一层任务和实现。
+
+\section{用 LTX 阅读可实现的联合音视频}\label{seedance-m15-ux7528-ltx-ux9605ux8bfbux53efux5b9eux73b0ux7684ux8054ux5408ux97f3ux89c6ux9891}
+
+\href{https://github.com/Lightricks/LTX-2}{Lightricks/LTX-2} 固定版本为 \codepath{daa6b16fc7f0f1628f2c9e36a303e3312b333cc6}。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-core/src/ltx_core/model/transformer/transformer.py}{transformer.py}：\codepath{BasicAVTransformerBlock} 的视频/音频交互。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-core/src/ltx_core/model/transformer/rope.py}{rope.py}：位置与频率实现。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-pipelines/README.md}{推理说明}：选择模型对应的 pipeline。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-trainer/README.md}{训练说明} 与 \href{https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-trainer/configs/av2av_ic_lora.yaml}{音视频条件配置}：真实训练路线。
+\end{itemize}
+
+当前版本覆盖多个 LTX 型号，模型、codec、文本组件与 LoRA 要按对应说明匹配。代码是 Apache-2.0，模型使用单独的 Community License；这两类许可不能混为一项。LTX 可作为联合音视频工程的独立选择，不能直接成为 Wan 的兼容音频插件。
+
+\section{将 LTX 原系列固定为共同主干}\label{seedance-m15-ux5c06-ltx-ux539fux7cfbux5217ux56faux5b9aux4e3aux5171ux540cux4e3bux5e72}
+
+完整候选设计选择初始公开系列，另固定 \codepath{bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638}，避免后续型号的文本、codec与训练配置混入。阅读顺序是表示、主干、训练策略：
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/types.py}{types.py}：视频/音频latent布局及尺寸约定。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/transformer.py}{transformer.py}：原生AV交互、调制和门控。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/video_vae/video_vae.py}{video\_vae.py}：视频编码、解码与原生归一化。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/configs/ltx2_av_lora.yaml}{音视频LoRA配置} 与 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/configs/ltx2_v2v_ic_lora.yaml}{视频条件IC-LoRA配置}：已有策略、组件和参数组的落地起点。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/model.py}{model.py} 与 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/transformer_args.py}{transformer\_args.py}：块循环、逐token噪声调制及候选支路插入位置。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/training_strategies/text_to_video.py}{text\_to\_video.py} 与 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/training_strategies/video_to_video.py}{video\_to\_video.py}：前者可联合训练AV，后者是视频参考拼接；不能直接把后者当成联合音频编辑。
+\item
+  \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/timestep_samplers.py}{timestep\_samplers.py} 与 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/trainer.py}{trainer.py}：长度外推、参数收集与权重保存；新增模块和完整恢复状态需要显式扩展。
+\end{itemize}
+
+这些配置没有自动包含候选方案的多参考池化、角色时间绑定、VACE式支路或因果续写；新增接口与任务仍需实现。该历史commit的 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/LICENSE}{根许可证} 是 LTX-2 Community License，应按历史版本记录，不能回填当前版本的Apache代码许可结论。
+
+\section{从 VACE 阅读统一视觉条件}\label{seedance-m15-ux4ece-vace-ux9605ux8bfbux7edfux4e00ux89c6ux89c9ux6761ux4ef6}
+
+\href{https://github.com/ali-vilab/VACE}{ali-vilab/VACE} 固定 \codepath{48eb44f1c4be87cc65a98bff985a26976841e9f3}，代码Apache-2.0。它把不同视觉条件组织为帧与mask，再接入相应基座。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/ali-vilab/VACE/blob/48eb44f1c4be87cc65a98bff985a26976841e9f3/vace/vace_preproccess.py}{vace\_preproccess.py}：条件预处理入口，文件名沿用上游拼写。
+\item
+  \href{https://github.com/ali-vilab/VACE/blob/48eb44f1c4be87cc65a98bff985a26976841e9f3/vace/annotators/mask.py}{mask.py}：编辑区域和mask组织。
+\item
+  \href{https://github.com/ali-vilab/VACE/blob/48eb44f1c4be87cc65a98bff985a26976841e9f3/vace/vace_wan_inference.py}{vace\_wan\_inference.py}：条件、checkpoint与Wan采样链路怎样配合。
+\end{itemize}
+
+这是可用视觉控制工程的入口，但不同基座分支有各自权重和条件层。即使目录中出现LTX分支，也不代表能直接加载到这里固定的LTX-2原系列。
+
+\section{从 VideoCoF 阅读区域中间表示}\label{seedance-m15-ux4ece-videocof-ux9605ux8bfbux533aux57dfux4e2dux95f4ux8868ux793a}
+
+\href{https://github.com/knightyxp/VideoCoF}{knightyxp/VideoCoF} 固定 \codepath{f45b8009616b3ef8e2024a7da585249b4c74fc2b}，代码Apache-2.0，包含Wan/VideoX-Fun的推理与训练入口。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/knightyxp/VideoCoF/blob/f45b8009616b3ef8e2024a7da585249b4c74fc2b/examples/wan2.1/predict_v2v_cot_json.py}{predict\_v2v\_cot\_json.py}：源视频、指令与区域式编辑的推理组织。
+\item
+  \href{https://github.com/knightyxp/VideoCoF/blob/f45b8009616b3ef8e2024a7da585249b4c74fc2b/scripts/wan2.1/train_joint_img_video_lora.py}{train\_joint\_img\_video\_lora.py}：图像/视频联合训练与LoRA入口。
+\item
+  \href{https://github.com/knightyxp/VideoCoF/blob/f45b8009616b3ef8e2024a7da585249b4c74fc2b/videox_fun/pipeline/pipeline_wan.py}{pipeline\_wan.py}：条件与去噪执行路径。
+\end{itemize}
+
+区域与目标联合去噪是一种具体建模选择。候选设计为了可检查性先定位再编辑，执行图和训练数据组织都要相应修改；不能只把这个采样入口改名就视为完成迁移。
+
+\section{从 DanceGRPO 看完整视觉策略优化}\label{seedance-m15-ux4ece-dancegrpo-ux770bux5b8cux6574ux89c6ux89c9ux7b56ux7565ux4f18ux5316}
+
+\href{https://github.com/XueZeyue/DanceGRPO}{XueZeyue/DanceGRPO} 固定版本为 \codepath{15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344}。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/XueZeyue/DanceGRPO/blob/15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344/fastvideo/train_grpo_hunyuan.py}{Hunyuan 视频训练}：采样、奖励、优势和策略更新。
+\item
+  \href{https://github.com/XueZeyue/DanceGRPO/blob/15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344/scripts/finetune/finetune_hunyuan_grpo.sh}{启动配方}：数据、模型和分布式设置。
+\item
+  \href{https://github.com/XueZeyue/DanceGRPO/blob/15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344/fastvideo/train_grpo_wan_2_1.py}{Wan 分支}：比较基座差异。
+\end{itemize}
+
+固定版 README 将 Wan 分支当作图像生成并使用 HPS 奖励，所以不能据其文件名就认定已经提供完整视频任务的可靠奖励配方。阅读重点是 SDE 转移概率、组内比较和更新流程；奖励是否代表业务质量仍需另行定义。
+
+\section{用 Tarsier 进入描述数据生产}\label{seedance-m15-ux7528-tarsier-ux8fdbux5165ux63cfux8ff0ux6570ux636eux751fux4ea7}
+
+\href{https://github.com/bytedance/tarsier}{bytedance/tarsier} 固定版本为 \codepath{63de87a760c2aec6b31470a08046969a13787126}。
+
+\begin{itemize}
+\tightlist
+\item
+  \href{https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/tasks/inference_caption.py}{inference\_caption.py}：批量描述入口。
+\item
+  \href{https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/scripts/run_inference_caption.sh}{启动脚本}：输入、模型和输出组织。
+\item
+  \href{https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/models/modeling_tarsier.py}{模型封装} 与 \href{https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/evaluation/evaluate.py}{评价入口}：描述模型怎样被调用与评价。
+\end{itemize}
+
+选 checkpoint 时同时匹配 Tarsier/Tarsier2 的 processor 和配置。描述生成完成后，仍应抽检动作遗漏、时序和事实；自动生成文本不等于获得无误差监督。
+
+\section{实际选型时怎样组合}\label{seedance-m15-ux5b9eux9645ux9009ux578bux65f6ux600eux6837ux7ec4ux5408}
+
+基础推理可从 Wan 开始，业务微调可用 DiffSynth；已有主体参考需求可先看 Phantom-Wan 的推理结构，长视频单独研究 LongLive；多轮图像编辑看 VINCIE，统一视频条件看 VACE，区域中间表示看 VideoCoF，联合音视频另选配套的 LTX 路线；数据生产由描述工具支持，策略优化放在基础数据和目标稳定之后。
+
+它们可以共享任务规格、素材和评价方法，但训练入口、权重、scheduler 和条件接口并不自动兼容。只有明确需要修改的接口时，才把某个机制迁入另一个基座。
+
+10个仓库的11份固定版本记录与57个代码/配置入口登记在 \href{https://github.com/foocker/multimodal-journey/blob/0f1b6bb86d609d75d8c2582063d85707d0180d39/sources/code.json}{sources/code.json}。需要阅读固定版本时，可以使用以下形式获取源码；安装、权重与启动参数以相应版本的说明为准：
+
+\begin{verbatim}
+git clone https://github.com/Wan-Video/Wan2.1.git
+git -C Wan2.1 checkout 9737cba9c1c3c4d04b33fcad41c111989865d315
+\end{verbatim}

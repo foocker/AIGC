@@ -1,0 +1,38 @@
+% Shared support for the standalone volume and the integrated AIGC book.
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{fvextra,needspace}
+\usepackage{xurl}
+\usepackage{adjustbox}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit}
+\IfFontExistsTF{Consolas}{\setmonofont{Consolas}[Scale=0.88]}{\setmonofont{Latin Modern Mono}[Scale=0.88]}
+\setCJKmonofont{FandolFang-Regular}
+\setCJKfamilyfont{zhkai}[AutoFakeBold=2]{FandolKai-Regular}
+% Keep literal backslashes in imported code; no TeX interpolation.
+\DefineVerbatimEnvironment{verbatim}{Verbatim}{%
+  fontsize=\small,breaklines=true,breakanywhere=true,
+  frame=single,rulecolor=\color{gray!35},framesep=5pt,baselinestretch=1.08}
+\BeforeBeginEnvironment{verbatim}{\Needspace{8\baselineskip}}
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\newcommand{\codepath}[1]{{\small\nolinkurl{#1}}}
+\newcommand{\moduleinfo}[3]{%
+  \begin{tcolorbox}[colback=structurecolor!4,colframe=structurecolor!30,
+    boxrule=0.4pt,arc=1mm,left=7pt,right=7pt,top=5pt,bottom=5pt]
+  \small\textbf{模块 #1}\quad #2\par
+  来源：#3。来源版本与支持范围见本专题末尾的来源登记。\par
+  \end{tcolorbox}}
+\newcommand{\sourceentry}[4]{%
+  \par\medskip\phantomsection\label{src-#1}%
+  \noindent\textbf{\texttt{#1}}\quad #2\par
+  {\small #3\par\url{#4}\par}}
+\providecommand{\pandocbounded}[1]{%
+  \begin{adjustbox}{max width=\linewidth,max height=0.60\textheight}#1\end{adjustbox}}
+\setcounter{LTchunksize}{100}
+\setlength{\LTpre}{8pt}
+\setlength{\LTpost}{8pt}
+\setlength{\emergencystretch}{2em}
+\hypersetup{unicode=true,breaklinks=true}
+\pdfstringdefDisableCommands{\def\codepath#1{#1}}

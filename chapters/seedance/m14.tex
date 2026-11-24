@@ -1,0 +1,79 @@
+% Imported from applications/video-production/solutions.md
+\chapter{M14 业务映射与交付成本}\label{seedance-m14}
+\moduleinfo{M14}{增量路线与工程阅读；未运行教学代码}{\hyperref[src-seedance-2.5-release]{\texttt{seedance-2.5-release}}、\hyperref[src-seedance-2.0]{\texttt{seedance-2.0}}、\hyperref[src-phantom]{\texttt{phantom}}、\hyperref[src-vincie]{\texttt{vincie}}、\hyperref[src-long-context-tuning]{\texttt{long-context-tuning}}、\hyperref[src-wan21-code]{\texttt{wan21-code}}、\hyperref[src-diffsynth-code]{\texttt{diffsynth-code}}、\hyperref[src-phantom-code]{\texttt{phantom-code}}、\hyperref[src-vincie-code]{\texttt{vincie-code}}、\hyperref[src-ltx-code]{\texttt{ltx-code}}}
+
+
+业务需要的通常是一条能交付的内容，而不是一个平均分很高的模型。产品标识是否正确、角色能否保持、指定片段能否修改、台词是否逐字一致，都可能比整体美感更重要。选择技术方案前，应该先把这些硬约束与软偏好分开。
+
+\section{不同失败，需要不同解法}\label{seedance-m14-ux4e0dux540cux5931ux8d25ux9700ux8981ux4e0dux540cux89e3ux6cd5}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+问题
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+优先技术路线
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+核心验收
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+电商同款跨镜头变形 & 产品参考、主体绑定，必要时用三维或实拍合成 & 部件数量、比例、颜色、logo \\
+短剧角色换脸换衣 & 角色资产库、跨片段参考、镜头状态记录 & 身份、服装、道具归属 \\
+只有某几秒局部出错 & 时间与区域编辑，外区源内容保留 & 变化正确、非目标保持、边界连续 \\
+教学文字和几何需准确 & 确定性图形承载知识，生成情景辅助 & 事实、公式、标注、时序 \\
+工业结构和装配顺序固定 & CAD、白模、轨迹与相机条件 & 零件、接触、遮挡、装配关系 \\
+分钟级叙事难连续 & 短镜头编排、状态追踪，再比较原生长生成 & 剧情顺序、角色和道具持续性 \\
+多语言对白与品牌音色 & 受控配音或联合生成，按口型需求选择 & 台词、音色、嘴形、情绪 \\
+大批量版本成本高 & 规格模板、静态条件缓存、失败分流 & 每条交付成本、审片和返工时间 \\
+\end{longtable}
+}
+
+如果产品结构仍然错误，继续增加``高清、电影感''等提示往往无效；如果动作没跟随，提高身份参考强度也可能让画面更静止。先识别错误属于身份、动作、几何、时间还是服务层，才能减少无效重试。
+
+\section{先选一个任务做对照}\label{seedance-m14-ux5148ux9009ux4e00ux4e2aux4efbux52a1ux505aux5bf9ux7167}
+
+可以从产品一致性或区间编辑选择一个首轮试验。先用五个开发任务校准评价规则，再冻结约三十个测试任务；每个任务、每种方案允许三个候选，比较纯文本与参考适配，或者整段重生与局部编辑。
+
+这些数量是 pilot 起点，不代表已经具备充分统计功效。服务不开放随机种子时，保存 request ID 并说明随机性不能严格配对；失败、超时和未交付任务都保留，不能只记录最佳候选。
+
+评价尽量隐藏模型名称。目标遵循、主体保持、时序、声音和非目标区域分别评分，再判断是否达到交付标准。部分任务由两人独立评价并裁定分歧，避免把某个审片人的偏好当成通用真值。
+
+\section{重试策略应提前固定}\label{seedance-m14-ux91cdux8bd5ux7b56ux7565ux5e94ux63d0ux524dux56faux5b9a}
+
+输入缺件先修规格；身份错误先检查参考和绑定；动作错误考虑简化动作或拆镜；局部缺陷优先定向编辑；剧情全局错误则修改镜头计划与状态，再重生受影响部分。
+
+例如每任务最多三个候选，仍失败就转人工或记录不可交付。困难任务的多次失败通常相关，不能假设不断重试总会以固定概率成功。API 超时也未必没有计费，应先查询原请求状态，再判断是否提交新生成。
+
+\section{单位成本要按交付核算}\label{seedance-m14-ux5355ux4f4dux6210ux672cux8981ux6309ux4ea4ux4ed8ux6838ux7b97}
+
+每条交付的成本应包含所有尝试和人工：
+
+\[
+C_{\mathrm{delivery}}=
+\frac{C_{\mathrm{generation}}+C_{\mathrm{review}}+
+C_{\mathrm{editing}}+C_{\mathrm{fixed}}}{N_{\mathrm{delivered}}}.
+\]
+
+其中生成费用包括失败和重试，人工包括审片与后期；未交付任务已经消耗的资源也不能从分子删除。如果没有任何交付，应报告零交付和已消耗成本，而不是给出一个有误导性的单位数字。
+
+还要分别报告候选通过率、预算内任务交付率、交付周期 p50/p95、人工分钟数和不同任务切片。一次推理更便宜，可能被更低可用率抵消；推理更快，也可能没有减少排队或后期时间。
+
+每个候选保存任务版本、素材哈希、模型版本、请求、费用、各阶段延迟、审片时间、失败类别和是否最终交付。价格同时记录币种、合同和日期，避免把试用补贴当成长期成本。
+
+\section{什么时候值得自训}\label{seedance-m14-ux4ec0ux4e48ux65f6ux5019ux503cux5f97ux81eaux8bad}
+
+先比较现成服务是否已经满足任务、成本和数据要求。只有出现稳定、可标注的失败切片，且开放模型训练有机会改善它，才值得投入适配。拥有足够同主体跨场景数据，可能适合身份控制；缺少准确编辑对，仅增加训练步数未必会改善保持能力。
+
+用户导出、重新生成和停留时长可以帮助发现问题，但含义并不唯一。导出可能用于比较，不导出可能因为预算、任务取消或网络问题。它们应进入待确认的反馈队列，结合失败原因和人工偏好形成训练信号，不能自动等同正负标签。
+
+\section{真实工程从哪里进入}\label{seedance-m14-ux771fux5b9eux5de5ux7a0bux4eceux54eaux91ccux8fdbux5165}
+
+业务选型应落到具体能力入口：基础生成、训练适配、主体参考、图像编辑、联合音视频分别有可阅读的工程。\{\hyperref[seedance-m15]{代码路线与仓库选择}\} 给出相应仓库和限制，避免把接受图片输入等同于主体参考，或把图像编辑当成精确视频编辑。

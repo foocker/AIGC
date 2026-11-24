@@ -1,14 +1,14 @@
 
 \documentclass[lang=cn,newtx,10pt,scheme=chinese]{elegantbook}
 \title{AIGC}
-\subtitle{扩散模型}
+\subtitle{扩散模型与 Seedance 2.5 音视频生成}
 
 \author{Sisyphes}
 \institute{家里蹲}
-\date{\today}
-\version{0.1}
+\date{2026年11月24日}
+\version{0.2 · 本地审阅稿}
 
-\setcounter{tocdepth}{3}
+\setcounter{tocdepth}{1}
 
 \logo{logo-blue.png}
 \cover{cover.jpg}
@@ -24,6 +24,7 @@
 
 \addbibresource[location=local]{reference.bib} % 参考文献，不要删除
 
+\input{tex/seedance-preamble}
 \begin{document}
 
 \maketitle
@@ -33,6 +34,7 @@
 
 \mainmatter
 
+\part{扩散模型基础}
 \chapter{零}
 \section{符号说明}
 \begin{itemize}
@@ -134,7 +136,7 @@ $
 从中了解到，VLB和ELBO在定义上存在一个正负符号只差。
 \href{https://github.com/goodfeli/dlbook_notation}{dlbook notation 2016}
 
-\href{https://www.inf.ed.ac.uk/teaching/courses/fmcs1/slides/lecture25.pdf}
+\href{https://www.inf.ed.ac.uk/teaching/courses/fmcs1/slides/lecture25.pdf}{Evidence lower bound 讲义}
 \href{https://en.wikipedia.org/wiki/Entropy\_(information\_theory)}{Entropy information theory }
 
 \begin{equation}
@@ -703,14 +705,14 @@ $$
 \end{gathered}
 $$
 
-当 $s \downarrow 0 ， \frac{\mathbb{E}_x\left[g\left(X_s\right)\right]-g(x)}{s}=L u=\frac{\partial u}{\partial t}$ 。这样，我们就得到了给定初始条件Kolmogorov后向方程。如果我们把变量 $t$ 转换为 $T-t$ ，
+当 $s \downarrow 0$，$\frac{\mathbb{E}_x\left[g\left(X_s\right)\right]-g(x)}{s}=L u=\frac{\partial u}{\partial t}$。这样，我们就得到了给定初始条件Kolmogorov后向方程。如果我们把变量 $t$ 转换为 $T-t$，
 我们可以得到更常见的给定终止条件的Kolmogorov后向方程 $-\partial_t u=L u$ ，即
 $$
 -\frac{\partial}{\partial t} u(t, x)=\sum_i \mu_i(x) \frac{\partial}{\partial x_i} u(t, x)+\frac{1}{2} \sum_i \sum_j\left(\sigma \sigma^{\top}\right)_{i, j}(x) \frac{\partial^2}{\partial x_i \partial x_j} u(t, x)
 $$
 
 给定定义 $L_2$ 内积 (inner product) $\langle q, g\rangle=\int q(x) g(x) d x$ ，我们可以定义生成算子 $L$ 的
-伴随算子 (adjoint operator) $L^*$ ，使得对于每一个函数对 $q, g ，\left\langle L^* q, g\right\rangle=\langle q, L g\rangle$ ，
+伴随算子 (adjoint operator) $L^*$，使得对于每一个函数对 $q,g$，$\left\langle L^* q, g\right\rangle=\langle q, L g\rangle$，
 即 $L$和 $L^*$ 构成对偶性。使用和在1.1中用分部积分进行的推导类似的计算过程，我们可以得到
 $$
 L^* q(x)=-\sum_i \frac{\partial}{\partial x_i}\left[\mu_i(x) q(x)\right]+\frac{1}{2} \sum_i \sum_j \frac{\partial^2}{\partial x_i \partial x_j}\left[\left(\sigma \sigma^{\top}\right)_{i, j}(x) q(x)\right]
@@ -727,7 +729,7 @@ $$
 
 由于 $f$ 是任意选取的，我们得到Kolmogorov前向方程 $\partial_t p-L^* p$ ，即
 $$
-\frac{\partial}{\partial x_i} p(t, x)=-\sum_i \frac{\partial}{\partial x_i}\left[\mu_i(x) p(t, x)\right]+
+\frac{\partial}{\partial t} p(t, x)=-\sum_i \frac{\partial}{\partial x_i}\left[\mu_i(x) p(t, x)\right]+
 \frac{1}{2} \sum_i \sum_j \frac{\partial^2}{\partial x_i \partial x_j}
 \left[\left(\sigma \sigma^{\top}\right)_{i, j}(x) p(t, x)\right]
 $$
@@ -741,7 +743,7 @@ $$
 0=-\frac{d}{d x}(\mu p(x))+\frac{d^2}{d x^2}\left(\frac{1}{2} \sigma^2 p(x)\right)
 $$
 
-根据边界条件，当 $x \rightarrow \pm \infty ， p(x), p^{\prime}(x) \rightarrow 0$ ，等式两边关于 $x$ 积分后得到
+根据边界条件，当 $x \rightarrow \pm\infty$，$p(x),p^{\prime}(x)\rightarrow0$，等式两边关于 $x$ 积分后得到
 $$
 0=-\mu(x) p(x)+\left(\frac{1}{2} \sigma^2(x) p(x)\right)^{\prime}
 $$
@@ -787,7 +789,7 @@ $$
 $X_t$ 的Fokker-Planck方程是
 $$
 \begin{gathered}
-\partial_t p(t, x)=-\mu \partial_x p(t, x)+\frac{1}{2} \sigma^2 \partial_x^2 p(t, x)=0 \\
+\partial_t p(t, x)=-\mu \partial_x p(t, x)+\frac{1}{2} \sigma^2 \partial_x^2 p(t, x) \\
 p(0, x)=\delta\left(x-x_0\right)
 \end{gathered}
 $$
@@ -809,7 +811,7 @@ $$
 $X_t$ 的Fokker-Planck方程是
 $$
 \begin{gathered}
-\partial_t p(t, x)=-\mu \partial_x(x p(t, x))+\frac{1}{2} \sigma^2 \partial_x^2\left(x^2 p(t, x)\right)=0 \\
+\partial_t p(t, x)=-\mu \partial_x(x p(t, x))+\frac{1}{2} \sigma^2 \partial_x^2\left(x^2 p(t, x)\right) \\
 p(0, x)=\delta\left(x-x_0\right)
 \end{gathered}
 $$
@@ -823,12 +825,12 @@ $$
 $$
 d X_t=\left(\mu X_t+q\right) d t+\sigma X_t d W_t
 $$
-$X_t$ 的稳定密度分布是伽马分布 (gamma distribution)
+$X_t$ 在 $\alpha=1-2\mu/\sigma^2>0$ 时的稳定密度为逆伽马分布 (inverse gamma distribution)
 $$
 p(x)=\frac{\beta^\alpha}{\Gamma(\alpha)} x^{-\alpha-1} \exp \left(-\frac{\beta}{x}\right)
 $$
 
-这里 $\alpha=1-2 \mu / \sigma^2 ， \beta=2 q / \sigma^2>0$ ，且 $\Gamma(x)=\int_0^{\infty} t^{x-1} e^{-t} d t$ 。
+这里 $\alpha=1-2\mu/\sigma^2$，$\beta=2q/\sigma^2>0$，且 $\Gamma(x)=\int_0^{\infty}t^{x-1}e^{-t}dt$。
 
 Ornstein-Uhlenbeck过程
 
@@ -842,18 +844,19 @@ $$
 $X_t$ 的Fokker-Planck方程是
 $$
 \begin{gathered}
-\partial_t p(t, x)=-\mu \partial_x(x p(t, x))+\frac{1}{2} \sigma^2 \partial_x^2 p(t, x)=0 \\
+\partial_t p(t, x)=\mu \partial_x(x p(t, x))+\frac{1}{2} \sigma^2 \partial_x^2 p(t, x) \\
 p(0, x)=\delta\left(x-x_0\right)
 \end{gathered}
 $$
 
 Fokker-Planck方程的解是正态分布
 $$
-p(t, x)=\frac{1}{\sqrt{2 \pi e^{-2 \mu t}\left(e^{-2 \mu t}-1\right) \sigma^2 / \mu}} 
-\exp \left(-\frac{\left(x-x_0-e^{-\mu t}\right)^2}{2 e^{-2 \mu t}\left(e^{-2 \mu t}-1\right) \sigma^2 / \mu}\right)
+p(t,x\mid x_0)=\frac{1}{\sqrt{2\pi v_t}}
+\exp\left(-\frac{(x-x_0 e^{-\mu t})^2}{2v_t}\right),
+\qquad v_t=\frac{\sigma^2}{2\mu}(1-e^{-2\mu t}),\quad\mu>0.
 $$
 
-而当 $t \rightarrow \infty ， X_t$ 的稳定密度分布是 $N\left(0, \frac{\sigma^2}{\mu}\right)$ 。
+而当 $t\rightarrow\infty$，$X_t$ 的稳定密度分布是 $N\left(0,\frac{\sigma^2}{2\mu}\right)$，其中 $\mu>0$。
 
 % \section{SDE 和ODE}
 % 简单介绍下。
@@ -1036,7 +1039,7 @@ $$
 
 令
 \begin{equation}
-\alpha_t = 1 - \beta_t, \bar{\alpha_{t}} = \prod_{i=1}^{t}\alpha_i，
+\alpha_t = 1 - \beta_t, \bar{\alpha_{t}} = \prod_{i=1}^{t}\alpha_i.
 \end{equation}
 对于$q\left(\mathbf{x}_t \mid \mathbf{x}_{t-1}\right)$，由重参数化得
 $\mathbf{x}_t =\sqrt{\alpha_t} \mathbf{x}_{t-1}+\sqrt{1-\alpha_t} \epsilon_{t-1}$，
@@ -1490,7 +1493,7 @@ $\boldsymbol{f}_{\boldsymbol{\theta}}(\mathbf{x}, t)=c_{\text {skip }}(t) \mathb
 
 \begin{figure}[h!]
 \centering
-\includegraphics[scale=0.7]{image/LCD.jpg}
+\includegraphics[width=\linewidth]{image/LCD.jpg}
 \caption{Latent Consistency Distillation}
 \label{fig:LCD}
 \end{figure}
@@ -1545,128 +1548,9 @@ $\boldsymbol{f}_{\boldsymbol{\theta}}(\mathbf{x}, t)=c_{\text {skip }}(t) \mathb
 
 
 
-\chapter{ElegantBook 写作示例}
+% Shared Seedance supplement.
+\input{chapters/seedance/contents}
 
-\begin{introduction}
-  \item 积分定义~\ref{def:int}
-  \item Fubini 定理~\ref{thm:fubi}
-  \item 最优性原理~\ref{pro:max}
-  \item 柯西列性质~\ref{property:cauchy}
-  \item 韦达定理
-\end{introduction}
-
-\section{Lebesgue 积分}
-在前面各章做了必要的准备后，本章开始介绍新的积分。在 Lebesgue 测度理论的基础上建立了 Lebesgue 积分，其被积函数和积分域更一般，可以对有界函数和无界函数统一处理。正是由于 Lebesgue 积分的这些特点，使得 Lebesgue 积分比 Riemann 积分具有在更一般条件下的极限定理和累次积分交换积分顺序的定理，这使得 Lebesgue 积分不仅在理论上更完善，而且在计算上更灵活有效。
-
-Lebesgue 积分有几种不同的定义方式。我们将采用逐步定义非负简单函数，非负可测函数和一般可测函数积分的方式。
-
-由于现代数学的许多分支如概率论、泛函分析、调和分析等常常用到一般空间上的测度与积分理论，在本章最后一节将介绍一般的测度空间上的积分。
-
-\subsection{积分的定义}
-
-我们将通过三个步骤定义可测函数的积分。首先定义非负简单函数的积分。以下设 $E$ 是 $\mathcal{R}^n$ 中的可测集。
-
-\begin{definition}[可积性] \label{def:int} 
-设 $ f(x)=\sum\limits_{i=1}^{k} a_i \chi_{A_i}(x)$ 是 $E$ 上的\textbf{非负简单函数}，中文其中 $\{A_1,A_2,\ldots,A_k\}$ 是 $E$ 上的一个可测分割，$a_1,a_2,\ldots,a_k$ 是非负实数。定义 $f$ 在 $E$ 上的积分为 $\int_{a}^b f(x)$
-\begin{equation}
-   \label{inter}
-   \int_{E} f dx = \sum_{i=1}^k a_i m(A_i) \pi \alpha\beta\sigma\gamma\nu\xi\epsilon\varepsilon. \oint_{a}^b\ointop_{a}^b\prod_{i=1}^n
-\end{equation}
-一般情况下 $0 \leq \int_{E} f dx \leq \infty$。若 $\int_{E} f dx < \infty$，则称 $f$ 在 $E$ 上可积。
-\end{definition}
-
-一个自然的问题是，Lebesgue 积分与我们所熟悉的 Riemann 积分有什么联系和区别？在 4.4 在我们将详细讨论 Riemann 积分与 Lebesgue 积分的关系。这里只看一个简单的例子。设 $D(x)$ 是区间 $[0,1]$ 上的 Dirichlet 函数。即 $D(x)=\chi_{Q_0}(x)$，其中 $Q_0$ 表示 $[0,1]$ 中的有理数的全体。根据非负简单函数积分的定义，$D(x)$ 在 $[0,1]$ 上的 Lebesgue 积分为
-\begin{equation}
-   \label{inter2}
-   \int_0^1 D(x)dx = \int_0^1 \chi_{Q_0} (x) dx = m(Q_0) = 0
-\end{equation}
-即 $D(x)$ 在 $[0,1]$ 上是 Lebesgue 可积的并且积分值为零。但 $D(x)$ 在 $[0,1]$ 上不是 Riemann 可积的。
-
-
-有界变差函数是与单调函数有密切联系的一类函数。有界变差函数可以表示为两个单调递增函数之差。与单调函数一样，有界变差函数几乎处处可导。与单调函数不同，有界变差函数类对线性运算是封闭的，它们构成一线空间。练习题 \ref{exer:43} 是一个性质的证明。
-
-\begin{exercise}\label{exer:43}
-设 $f \notin\in L(\mathcal{R}^1)$，$g$ 是 $\mathcal{R}^1$ 上的有界可测函数。证明函数
-\begin{equation}
-   \label{ex:1}
-   I(t) = \int_{\mathcal{R}^1} f(x+t)g(x)dx \quad t \in \mathcal{R}^1
-\end{equation}
-是 $\mathcal{R}^1$ 上的连续函数。 
-\end{exercise}
-
-\begin{solution}
-即 $D(x)$ 在 $[0,1]$ 上是 Lebesgue 可积的并且积分值为零。但 $D(x)$ 在 $[0,1]$ 上不是 Riemann 可积的。
-\end{solution}
-
-\begin{proof}
-即 $D(x)$ 在 $[0,1]$ 上是 Lebesgue 可积的并且积分值为零。但 $D(x)$ 在 $[0,1]$ 上不是 Riemann 可积的。
-\end{proof}
-
-\begin{theorem}[Fubini 定理] \label{thm:fubi} 
-（1）若 $f(x,y)$ 是 $\mathcal{R}^p\times\mathcal{R}^q$ 上的非负可测函数，则对几乎处处的 $x\in \mathcal{R}^p$，$f(x,y)$ 作为 $y$ 的函数是 $\mathcal{R}^q$ 上的非负可测函数，$g(x)=\int_{\mathcal{R}^q}f(x,y) dy$ 是 $\mathcal{R}^p$ 上的非负可测函数。并且
-\begin{equation}
-   \label{eq:461}
-   \int_{\mathcal{R}^p\times\mathcal{R}^q} f(x,y) dxdy=\int_{\mathcal{R}^p}\left(\int_{\mathcal{R}^q}f(x,y)dy\right)dx.
-\end{equation}
-
-（2）若 $f(x,y)$ 是 $\mathcal{R}^p\times\mathcal{R}^q$ 上的可积函数，则对几乎处处的 $x\in\mathcal{R}^p$，$f(x,y)$ 作为 $y$ 的函数是 $\mathcal{R}^q$ 上的可积函数，并且 $g(x)=\int_{\mathcal{R}^q}f(x,y) dy$ 是 $\mathcal{R}^p$ 上的可积函数。而且~\eqref{eq:461} 成立。
-\end{theorem}
-
-\begin{note}
-在本模板中，引理（lemma），推论（corollary）的样式和定理~\ref{thm:fubi} 的样式一致，包括颜色，仅仅只有计数器的设置不一样。
-\end{note}
-
-我们说一个实变或者复变量的实值或者复值函数是在区间上平方可积的，如果其绝对值的平方在该区间上的积分是有限的。所有在勒贝格积分意义下平方可积的可测函数构成一个希尔伯特空间，也就是所谓的 $L^2$ 空间，几乎处处相等的函数归为同一等价类。形式上，$L^2$ 是平方可积函数的空间和几乎处处为 0 的函数空间的商空间。
-
-\begin{proposition}[最优性原理] \label{pro:max}
-如果 $u^*$ 在 $[s,T]$ 上为最优解，则 $u^*$ 在 $[s, T]$ 任意子区间都是最优解，假设区间为 $[t_0, t_1]$ 的最优解为 $u^*$ ，则 $u(t_0)=u^{*}(t_0)$，即初始条件必须还是在 $u^*$ 上。
-\end{proposition}
-
-我们知道最小二乘法可以用来处理一组数据，可以从一组测定的数据中寻求变量之间的依赖关系，这种函数关系称为经验公式。本课题将介绍最小二乘法的精确定义及如何寻求点与点之间近似成线性关系时的经验公式。假定实验测得变量之间的 $n$ 个数据，则在平面上，可以得到 $n$ 个点，这种图形称为 “散点图”，从图中可以粗略看出这些点大致散落在某直线近旁, 我们认为其近似为一线性函数，下面介绍求解步骤。
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.6\textwidth]{image/scatter.jpg}
-  \caption{散点图示例 $\hat{y}=a+bx$ \label{fig:scatter}}
-\end{figure}
-
-以最简单的一元线性模型来解释最小二乘法。什么是一元线性模型呢？监督学习中，如果预测的变量是离散的，我们称其为分类（如决策树，支持向量机等），如果预测的变量是连续的，我们称其为回归。回归分析中，如果只包括一个自变量和一个因变量，且二者的关系可用一条直线近似表示，这种回归分析称为一元线性回归分析。如果回归分析中包括两个或两个以上的自变量，且因变量和自变量之间是线性关系，则称为多元线性回归分析。对于二维空间线性是一条直线；对于三维空间线性是一个平面，对于多维空间线性是一个超平面。
-
-\begin{property}\label{property:cauchy}
-柯西列的性质
-\begin{enumerate}
-\item $\{x_k\}$ 是柯西列，则其子列 $\{x_k^i\}$ 也是柯西列。
-\item $x_k\in \mathcal{R}^n$，$\rho(x,y)$ 是欧几里得空间，则柯西列收敛，$(\mathcal{R}^n,\rho)$ 空间是完备的。
-\end{enumerate}
-\end{property}
-
-\begin{conclusion}
-回归分析（regression analysis） 是确定两种或两种以上变量间相互依赖的定量关系的一种统计分析方法。运用十分广泛，回归分析按照涉及的变量的多少，分为一元回归和多元回归分析；按照因变量的多少，可分为简单回归分析和多重回归分析；按照自变量和因变量之间的关系类型，可分为线性回归分析和非线性回归分析。
-\end{conclusion}
-
-\begin{problemset}
-\item 设 $A$ 为数域 $K$ 上的 $n$ 级矩阵。证明：如果 $K^n$ 中任意非零列向量都是 $A$ 的特征向量，则 $A$ 一定是数量矩阵。
-\item 证明：不为零矩阵的幂零矩阵不能对角化。
-\item 设 $A = (a_{ij})$ 是数域 $K$ 上的一个 $n$ 级上三角矩阵，证明：如果 $a_{11} = a_{22} = \cdots = a_{nn}$，并且至少有一个 $a_{kl} \not = 0 (k < l)$，则 $A$ 一定不能对角化。
-\end{problemset}
-
-
-\nocite{*}
+\nocite{yang2023diffusion,276}
 \printbibliography[heading=bibintoc, title=\ebibname]
-\appendix
-
-\chapter{基本数学工具}
-
-
-本附录包括了计量经济学中用到的一些基本数学，我们扼要论述了求和算子的各种性质，研究了线性和某些非线性方程的性质，并复习了比例和百分数。我们还介绍了一些在应用计量经济学中常见的特殊函数，包括二次函数和自然对数，前 4 节只要求基本的代数技巧，第 5 节则对微分学进行了简要回顾；虽然要理解本书的大部分内容，微积分并非必需，但在一些章末附录和第 3 篇某些高深专题中，我们还是用到了微积分。
-
-\section{求和算子与描述统计量}
-
-\textbf{求和算子} 是用以表达多个数求和运算的一个缩略符号，它在统计学和计量经济学分析中扮演着重要作用。如果 $\{x_i: i=1, 2, \ldots, n\}$ 表示 $n$ 个数的一个序列，那么我们就把这 $n$ 个数的和写为：
-
-\begin{equation}
-\sum_{i=1}^n x_i \equiv x_1 + x_2 +\cdots + x_n
-\end{equation}
-
-
 \end{document}

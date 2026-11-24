@@ -1,0 +1,132 @@
+{
+  "source_id": "ltx-original-model",
+  "checked_on": "2026-11-22",
+  "repository": "Lightricks/LTX-2",
+  "revision": "64f65d09e0b76c96202b5bc09997673184cf9b5d",
+  "selected_filename": "ltx-2-19b-dev.safetensors",
+  "remote_declared_sha256": "4a51e70aad660e55648d6f0b8af15c8acaaffc06e2a4ae7c7cb01ede701981a8",
+  "remote_declared_bytes": 43285058242,
+  "local_full_weight_hash": null,
+  "tensor_payload_downloaded_bytes": 0,
+  "header_bytes": 603120,
+  "header_sha256": "92f323a94dff45d5cb985917692535a1dc8af5126b9aca7e7d162e535e552fd0",
+  "native_transformer_config": {
+    "_class_name": "AVTransformer3DModel",
+    "_diffusers_version": "0.25.1",
+    "activation_fn": "gelu-approximate",
+    "attention_bias": true,
+    "attention_head_dim": 128,
+    "attention_type": "default",
+    "caption_channels": 3840,
+    "cross_attention_dim": 4096,
+    "double_self_attention": false,
+    "dropout": 0.0,
+    "in_channels": 128,
+    "norm_elementwise_affine": false,
+    "norm_eps": 1e-06,
+    "norm_num_groups": 32,
+    "num_attention_heads": 32,
+    "num_embeds_ada_norm": 1000,
+    "num_layers": 48,
+    "num_vector_embeds": null,
+    "only_cross_attention": false,
+    "cross_attention_norm": true,
+    "out_channels": 128,
+    "upcast_attention": false,
+    "use_linear_projection": false,
+    "qk_norm": "rms_norm",
+    "standardization_norm": "rms_norm",
+    "positional_embedding_type": "rope",
+    "positional_embedding_theta": 10000.0,
+    "positional_embedding_max_pos": [
+      20,
+      2048,
+      2048
+    ],
+    "timestep_scale_multiplier": 1000,
+    "av_ca_timestep_scale_multiplier": 1000.0,
+    "causal_temporal_positioning": true,
+    "audio_num_attention_heads": 32,
+    "audio_attention_head_dim": 64,
+    "use_audio_video_cross_attention": true,
+    "share_ff": false,
+    "audio_out_channels": 128,
+    "audio_cross_attention_dim": 2048,
+    "audio_positional_embedding_max_pos": [
+      20
+    ],
+    "av_cross_ada_norm": true,
+    "use_embeddings_connector": true,
+    "connector_attention_head_dim": 128,
+    "connector_num_attention_heads": 30,
+    "connector_num_layers": 2,
+    "connector_positional_embedding_max_pos": [
+      4096
+    ],
+    "connector_num_learnable_registers": 128,
+    "connector_norm_output": true,
+    "use_middle_indices_grid": true,
+    "rope_type": "split",
+    "frequencies_precision": "float64"
+  },
+  "selected_tensor_shapes": {
+    "model.diffusion_model.patchify_proj.weight": [
+      4096,
+      128
+    ],
+    "model.diffusion_model.audio_patchify_proj.weight": [
+      2048,
+      128
+    ]
+  },
+  "small_files": [
+    {
+      "path": "README.md",
+      "url": "https://huggingface.co/Lightricks/LTX-2/resolve/64f65d09e0b76c96202b5bc09997673184cf9b5d/README.md",
+      "sha256": "8d63508172b847ecb0fc53173f5c013f29178a19f5113d679866243ca4416f0a"
+    },
+    {
+      "path": "transformer/config.json",
+      "url": "https://huggingface.co/Lightricks/LTX-2/resolve/64f65d09e0b76c96202b5bc09997673184cf9b5d/transformer/config.json",
+      "sha256": "66f708e87e9bbd93ee48051562241e76d47b4891f66484f9863b259b9780669f"
+    },
+    {
+      "path": "connectors/config.json",
+      "url": "https://huggingface.co/Lightricks/LTX-2/resolve/64f65d09e0b76c96202b5bc09997673184cf9b5d/connectors/config.json",
+      "sha256": "f74c5e4b3d2488d0f85308e3892e2e07e74e7249eb5e4ead647aa52f64a92258"
+    },
+    {
+      "path": "vae/config.json",
+      "url": "https://huggingface.co/Lightricks/LTX-2/resolve/64f65d09e0b76c96202b5bc09997673184cf9b5d/vae/config.json",
+      "sha256": "1d402aa299d7c58bf6a30232ee1dcbb0aa41f61237fcb569ef27c2135bfba1cc"
+    },
+    {
+      "path": "audio_vae/config.json",
+      "url": "https://huggingface.co/Lightricks/LTX-2/resolve/64f65d09e0b76c96202b5bc09997673184cf9b5d/audio_vae/config.json",
+      "sha256": "58c10a50ceafcbd19b61c99761b2b676d58186a4c2b1284833a41637ccaeeda0"
+    },
+    {
+      "path": "scheduler/scheduler_config.json",
+      "url": "https://huggingface.co/Lightricks/LTX-2/resolve/64f65d09e0b76c96202b5bc09997673184cf9b5d/scheduler/scheduler_config.json",
+      "sha256": "d0ea66125ca4e0f5bcd6bd26ee6797217abca76f7270d2bf1a64d33c6364d195"
+    },
+    {
+      "path": "model_index.json",
+      "url": "https://huggingface.co/Lightricks/LTX-2/resolve/64f65d09e0b76c96202b5bc09997673184cf9b5d/model_index.json",
+      "sha256": "5cd61e88b2db9f205cd803b2c4bdca96520a1e94f26cf0574c245f99d9697d4a"
+    }
+  ],
+  "header_statistics": {
+    "group_prefix": "model.diffusion_model.",
+    "serialized_scalar_elements": 19585115392,
+    "serialized_tensor_bytes": 39176743424,
+    "interpretation": "serialized elements and storage, not an independently measured trainable parameter count"
+  },
+  "native_video_vae_observation": {
+    "header_config_field": "vae.causal_decoder",
+    "header_config_value": false,
+    "converted_config_encoder_causal": true,
+    "converted_config_decoder_causal": false,
+    "interpretation": "causal encoding does not imply zero-lookahead decoding"
+  }
+}

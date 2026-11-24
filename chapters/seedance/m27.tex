@@ -1,0 +1,477 @@
+% Imported from topics/video-generation/seedance-2.5/speculative-plan.md
+\chapter{M27 Seedance 2.5 完整推测方案与投入选择}\label{seedance-m27}
+\moduleinfo{M27}{候选设计与工程选型；组合效果待验证}{\hyperref[src-seedance-2.5-release]{\texttt{seedance-2.5-release}}、\hyperref[src-seedance-2.5-product]{\texttt{seedance-2.5-product}}、\hyperref[src-seedance-1.0]{\texttt{seedance-1.0}}、\hyperref[src-seedance-1.5-pro]{\texttt{seedance-1.5-pro}}、\hyperref[src-seedance-2.0]{\texttt{seedance-2.0}}、\hyperref[src-ltx-2]{\texttt{ltx-2}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-ltx-original-model]{\texttt{ltx-original-model}}、\hyperref[src-phantom]{\texttt{phantom}}、\hyperref[src-alchemint]{\texttt{alchemint}}、\hyperref[src-vace]{\texttt{vace}}、\hyperref[src-videocof]{\texttt{videocof}}、\hyperref[src-vincie-next]{\texttt{vincie-next}}、\hyperref[src-geometry-as-context]{\texttt{geometry-as-context}}、\hyperref[src-long-context-tuning]{\texttt{long-context-tuning}}、\hyperref[src-longlive]{\texttt{longlive}}、\hyperref[src-tarsier2]{\texttt{tarsier2}}、\hyperref[src-rayflow]{\texttt{rayflow}}、\hyperref[src-adaspa]{\texttt{adaspa}}}
+
+
+\textbf{方案性质：所有未公开的架构、数据、训练与部署细节均为本文推测或候选选择。} 目标是提出一套能解释公开能力、接口自洽、可分阶段投入的完整方案；既讨论模型可能怎样演进，也说明业务团队应把工作放在哪里。它不声称还原了闭源实现，也不把公开替代模型的规格当成Seedance参数。
+
+推荐的主线是：\textbf{沿用已经具备联合音视频能力的基础模型，以任务数据和训练课程扩展能力；确有接口缺口时增加有限条件插件；各行业主要通过资产、任务编译、工具和交付规则做适配。} 长叙事先用联合长上下文与镜头编排，实时因果模型作为有独立需求时才启动的派生项目。
+
+\section{目标与改造重点}\label{seedance-m27-ux76eeux6807ux4e0eux6539ux9020ux91cdux70b9}
+
+最终产物是一套``给出素材与约束→生成→定向修改→可验收交付''的系统。重点解决角色/商品一致、多参考分工、指定区间编辑、对白同步和连续叙事，同时把失败消耗纳入成本。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1600}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+工作方向
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+本方案的具体选择
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+应形成的产物
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+启动条件
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+基础架构 & 延续文本条件、视频/音频潜空间、联合DiT与解码精修 & 一个可复用基座及清楚的接口 & 既有基础生成已经可用 \\
+数据建设，首要模型投入 & 建立身份、动作、编辑、speaker、长叙事的配对与难例 & 可追溯任务数据、切片评估和回流规则 & 每项能力都需要 \\
+有限模型插件 & 仅为缺失的参考绑定、源条件或结构条件增加支路 & 小范围新增模块与任务checkpoint & 现有条件接口无法表示需求，且有训练对 \\
+应用适配，首要产品投入 & 资产库、分镜、任务编译、区域定位、合成和失败分流 & 行业工作流、可追踪请求与交付包 & 可以直接使用现成模型时即启动 \\
+推理与成本 & 先减少无效候选，再优化缓存、分桶、精修和少步数 & 每条交付成本、质量/延迟档位 & 有固定任务与费用记录 \\
+主干重构 & 不列入首版必要工作 & 独立研究提案 & 数据/条件/应用对照仍无法解决稳定瓶颈 \\
+\end{longtable}
+}
+
+``主干变化不大''在这里是\textbf{设计约束与工作假设}，不是``2.5没有改变任何层或训练权重''的事实判断。结构不变也可能需要大量继续训练；相同模块名称不意味着权重、容量和实现完全相同。
+
+\section{公开资料能支持到哪里}\label{seedance-m27-ux516cux5f00ux8d44ux6599ux80fdux652fux6301ux5230ux54eaux91cc}
+
+官方发布明确写道，2.5``延续了Seedance 2.0统一的多模态音视频联合生成架构''，重点提升长叙事、多模态参考和编辑。{[}1{]} 这为保持总体架构连续提供依据，但没有公布新增层、训练样本数、参数量或各项贡献比例。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+公开信息
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+对方案的约束
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+仍需推测的部分
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+2.5披露30秒生成、延长、多参考、编辑和白模等能力 {[}1{]}{[}2{]} & 需要统一时间、资产绑定、编辑状态和更长上下文 & 如何编码参考，是否有专用adapter，怎样训练 \\
+1.5 Pro披露双分支DiT和跨模态联合模块 {[}3{]} & 双流联合音视频是有公开前例的候选方向 & 2.5是否保留完全相同的拓扑、层号、宽度 \\
+2.0报告讨论多模态输入、联合生成与生产任务 {[}4{]} & 2.5可理解为已有能力体系的继续发展 & 各项提升由数据、结构还是服务编排贡献多少 \\
+主体参考、统一视觉条件、长上下文等已有公开方法 {[}6{]}--{[}11{]} & 可据此提出局部机制与数据任务 & Seedance是否采用其中任何一个具体方法 \\
+\end{longtable}
+}
+
+本文引用这些工作来解释``为什么这个候选可讨论''，不以作者关系、引用关系或能力相似证明内部采用。下文的精确规格若来自LTX，均只用于公开替代实现的预算与接口示例。
+
+晚于2.5发布的公开材料，例如2026年10月的VINCIE-NExT，只作为当前提出方案时的方法类比，不能据此倒推2026年7月产品的技术来源。
+
+\section{一套稳定主干上的系统架构}\label{seedance-m27-ux4e00ux5957ux7a33ux5b9aux4e3bux5e72ux4e0aux7684ux7cfbux7edfux67b6ux6784}
+
+候选系统分为四层：应用任务层、条件与资产层、联合生成层、交付与反馈层。基础模型共享，行业差异主要在上游条件和下游验收。
+
+\begin{verbatim}
+业务要求、图片、视频、音频、白模
+        ↓
+行业工作流：资产选择、镜头计划、角色/speaker、编辑与保持规则
+        ↓
+任务编译：共同媒体时钟、主体/属性绑定、冲突检查、预算和质量档位
+        ↓
+文本编码   参考视觉/声音记忆   干净源条件   depth/pose/camera
+     \           ↓               ↓              /
+      已有联合音视频DiT ＋ 必要时新增的条件读取/残差插件
+                  ↓
+      视频/音频解码、空间精修、原内容合成、字幕/logo、混流
+                  ↓
+      分项验收 → 交付；失败分类 → 修输入/局部修改/数据回流
+\end{verbatim}
+
+\subsection{基础模块怎样分工}\label{seedance-m27-ux57faux7840ux6a21ux5757ux600eux6837ux5206ux5de5}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+模块
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+输入输出与作用
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+首版处理
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+视频codec & 像素与连续时空latent互转，降低序列成本 & 沿用基座的压缩、归一化和帧网格 \\
+音频codec/vocoder & 波形、音频latent与可播放声音互转 & 沿用配套组件，不任意更换token率 \\
+文本编码与连接器 & 将全局/镜头/事件描述变为条件特征 & 固定版本；改写器保留角色与硬约束 \\
+联合DiT & 在带噪视频/音频latent上预测去噪方向 & 保留流内建模与跨模态交互 \\
+时间与位置编码 & 表达视频空间、声音时间和条件区间 & 保持原生RoPE；新增区间偏置单独表达 \\
+参考读取 & 将素材属性绑定到主体、镜头和时间 & 优先使用原生接口，缺口才增加门控支路 \\
+源/结构条件 & 提供编辑源、区域、动作、相机与几何 & 独立干净条件路径，保留有效位与置信度 \\
+采样与精修 & 决定更新哪些目标、做多少网络求值 & 质量基线固定后再做蒸馏或近似 \\
+\end{longtable}
+}
+
+联合生成采用流匹配作为本候选的建模选择。对视频或音频模态 \(m\)：
+
+\[
+z_\sigma^m=(1-\sigma_m)z_0^m+\sigma_m\epsilon_m,
+\qquad u_m^*=\epsilon_m-z_0^m.
+\]
+
+\(z_0\)为干净latent，\(\epsilon\)为噪声，\(\sigma=0\)表示干净、1表示噪声。采样从大sigma向小sigma更新。基座如有不同的时间/预测约定，应通过明确映射适配，不能只换符号直接加载。
+
+\subsection{可以把插件具体做到多小}\label{seedance-m27-ux53efux4ee5ux628aux63d2ux4ef6ux5177ux4f53ux505aux5230ux591aux5c0f}
+
+公开替代实现可选LTX-2原系列19B dev作为接口实例：48个联合块，视频宽4096、音频宽2048，latent token均为128维。{[}5{]} 这些是\textbf{替代基座的规格，不是对Seedance参数量的猜定}。
+
+对于缺失的控制能力，候选每四个块后增加一次512维条件读取，共12处；依次读对齐源/结构、视觉参考、声音参考。新增残差使用零初始化门控，素材池化器共享，逐层Q/K/V与输出投影独立。主干与codec先固定，必要时才增加选定注意力的LoRA。具体工程契约在 \hyperref[seedance-m21]{模块说明}。
+
+这是一套统一条件插件，不为每个客户另建主干，也不假定把VACE、Phantom等checkpoint直接相接。插件设计较局部，仍需在对应任务上训练；如果基座原生条件已经足够，则优先只补数据。
+
+\section{逐项能力：主要改数据、插件还是应用}\label{seedance-m27-ux9010ux9879ux80fdux529bux4e3bux8981ux6539ux6570ux636eux63d2ux4ef6ux8fd8ux662fux5e94ux7528}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1600}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2100}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2100}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2100}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2100}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+能力与目的
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+首先做什么
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+何时需要模型改动
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+应收集什么数据
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+关键验收
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+多角色/商品参考：减少串用与变形 & 资产库、主体/属性绑定、镜头级素材选择 & 原生接口无法区分主体或时间时增加参考读取 & 同主体跨视角/跨背景、相似主体同框、换衣与缺席 & 身份/部件正确，文件顺序置换不改变归属 \\
+动作和相机参考：借运动不借人物 & 抽pose/flow/camera，禁用无关外观路径 & 缺结构接口时加type投影与残差 & 同轨迹跨外观渲染、姿态与遮挡难例 & 运动遵循且参考人物外观不泄漏 \\
+指定时间局部编辑：保留已通过内容 & 区间、跟踪mask、工作窗口和最终合成 & 原生源/区域条件不足时加源条件支路 & 同源编辑对、保持项、预测mask误差 & 改动成功、外区保持、边界连续 \\
+音色与对白：声音归属和口型一致 & speaker映射、转录、时长预算和配音路由 & 需要生成音色控制时加声音参考；联合口型任务继续训练 & 同speaker不同台词、重叠讲话、对齐对白/嘴形 & 台词、声音身份、口型与时间同时正确 \\
+30秒与多镜头：事件连续 & 镜头计划、角色/道具状态和全局/局部caption & 先长上下文继续训练；无需先改因果拓扑 & 真实连续场景、事件时间、离场重返与状态迁移 & 前中后段身份、动作和事件顺序 \\
+白模/工业展示：结构和相机可控 & 用渲染器生成RGB/深度/法线/pose与相机 & 需要非RGB条件时加结构投影 & 同资产同轨迹的控制层与材质渲染 & 结构、轨迹和遮挡；尺寸由CAD验收 \\
+绿幕/教学/品牌：精确交付 & 分割matte、字幕公式、logo与确定性合成 & 首版一般不新增生成主干 & 边缘/透明物/色溢、事实与版式失败切片 & alpha边缘、字样和知识正确 \\
+\end{longtable}
+}
+
+例如``增加参考上限''不宜首先理解为增大主干。先做按镜头检索、去重、角色/属性标注和定额摘要，再观察细节是否损失。30图、10视频、10音频按每份32/64/32摘要可表示为1600视觉与320声音位置；这只给出容量方案，没有证明多人、logo与音色质量。
+
+声音摘要用于音色/风格，逐字对白或必须保留的配乐使用完整时间条件。区域外严格保持最终依靠源像素/波形合成；编码前保持不等于有损重编码后的文件字节相同。
+
+\section{应用适配与模型插件有不同交付物}\label{seedance-m27-ux5e94ux7528ux9002ux914dux4e0eux6a21ux578bux63d2ux4ef6ux6709ux4e0dux540cux4ea4ux4ed8ux7269}
+
+只通过闭源Seedance入口使用模型的业务团队，可以维护外部工具和工作流，不能据本文假定拥有注入内部adapter、上传LoRA或继续训练基座的能力。现有资料未确认当前所有API、套餐和训练入口；具体产品接口要另行核实。{[}1{]}{[}2{]}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1600}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+应用
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+推荐主要投入
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+外部适配器/工具交付
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+需要自训时的明确目的
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+电商广告 & 产品资产、多视角配对、品牌规则与局部返工 & 商品/SKU检索、logo图层、版本模板、部件检查 & 系统性商品结构/身份失败；训练共享条件能力 \\
+多角色短剧 & 角色/speaker资产、连续场景与事件标签 & 分镜状态表、服装/道具记录、角色时间绑定 & 相似主体与离场返回持续失败；补难例和有限绑定模块 \\
+多语言本地化 & 台词、speaker、对白时间与对齐评估 & 翻译/时长改写、配音、嘴形编辑任务、音轨合成 & 目标语言发音或同步切片稳定落后 \\
+教学解释 & 知识脚本、图形/公式与情景的时间编排 & 确定性动画和字幕，生成生活情景 & 特定演示动作无法由现成条件控制 \\
+工业/机器人数据 & 可验证渲染场景、几何与任务标签 & CAD/轨迹导出、合成条件、下游评估 & 数据外观域覆盖不足；先域数据适配并验证感知/操作收益 \\
+\end{longtable}
+}
+
+第一项商业落地推荐``\textbf{商品参考＋短片生成＋局部返工}''，因为资产、变化项与交付错误较容易定义。多角色长剧和实时交互续写可随后开展，不把它们都设成首轮成功条件。
+
+\subsection{一个30秒广告请求怎样走完}\label{seedance-m27-ux4e00ux4e2a30ux79d2ux5e7fux544aux8bf7ux6c42ux600eux6837ux8d70ux5b8c}
+
+请求指定商品P、角色A/B、两段对白和镜头时间，商品结构与logo为硬约束。资产层标记每张图提供脸、服装、商品还是风格，动作视频只供运动，音频明确speaker。编译层检测同一时段互斥服装、对白超时长和缺参考，输出可执行任务。
+
+先以较低成本短预览检查布局，随后选择一个30秒联合生成任务或若干短镜头编排。两者单独记录：剪出30秒成片不算证明了原生30秒长程保持。第二镜头衣服出错时，只提交允许区域和时间的编辑；通过后完成logo、字幕与混流，记录全部候选、审片和后期成本。
+
+最终交付包包含成片、可恢复镜头/资产规格、编辑范围、版本和费用记录。应用插件的价值由交付率和返工减少体现，不要求它必须修改神经网络。
+
+\section{数据是能力扩展的主要载体}\label{seedance-m27-ux6570ux636eux662fux80fdux529bux6269ux5c55ux7684ux4e3bux8981ux8f7dux4f53}
+
+基本样本应表示为``任务、目标媒体、条件资产、绑定、时间与变化/保持监督''，不是只有视频和caption。所有派生项继承原片、主体、speaker和三维资产关系，以关联组划分数据，避免同源或同身份泄漏。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+数据池
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+制作方式
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+必须保留的标签与失败样例
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+基础音视频 & 清洗同步真实片段，生成可核对的全局/事件描述 & 时间戳、动作、音轨存在/静音、错位与漏事件 \\
+身份与多参考 & 同主体不同时间/背景/视角配对 & 主体槽、属性、多区间可见性、相似主体和换衣 \\
+动作/相机/几何 & 目标提取结构或受控跨外观重渲染 & 坐标、单位、置信度、遮挡与原外观泄漏 \\
+音色与对白 & 同speaker不同台词与情绪，匹配目标音画 & speaker时间、转录、重叠说话、音乐污染 \\
+区域与示例编辑 & 人工编辑对、同场景重渲染、关键帧示例传播 & 源/目标、改变属性、区域、保持范围与接缝 \\
+长叙事与续写 & 保留真实连续片段和镜头联系 & 状态证据、事件先后、离场返回、历史截止时间 \\
+偏好与失败回流 & 固定任务候选，分项标注差异及失败原因 & 目标成功、身份、动作、音频、保持；难度与模型版本 \\
+\end{longtable}
+}
+
+流程为媒体登记→重采样与声画对齐→镜头/主体/speaker组织→来源分组→任务配对→分层审阅→编码打包。caption模型、跟踪/分割和ASR用于生产候选标签，人工校准事实错误；Tarsier2可作为描述环节的方法参考。{[}12{]}
+
+先对每个拟解锁的数据池制作约200条分层试样，其中50条双人标注，估计配对、时间、mask和speaker错误。这是生产流程校准，\textbf{不是足够训练量}。样本规模由学习曲线、错误类型覆盖和标注预算决定，不从产品上限反推一个虚构的训练总量。
+
+优先提高任务对和难例的可信度：真实静音与缺音轨分开，遮挡与离场分开，换衣与换身份分开。故意把A参考绑到B目标不能仍作为正确生成监督；可将其用于冲突检测。只有图像编辑示例、没有可靠视频目标时，先做图像/弱监督任务。
+
+\section{训练：继承基座，再逐级解锁能力}\label{seedance-m27-ux8badux7ec3ux7ee7ux627fux57faux5ea7ux518dux9010ux7ea7ux89e3ux9501ux80fdux529b}
+
+推测Seedance内部已经有可用的联合基础模型，2.5主要执行继续训练与任务扩展；这是与架构连续性相容的假设。本文不估算从零获得世界级基础模型的花费。自建验证路线继承公开基座；调用闭源服务的应用路线跳过下表中的模型训练，仅建设任务、数据评估与工作流。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1600}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2800}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+阶段
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+更新什么
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+训练任务与目的
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+扩大投入前看什么
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+T0 固定基线 & 暂不训练 & 核对codec、文本、时钟、基础AV与保存接口 & 基线可解释；任务与成本可记录 \\
+T1 数据与原生适配 & 有可用条件接口时，先做任务SFT/有限LoRA & 用跨背景参考、声音与动作难例纠正稳定失败 & 数据改善是否已经足够 \\
+T2 缺失条件插件 & 池化、绑定、条件塔、投影和门控，主干先冻结 & 学会原生接口尚不能表达的主体/时间/源条件 & 参考遵循与基础动作均不退化 \\
+T3 编辑与联合微调 & 上述插件＋必要的有限注意力LoRA & 源条件、真值/预测区域、音轨保持与局部对白 & 改对且保持，区域误差可恢复 \\
+T4 长上下文 & 同一联合主干的任务适配参数，必要时扩大解冻范围 & 8→16→30秒、全局/局部事件和状态 & 后段不集中崩坏，成本可承受 \\
+T5 偏好与蒸馏 & 先SFT/偏好校准，再独立少步数student & 保持参考/编辑/声音任务的质量并减少求值 & 人工结果与分项指标同步改善 \\
+T6 可选因果派生 & 因果mask、适配参数和相应历史训练 & 只有持续流式或超长交互需求才启动 & 四类AV依赖、缓存和长rollout都正确 \\
+\end{longtable}
+}
+
+如果T1的数据与原生接口已解决问题，直接进入应用交付，不必为了``有插件''而执行T2。若冻结主干的新模块无法学会目标，再比较有限解冻；不能预先承诺所有新能力都能仅靠小模块得到。
+
+训练目标先对每样本有效标量元素取平均，再对该任务的有效样本取平均：
+
+\[
+\ell_b^m=\frac{\sum_i W_{bi}^m(u_{bi}^m-u_{bi}^{m*})^2}
+{\sum_i W_{bi}^m},\qquad
+\mathcal L=\operatorname{mean}_{b\in V_v}\ell_b^v+
+\lambda_a\operatorname{mean}_{b\in V_a}\ell_b^a+
+\lambda_e\mathcal L_{\mathrm{edit}}.
+\]
+
+\(W\)为有效监督位，\(V_m\)为该模态有监督的样本集合；空集合跳过相应项。编辑项按任务选区域定位或保持损失，不把相机变化强行监督成外区逐像素保持。多卡归约使用全局有效计数。
+
+音频任务分四种状态：联合生成、缺音轨、保留原音轨、局部对白重生。保留原音轨时latent干净且不更新，但声音隐藏状态仍处理并参与AV交互。条件可见性、去噪更新、训练有效位和最终合成mask分别维护。
+
+替代基座的短pilot可取有效batch8、新支路学习率 \(10^{-4}\)、1000次更新、100步预热，每100步固定验证；这只用于排查任务与梯度，不能解释为完成训练。长阶段另审噪声分布：原LTX长度shift会外推，直接沿用到40768个视频token时可能几乎只见纯噪声，候选需限制shift并保留对照。参数组、混合任务和恢复细节见 \hyperref[seedance-m25]{训练规格}。
+
+所有新模块、LoRA、optimizer、scheduler、随机状态、数据游标、任务混合与噪声版本共同保存。冻结权重不等于关闭后续主干反传；原工程的``保存权重''也不等于已具备完整恢复。
+
+\section{长视频与优化的投入顺序}\label{seedance-m27-ux957fux89c6ux9891ux4e0eux4f18ux5316ux7684ux6295ux5165ux987aux5e8f}
+
+首版沿联合主干扩大上下文，并用镜头计划和状态表控制任务。LCT说明长上下文调优是一条可研究的方向；LongLive说明真正可缓存的流式生成需要模型依赖、训练历史与推理配套。{[}10{]}{[}11{]} 二者不能合并成``长视频天然有KV缓存''。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+优化层级
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+优先措施
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+保持的边界
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+应用与任务 & 预览、按镜头选参考、先解决输入冲突、局部返工 & 最终质量条件不被预览档替代 \\
+生产管线 & 缓存冻结文本/codec、分桶、去重、阶段卸载与批处理 & 内容、变换和模型版本一致 \\
+模型执行 & Flash attention、并行、静态条件K/V或源残差缓存 & 静态条件不读取动态目标；实测端到端收益 \\
+近似加速 & 量化、稀疏、动态特征复用、少步数蒸馏 & 分开测质量回归，不能默认无损 \\
+独立执行模型 & 因果续写与历史KV & 单独训练；收益覆盖维护复杂度 \\
+\end{longtable}
+}
+
+对因果派生，视频self、音频self、视频读音频和音频读视频均遵守相同块边界。每块完成后用干净零噪声历史重算再提交KV；未来提示、参考和过去编辑变化时按依赖失效。原decoder可能需要前瞻，首版仍离线整段解码。\hyperref[seedance-m24]{长视频规格}保存完整协议。
+
+少步数的逻辑网络求值次数约为 \(KG\)，\(K\)为步数，\(G\)为每步guidance分支数；两个精修阶段还需相加。多分支合batch改变吞吐，并不消除计算。RayFlow/AdaSpa等可解释蒸馏与稀疏优化的方向，但不能据此给2.5分配一个未经披露的加速贡献。{[}13{]}
+
+\section{成本：分别核算训练、服务与交付}\label{seedance-m27-ux6210ux672cux5206ux522bux6838ux7b97ux8badux7ec3ux670dux52a1ux4e0eux4ea4ux4ed8}
+
+\subsection{模型资源的算术参照}\label{seedance-m27-ux6a21ux578bux8d44ux6e90ux7684ux7b97ux672fux53c2ux7167}
+
+以下仅用公开LTX替代规格估算，\textbf{不代表Seedance的参数、硬件或成本}。取24fps、\(512\times896\)、30秒交付，内部721帧满足原生帧网格：
+
+\[
+N_v=91\times16\times28=40\,768,\qquad N_a\approx750.
+\]
+
+32头、BF16若显式保存完整视频attention分数，约99.1GiB；Flash避免保存此完整矩阵，实际峰值不能据此读出。12处512维参考支路在2048视觉预算下的K/V约50.3MB，30秒源条件12处缓存约501MB；两者都不含原始素材编码和训练反传。
+
+公开模型文件约43.29GB，外部文本模型等另计。19B全参AdamW按16字节/参数只是约304GB状态量级，尚不含activation、通信与其它组件。LoRA减少可训练状态，长序列反传仍有成本。不能从这些数字直接承诺某几张GPU能训练。
+
+\subsection{自建增量训练怎样列预算}\label{seedance-m27-ux81eaux5efaux589eux91cfux8badux7ec3ux600eux6837ux5217ux9884ux7b97}
+
+\[
+C_{\mathrm{build}}=C_{\mathrm{data}}+C_{\mathrm{label}}+
+C_{\mathrm{train}}+C_{\mathrm{teacher/validation}}+
+C_{\mathrm{engineering}}+C_{\mathrm{storage}},
+\]
+
+\[
+C_{\mathrm{train}}=n_{\mathrm{GPU}}r_{\mathrm{GPU/h}}
+\frac{U t_{\mathrm{update}}}{3600}.
+\]
+
+\(U\)为优化器更新次数，\(t_{\mathrm{update}}\)须含梯度累积，不能拿单microbatch耗时代入。假设8卡、每卡25元/小时、每次更新30秒、1000次更新，纯训练计算约1667元。这是\textbf{虚构输入的算术示例}，未证明8卡可装下任务，也不含标注、验证、teacher、失败或工程，更不是达到目标效果的总价。
+
+数据预算以真实可用样本计：若审阅2000条、每条3分钟，共100人时；双标、修订和工具成本另外记。它能直观看出，增量项目中标签可靠性与人工流程可能比一段短pilot更贵，不能只报GPU租金。
+
+\subsection{应用路线按交付而非调用核算}\label{seedance-m27-ux5e94ux7528ux8defux7ebfux6309ux4ea4ux4ed8ux800cux975eux8c03ux7528ux6838ux7b97}
+
+\[
+C_{\mathrm{delivery}}=
+\frac{C_{\mathrm{all\ attempts}}+C_{\mathrm{review}}+
+C_{\mathrm{post/edit}}+C_{\mathrm{fixed\ allocation}}}
+{N_{\mathrm{delivered}}}.
+\]
+
+假设100项任务平均产生2次计费候选、每次8元，最终交付80条；审片600元、后期320元、固定分摊400元，则总成本2920元，每交付36.5元。\textbf{8元是示例单价，不是Seedance报价；平均2次是给定的场景输入，不是用独立成功概率推出来的。} 候选上限、超时和放弃须完整记录。零交付时报告已消耗费用和零交付，单位成本不计算。
+
+决定是否自训时，用每月可替代的真实交付量 \(V\)、单位交付净节省 \(\Delta c\)和每月新增维护 \(F\)估算回收期：
+
+\[
+M_{\mathrm{payback}}=\frac{C_{\mathrm{incremental\ build}}}{V\Delta c-F},
+\quad V\Delta c>F.
+\]
+
+\(\Delta c\)必须包含自建推理、审片和后期，双方按相同质量比较。若分母不为正，成本上没有得到回收依据；特殊能力或数据要求应另设价值目标。当前没有真实报价、GPU测量和业务订单，本方案不填虚构毛利。
+
+\section{怎么证明方向选对了}\label{seedance-m27-ux600eux4e48ux8bc1ux660eux65b9ux5411ux9009ux5bf9ux4e86}
+
+验证按改造层级递进，先比较``现成基座＋规范任务''，再加数据/原生适配，之后才加新插件；因果模型和近似加速各自单列。每次固定任务与候选上限，不以同时更换数据、模型、提示和后期的结果证明某个单独模块有效。
+
+可以建立8类任务、每类4个开发与4个冻结评估，共64项的小pilot：商品细节、单主体、相似双主体、区域编辑、局部对白、连续叙事、场景重访、结构控制。开发与评估隔离身份/来源/资产家族；它只是查找失败的起点，不能证明产品级统计可靠性。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+比较问题
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+对照方式
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+决策依据
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+应用适配是否足够 & 同模型，比较原始请求与任务编译/资产选择 & 交付率、硬约束、人工时间和完整成本 \\
+主要缺的是数据吗 & 固定结构与参数预算，比较原数据与任务配对/难例 & 对应失败切片改善且基础能力不退化 \\
+插件是否必要 & 固定数据，比较原生条件与新增支路 & 归属/区间/编辑遵循的额外收益与成本 \\
+长片需要改拓扑吗 & 联合长片、分镜编排、独立因果分别评估 & 持续状态、延迟要求和资源，而非总时长 \\
+优化是否真省钱 & 相同验收门槛下比较端到端流程 & 每交付成本、p50/p95延迟、返工及尾部失败 \\
+\end{longtable}
+}
+
+先由任务方定义商品部件、字样、对白、保持范围等硬约束，再做美感与风格评分；整体好看不能抵消硬约束失败。收益不足时保留较简单路线，失败集中在哪一层，就把下一轮投入放到那一层。
+
+本方案的优先交付是：\textbf{一个稳定联合基座、一套可信任务数据、必要而有限的条件模块，以及能持续减少返工的行业工作流。} 模型继续训练以可定位的能力缺口为目标；插件以原生接口缺口为目标；主干重构和实时因果化各有独立启动依据。
+
+\section{引用与支持范围}\label{seedance-m27-ux5f15ux7528ux4e0eux652fux6301ux8303ux56f4}
+
+以下资料均来自已有来源登记与定点阅读；网页访问记录为2026-11-22，当前API和价格未复核。引用支持对应局部事实或机制，不构成对本文组合效果的验证。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \href{https://seed.bytedance.com/blog/one-take-creation-flexible-referencing-introducing-seedance-2-5}{Seedance 2.5官方发布}，2026-07-31：架构延续、30秒、多参考、编辑与应用展示。
+\item
+  \href{https://seed.bytedance.com/en/seedance2_5}{Seedance 2.5产品页}：产品能力说明；延长次数等以具体入口范围为准。
+\item
+  \href{https://arxiv.org/abs/2512.13507v3}{Seedance 1.5 Pro，2512.13507v3}，摘要与整体流程：双分支DiT、跨模态模块及训练阶段，未给2.5精确层位。
+\item
+  \href{https://arxiv.org/abs/2604.14148v1}{Seedance 2.0，2604.14148v1}：多模态参考与生产任务的能力/评测背景。
+\item
+  \href{https://arxiv.org/abs/2601.03233v1}{LTX-2，2601.03233v1}及\href{https://github.com/Lightricks/LTX-2/tree/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638}{原系列固定源码}：公开替代主干；精确实例另见\href{https://github.com/foocker/multimodal-journey/blob/0f1b6bb86d609d75d8c2582063d85707d0180d39/research/2026-11-22-implementation-contracts/model-config-check.json}{模型元数据记录}。
+\item
+  \href{https://arxiv.org/abs/2502.11079v2}{Phantom，2502.11079v2}与\href{https://openaccess.thecvf.com/content/CVPR2026/html/Girish_AlcheMinT_Fine-grained_Temporal_Control_for_Multi-Reference_Consistent_Video_Generation_CVPR_2026_paper.html}{AlcheMinT CVPR版}：主体参考、绑定与时间控制。本文显式时间bias不宣称复现WeRoPE。
+\item
+  \href{https://arxiv.org/abs/2503.07598v2}{VACE，2503.07598v2}，视觉条件与context adapter：统一条件的候选依据，不直接提供本文LTX迁移插件。
+\item
+  \href{https://openaccess.thecvf.com/content/CVPR2026/html/Yang_VideoCoF_Unified_Video_Editing_with_Temporal_Reasoner_CVPR_2026_paper.html}{VideoCoF CVPR版}与\href{https://arxiv.org/abs/2610.12104v1}{VINCIE-NExT，2610.12104v1}：区域中间表示、编辑分解与异构任务；两者执行图不同。
+\item
+  \href{https://openaccess.thecvf.com/content/CVPR2026/html/Hu_Geometry-as-context_Modulating_Explicit_3D_in_Scene-consistent_Video_Generation_to_Geometry_CVPR_2026_paper.html}{Geometry-as-Context CVPR版}：几何上下文与相机条件，不能据此保证工业尺寸或物理仿真正确。
+\item
+  \href{https://arxiv.org/abs/2503.10589v1}{Long-Context Tuning，2503.10589v1}：长上下文继续调优方向。
+\item
+  \href{https://arxiv.org/abs/2509.22622v2}{LongLive，2509.22622v2}及\href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/pipeline/causal_inference.py}{固定因果推理入口}：训练历史、因果依赖与流式缓存。
+\item
+  \href{https://arxiv.org/abs/2501.07888v1}{Tarsier2，2501.07888v1}：视频描述与时间理解的数据生产参考。
+\item
+  \href{https://arxiv.org/abs/2506.09113v2}{Seedance 1.0，2506.09113v2}、\href{https://arxiv.org/abs/2503.07699v2}{RayFlow，2503.07699v2}与\href{https://arxiv.org/abs/2502.21079v1}{AdaSpa，2502.21079v1}：已公开代际的蒸馏/稀疏方向，不证明2.5使用相同配方或可直接复用加速倍数。
+\end{enumerate}

@@ -1,0 +1,133 @@
+% Imported from topics/video-generation/seedance-2.5/reference-binding-spec.md
+\chapter{M22 主体槽、参考冲突与细节预算}\label{seedance-m22}
+\moduleinfo{M22}{候选设计与工程选型；组合效果待验证}{\hyperref[src-alchemint]{\texttt{alchemint}}、\hyperref[src-phantom]{\texttt{phantom}}、\hyperref[src-ltx-2]{\texttt{ltx-2}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-vace]{\texttt{vace}}}
+
+
+假设一个镜头包含角色A、角色B和一件商品：六张图提供A的脸与服装，两张图提供B，商品图锁外观，一段视频只借动作，另两段语音指定声音。把文件全部编码并拼接，仍没有说明谁应该使用哪份信息。
+
+一套可实施的参考设计必须同时回答：哪些素材属于同一主体、每份素材提供哪些属性、何时生效，以及信息不足或冲突时怎样处理。下面给出面向联合音视频主干的候选规则，压缩预算与模块宽度尚未经过模型验证。
+
+\section{主体槽是一次任务中的关系}\label{seedance-m22-ux4e3bux4f53ux69fdux662fux4e00ux6b21ux4efbux52a1ux4e2dux7684ux5173ux7cfb}
+
+素材身份用内容哈希和 \codepath{asset_id}；人物或商品用稳定业务ID；模型则使用场景局部主体槽，例如A、B、product。业务ID用于检索，局部槽用于表示这一次请求中的对应关系。
+
+槽号不是某个人的永久身份向量。训练时随机置换A/B槽，所有文本、图像、声音和区域标签同步置换，使模型不能记住``第0槽永远是主角''。新人物的外观仍由素材提供。
+
+\begin{verbatim}
+{
+  "asset_id": "a_coat_front",
+  "subject_slot": "A",
+  "roles": ["clothing"],
+  "shot_ids": ["s2"],
+  "active_intervals_seconds": [[8, 12], [15, 18]],
+  "priority": 2,
+  "confidence": 0.95
+}
+\end{verbatim}
+
+同一图片需要同时提供脸和服装时，保留一个资产、建立两个属性视图；不复制成两个互相无关的主体。音频另保留speaker-to-subject映射，群体环境声没有人物槽。
+
+\section{实体词与视觉特征怎样共享绑定}\label{seedance-m22-ux5b9eux4f53ux8bcdux4e0eux89c6ux89c9ux7279ux5f81ux600eux6837ux5171ux4eabux7ed1ux5b9a}
+
+冻结文本模型后，先在它的原始token序列定位实体描述范围，汇聚成实体文本特征，再投影到512维的实体条件记忆。图像摘要与实体记忆附加相同主体槽和role表示。
+
+文本连接器可能改变序列和加入register，不能直接把原始字符偏移当成连接器输出token索引。首版将实体条件作为单独记忆保存，原caption仍走原生文本路径；实体跨度与tokenizer版本一并记录。
+
+每个图像资产独立VAE编码，空间坐标与局部crop信息进入池化器；每段参考视频保留自己的时间轴，不与其它素材在像素时间维拼接。音色素材由音频codec独立编码，文字转录只用于区分声音内容与声音身份。
+
+\section{先分配预算，再进行汇聚}\label{seedance-m22-ux5148ux5206ux914dux9884ux7b97ux518dux8fdbux884cux6c47ux805a}
+
+候选共享记忆宽度512。视觉总预算2048，声音摘要预算512，null token单独增加一个位置；这些预算表示可读取记忆长度，不包含原始素材编码开销。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+角色
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+默认摘要数
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+额外保留什么
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+人物/商品图片 & 32/图 & 主体crop、视角和关键细节crop \\
+外观参考视频 & 64/段 & 分段时间、视角与可见性 \\
+音色/声音风格 & 32/段 & speaker、干净语音段与文字内容标签 \\
+仅动作/相机视频 & 不占身份摘要 & pose/flow/相机走结构路径，单独计费 \\
+必须逐字/逐拍保留的音轨 & 不压成声音摘要 & 完整原生时序音频条件 \\
+\end{longtable}
+}
+
+先满足本镜头必需主体的最低份额，再给优先级高和不确定性高的资产分配剩余额度。预算不足时依次去掉无关镜头素材、近重复视角和低质量素材，输出被裁减清单；不能悄悄丢掉唯一的背面或唯一的speaker参考。
+
+30图＋10外观视频按默认预算为1600视觉位置，10音频为320声音位置。两类都能放进预算，只证明输入可表示；没有证明小logo、多人身份和音色细节仍然充分。
+
+池化前保留crop坐标、素材内时间和type信息。对细字、商标和精密结构，摘要容量不足时增加局部预算，或通过确定性图层交付；摘要token不能承诺恢复已经丢掉的像素信息。
+
+\section{可读性由三层规则决定}\label{seedance-m22-ux53efux8bfbux6027ux7531ux4e09ux5c42ux89c4ux5219ux51b3ux5b9a}
+
+对视频query \(i\) 与参考位置 \(j\)，先判定镜头和属性是否允许，再计算时间偏置：
+
+\[
+B_{ij}=\log\left(\varepsilon+(1-\varepsilon)g_j(\tau_i)\right)
++\log(\max(c_j,\varepsilon))+H_{ij}.
+\]
+
+\(c_j\in[0,1]\)是置信度；\(H_{ij}\)为兼容时0、不兼容时负无穷。时间函数 \(g_j\) 合并同主体的重叠区间，对多次出场分别计算软门，再限制到 \([0,1]\)。null位置始终有限且不施加置信度惩罚。
+
+空间query没有已知主体槽，默认只做镜头级粗筛。用户布局、源视频跟踪或可靠预测区域存在时，可进一步限制空间归属；遮挡边界使用软区域，而不是强行把一个latent只分给一个人物。
+
+多人混合音频的一个时间token也可能含两个speaker。声音支路按明确对白时间和说话人映射路由，重叠讲话使用集合或软权重；没有说话人时间信息时保留不确定性，不能由文件顺序猜声音归属。
+
+\section{冲突如何进入任务编译}\label{seedance-m22-ux51b2ux7a81ux5982ux4f55ux8fdbux5165ux4efbux52a1ux7f16ux8bd1}
+
+同一人不同视角是互补信息；两套服装同时要求占据同一时间，则是冲突。角色关系应由属性、时间和优先级判断，不能仅对所有图像做相似度平均。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2200}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.7800}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+情况
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+首版处理
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+同主体多视角 & 共用主体槽，保留视角标签 \\
+同主体前后换衣 & 为服装属性分别设置区间，身份参考持续有效 \\
+同一时段两套互斥服装 & 采用显式优先级；无优先级则返回规格冲突 \\
+动作视频人物与身份参考不同 & 禁用其外观记忆，只传结构条件 \\
+声音参考包含音乐/他人讲话 & 分段或分离后用；无法分离则降低置信度或回到后期音轨方案 \\
+同一角色离场后返回 & 保留身份记忆，出场监督记录多个区间 \\
+\end{longtable}
+}
+
+置信度低并不等于允许忽略用户必需条件。低置信的必需条件应成为待修正输入，而不是被模型静默跳过。
+
+\section{训练要教会什么}\label{seedance-m22-ux8badux7ec3ux8981ux6559ux4f1aux4ec0ux4e48}
+
+参考正确但背景不同、参考服装不同、相似人物同时出现、人物暂时遮挡、角色真正离场、声色与台词不同，是不同的数据切片。只收集``人物一直在画面中央''的正例，不足以学习绑定。
+
+每条训练样本可派生保持目标不变的槽号置换、素材顺序置换、无关素材添加和重复视角删除。这些是有效的关系增强；把A的参考改成B却仍使用A目标，就不能继续作为同一正确条件的生成监督。
+
+错误参考更适合用于绑定分类、冲突检测或配对偏好任务。对于生成分支，只做训练约定内的条件dropout，避免把故意矛盾的条件标为正确答案。
+
+\section{验收使用成组任务}\label{seedance-m22-ux9a8cux6536ux4f7fux7528ux6210ux7ec4ux4efbux52a1}
+
+至少保留单主体新背景、两主体相似外观、多人重叠、换衣、间断出场、动作换身份、同音色新台词和文件数上限八类。每类分别看身份、动作、误出场、边界偏差、背景泄漏和声音归属，不能只报告总体美感。
+
+最有区分力的对照是：相同文本换参考、相同参考换时间、同时置换所有槽号、只打乱文件顺序。正确绑定应遵循语义关系；它不应依赖素材恰巧排列在哪个位置。
+
+时间偏置的极简示例见 \hyperref[code-reference-timing]{reference\_timing.py}，候选读取见 \hyperref[code-gated-condition]{gated\_condition.py}。真实主体参考结构可读 \href{https://github.com/Phantom-video/Phantom}{Phantom}，它提供的实现和这里的摘要路由、音频绑定不是同一套完整工程。

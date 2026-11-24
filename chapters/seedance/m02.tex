@@ -1,0 +1,111 @@
+% Imported from algorithms/flow-matching/README.md
+\chapter{M02 流匹配与采样方向}\label{seedance-m02}
+\moduleinfo{M02}{基础方法与机制解释}{\hyperref[src-seedance-1.0]{\texttt{seedance-1.0}}、\hyperref[src-long-context-tuning]{\texttt{long-context-tuning}}、\hyperref[src-wan-2.1]{\texttt{wan-2.1}}、\hyperref[src-wan21-code]{\texttt{wan21-code}}、\hyperref[src-diffsynth-code]{\texttt{diffsynth-code}}}
+
+
+视频生成可以理解为一次从随机噪声到有意义视频的连续变换。VAE 先把真实视频压缩成潜变量，生成主干再学习潜变量空间中的运动方向：给它一个带噪状态、一个噪声时间以及文本或参考条件，它应当告诉我们，下一步往哪里走。
+
+流匹配学习的就是这个随状态和时间变化的速度场。理解它，需要先分清视频时间与噪声时间。
+
+\section{两种时间，两个作用}\label{seedance-m02-ux4e24ux79cdux65f6ux95f4ux4e24ux4e2aux4f5cux7528}
+
+一段五秒视频中的``第二秒''，表示动作发生的位置。噪声时间 \(t\) 则表示当前潜变量接近真实数据还是随机噪声。它们彼此独立：视频中的所有帧可以处在同一个噪声时间，也可以按镜头设置不同的噪声时间。
+
+下面统一取 \(t=0\) 为干净数据、\(t=1\) 为噪声。令 \(z_0\) 是真实视频的潜变量，\(\epsilon\) 是标准高斯噪声，构造中间状态：
+
+\[
+z_t=(1-t)z_0+t\epsilon,\qquad \epsilon\sim\mathcal{N}(0,I).
+\]
+
+沿这条直线路径对 \(t\) 求导，得到监督目标：
+
+\[
+u^*=\frac{\mathrm{d}z_t}{\mathrm{d}t}=\epsilon-z_0.
+\]
+
+网络 \(u_\theta(z_t,t,c)\) 根据当前状态、噪声时间和条件 \(c\) 预测这个速度，训练目标可写成：
+
+\[
+\mathcal{L}=\mathbb{E}_{z_0,\epsilon,t}
+\left[w(t)\left\lVert u_\theta(z_t,t,c)-(\epsilon-z_0)\right\rVert_2^2\right].
+\]
+
+条件可以包括文本、图片参考、已知帧、编辑掩码或相机轨迹。基础训练每次采样一个或一组噪声时间，计算一次速度回归损失；不需要先生成完整视频，再把整条采样链反传。
+
+\section{推理为什么可以逐步还原视频}\label{seedance-m02-ux63a8ux7406ux4e3aux4ec0ux4e48ux53efux4ee5ux9010ux6b65ux8fd8ux539fux89c6ux9891}
+
+推理从随机噪声开始，让时间从 1 逐渐走向 0。最简单的 Euler 更新是：
+
+\[
+z_{t_{i+1}}=z_{t_i}+(t_{i+1}-t_i)u_\theta(z_{t_i},t_i,c),
+\qquad t_{i+1}<t_i.
+\]
+
+因为时间差为负，更新会沿预测速度的反方向从噪声走回数据。用一个标量例子看得更清楚：干净值为 2、噪声为 10，在 \(t=0.75\) 时有 \(z_t=8\)，目标速度为 8。若知道准确速度，一步走回 0：
+
+\[
+z_0=8+(0-0.75)\times8=2.
+\]
+
+真实模型无法从任意带噪状态中唯一确定对应的数据和噪声，学习到的是由数据分布决定的速度场。采样过程中轨迹会弯曲，网络也有误差，因此这个线性例子不能说明真实视频可以无损一步生成。
+
+还有一种同样合法的约定，把 \(t=0\) 设为噪声、\(t=1\) 设为数据。此时速度符号和积分方向一起反转。接入模型时，必须同时核对训练目标、scheduler 和模型输出定义；公式看起来相似，符号混用仍会导致采样完全错误。
+
+\section{条件怎样进入训练}\label{seedance-m02-ux6761ux4ef6ux600eux6837ux8fdbux5165ux8badux7ec3}
+
+一次训练批次通常经过以下路径：
+
+\begin{verbatim}
+真实视频 → VAE 与潜变量归一化 → 干净 latent
+随机噪声 + 噪声时间 → 带噪 latent
+文本 / 参考 / 任务条件 → 条件表示
+生成主干 → 预测速度 → 有效目标位置上的损失 → 参数更新
+\end{verbatim}
+
+条件 token 可以不直接作为回归目标，但它们参与注意力计算，其投影层仍然可以获得梯度。冻结外部文本编码器，只意味着不更新这个编码器，不意味着生成主干中的文本投影和条件适配器也被冻结。
+
+\section{补全任务为什么需要多个掩码}\label{seedance-m02-ux8865ux5168ux4efbux52a1ux4e3aux4ec0ux4e48ux9700ux8981ux591aux4e2aux63a9ux7801}
+
+假设视频的一部分已经给定，模型只需生成其余部分。一种做法是把已知帧作为额外条件；另一种做法是在采样中覆盖已知区域。两者的输入形式与训练分布不同，不能当成随意互换的推理开关。
+
+对第二种做法，设 \(M=1\) 表示要生成的区域，已知部分可在每个时间步沿同一条噪声路径重新加噪：
+
+\[
+z_t\leftarrow M\odot z_t+(1-M)\odot
+\left[(1-t)z_{\mathrm{known}}+t\epsilon_{\mathrm{known}}\right].
+\]
+
+这里至少需要区分三种掩码：条件掩码说明哪些信息已知，损失掩码说明哪些位置需要监督，padding 掩码说明哪些位置根本不是有效数据。把 padding 误算进损失，或者把已知区域当成普通未知目标，都会改变训练任务。
+
+多镜头的异步噪声则为不同镜头采样 \(t_s\)。低噪镜头提供较清楚的外观与场景信息，高噪镜头学习在这些条件下生成。模型必须得到正确的逐镜头噪声时间；只改变输入噪声，却仍给所有镜头一个全局时间，会造成条件与目标不匹配。
+
+\section{采样分布与引导强度怎样影响结果}\label{seedance-m02-ux91c7ux6837ux5206ux5e03ux4e0eux5f15ux5bfcux5f3aux5ea6ux600eux6837ux5f71ux54cdux7ed3ux679c}
+
+训练不一定均匀采样 \(t\)。例如 logit-normal 分布会调整不同噪声区间的学习比例，分辨率相关的时间变换则用于适配不同信号尺度。训练时间分布与推理 scheduler 必须配套记录。
+
+classifier-free guidance 把有条件与无条件预测组合为：
+
+\[
+u_{\mathrm{cfg}}=u_{\mathrm{uncond}}+
+s\left(u_{\mathrm{cond}}-u_{\mathrm{uncond}}\right).
+\]
+
+它通常需要训练时随机丢弃条件，让模型见过无条件或弱条件输入。若每个采样步都计算两个分支，\(K\) 个步骤就包含 \(2K\) 个样本级网络求值；把两者合并为一个 batch，并不会将算术工作量减半。
+
+排查训练失败时，应先核对潜变量缩放、速度符号、有效位置平均方式和条件 dropout，再看模型大小。一个小型真实样本集能否被过拟合、固定种子下的生成是否随条件变化，比单看一条不断下降的 loss 曲线更有诊断价值。
+
+\section{从极简代码到真实实现}\label{seedance-m02-ux4eceux6781ux7b80ux4ee3ux7801ux5230ux771fux5b9eux5b9eux73b0}
+
+统一时间方向后，训练目标与更新规则只剩几行。这里 \codepath{t} 已扩展为可广播到视频潜变量的形状：
+
+\begin{verbatim}
+noise = torch.randn_like(clean)
+noisy = (1 - t) * clean + t * noise
+target = noise - clean
+prediction = model(noisy, t, condition)
+loss = (prediction - target).square().mean()
+# 推理中 next_t < t；实际训练需要按有效区域求平均。
+x = x + (next_t - t) * velocity
+\end{verbatim}
+
+有效区损失与简单 Euler 循环见 \hyperref[code-flow-matching]{flow\_matching.py}。真实训练入口看 \href{https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_training/train.py}{DiffSynth 的 WanTrainingModule}，采样和解码组织看 \href{https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/text2video.py}{Wan 文生视频流水线}；使用时保留相应基座的时间与 scheduler 约定。

@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "purpose": "Selected paper excerpts for independent explanatory articles, requested by user; no full-paper redistribution.",
+  "figures": [
+    {
+      "id": "causal-tokenizer",
+      "source_id": "magvit-v2",
+      "pdf_name": "magvit-v2-v3.pdf",
+      "pdf_sha256": "b393503a10d53239ff4ebc67124d99fcc96777e78e4d525b1dd17ba43a474537",
+      "pdf_page": 5,
+      "crop_points": [
+        105,
+        57,
+        507,
+        225
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/causal-tokenizer.png"
+    },
+    {
+      "id": "spatial-temporal-dit",
+      "source_id": "seedance-1.0",
+      "pdf_name": "seedance-1.0-v2.pdf",
+      "pdf_sha256": "e4ec66efd7e354bc7b3d25478fc1cb21709d0dc907f70cee7000ad2bf036fd13",
+      "pdf_page": 5,
+      "crop_points": [
+        65,
+        70,
+        547,
+        278
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/spatial-temporal-dit.png"
+    },
+    {
+      "id": "multishot-positions",
+      "source_id": "long-context-tuning",
+      "pdf_name": "long-context-tuning-v1.pdf",
+      "pdf_sha256": "2c301affc003325edf04177086e042c3a03b631084ea4ab02c041aeda76f0e1c",
+      "pdf_page": 5,
+      "crop_points": [
+        57,
+        55,
+        555,
+        199
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/multishot-positions.png"
+    },
+    {
+      "id": "subject-reference",
+      "source_id": "phantom",
+      "pdf_name": "phantom-v2.pdf",
+      "pdf_sha256": "643e477719f256bfcbe254622858bb1531bd15703d3ad3c3d90bbf65f25cdf20",
+      "pdf_page": 4,
+      "crop_points": [
+        57,
+        60,
+        555,
+        246
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/subject-reference.png"
+    },
+    {
+      "id": "edit-data",
+      "source_id": "vincie",
+      "pdf_name": "vincie-v2.pdf",
+      "pdf_sha256": "ad7a382e905151b286cf0aadd15b20282c17ff9259941bd706384514c19eaa39",
+      "pdf_page": 4,
+      "crop_points": [
+        105,
+        65,
+        508,
+        264
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/edit-data.png"
+    },
+    {
+      "id": "generative-reward",
+      "source_id": "rewarddance",
+      "pdf_name": "rewarddance-v1.pdf",
+      "pdf_sha256": "c09a20debfcafb853a3db836614913bd25d54dc09fbdd9b06a8dca5c70ce917c",
+      "pdf_page": 5,
+      "crop_points": [
+        65,
+        65,
+        546,
+        368
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/generative-reward.png"
+    },
+    {
+      "id": "streaming-cache",
+      "source_id": "longlive",
+      "pdf_name": "longlive-v2.pdf",
+      "pdf_sha256": "c02db70004d281be6f35b760052457b86860eebbb6356abd3044690a96b54905",
+      "pdf_page": 2,
+      "crop_points": [
+        105,
+        85,
+        507,
+        269
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/streaming-cache.png"
+    },
+    {
+      "id": "data-pipeline",
+      "source_id": "seedance-1.0",
+      "pdf_name": "seedance-1.0-v2.pdf",
+      "pdf_sha256": "e4ec66efd7e354bc7b3d25478fc1cb21709d0dc907f70cee7000ad2bf036fd13",
+      "pdf_page": 6,
+      "crop_points": [
+        65,
+        70,
+        546,
+        214
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/data-pipeline.png"
+    },
+    {
+      "id": "training-pipeline",
+      "source_id": "seedance-1.0",
+      "pdf_name": "seedance-1.0-v2.pdf",
+      "pdf_sha256": "e4ec66efd7e354bc7b3d25478fc1cb21709d0dc907f70cee7000ad2bf036fd13",
+      "pdf_page": 8,
+      "crop_points": [
+        65,
+        480,
+        546,
+        707
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/training-pipeline.png"
+    },
+    {
+      "id": "audio-video-pipeline",
+      "source_id": "seedance-1.5-pro",
+      "pdf_name": "seedance-1.5-pro-v3.pdf",
+      "pdf_sha256": "b9ace4794ebe437adeb9e3b63bdf66b2d8ab496adb5d9f0b5696a5bcb46f40b6",
+      "pdf_page": 2,
+      "crop_points": [
+        65,
+        522,
+        545,
+        673
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/audio-video-pipeline.png"
+    },
+    {
+      "id": "wan-block",
+      "source_id": "wan-2.1",
+      "pdf_name": "wan-2.1-v2.pdf",
+      "pdf_sha256": "ca859378a8296fe1a09fb5127680bcdc7e6499fb340e989a598c904720424e9c",
+      "pdf_page": 14,
+      "crop_points": [
+        345,
+        130,
+        506,
+        333
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/wan-block.png"
+    },
+    {
+      "id": "timed-reference",
+      "source_id": "alchemint",
+      "pdf_name": "alchemint-cvpr2026.pdf",
+      "pdf_sha256": "1657b4098352a2270c993764a9ab7d1d3408c5355d4eef4b179204e62aecede0",
+      "pdf_page": 4,
+      "crop_points": [
+        57,
+        57,
+        556,
+        252
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/timed-reference.png"
+    },
+    {
+      "id": "geometry-context",
+      "source_id": "geometry-as-context",
+      "pdf_name": "geometry-as-context-cvpr2026.pdf",
+      "pdf_sha256": "b2817bb1c656909fbb8ed927b9a3edda07b7c9c8be0d07d0a982ad7404a464d4",
+      "pdf_page": 5,
+      "crop_points": [
+        317,
+        357,
+        555,
+        626
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/geometry-context.png"
+    },
+    {
+      "id": "reason-edit",
+      "source_id": "videocof",
+      "pdf_name": "videocof-cvpr2026.pdf",
+      "pdf_sha256": "f46af3ed9896877cff7c2f996f31f23f53552cd640d4d0f067f0d13318e51379",
+      "pdf_page": 3,
+      "crop_points": [
+        57,
+        55,
+        556,
+        276
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/reason-edit.png"
+    },
+    {
+      "id": "unified-context",
+      "source_id": "vace",
+      "pdf_name": "vace-v2.pdf",
+      "pdf_sha256": "951af6f6398929a8c3d5e992d0180899db24a6366b637bf8b767380b54281ce3",
+      "pdf_page": 4,
+      "crop_points": [
+        57,
+        55,
+        556,
+        211
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/unified-context.png"
+    },
+    {
+      "id": "joint-av-block",
+      "source_id": "ltx-2",
+      "pdf_name": "ltx-2-v1.pdf",
+      "pdf_sha256": "6499eb067744ab8d2564888f22acc8ec8c11d4e2b50169619d70e7e0886091bf",
+      "pdf_page": 5,
+      "crop_points": [
+        106,
+        55,
+        506,
+        243
+      ],
+      "scale": 2.5,
+      "path": "assets/paper-figures/joint-av-block.png"
+    }
+  ]
+}

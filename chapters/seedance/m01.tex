@@ -1,0 +1,126 @@
+% Imported from algorithms/causal-video-vae/README.md
+\chapter{M01 因果视频 VAE 与时空压缩}\label{seedance-m01}
+\moduleinfo{M01}{基础方法与机制解释}{\hyperref[src-seedance-1.0]{\texttt{seedance-1.0}}、\hyperref[src-magvit-v2]{\texttt{magvit-v2}}、\hyperref[src-wan-2.1]{\texttt{wan-2.1}}、\hyperref[src-wan21-code]{\texttt{wan21-code}}}
+
+
+一段视频包含大量重复信息：相邻帧中的背景相近，同一个物体的颜色和纹理通常连续变化。如果生成模型直接处理每一帧的所有像素，计算和显存会很快失控。视频 VAE 的任务，就是把这些像素压缩成较小的连续潜变量，让生成模型在潜空间中学习，最后再把结果解码为视频。
+
+这里有两个相互制约的目标：压缩越强，后续生成越便宜；保留的信息越少，文字、纹理和快速运动就越难重建。VAE 因而既决定生成系统的计算起点，也限制其细节保真能力。
+
+\section{一段视频怎样变成潜变量}\label{seedance-m01-ux4e00ux6bb5ux89c6ux9891ux600eux6837ux53d8ux6210ux6f5cux53d8ux91cf}
+
+用 \(B\) 表示批大小，\(F\) 表示帧数，\(H_0,W_0\) 表示原始分辨率。采用通道在前的布局，输入为：
+
+\[
+x\in\mathbb{R}^{B\times3\times F\times H_0\times W_0}.
+\]
+
+以 Seedance 1.0 的压缩配置为例，时间压缩率为 4，空间两轴各压缩 16 倍，潜变量通道数为 48。第一帧单独保留时间位置，其余帧按时间压缩，所以在 \(F=1+4k\) 时：
+
+\[
+z\in\mathbb{R}^{B\times48\times(1+k)\times H_0/16\times W_0/16}.
+\]
+
+编码器通常先预测后验分布的均值 \(\mu\) 和对数方差 \(\log\sigma^2\)，再通过重参数化采样：
+
+\[
+z=\mu+\sigma\odot\epsilon,\qquad \epsilon\sim\mathcal{N}(0,I).
+\]
+
+48 是采样后 \(z\) 的通道数；若实现把均值和对数方差拼在一起，该中间张量会有 96 个通道。使用后验均值还是随机采样、是否再做缩放和平移，属于模型接口的一部分，训练与推理必须保持一致。
+
+例如，121 帧、\(480\times832\) 像素的视频会变成形状为 \codepath{B×48×31×30×52} 的潜变量。若生成主干不再切 patch，每个潜空间位置对应一个视觉 token，共有：
+
+\[
+N=31\times30\times52=48\,360.
+\]
+
+\section{为什么首帧需要单独处理}\label{seedance-m01-ux4e3aux4ec0ux4e48ux9996ux5e27ux9700ux8981ux5355ux72ecux5904ux7406}
+
+因果设计让第一帧可以不依赖后面的帧。输入只有一张图片时，时间维度仍然合法，因此同一个编码器可以处理图片和视频。
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={因果视频编码器的几种组织方式 （论文示意，来源：magvit-v2）}]{assets/seedance/figures/causal-tokenizer.png}}
+\caption{因果视频编码器的几种组织方式 （论文示意，来源：magvit-v2）}
+\end{figure}
+
+图中右侧的因果三维卷积结构沿时间读取历史，空间上仍可聚合邻域。整张图展示的是视觉 tokenizer 的组织方式；其中的离散量化器与连续 VAE 的概率潜变量是不同设计，不能直接互换。
+
+保留首帧也意味着，有限帧数下的压缩率需要精确计算。以\textbf{元素数量}为单位，压缩后的元素与原像素元素之比是：
+
+\[
+r_F=\frac{48\left(1+(F-1)/4\right)}{3F\cdot16^2}.
+\]
+
+当 \(F\) 很大时，它趋近于 \(1/64\)；121 帧时约为 \(1/62.45\)，单张图片则是 \(1/16\)。这个比值没有考虑数据类型：原始像素可能是 uint8，潜变量可能是 BF16，不能直接把元素比当成显存字节比或视频文件压缩率。
+
+\section{因果性来自输入索引}\label{seedance-m01-ux56e0ux679cux6027ux6765ux81eaux8f93ux5165ux7d22ux5f15}
+
+普通三维卷积可能同时读取过去、当前和未来。时间因果卷积只在输入的时间轴左侧补齐，不在右侧补齐。
+
+设时间卷积核大小为 \(k_t\)，膨胀率为 \(\delta\)，步长为 \(s\)，左侧 padding 为：
+
+\[
+p=\delta(k_t-1).
+\]
+
+输出位置 \(j\) 读取的输入时间索引为：
+
+\[
+js-p+i\delta\le js,\qquad 0\le i<k_t.
+\]
+
+最大索引不超过 \(js\)，所以该输出没有读取未来。当核大小为 3、膨胀率为 1 时，序列 \codepath{[a,b,c,d]} 左补两个零，四个卷积窗口依次为 \codepath{[0,0,a]}、\codepath{[0,a,b]}、\codepath{[a,b,c]}、\codepath{[b,c,d]}。
+
+PyTorch 对 \codepath{B,C,T,H,W} 张量的 padding 从最后一个维度开始填写：
+
+\begin{verbatim}
+# Conv3d 内部 padding 设为 0，空间 padding 另行计算。
+x = F.pad(x, (pad_w, pad_w, pad_h, pad_h,
+              dilation_t * (kernel_t - 1), 0))
+y = conv(x)
+\end{verbatim}
+
+对应的时间输出长度是：
+
+\[
+F_{\mathrm{out}}=\left\lfloor\frac{F-1}{s}\right\rfloor+1.
+\]
+
+因此，步长为 4 不代表任意输入长度都能简单除以 4。补帧、裁帧以及首帧位置，都必须在数据预处理和解码时保持一致。
+
+\section{整个网络怎样保持因果}\label{seedance-m01-ux6574ux4e2aux7f51ux7edcux600eux6837ux4fddux6301ux56e0ux679c}
+
+卷积不读未来，还不足以保证整个编码器不读未来。如果归一化把整段时间轴一起用于计算均值和方差，前面的输出仍会受后面帧影响。跨时间的注意力、重采样、特征缓存也有同样的问题。判断因果性时，需要沿整个计算图检查依赖范围。
+
+解码器还要处理时间展开。一个常见设计将 \(1+t\) 个潜时间位置展开为 \(1+st\) 帧；如果直接做普通 \(s\) 倍上采样，会得到 \(s+st\) 帧，需要配合首帧约定处理多出的 \(s-1\) 帧。采用 depth-to-space、插值加卷积或转置卷积时，长度和时间对齐规则各不相同，不能用统一的``裁掉尾部若干帧''替代依赖分析。
+
+分块编码也必须保留历史特征。若每个块都重新补零，块首帧会被错误地当成视频起点，容易出现接缝。除缓存长度外，还需要保留 stride 的采样相位。
+
+\section{训练损失各自负责什么}\label{seedance-m01-ux8badux7ec3ux635fux5931ux5404ux81eaux8d1fux8d23ux4ec0ux4e48}
+
+一种常见的训练目标由重建、感知、分布约束和对抗损失组成：
+
+\[
+\mathcal{L}=\lambda_1\lVert x-\hat{x}\rVert_1
++\lambda_p\mathcal{L}_{\mathrm{LPIPS}}
++\beta D_{\mathrm{KL}}\left(q(z\mid x)\Vert\mathcal{N}(0,I)\right)
++\lambda_a\mathcal{L}_{\mathrm{adv}}.
+\]
+
+L1 约束像素重建；LPIPS 强调感知特征；KL 让后验分布受到约束；判别器补充纹理和运动监督。权重、求和还是求平均、判别器何时开始训练，会改变实际优化过程。KL 过强可能损伤细节，对抗训练过早可能造成不稳定。
+
+使用一个视频 VAE 前，最有效的检查是先让真实视频经过完整的编码与解码。观察细字、手部、快速运动、切镜和块间接缝，再用未来帧扰动测试因果性，用整段与分块结果对照缓存正确性。如果这些细节在重建阶段已经丢失，就应先处理压缩器问题，再判断生成主干是否需要改进。
+
+\section{从极简代码到真实实现}\label{seedance-m01-ux4eceux6781ux7b80ux4ee3ux7801ux5230ux771fux5b9eux5b9eux73b0}
+
+卷积的核心可以压缩成两步。设输入为 \codepath{B,C,T,H,W}，卷积内部不再自动补齐：
+
+\begin{verbatim}
+left = dilation_t * (kernel_t - 1)
+x = F.pad(x, (pad_w, pad_w, pad_h, pad_h, left, 0))
+y = conv3d(x)
+\end{verbatim}
+
+左侧 padding 决定时间依赖，空间 padding 负责尺寸。完整教学类见 \hyperref[code-causal-conv]{causal\_conv.py}；真实 VAE 的上下采样、归一化与特征缓存可直接读 \href{https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/modules/vae.py}{Wan VAE}。

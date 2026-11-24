@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-24",
+  "status": "local_review_draft",
+  "compiled_with": "TeX Live 2025 / XeLaTeX / latexmk / Biber",
+  "books": {
+    "Seedance25": {
+      "pages": 125,
+      "bytes": 3744497,
+      "errors": [],
+      "undefined_references": [],
+      "missing_glyphs": [],
+      "overfull_boxes": [],
+      "broken_internal_links": [],
+      "text_outside_page": [],
+      "rendered_pages": 125,
+      "sha256": "7be745da5fc0eefa80f012cad4779a7a0fb0b108659141fa29574523f983df24",
+      "visual_review": "All supplement pages inspected via contact sheets; enlarged math, dense tables, figures and Chinese code inspected. Original-book prefix and supplement transition inspected."
+    },
+    "StabelDiffusion": {
+      "pages": 158,
+      "bytes": 5154567,
+      "errors": [],
+      "undefined_references": [],
+      "missing_glyphs": [],
+      "overfull_boxes": [],
+      "broken_internal_links": [],
+      "text_outside_page": [],
+      "rendered_pages": 158,
+      "sha256": "93367f8b71ab5461adc5566ef42755af09b6497361c27227d16e4faceebf052e",
+      "visual_review": "All supplement pages inspected via contact sheets; enlarged math, dense tables, figures and Chinese code inspected. Original-book prefix and supplement transition inspected."
+    }
+  },
+  "source_module_hashes_match": true,
+  "source_repository_modified": false,
+  "model_training_or_inference_run": false,
+  "teaching_examples_executed": false,
+  "online_product_rechecked": false,
+  "git_commit_created": false,
+  "git_push_performed": false
+}

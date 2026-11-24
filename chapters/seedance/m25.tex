@@ -1,0 +1,194 @@
+% Imported from topics/video-generation/seedance-2.5/data-training-spec.md
+\chapter{M25 联合数据生产、噪声课程与参数组}\label{seedance-m25}
+\moduleinfo{M25}{候选设计与工程选型；组合效果待验证}{\hyperref[src-ltx-2]{\texttt{ltx-2}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-tarsier2]{\texttt{tarsier2}}、\hyperref[src-tarsier-code]{\texttt{tarsier-code}}、\hyperref[src-alchemint]{\texttt{alchemint}}、\hyperref[src-vace]{\texttt{vace}}、\hyperref[src-videocof]{\texttt{videocof}}、\hyperref[src-longlive]{\texttt{longlive}}}
+
+
+参考、编辑、几何和长叙事各自有可行方法，并不意味着把数据混在一起训练就会同时获得这些能力。它们的条件状态、有效监督和梯度路径不同；相互干扰也可能使身份变稳、动作却变静。
+
+下面为同一音视频主干规定一套候选数据与训练协议。任务比例、阈值和学习率用于给实施者一个可审阅的起点，均不代表已测得最优配方。
+
+\section{数据生产分为八个可重做步骤}\label{seedance-m25-ux6570ux636eux751fux4ea7ux5206ux4e3aux516bux4e2aux53efux91cdux505aux6b65ux9aa4}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  媒体登记：内容哈希、来源组、可用范围、版本与音视频流信息。
+\item
+  时间规范化：真实重采样、PTS映射、声画偏移、色彩与旋转处理。
+\item
+  内容组织：镜头、场景、事件、人物与speaker候选。
+\item
+  关系确认：同主体跨片段配对、道具归属、speaker映射与资产家族。
+\item
+  来源划分：按共享主体/原片/三维资产关系确定开发、验证、测试分组。
+\item
+  任务派生：参考、动作、编辑、音频、几何和长叙事监督。
+\item
+  质量审阅：抽检与错误归因，剔除或回流重标。
+\item
+  编码打包：固定codec和文本特征，按形状/任务分桶，保存变换与编码版本。
+\end{enumerate}
+
+入库去重和任务分组不是一次性动作。新参考若连接了原本分开的来源组，需要重查split；已经锁定测试身份时，不能把其新视角补入训练后继续声称身份隔离。
+
+\section{每种自动工具输出什么}\label{seedance-m25-ux6bcfux79cdux81eaux52a8ux5de5ux5177ux8f93ux51faux4ec0ux4e48}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+环节
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+可选工具/来源
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+必须保存的结果
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+媒体探测与转码 & ffprobe、FFmpeg & 原时间戳、变换参数、输出映射 \\
+镜头与场景组织 & 场景检测器＋连续性审阅 & 切点、误切标记、场景组 \\
+视频描述 & Tarsier/Tarsier2等 & 事实描述、事件时间、模型版本与人工纠错 \\
+主体检测与跟踪 & Grounding DINO、SAM2等 & 框、逐帧mask、轨迹、可见性与置信度 \\
+语音转录与分段 & ASR、diarization与必要的声源分离 & 台词、speaker段、重叠讲话和声画偏移 \\
+结构条件 & 3D渲染器或深度/姿态/相机估计器 & 单位、坐标、有效位、估计置信度 \\
+\end{longtable}
+}
+
+工具是候选生产组件，名称不代表已经安装或运行。阈值先在开发集按人工错误类型校准并登记版本；评估集上不再反复调阈值。
+
+\section{八个数据池如何构造监督}\label{seedance-m25-ux516bux4e2aux6570ux636eux6c60ux5982ux4f55ux6784ux9020ux76d1ux7763}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+池
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+配对方式
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+不应混入的伪真值
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+基础AV & 同一原片中的caption、视频和对齐音轨 & 猜测的画外台词、错位声音 \\
+身份参考 & 同主体不同时间/视角参考与目标 & 只靠相似embedding认定身份 \\
+动作/相机 & 目标提取结构，或同轨迹跨外观重渲染 & 用原人物外观暗中帮助控制 \\
+声音参考 & 同speaker不同台词的干净语音与目标 & 背景音乐被标为音色 \\
+区域编辑 & 人工编辑对、受控重渲染、明确标记的弱监督 & 把相机变化误标为单一颜色变化 \\
+示例传播 & 源关键帧、编辑后关键帧与可靠目标视频 & 每帧独立图像编辑产生的闪烁``真值'' \\
+几何控制 & 同资产与相机的控制层和目标材质渲染 & 米制渲染和未知尺度估计混用 \\
+场景叙事 & 连续片段、镜头事件和角色道具状态 & 无关短片拼接成虚假连续场景 \\
+\end{longtable}
+}
+
+参考离目标较远、同角色服装变化、人物中途缺席、动作参考换身份、speaker重叠，是需主动补齐的难例。故意错绑的条件不继续使用原目标做普通flow监督，而是进入冲突检测或比较任务。
+
+先为每池制作一个分层审阅批次，例如200条、其中50条双人独立标注。这是流程校准数量。记录配对、时间、mask、caption和speaker各自错误率；没有足够真实样本时，减少解锁能力，而不是凭空补足池大小。
+
+\section{样本有三个独立状态轴}\label{seedance-m25-ux6837ux672cux6709ux4e09ux4e2aux72ecux7acbux72b6ux6001ux8f74}
+
+每个模态记录是否存在、是否处理隐藏状态、是否更新latent；每个目标记录有效监督位。全局更新尽量按同一任务、形状和音频状态成批，降低错误padding与分布式未使用参数处理的复杂度。
+
+\begin{verbatim}
+基础AV：两流均存在、处理、更新，计算两流loss。
+无音轨视频：只有视频目标；音频不存在，跳过声音与无效交互。
+保留声音的编辑：音频存在且处理，但不更新latent、不计算音频loss。
+局部对白编辑：活动声音区加噪并监督，外部为干净条件。
+因果续写：历史为干净条件，只监督当前块，两流同一块划分。
+\end{verbatim}
+
+缺失音轨和有效静音分开；训练``保留声音''任务不意味着让音频模态彻底失能。
+
+\section{噪声课程不能盲目按长序列外推}\label{seedance-m25-ux566aux58f0ux8bfeux7a0bux4e0dux80fdux76f2ux76eeux6309ux957fux5e8fux5217ux5916ux63a8}
+
+原系列训练sampler使用长度相关的shifted logit-normal。它的偏移为：
+
+\[
+\mu(N)=0.95+\frac{1.10}{3072}(N-1024),
+\qquad \sigma=\operatorname{sigmoid}(\xi+\mu(N)),\quad
+\xi\sim\mathcal N(0,1).
+\]
+
+原实现按实际长度外推，并没有在4096处自动截断。当 \(N=40\,768\) 时，\(\mu\approx15.18\)，分布中位数接近0.9999997。长阶段照抄会高度集中在几乎纯噪声的位置，缺少足够的中低噪声训练。
+
+候选长阶段采用：90\%有界shifted logit-normal、10\%均匀sigma；偏移限制在0.95至2.05之间。长度只计算目标视频token，不加参考摘要数；短片原生配置单独保留为对照。推理sigma调度也固定同一候选shift策略与原生端点处理，避免训练改了、验证仍使用另一套外推。
+
+这是明确改变原配方的候选课程，需要比较而不能宣称无损。基础AV两流共用sigma；固定条件为0，异步镜头任务另外采样镜头sigma。首先不引入无依据的全自由双流独立sigma。
+
+\section{损失先按样本有效元素平均}\label{seedance-m25-ux635fux5931ux5148ux6309ux6837ux672cux6709ux6548ux5143ux7d20ux5e73ux5747}
+
+对样本 \(b\)、模态 \(m\)，先在FP32中计算：
+
+\[
+\ell_b^m=\frac{\sum_i W_{bi}^m
+(u_{bi}^m-u_{bi}^{m*})^2}{\sum_i W_{bi}^m},
+\qquad u^{m*}=\epsilon^m-z_0^m.
+\]
+
+\(i\)遍历标量通道元素，token mask需广播到通道。没有有效目标的样本不进入该模态平均；不能给零分母加epsilon后把缺失监督当作一个低loss样本。
+
+每样本先归一，再对同任务有效样本平均，最后按任务采样比例形成期望。这样长样本不会仅因token更多获得更大权重。多个设备上有效样本数不同时，全局归约有效计数并修正梯度缩放；简单平均各卡平均值可能偏置任务。
+
+基础目标为 \(\ell_v+\lambda_a\ell_a\)，初始 \(\lambda_a=1\)。区域头使用BCE＋Dice或独立区域flow，选择一种输出形式；保持项初始权重0.1且仅用于适用的对齐编辑。极简有效位归一化见 \hyperref[code-masked-sample-loss]{masked\_sample\_loss.py}。
+
+\section{参数组与解冻顺序}\label{seedance-m25-ux53c2ux6570ux7ec4ux4e0eux89e3ux51bbux987aux5e8f}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+阶段
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+更新对象
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+首版候选学习率
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+支路起步 & 池化器、绑定表示、条件塔、投影与门控 & \(10^{-4}\) \\
+编辑联合 & 已有支路＋源条件与区域模块 & 新模块 \(10^{-4}\)，已有模块 \(3\times10^{-5}\) \\
+主干适配 & 上述模块＋选定原生注意力LoRA & LoRA \(10^{-5}\) \\
+因果派生 & 因果适配器、必要LoRA与当前块策略 & 重新短pilot确定，不继承错误的全局sigma \\
+\end{longtable}
+}
+
+codec、vocoder和文本模型首版冻结。LoRA起点rank16、alpha16、A正常初始化而B置零；先只匹配原生self与AV注意力的 \codepath{to_q}、\codepath{to_v}，排除文本注意力和新增支路，再登记实际模块全名及参数数。通用后缀 \codepath{to_q} 可能匹配所有分支，不能直接作为精确参数组。
+
+冻结权重不等于关闭整个主干的autograd。新支路的梯度仍要经过后续冻结块传回；把整个主干放进 \codepath{no_grad()} 会截断学习。梯度检查点可以节约activation，不能因此认为LoRA无需主干反传计算。
+
+候选有效batch8、全局范数裁剪1.0、100步预热、每100次更新固定验证；先1000次更新做短pilot。AdamW的weight decay对bias、norm和门控单列为0，普通投影初始0.01。所有数值都是实施起点。
+
+\section{任务混合与干扰处理}\label{seedance-m25-ux4efbux52a1ux6df7ux5408ux4e0eux5e72ux6270ux5904ux7406}
+
+支路阶段按20\%基础AV、30\%图片参考、20\%动作/相机、20\%声音参考、10\%几何采样；编辑阶段按15\%基础、20\%参考、30\%编辑对、20\%示例传播、15\%区域定位采样。缺某池时重新发布混合版本，不悄悄沿用一个无法实现的比例。
+
+每次全局更新先按比例抽任务，再抽来源组与形状桶。参考数从1--2到4/8，再到容量上限；时长从8到16/30秒。不要同时改变时长、分辨率、参考数和可训练模块，导致无法定位退化。
+
+每个任务记录独立loss、固定验证切片与共享参数梯度量级。出现身份增强但动作趋静，先检查数据复制与条件强度；出现音频任务压过视频，先检查有效元素和梯度比例；编辑退化为复制时，检查目标变化而非只看保持loss。
+
+\section{checkpoint是一个组合对象}\label{seedance-m25-checkpointux662fux4e00ux4e2aux7ec4ux5408ux5bf9ux8c61}
+
+保存基座身份、所有新增模块、LoRA、参数组、optimizer、scheduler、随机状态、分布式采样器游标、数据版本、任务混合、sigma策略和条件预算。只保存LoRA不足以恢复新条件塔；只保存模型也不能证明可以继续同一训练轨迹。
+
+这里需要新增训练状态保存与恢复路径。选定trainer的现有checkpoint函数保存模型权重，LoRA模式另经PEFT筛选；它不能直接满足上述恢复协议。接入新增模块后，还要核对参数组与保存清单是否一致，避免模块参与了训练却没有进入交付文件。
+
+真实训练接口读 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/training_strategies/text_to_video.py}{基础AV策略}、\href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/timestep_samplers.py}{timestep samplers} 与 \href{https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/trainer.py}{trainer}。本协议规定新增工作如何组织，没有把纸面候选值当成已收敛训练结果。

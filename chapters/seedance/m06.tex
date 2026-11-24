@@ -1,0 +1,82 @@
+% Imported from algorithms/long-video/README.md
+\chapter{M06 长上下文与缓存条件}\label{seedance-m06}
+\moduleinfo{M06}{基础方法与机制解释}{\hyperref[src-long-context-tuning]{\texttt{long-context-tuning}}、\hyperref[src-longlive]{\texttt{longlive}}、\hyperref[src-seedance-1.0]{\texttt{seedance-1.0}}、\hyperref[src-longlive-code]{\texttt{longlive-code}}}
+
+
+让视频变长，增加的并不只是帧数。人物必须保持身份，道具状态要延续，新的动作还要接上已经发生的事件。模型如果只在短片段上训练，推理时反复把自己的输出当成历史，误差就可能逐段累积，最后出现角色漂移、背景突变和剧情失忆。
+
+\section{先区分三种长视频}\label{seedance-m06-ux5148ux533aux5206ux4e09ux79cdux957fux89c6ux9891}
+
+多镜头叙事允许切镜，重点是共享角色、环境和事件关系；长单镜头要求连续运动和相机空间稳定；交互续写则要求历史已定、新提示及时生效。三者对上下文的需求不同，不能用``总时长达到一分钟''统一验收。
+
+多镜头训练可以把场景描述拆成两层：全局层描述角色、环境和故事，镜头层描述局部动作、景别与运镜。这样，模型既知道需要保持什么，也知道每个镜头应该改变什么。
+
+\section{多镜头为什么适合异步噪声}\label{seedance-m06-ux591aux955cux5934ux4e3aux4ec0ux4e48ux9002ux5408ux5f02ux6b65ux566aux58f0}
+
+普通联合去噪可以让所有镜头处在同一个噪声时间；异步训练则给每个镜头独立的 \(t_s\)。较干净的镜头提供身份和环境线索，较噪的镜头学习利用这些线索生成。
+
+这种任务需要逐镜头时间条件，不能只把输入噪声改成不同强度，却仍向网络提供同一个时间。训练完成后，既可以共同生成一组镜头，也可以固定已有镜头，再生成后续镜头。
+
+双向注意力允许镜头相互约束；上下文因果注意力则规定镜头内双向、镜头间只能读取过去与当前。先训练双向模型、再做因果适配是一条可行路线，但不是所有模型都必须遵守的固定顺序。
+
+\section{因果 mask 为什么还不足以支持缓存}\label{seedance-m06-ux56e0ux679c-mask-ux4e3aux4ec0ux4e48ux8fd8ux4e0dux8db3ux4ee5ux652fux6301ux7f13ux5b58}
+
+KV-cache 保存的是某层已经算出的 key 和 value。只有它们的全部依赖保持不变，缓存才等价于重新计算。这些依赖包括历史潜变量、提示、参考、噪声时间、位置、mask、模型权重和上游隐藏状态。
+
+普通视频扩散每步都会更新整个带噪序列 \(z_t\)，历史 K/V 也随之变化。即使设置因果 mask，只要历史状态或它使用的噪声时间仍在改变，旧缓存就会过期。
+
+适合精确缓存的是专门定义为固定条件的历史：它的内容、噪声水平和条件化方式不再随当前块的采样步变化。当前正在生成的新块则仍需在每一步计算自己的 Q、K、V，再读取历史缓存。
+
+\section{缓存究竟省掉多少计算}\label{seedance-m06-ux7f13ux5b58ux7a76ux7adfux7701ux6389ux591aux5c11ux8ba1ux7b97}
+
+设视频有 \(S\) 个块，每块 \(n\) 个 token。如果生成第 \(i\) 块时重新处理全部前缀，投影和 FFN 累计处理的 token 数为：
+
+\[
+n\sum_{i=1}^{S}i=O(nS^2).
+\]
+
+若每次还对整个前缀做完整注意力，累计交互规模为：
+
+\[
+n^2\sum_{i=1}^{S}i^2=O(n^2S^3).
+\]
+
+缓存固定历史后，可以省掉重复的历史投影和前馈计算，但第 \(i\) 块仍要查询前面约 \(i\) 个块，累计 attention 成本约为：
+
+\[
+n^2\sum_{i=1}^{S}i=O(n^2S^2).
+\]
+
+只有进一步把可读历史限制为固定的 \(W\) 个块，才会接近 \(O(Sn^2W)\)。因此，``使用 cache''与``总计算随时长线性增长''不是同一个结论。以上省略了层数与每块去噪步数，实际实现还需乘回这些因素。
+
+\section{流式训练怎样缩小训练与推理差距}\label{seedance-m06-ux6d41ux5f0fux8badux7ec3ux600eux6837ux7f29ux5c0fux8badux7ec3ux4e0eux63a8ux7406ux5deeux8ddd}
+
+一种有效思路，是训练时就让模型在自己生成的历史上继续生成，而不是永远读取完美的真实历史。每次只对当前短片段计算梯度，历史状态停止反传，再逐段延长训练序列。
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={短窗口、历史锚点与提示切换时的缓存刷新 （论文示意，来源：longlive）}]{assets/seedance/figures/streaming-cache.png}}
+\caption{短窗口、历史锚点与提示切换时的缓存刷新 （论文示意，来源：longlive）}
+\end{figure}
+
+短窗口限制最近历史的成本，固定保留的早期帧充当身份与场景锚点。提示改变时，用历史画面与新提示刷新缓存，可以减少旧提示残留。这些机制共同构成长视频训练与推理的一致策略，而不是互不相关的推理技巧。
+
+早期锚点也不能记住全部剧情。例如人物中途拿起一把钥匙，开头的锚点并不包含钥匙状态。长叙事仍需要保留或重新编码近期事件，以及角色和物体的状态。
+
+\section{怎样验证缓存和长程记忆}\label{seedance-m06-ux600eux6837ux9a8cux8bc1ux7f13ux5b58ux548cux957fux7a0bux8bb0ux5fc6}
+
+先以不使用缓存的完整重算结果为基线，在相同噪声下逐层比较输出；再分别改变提示、参考、历史和时间条件，确认系统会使相应缓存失效。修改过去片段时，因果模型的该片段及后续缓存通常需要刷新，双向场景模型甚至可能影响整场景。
+
+质量测试应把生成长度逐步扩到训练长度的两倍、四倍，按时间段记录身份、道具状态、背景与动作错误。整段平均分可能掩盖后半段崩坏，新提示的生效延迟也应独立记录。只有缓存正确和长程质量都通过，才值得继续优化窗口大小、缓存精度与吞吐。
+
+\section{从极简代码到真实实现}\label{seedance-m06-ux4eceux6781ux7b80ux4ee3ux7801ux5230ux771fux5b9eux5b9eux73b0}
+
+缓存首先是依赖版本问题。提示、历史、噪声策略或模型改变时，旧状态就不能继续当成相同条件：
+
+\begin{verbatim}
+key = hash_of(model, prompt, references, history, noise_policy)
+if key != previous_key:
+    cached_layers.clear()
+\end{verbatim}
+
+\hyperref[code-cache-context]{cache\_context.py} 只说明失效机制，没有实现完整自回归 attention。真实的缓存写入、当前块去噪和窗口读取，直接看 \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/pipeline/causal_inference.py}{LongLive1.0 因果推理} 与 \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/wan/modules/causal_model.py}{CausalWanSelfAttention}。普通双向模型无法只靠添加这个字典获得相同能力。

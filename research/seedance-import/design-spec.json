@@ -1,0 +1,329 @@
+{
+  "spec_version": "candidate-av-v2",
+  "status": "proposed_not_executed",
+  "target": "A coherent candidate for multimodal references, long narratives and local editing; not Seedance reverse engineering",
+  "base": {
+    "family": "original LTX-2 non-distilled audiovisual model",
+    "code_source_id": "ltx-original-code",
+    "commit": "bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638",
+    "checkpoint_hash": null,
+    "checkpoint_status": "metadata_and_header_read_tensor_payload_not_downloaded",
+    "later_model_families_interchangeable": false,
+    "model_source_id": "ltx-original-model",
+    "model_revision": "64f65d09e0b76c96202b5bc09997673184cf9b5d",
+    "checkpoint_filename": "ltx-2-19b-dev.safetensors",
+    "remote_declared_sha256": "4a51e70aad660e55648d6f0b8af15c8acaaffc06e2a4ae7c7cb01ede701981a8",
+    "native_config": {
+      "layers": 48,
+      "video_width": 4096,
+      "audio_width": 2048,
+      "video_heads": 32,
+      "audio_heads": 32,
+      "text_connector_width": 3840,
+      "rope_type": "split",
+      "frequencies_precision": "float64",
+      "timestep_scale_multiplier": 1000,
+      "av_ca_timestep_scale_multiplier": 1000
+    },
+    "keep_native_vae_text_normalization": true,
+    "scheduler_policy": "native short baseline retained; bounded long-sequence shift is an explicit candidate override"
+  },
+  "representations": {
+    "video": {
+      "layout": "B,C,T,H,W",
+      "channels": 128,
+      "compression": [
+        8,
+        32,
+        32
+      ],
+      "valid_frames": "1+8*k"
+    },
+    "audio": {
+      "codec_layout": "B,8,T,16",
+      "transformer_layout": "B,T,128",
+      "approximate_tokens_per_second": 25,
+      "codec_input_hz": 16000,
+      "waveform_output_hz": 24000
+    },
+    "time": {
+      "events": "seconds from common media origin",
+      "latent_position": "native codec coverage and temporal coordinates",
+      "noise_convention_for_explanation": "0=data,1=noise; map to native implementation",
+      "position_bounds_are_not_full_receptive_fields": true
+    }
+  },
+  "example_request": {
+    "kind": "format_and_design_example",
+    "output_seconds": 30,
+    "fps": 24,
+    "output_frames": 720,
+    "internal_frames": 721,
+    "internal_resolution": [
+      512,
+      896
+    ],
+    "video_latent_grid": [
+      91,
+      16,
+      28
+    ],
+    "video_tokens": 40768,
+    "approximate_audio_tokens": 750,
+    "training_padding_policy": "Track valid pixels/frames and latent receptive fields; do not drop a whole mixed last latent as a substitute"
+  },
+  "reference_memory": {
+    "image_file_limit": 30,
+    "video_file_limit": 10,
+    "audio_file_limit": 10,
+    "image_summary_tokens": 32,
+    "video_summary_tokens": 64,
+    "audio_summary_tokens": 32,
+    "visual_budget": 2048,
+    "audio_budget": 512,
+    "budget_scope": "pooled identity/style summaries; aligned fixed soundtrack uses full native audio tokens separately",
+    "quality_at_file_limit": "unverified",
+    "binding_fields": [
+      "asset_id",
+      "subject_id",
+      "speaker_id",
+      "role",
+      "shot_ids",
+      "active_intervals_seconds",
+      "priority",
+      "confidence"
+    ],
+    "fusion": "new gated cross-attention after every fourth native block, pilot choice",
+    "time_gate": "explicit soft interval bias; not a claimed WeRoPE reproduction",
+    "subject_query_policy": "shot-level allowed subject set by default; spatial hard mask only with layout/source tracking/reliable predicted regions available at inference",
+    "empty_condition": "always-visible null token or skip new branch",
+    "motion_only_video": "pose/flow/camera context path; appearance tokens disabled by role"
+  },
+  "source_condition": {
+    "mask_one_means": "regenerate",
+    "reactive": "F*M",
+    "inactive": "F*(1-M)",
+    "encoding": "independent asset VAE encode then native-grid-aligned context projection",
+    "source_context_noise": "clean fixed condition",
+    "known_target_clamp": "optional separate policy with fixed noise path, matched in training",
+    "strict_preservation": "reuse source pixels/audio outside authorized output edit range"
+  },
+  "task_states": {
+    "generate_av": {
+      "video": "noisy_target",
+      "audio": "noisy_target",
+      "update": [
+        "video",
+        "audio"
+      ]
+    },
+    "video_without_audio": {
+      "video": "noisy_target",
+      "audio": "absent",
+      "update": [
+        "video"
+      ],
+      "audio_loss_and_invalid_av_edges": false
+    },
+    "visual_edit_keep_audio": {
+      "video": "noisy_target_plus_clean_source_context",
+      "audio": "clean_source_condition",
+      "update": [
+        "video"
+      ],
+      "delivery_audio": "original_waveform",
+      "process_audio_hidden": true,
+      "audio_latent_sigma": 0,
+      "cache_audio_transformer_hidden_across_steps": false
+    },
+    "causal_extension": {
+      "video": "clean_history_plus_noisy_current",
+      "audio": "clean_history_plus_noisy_current",
+      "update": [
+        "current_video",
+        "current_audio"
+      ]
+    },
+    "mask_roles": [
+      "condition_visibility",
+      "denoise_update",
+      "training_loss",
+      "delivery_compositing"
+    ],
+    "policy_status": "New conditional modes must be represented during training; not inference-only switches"
+  },
+  "model_versions": {
+    "joint": {
+      "attention": "retain native joint denoising",
+      "history_kv_across_steps": false,
+      "duration_curriculum_seconds": [
+        8,
+        16,
+        30
+      ]
+    },
+    "causal_extension": {
+      "status": "requires_separate_training",
+      "within_block": "bidirectional",
+      "between_blocks": "past/current only in self and AV cross attention",
+      "history": "fixed clean conditioning",
+      "cache": "rebuild when any dependency changes",
+      "self_generated_history_ratio_candidates": [
+        0.3,
+        0.7
+      ],
+      "target_chunk_seconds": 4,
+      "block_assignment": "native position intervals plus actual preprocessing/encoder dependency end; defer and buffer boundary-straddling tokens",
+      "mask_calls": [
+        "video_self",
+        "audio_self",
+        "video_reads_audio",
+        "audio_reads_video"
+      ],
+      "cache_write": "recompute completed block as clean sigma-zero context; do not reuse final noisy-step KVs",
+      "decoder": "offline whole-sequence decode first; native noncausal decoder needs lookahead or separate causal design for streaming",
+      "rollout_supervision": "teacher relabels continuation conditional on actual student history; reject state conflicts",
+      "optional": true
+    }
+  },
+  "training": {
+    "candidate_only": true,
+    "s1_task_percent": {
+      "base_av": 20,
+      "image_reference": 30,
+      "motion_camera": 20,
+      "audio_reference": 20,
+      "geometry": 10
+    },
+    "s2_task_percent": {
+      "base_av": 15,
+      "reference": 20,
+      "paired_edit": 30,
+      "example_propagation": 20,
+      "region": 15
+    },
+    "s3_duration_bucket_percent": {
+      "8": 30,
+      "16": 30,
+      "30": 40
+    },
+    "adapter_lr": 0.0001,
+    "global_batch_candidate": 8,
+    "gradient_norm_clip": 1.0,
+    "initial_adapter_pilot_optimizer_updates": 1000,
+    "initial_adapter_pilot_warmup_updates": 100,
+    "initial_adapter_pilot_validation_interval": 100,
+    "initial_sigma_sampling": "native short joint baseline; bounded candidate long policy is specified separately; clean condition modes trained explicitly",
+    "data_loader_extensions_required": [
+      "speaker_binding",
+      "geometry_confidence",
+      "multiple_active_intervals",
+      "audio_condition_status"
+    ],
+    "loss": "per-sample valid-element mean; then valid-sample mean per task/modality with global distributed counts; plus task-specific region/preservation",
+    "lambda_audio_initial": 1.0,
+    "lambda_preservation_initial": 0.1,
+    "full_parameter_optimizer_state_estimate_gb": 304,
+    "optimizer_estimate_scope": "19B*16 bytes, decimal GB, excludes activations/text/VAEs/communication; not a measured requirement",
+    "sigma_policy": {
+      "short_baseline": "native sampler retained separately",
+      "candidate_long": "90% shifted logit-normal with shift clipped [0.95,2.05] +10% uniform sigma",
+      "length_basis": "target video tokens only",
+      "inference": "matched bounded shift plus native endpoint handling; requires comparison"
+    },
+    "lora_candidate": {
+      "rank": 16,
+      "alpha": 16,
+      "lr": 1e-05,
+      "targets": "full module names for native self and AV to_q/to_v only; exclude text attention and new branches"
+    },
+    "frozen_backbone_requires_activation_backprop": true,
+    "recovery": "all new modules plus LoRA, optimizer, scheduler, RNG, sampler cursor, task/sigma/data versions"
+  },
+  "unverified_gates": [
+    "reference compression retains small identity/product/voice details",
+    "new role and interval controls generalize to unseen scenes",
+    "joint 30-second quality remains stable through final seconds",
+    "local edit targets change while keep regions remain valid",
+    "speaker references match voice without copying unintended words/music",
+    "causal model matches its cache dependencies and long-rollout training distribution",
+    "actual hardware and delivery costs meet task constraints"
+  ],
+  "adapter_contract": {
+    "insert_after_one_based_blocks": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      28,
+      32,
+      36,
+      40,
+      44,
+      48
+    ],
+    "memory_width": 512,
+    "reference_attention_inner_width": 512,
+    "reference_heads": 8,
+    "reference_head_dim": 64,
+    "post_block_order": [
+      "aligned_source_structure_residual",
+      "visual_reference_read",
+      "audio_reference_read"
+    ],
+    "shared": [
+      "asset_encoders",
+      "poolers"
+    ],
+    "per_slot": [
+      "qkv",
+      "output_projection",
+      "gates",
+      "source_output_projection"
+    ],
+    "initialization": "normal projections, zero scalar gates, no output bias",
+    "source_channels": 257,
+    "source_hidden_width": 512,
+    "source_tower": "aligned lightweight depthwise temporal/spatial residual blocks; no dynamic target input",
+    "optimizer_and_checkpoint_include_all_new_modules": true
+  },
+  "delivery_contract": {
+    "quality_modes": [
+      "layout_preview",
+      "standard_av",
+      "refinement"
+    ],
+    "explicit_dense_video_scores_30s_gib_at_32heads_bf16": 99.06,
+    "reference_kv_cache_mb_at_budget": 50.3,
+    "source_hidden_cache_mb_12slots_30s": 501,
+    "numbers_are": "arithmetic estimates, not GPU measurements",
+    "pilot_tasks": {
+      "categories": 8,
+      "development_per_category": 4,
+      "evaluation_per_category": 4,
+      "candidate_cap": 3
+    },
+    "strict_preservation_scope": "pre-encoding pixel/PCM working representation; lossy re-encode does not guarantee byte equality"
+  },
+  "plan_scope": {
+    "overview_article": "topics/video-generation/seedance-2.5/speculative-plan.md",
+    "status": "speculative_with_citations_not_internal_disclosure",
+    "public_continuity_evidence_source_id": "seedance-2.5-release",
+    "primary_direction": "stable joint backbone; task data and application adaptation first; limited condition plugins only for interface gaps",
+    "engineering_reference_is_not_seedance_architecture": true,
+    "closed_service_route": "external workflow/tools/data evaluation only; no assumed access to internal adapters, LoRA or continued training",
+    "open_reference_route": "matched public base; task data, native adaptation, then missing condition plugins",
+    "primary_long_video_route": "joint long context plus separately evaluated shot orchestration",
+    "causal_extension": "optional separately trained derivative; not a prerequisite for the first application",
+    "decision_order": [
+      "application_task_and_asset_controls",
+      "task_data_and_native_condition_adaptation",
+      "missing_condition_plugins",
+      "limited_backbone_adaptation",
+      "optional_causal_or_backbone_research"
+    ],
+    "cost_examples": "illustrative inputs only; no verified Seedance prices or GPU measurements"
+  }
+}

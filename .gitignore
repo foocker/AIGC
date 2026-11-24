@@ -18,3 +18,10 @@ t.py
 **/*.gif
 **/*.mp4
 **/*.jpg
+
+# Local book compilation and visual review.
+/build/
+*.fdb_latexmk
+*.fls
+# These selected paper excerpts belong to the editable Seedance chapter set.
+!assets/seedance/figures/*.png

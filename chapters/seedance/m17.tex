@@ -1,0 +1,98 @@
+% Imported from topics/video-generation/seedance-2.5/editing-conditions.md
+\chapter{M17 源条件与统一编辑接口}\label{seedance-m17}
+\moduleinfo{M17}{候选设计与工程选型；组合效果待验证}{\hyperref[src-vace]{\texttt{vace}}、\hyperref[src-videocof]{\texttt{videocof}}、\hyperref[src-vincie-next]{\texttt{vincie-next}}、\hyperref[src-ltx-2]{\texttt{ltx-2}}}
+
+
+视频编辑同时涉及三个问题：理解指令说的是谁，决定哪里需要变化，以及把变化稳定传播到整段视频。只输入``源视频＋修改要求''，会把这三件事压在同一个隐含过程里，既难定位失败，也难制作有效监督。
+
+一种更清楚的设计，把用户提供的条件、模型推断的编辑区域和最终生成目标分开，同时让它们共享一个视频主干。
+
+\section{用帧与 mask 表示不同任务}\label{seedance-m17-ux7528ux5e27ux4e0e-mask-ux8868ux793aux4e0dux540cux4efbux52a1}
+
+设源条件为 \(F\)，编辑 mask 为 \(M\)，其中 \(M=1\) 表示允许重新生成。可将条件分成两路：
+
+\[
+F_c=F\odot M,\qquad F_k=F\odot(1-M).
+\]
+
+\(F_c\) 放待改变内容或控制信号，\(F_k\) 放必须保留的信息。分别编码后，再连同压缩到相同网格的 mask 进入条件支路：
+
+\[
+C_{\mathrm{edit}}=P\bigl[E_v(F_c);E_v(F_k);D(M)\bigr].
+\]
+
+分号表示通道拼接，\(D\) 表示保持对齐的 mask 变换。目标的带噪 latent 仍走原主干输入，新增条件支路在选定层提供残差信息，不直接改写旧 checkpoint 的输入通道。
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={视觉条件的拆分、编码与主干残差连接 （论文示意，来源：vace）}]{assets/seedance/figures/unified-context.png}}
+\caption{视觉条件的拆分、编码与主干残差连接 （论文示意，来源：vace）}
+\end{figure}
+
+这种接口可以组织多类任务：纯文生视频使用空条件与全生成 mask；整段重绘提供源帧与全生成 mask；局部编辑提供源帧与局部 mask；续写则把历史帧作为已知条件。它统一了表示方式，但不意味着训练中没见过的任务会自动出现。
+
+\section{时间和空间需要同时定义}\label{seedance-m17-ux65f6ux95f4ux548cux7a7aux95f4ux9700ux8981ux540cux65f6ux5b9aux4e49}
+
+用户要求``第二到第四秒更换角色 A 的外套''时，最终编辑范围可写为：
+
+\[
+M(\tau,y,x)=M_{\mathrm{coat},A}(\tau,y,x)
+\cdot\mathbf{1}_{[2,4)}(\tau).
+\]
+
+模型工作区应根据 VAE 和 patch 感受野扩张，以获得边界上下文；最终保持区间仍以用户规格为准。预测光照、阴影或遮挡变化时，必须明确是否允许影响目标物体以外的区域。
+
+源视频、参考图、区域条件和目标分别编码，防止不连续片段通过因果 VAE 相互污染。loss mask、条件 mask 和最终像素合成 alpha 也分别保存。
+
+\section{用户不提供 mask 时，先定位再编辑}\label{seedance-m17-ux7528ux6237ux4e0dux63d0ux4f9b-mask-ux65f6ux5148ux5b9aux4f4dux518dux7f16ux8f91}
+
+指令可能只说``删除右边穿绿衣的人''。此时可以先预测一个区域表示，再以它约束目标生成。区域可以是分割 mask，也可以是突出目标区域的灰度帧。
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={源内容、区域表示和目标内容的链式组织 （论文示意，来源：videocof）}]{assets/seedance/figures/reason-edit.png}}
+\caption{源内容、区域表示和目标内容的链式组织 （论文示意，来源：videocof）}
+\end{figure}
+
+这里的``推理''是可监督的视觉中间表示，并不等于语言模型隐藏的思维过程。首版实现采用两阶段：
+
+\begin{verbatim}
+源视频 + 指令 → 目标区域/关键帧示意
+源视频 + 已确认区域 + 指令 + 参考 → 编辑后视频
+\end{verbatim}
+
+有人工 mask 时直接进入第二阶段；自动区域不可信时可回退到用户修正。训练第二阶段时逐步混入预测区域，而不是永远读取完美真值，避免推理遇到少量越界就失控。
+
+VideoCoF 将区域和目标放进一个联合去噪序列，源 latent 保持干净，区域与目标同时被监督。本文选择的显式两阶段更便于检查和返工，但增加一次生成/定位开销，不能把两者执行方式混称。
+
+\section{编辑示例图怎样减少成对视频数据需求}\label{seedance-m17-ux7f16ux8f91ux793aux4f8bux56feux600eux6837ux51cfux5c11ux6210ux5bf9ux89c6ux9891ux6570ux636eux9700ux6c42}
+
+还可以先从源视频选关键帧 \(I_s\)，将它编辑为 \(I_t\)，再让整段视频读取``修改前、修改后''的图像示例：
+
+\[
+p(V_t\mid V_s,c,I_s,I_t).
+\]
+
+这种条件告诉模型具体的外观变化，适合利用大量图像编辑数据。视频目标仍需保持源视频的运动，不能退化为仅根据编辑后的图片生成另一段动作。
+
+关键帧并非永远足够。转身后露出的背面、多角色交互或只在后半段出现的道具，需要额外参考或更多编辑示例。不同角度的修改结果也要一致，不能每帧独立调用图像编辑器后直接拼成视频。
+
+\section{损失怎样分配}\label{seedance-m17-ux635fux5931ux600eux6837ux5206ux914d}
+
+源视频是条件，不作为普通噪声目标。目标视频使用有效位置上的流匹配损失；若训练区域预测，再给区域头或区域 latent 单独监督：
+
+\[
+\mathcal{L}=\mathcal{L}^{\mathrm{target}}_{\mathrm{flow}}
++\lambda_r\mathcal{L}_{\mathrm{region}}
++\lambda_p\mathcal{L}_{\mathrm{preserve}}.
+\]
+
+保持损失只用于确实要求空间对齐的编辑。视角、相机或大姿态变化不能被一个逐像素保持项强行拉回原样。预测区域和结果质量也分开评价，避免模型以不编辑来取得很低的保持误差。
+
+\section{最终输出怎样保护已通过的部分}\label{seedance-m17-ux6700ux7ec8ux8f93ux51faux600eux6837ux4fddux62a4ux5df2ux901aux8fc7ux7684ux90e8ux5206}
+
+严格局部任务可将生成结果只合成到允许区域，外部直接复用源像素；严格保留的音轨也直接复用原始采样。这样不要求 VAE 在未编辑位置无损重建。
+
+语义编辑则允许更多上下文变化，应按身份、动作、几何与连贯性验收。先做``颜色/局部替换''，再做视角和光照任务，能更清楚地定位接口是否有效。
+
+机制代码见 \hyperref[code-condition-unit]{condition\_unit.py} 与 \hyperref[code-local-edit]{local\_edit.py}，均只作说明。真实统一条件实现读 \href{https://github.com/ali-vilab/VACE}{VACE}，区域中间表示读 \href{https://github.com/knightyxp/VideoCoF}{VideoCoF}，图像编辑迁移到视频的方法读 \href{https://vincie-next.github.io/}{VINCIE-NExT}。它们提供可借鉴机制，迁入联合音视频主干仍需要新适配和训练。

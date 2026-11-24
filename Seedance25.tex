@@ -1,0 +1,34 @@
+\documentclass[lang=cn,newtx,10pt,scheme=chinese]{elegantbook}
+\title{Seedance 2.5：基础原理与候选系统设计}
+\subtitle{从扩散模型、流匹配到多参考音视频生成}
+\author{Sisyphes}
+\institute{AIGC 技术笔记}
+\date{2026年11月24日}
+\version{0.2 · 本地审阅稿}
+\logo{logo-blue.png}
+\cover{cover.jpg}
+\definecolor{customcolor}{RGB}{32,178,170}
+\colorlet{coverlinecolor}{customcolor}
+\input{tex/seedance-preamble}
+\setcounter{tocdepth}{1}
+\begin{document}
+\maketitle
+\frontmatter
+\chapter*{阅读说明}
+\addcontentsline{toc}{chapter}{阅读说明}
+本册将 \texttt{multimodal-journey} 的 M00--M27 整理为可离线阅读的
+\LaTeX{} 专题，并增加从图像扩散到音视频生成的数学导读。
+正文保留各模块的符号定义、公式、例子、机制代码和论文示意图，
+文末提供固定版本、来源范围和插图出处。
+
+公开产品信息沿用来源仓库截至2026年11月22日的阅读记录，未在本次导入中
+重新核验线上产品、API或报价。基础方法、公开替代模型的真实规格、
+本文候选结构与算术示例分别说明；精确的 LTX 配置不能解读为 Seedance 的内部参数。
+所有未披露的 Seedance 2.5 实现仍是推测，组合方案尚未进行训练或业务验证。
+
+先读数学导读与 M01--M05 可掌握基本链路；希望先了解整体方案，可读 M27，
+再回到 M19--M26 检查模块、数据与执行细节。模块编号与来源仓库保持一致。
+\tableofcontents
+\mainmatter
+\input{chapters/seedance/contents}
+\end{document}

@@ -1,0 +1,178 @@
+% Imported from topics/video-generation/seedance-2.5/inference-delivery-spec.md
+\chapter{M26 推理资源与交付预算}\label{seedance-m26}
+\moduleinfo{M26}{候选设计与工程选型；组合效果待验证}{\hyperref[src-ltx-2]{\texttt{ltx-2}}、\hyperref[src-ltx-original-code]{\texttt{ltx-original-code}}、\hyperref[src-ltx-original-model]{\texttt{ltx-original-model}}、\hyperref[src-rayflow]{\texttt{rayflow}}、\hyperref[src-adaspa]{\texttt{adaspa}}、\hyperref[src-longlive]{\texttt{longlive}}、\hyperref[src-seedance-1.0]{\texttt{seedance-1.0}}}
+
+
+一套可实施的视频方案，需要说明一次请求如何消耗资源，以及失败后重做哪部分。只列``Flash attention、量化、缓存和蒸馏''，还无法决定该部署哪种模型、接受多长请求、保留什么质量档位。
+
+下面围绕原系列联合音视频主干与新增参考/源条件支路，制定候选部署协议。所有显存数字注明算术口径；没有实际GPU速度、峰值显存或业务通过率测量。
+
+\section{先把权重身份与运行配置锁在一起}\label{seedance-m26-ux5148ux628aux6743ux91cdux8eabux4efdux4e0eux8fd0ux884cux914dux7f6eux9501ux5728ux4e00ux8d77}
+
+基座选择非蒸馏 \codepath{ltx-2-19b-dev.safetensors}，同时固定仓库revision、文件名、远端声明的SHA-256、codec、文本模型与新增模块版本。远端声明哈希不代表已经下载并完成本地文件校验。
+
+公开模型文件约43.29GB，内含主干和多个辅助组件，外部Gemma文本模型需要另外计入。仅按``19B×2字节''估计约38GB，可以理解量级，不能作为整个进程的显存需求。
+
+模型文件头列出的 \codepath{model.diffusion_model} 组约195.85亿标量元素、39.18GB存储。这是序列化元素统计，可能包含辅助结构或buffer，不能直接当成精确可训练参数数。推理还需要activation、工作空间、参考K/V、源条件残差、解码器和并行通信缓冲。
+
+\section{三种时长对应多少token}\label{seedance-m26-ux4e09ux79cdux65f6ux957fux5bf9ux5e94ux591aux5c11token}
+
+示例保持24fps、\(512\times896\)工作分辨率。为满足视频帧网格，内部使用比交付多一帧，解码后按媒体时间裁切；音频仍按交付时长分配。
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1600}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2100}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2100}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2100}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2100}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+交付时长
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+内部帧数
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+视频latent时间数
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+视频token
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+音频token约数
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+8秒 & 193 & 25 & 11,200 & 200 \\
+16秒 & 385 & 49 & 21,952 & 400 \\
+30秒 & 721 & 91 & 40,768 & 750 \\
+\end{longtable}
+}
+
+三十秒时，仅完整视频attention分数矩阵若为32头、每元素2字节，就约99.1GiB。这个数字是显式矩阵的算术量级，不是Flash实现的实际峰值。Flash可避免保存完整分数，但全连接的计算量仍然存在。
+
+空间两边各放大2倍，token增至4倍，dense视频attention连接增至16倍。高分辨率应独立设计精修路径，不能把基础分辨率改成4K后沿用原预算。
+
+\section{新条件也有显存与算术账}\label{seedance-m26-ux65b0ux6761ux4ef6ux4e5fux6709ux663eux5b58ux4e0eux7b97ux672fux8d26}
+
+候选参考支路内宽512，共12处；每处独立K/V。视觉预算2048时，仅BF16 K/V缓存约：
+
+\[
+12\times2048\times512\times2_{K,V}\times2_{\mathrm{bytes}}
+\approx50.3\ \mathrm{MB}.
+\]
+
+它不包含素材原始编码、池化中间量与attention计算。每张高分辨率图独立编码的成本，不能因为最终只留下32个摘要位置就被省略。
+
+三十秒源条件为 \(40\,768\times512\)，一个BF16层特征约41.7MB，12处全部缓存约501MB。训练时这些可学习条件特征还涉及反传与保存策略，不能直接套推理缓存数字。
+
+参考attention的计算随 \(N_vR_vd\) 增长。缩窄支路减少通道运算，按镜头检索减少 \(R_v\)；给无关素材设置负无穷mask，若kernel仍执行完整矩阵，不会自动减少算术。
+
+\section{首版定义三个质量档位}\label{seedance-m26-ux9996ux7248ux5b9aux4e49ux4e09ux4e2aux8d28ux91cfux6863ux4f4d}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+档位
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+路线
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+候选用途
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+布局预览 & 较低合法分辨率、短片、少量参考，保留非蒸馏模型 & 检查角色、动作与镜头计划 \\
+标准生成 & 基础工作分辨率、完整参考/编辑支路、联合音视频 & 审片与局部修改 \\
+精修交付 & 原系列配套latent upscaler＋相应精修采样，必要时分镜 & 提高空间细节与最终编码 \\
+\end{longtable}
+}
+
+预览首先降分辨率和请求长度。少步数档位必须有适配当前条件任务的student或已验证蒸馏版本；原模型的公开蒸馏权重不自动继承新训练的参考和编辑行为。
+
+精修阶段也可能改变脸、logo、区域边界和声画关系，需重新验收。严格局部编辑在精修结束后再执行最终原内容合成，避免精修将已保护部分再次改写。
+
+\section{网络求值次数单独核算}\label{seedance-m26-ux7f51ux7edcux6c42ux503cux6b21ux6570ux5355ux72ecux6838ux7b97}
+
+令 \(K\)为采样步数，\(G\)为每步guidance分支数，则逻辑网络求值次数约为 \(KG\)。将多个分支合成batch可以改变吞吐，却不消除相应计算与显存。
+
+参考strength首版只是新增残差缩放，不另起一套reference CFG。文本CFG、跨模态guidance、扰动guidance以及多阶段精修分别记录分支；不能一边称四步推理，一边遗漏每步多个模型分支。
+
+对新任务先保留非蒸馏质量基线和固定sigma策略，再训练相应student。蒸馏数据覆盖少/多参考、编辑边界、声音状态和长片尾段；只蒸馏普通T2AV会遗忘新增条件。
+
+\section{四类缓存各有什么边界}\label{seedance-m26-ux56dbux7c7bux7f13ux5b58ux5404ux6709ux4ec0ux4e48ux8fb9ux754c}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2200}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.7800}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+缓存
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+可复用前提
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+媒体编码/原始文本特征 & 内容、变换、codec/文本版本相同 \\
+参考池化与逐层K/V & 池化器、读取投影、绑定与预算相同 \\
+干净源条件塔残差 & 条件内容、mask、几何、task版本相同且塔不读动态目标 \\
+因果历史K/V & 相同因果依赖图、干净历史和固定条件，正确完成干净重算写入 \\
+\end{longtable}
+}
+
+保留音轨时可复用codec结果，音频深层隐藏状态若读取当步视频仍需重算。跨步近似特征复用另列质量预算，不与精确静态缓存混称。
+
+\section{并行和卸载按资源项选择}\label{seedance-m26-ux5e76ux884cux548cux5378ux8f7dux6309ux8d44ux6e90ux9879ux9009ux62e9}
+
+小任务先串行执行文本编码、素材编码、去噪和解码，减少互相争显存；文本和codec可按阶段卸载。模型分片主要解决权重容量，context parallel主要分担长序列activation与attention；实际收益取决于通信拓扑。
+
+训练冻结主干仍需要向新增模块反传activation。LoRA减少可训练状态，无法消除长序列activation；全参AdamW的约16字节/参数只是一项状态估算。没有硬件与batch约束前，不指定``某几张卡一定够''。
+
+\section{把业务需求编译为验收规则}\label{seedance-m26-ux628aux4e1aux52a1ux9700ux6c42ux7f16ux8bd1ux4e3aux9a8cux6536ux89c4ux5219}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+需求
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+首要技术选择
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+硬约束与回退
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+电商商品与logo & 商品参考＋细节crop＋必要的实拍/图层合成 & 结构或字样错误不以美感分抵消 \\
+多角色短剧 & 主体/speaker绑定＋镜头状态 & 身份串用先查绑定，局部重做 \\
+指定秒数换衣 & 源条件＋跟踪区域＋最终像素合成 & 外区工作表示保持，边界不连续则修mask/工作区 \\
+局部换台词 & 转录/说话人时间＋声音参考＋嘴形联合编辑 & 台词超时长先改规格，不能截字交付 \\
+工业布局 & 白模/深度/相机与可验证轨迹 & 尺寸精度由确定性结构承载，生成画面不能充当测量真值 \\
+长叙事 & 联合长片或独立因果模型＋事件状态 & 后段崩坏按时段记录，必要时拆镜 \\
+\end{longtable}
+}
+
+首版可建立64个任务的阅读与实施验收包：上述需求及多人重叠、场景重访共8类，每类4个开发任务、4个冻结评估任务。开发与评估分组隔离身份/资产；每路最多3个候选。它是小规模pilot设计，不代表统计充分或已经完成运行。
+
+\section{返工沿依赖关系走}\label{seedance-m26-ux8fd4ux5de5ux6cbfux4f9dux8d56ux5173ux7cfbux8d70}
+
+输入冲突回到任务编译；区域定位失败回到mask；身份错误回到参考与绑定；动作错误检查结构条件或拆镜；只有局部画面错误优先局部编辑；剧情状态错误重做受影响镜头及其后续。
+
+每任务候选上限固定，失败、超时、放弃和人工处理都记录。交付成本包括全部生成、审片、后期和未交付消耗，除以真正交付数量；重试通常相关，不能用一个假设独立的成功概率推导最终成本。
+
+模型执行入口读 \href{https://github.com/Lightricks/LTX-2/tree/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core}{原系列核心实现}，真实分块缓存机制读 \href{https://github.com/NVlabs/LongLive}{LongLive}。本协议把资源口径与交付规则具体化，性能数字和质量通过率仍留待实际实施测量。

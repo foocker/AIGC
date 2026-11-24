@@ -1,0 +1,73 @@
+% Imported from algorithms/inference-optimization/README.md
+\chapter{M10 推理优化与瓶颈分析}\label{seedance-m10}
+\moduleinfo{M10}{基础方法与机制解释}{\hyperref[src-seedance-1.0]{\texttt{seedance-1.0}}、\hyperref[src-seedance-1.5-pro]{\texttt{seedance-1.5-pro}}、\hyperref[src-rayflow]{\texttt{rayflow}}、\hyperref[src-adaspa]{\texttt{adaspa}}、\hyperref[src-seaweed-apt]{\texttt{seaweed-apt}}、\hyperref[src-longlive]{\texttt{longlive}}、\hyperref[src-wan21-code]{\texttt{wan21-code}}、\hyperref[src-diffsynth-code]{\texttt{diffsynth-code}}、\hyperref[src-longlive-code]{\texttt{longlive-code}}}
+
+
+视频生成的总耗时不只来自 DiT。输入解码、提示改写、参考编码、去噪、精修、VAE 解码、音轨处理、上传与排队都可能成为瓶颈。优化一个很快的小环节，通常无法明显缩短用户等待。
+
+\section{用端到端路径建立测量基线}\label{seedance-m10-ux7528ux7aefux5230ux7aefux8defux5f84ux5efaux7acbux6d4bux91cfux57faux7ebf}
+
+一次请求可以分为：
+
+\begin{verbatim}
+排队 → 输入处理 → 文本与参考编码 → 基础采样
+     → 可选精修 → 视频/音频解码 → 编码混流 → 返回
+\end{verbatim}
+
+同时记录端到端墙钟和 GPU 内部时间。GPU 计时需要明确同步边界，否则异步执行可能让某个阶段显得异常便宜。冷启动、预热与缓存命中分开统计，不能把热缓存结果当作所有请求的延迟。
+
+基本记录包括 GPU、精度、模型版本、分辨率、帧数、采样步数、CFG 分支、并发、batch、峰值显存，以及各阶段 p50/p95。试验可以先预热三次、测二十次，但这个样本量只适合初步比较，不能保证生产尾延迟已经稳定。
+
+\section{第一步是消除确实不变的重复工作}\label{seedance-m10-ux7b2cux4e00ux6b65ux662fux6d88ux9664ux786eux5b9eux4e0dux53d8ux7684ux91cdux590dux5de5ux4f5c}
+
+同一提示、参考图片和固定预处理的编码结果可以缓存，键中需要包括内容哈希、裁剪缩放、编码器与适配器版本。
+
+这种静态条件缓存与历史 KV-cache、跨去噪步近似特征缓存不同。后两者依赖模型隐藏状态，不能仅凭输入文件没变就认为始终有效。每一类缓存都应以关闭缓存后的结果为基线验证。
+
+\section{注意力优化主要解决哪一类成本}\label{seedance-m10-ux6ce8ux610fux529bux4f18ux5316ux4e3bux8981ux89e3ux51b3ux54eaux4e00ux7c7bux6210ux672c}
+
+Flash attention 通过更好的计算组织减少中间量和显存访问，并不改变完整注意力的二次连接规模。稀疏或窗口 attention 改变读取范围，才直接减少连接，但也可能损失远距离信息。
+
+GQA 主要减少 K/V 投影与缓存。它改变参数布局，不能作为任意 MHA checkpoint 的无损开关。量化、融合算子和并行也需要区分作用对象，避免把通信 FP8 与整个模型 FP8 混为一谈。
+
+\section{步数减少为什么需要专门训练}\label{seedance-m10-ux6b65ux6570ux51cfux5c11ux4e3aux4ec0ux4e48ux9700ux8981ux4e13ux95e8ux8badux7ec3}
+
+采样步数决定模型被反复调用多少次。未蒸馏模型从五十步直接改成四步，与训练一个四步 student，是不同方案。步长变大后，速度场误差和积分误差都会更明显。
+
+蒸馏可以让 student 学习 teacher 的局部轨迹、跨时间一致性或预测分布；对抗与偏好监督还可用于改善少步数下的感知质量。TSCD、RayFlow 和 APT 等路线分别处理其中不同问题，不能将整套系统收益归结为一个模块。
+
+蒸馏前要固定 teacher、噪声约定、scheduler、CFG 和任务分布。比较时既看速度，也看高运动、手部、多参考、低光与长镜头。teacher 已经生成错误的身份或动作，student 不会因为更快而自动纠正。
+
+\section{VAE、量化和并行怎样选择}\label{seedance-m10-vaeux91cfux5316ux548cux5e76ux884cux600eux6837ux9009ux62e9}
+
+VAE 靠近像素端的阶段可能占用较多时间和显存，可以考虑更窄解码器、时空分块或分辨率级联。分块需要历史特征或空间 overlap，必须检查接缝、色差和快速运动。
+
+量化应覆盖不同噪声区间和条件数量，尤其观察低噪末段的细节、细字和音频杂声。权重量化、激活量化和缓存量化分别测量，不将一个部分的误差结论推广到全部模块。
+
+多卡并行能扩大容量或降低延迟，也会增加通信；CPU offload 节省显存，却可能受 PCIe 传输限制。是否划算取决于真实设备和并发模式，模型能装进显存不等于交付更快。
+
+\section{各模块加速倍数为什么不能直接相乘}\label{seedance-m10-ux5404ux6a21ux5757ux52a0ux901fux500dux6570ux4e3aux4ec0ux4e48ux4e0dux80fdux76f4ux63a5ux76f8ux4e58}
+
+设被优化部分原本占总耗时比例 \(f\)，该部分加速 \(s\) 倍，则整体加速比为：
+
+\[
+S=\frac{1}{(1-f)+f/s}.
+\]
+
+例如 DiT 占总耗时 70\%，即便它加速四倍，整体也只有：
+
+\[
+S=\frac{1}{0.3+0.7/4}\approx2.11.
+\]
+
+DiT 提速后，VAE 和输入处理所占比例还会变化。因此不同模块、不同基线下的加速数字不能任意相乘。网络求值次数、采样时间、吞吐和端到端延迟也要分别报告。
+
+\section{用质量预算决定是否保留优化}\label{seedance-m10-ux7528ux8d28ux91cfux9884ux7b97ux51b3ux5b9aux662fux5426ux4fddux7559ux4f18ux5316}
+
+每次只改变一个主要因素，固定任务、候选预算和可复用的随机条件，再做配对比较。先约定允许的质量变化与严重失败上限，避免看到结果后再放宽标准。
+
+真正有价值的加速，既减少计算等待，也不会使审片和返工增加得更多。若低步数节省了十秒，却让可用率下降、需要反复重生成，最终每条交付内容的成本可能反而上升。
+
+\section{真实工程从哪里进入}\label{seedance-m10-ux771fux5b9eux5de5ux7a0bux4eceux54eaux91ccux8fdbux5165}
+
+基础采样与解码流程看 \href{https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/text2video.py}{Wan text2video}，现成推理调用看 \href{https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_inference/Wan2.1-T2V-1.3B.py}{DiffSynth 样例}，因果缓存看 \href{https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/pipeline/causal_inference.py}{LongLive1.0}。先选择一个完整基线，再按具体瓶颈阅读对应模块；这些入口不意味着量化、稀疏和缓存可以在任意 checkpoint 上直接组合。

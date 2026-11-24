@@ -1,0 +1,1273 @@
+{
+  "schema_version": 1,
+  "updated": "2026-11-22",
+  "papers": [
+    {
+      "id": "x-vlm",
+      "title": "Multi-Grained Vision Language Pre-Training: Aligning Texts with Visual Concepts",
+      "year": 2021,
+      "arxiv_id": "2111.08276",
+      "arxiv_version": "v3",
+      "url": "https://proceedings.mlr.press/v162/zeng22c.html",
+      "arxiv_url": "https://arxiv.org/abs/2111.08276v3",
+      "pdf_url": "https://proceedings.mlr.press/v162/zeng22c/zeng22c.pdf",
+      "edition": "ICML 2022 / PMLR 162:25994–26009",
+      "note_path": "papers/2021/x-vlm.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "视觉语言表征"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "a650b881ba0c8aec25d25a6f10b8fc4ae5fdb9eeb700019fc189f3810d389639",
+        "page_count": 16,
+        "bytes": 22733188,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Yan Zeng",
+        "Xinsong Zhang",
+        "Hang Li"
+      ]
+    },
+    {
+      "id": "pixeldance",
+      "title": "Make Pixels Dance: High-Dynamic Video Generation",
+      "year": 2023,
+      "arxiv_id": "2311.10982",
+      "arxiv_version": "v1",
+      "url": "https://openaccess.thecvf.com/content/CVPR2024/html/Zeng_Make_Pixels_Dance_High-Dynamic_Video_Generation_CVPR_2024_paper.html",
+      "arxiv_url": "https://arxiv.org/abs/2311.10982v1",
+      "pdf_url": "https://openaccess.thecvf.com/content/CVPR2024/papers/Zeng_Make_Pixels_Dance_High-Dynamic_Video_Generation_CVPR_2024_paper.pdf",
+      "edition": "CVPR 2024, pp. 8850–8860",
+      "note_path": "papers/2023/pixeldance.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "运动与控制"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "400162a721fbf12c57226afbd75d4f0e239dbbc7fc0d13bbf4b89079d013b2cc",
+        "page_count": 11,
+        "bytes": 9244569,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Yan Zeng",
+        "Guoqiang Wei",
+        "Jiani Zheng",
+        "Jiaxin Zou",
+        "Yang Wei",
+        "Yuchen Zhang",
+        "Hang Li"
+      ]
+    },
+    {
+      "id": "seedance-2.0",
+      "title": "Seedance 2.0: Advancing Video Generation for World Complexity",
+      "year": 2026,
+      "arxiv_id": "2604.14148",
+      "arxiv_version": "v1",
+      "url": "https://arxiv.org/abs/2604.14148v1",
+      "arxiv_url": "https://arxiv.org/abs/2604.14148v1",
+      "pdf_url": "https://arxiv.org/pdf/2604.14148v1",
+      "edition": "arXiv, 2026-04-15; model card / technical report",
+      "note_path": "papers/2026/seedance-2.0.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "多模态音视频"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "b8a169f36db23966158c7db305986fe89b2f3d945e45987290942842daedcac9",
+        "page_count": 26,
+        "bytes": 2983402,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      }
+    },
+    {
+      "id": "vincie-next",
+      "title": "VINCIE-NExT: Unlocking Video Editing from Images via In-Context Modeling",
+      "year": 2026,
+      "arxiv_id": "2610.12104",
+      "arxiv_version": "v1",
+      "url": "https://arxiv.org/abs/2610.12104v1",
+      "arxiv_url": "https://arxiv.org/abs/2610.12104v1",
+      "pdf_url": "https://arxiv.org/pdf/2610.12104v1",
+      "edition": "NeurIPS 2026 (according to the arXiv authors' comment)",
+      "note_path": "papers/2026/vincie-next.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "参考编辑"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "98e3b0425c6245dc73e548de52e520a3fbbeb0d68ba9be03904d34f979d18231",
+        "page_count": 38,
+        "bytes": 21888026,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Leigang Qu",
+        "Feng Cheng",
+        "Ziyan Yang",
+        "Bangbang Yang",
+        "Zhaoyang Huang",
+        "Wei Chow",
+        "Yicong Li",
+        "Wenjie Wang",
+        "Tat-Seng Chua",
+        "Yan Zeng"
+      ],
+      "project_url": "https://vincie-next.github.io/",
+      "code_url": "https://github.com/LgQu/VINCIE-NExT"
+    },
+    {
+      "id": "seaweed-7b",
+      "title": "Seaweed-7B: Cost-Effective Training of Video Generation Foundation Model",
+      "year": 2025,
+      "arxiv_id": "2504.08685",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2504.08685v2",
+      "arxiv_url": "https://arxiv.org/abs/2504.08685v2",
+      "pdf_url": "https://arxiv.org/pdf/2504.08685v2",
+      "edition": "arXiv 2504.08685v2",
+      "note_path": "papers/2025/seaweed-7b.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "底座、训练预算与扩展"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "62fbcec3637ad30ee0982a3193848e5285cdfe0156b0db666013b4c262528bb0",
+        "page_count": 26,
+        "bytes": 13689998,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Seawead, Team",
+        "Yang, Ceyuan",
+        "Lin, Zhijie",
+        "Zhao, Yang",
+        "Lin, Shanchuan",
+        "Ma, Zhibei",
+        "Guo, Haoyuan",
+        "Chen, Hao",
+        "Qi, Lu",
+        "Wang, Sen",
+        "Cheng, Feng",
+        "Zuo, Feilong",
+        "Zeng, Xuejiao",
+        "Yang, Ziyan",
+        "Kong, Fangyuan",
+        "Wei, Meng",
+        "Qing, Zhiwu",
+        "Xiao, Fei",
+        "Hoang, Tuyen",
+        "Zhang, Siyu",
+        "Zhu, Peihao",
+        "Zhao, Qi",
+        "Yan, Jiangqiao",
+        "Gui, Liangke",
+        "Bi, Sheng",
+        "Li, Jiashi",
+        "Ren, Yuxi",
+        "Wang, Rui",
+        "Li, Huixia",
+        "Xiao, Xuefeng",
+        "Liu, Shu",
+        "Ling, Feng",
+        "Zhang, Heng",
+        "Wei, Houmin",
+        "Kuang, Huafeng",
+        "Duncan, Jerry",
+        "Zhang, Junda",
+        "Zheng, Junru",
+        "Sun, Li",
+        "Zhang, Manlin",
+        "Sun, Renfei",
+        "Zhuang, Xiaobin",
+        "Li, Xiaojie",
+        "Xia, Xin",
+        "Chi, Xuyan",
+        "Peng, Yanghua",
+        "Wang, Yuping",
+        "Wang, Yuxuan",
+        "Zhao, Zhongkai",
+        "Chen, Zhuo",
+        "Song, Zuquan",
+        "Yang, Zhenheng",
+        "Feng, Jiashi",
+        "Yang, Jianchao",
+        "Jiang, Lu"
+      ]
+    },
+    {
+      "id": "seedance-1.0",
+      "title": "Seedance 1.0: Exploring the Boundaries of Video Generation Models",
+      "year": 2025,
+      "arxiv_id": "2506.09113",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2506.09113v2",
+      "arxiv_url": "https://arxiv.org/abs/2506.09113v2",
+      "pdf_url": "https://arxiv.org/pdf/2506.09113v2",
+      "edition": "arXiv 2506.09113v2",
+      "note_path": "papers/2025/seedance-1.0.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "多镜头与产品化"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "e4ec66efd7e354bc7b3d25478fc1cb21709d0dc907f70cee7000ad2bf036fd13",
+        "page_count": 26,
+        "bytes": 24836898,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Gao, Yu",
+        "Guo, Haoyuan",
+        "Hoang, Tuyen",
+        "Huang, Weilin",
+        "Jiang, Lu",
+        "Kong, Fangyuan",
+        "Li, Huixia",
+        "Li, Jiashi",
+        "Li, Liang",
+        "Li, Xiaojie",
+        "Li, Xunsong",
+        "Li, Yifu",
+        "Lin, Shanchuan",
+        "Lin, Zhijie",
+        "Liu, Jiawei",
+        "Liu, Shu",
+        "Nie, Xiaonan",
+        "Qing, Zhiwu",
+        "Ren, Yuxi",
+        "Sun, Li",
+        "Tian, Zhi",
+        "Wang, Rui",
+        "Wang, Sen",
+        "Wei, Guoqiang",
+        "Wu, Guohong",
+        "Wu, Jie",
+        "Xia, Ruiqi",
+        "Xiao, Fei",
+        "Xiao, Xuefeng",
+        "Yan, Jiangqiao",
+        "Yang, Ceyuan",
+        "Yang, Jianchao",
+        "Yang, Runkai",
+        "Yang, Tao",
+        "Yang, Yihang",
+        "Ye, Zilyu",
+        "Zeng, Xuejiao",
+        "Zeng, Yan",
+        "Zhang, Heng",
+        "Zhao, Yang",
+        "Zheng, Xiaozheng",
+        "Zhu, Peihao",
+        "Zou, Jiaxin",
+        "Zuo, Feilong"
+      ]
+    },
+    {
+      "id": "seedance-1.5-pro",
+      "title": "Seedance 1.5 pro: A Native Audio-Visual Joint Generation Foundation Model",
+      "year": 2025,
+      "arxiv_id": "2512.13507",
+      "arxiv_version": "v3",
+      "url": "https://arxiv.org/abs/2512.13507v3",
+      "arxiv_url": "https://arxiv.org/abs/2512.13507v3",
+      "pdf_url": "https://arxiv.org/pdf/2512.13507v3",
+      "edition": "arXiv 2512.13507v3",
+      "note_path": "papers/2025/seedance-1.5-pro.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "原生音视频"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "b9ace4794ebe437adeb9e3b63bdf66b2d8ab496adb5d9f0b5696a5bcb46f40b6",
+        "page_count": 11,
+        "bytes": 3155692,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Seedance, Team",
+        "Chen, Heyi",
+        "Chen, Siyan",
+        "Chen, Xin",
+        "Chen, Yanfei",
+        "Chen, Ying",
+        "Chen, Zhuo",
+        "Cheng, Feng",
+        "Cheng, Tianheng",
+        "Cheng, Xinqi",
+        "Chi, Xuyan",
+        "Cong, Jian",
+        "Cui, Jing",
+        "Cui, Qinpeng",
+        "Dong, Qide",
+        "Fan, Junliang",
+        "Fang, Jing",
+        "Fang, Zetao",
+        "Feng, Chengjian",
+        "Feng, Han",
+        "Gao, Mingyuan",
+        "Gao, Yu",
+        "Guo, Dong",
+        "Guo, Qiushan",
+        "Hao, Boyang",
+        "Hao, Qingkai",
+        "He, Bibo",
+        "He, Qian",
+        "Hoang, Tuyen",
+        "Hu, Ruoqing",
+        "Hu, Xi",
+        "Huang, Weilin",
+        "Huang, Zhaoyang",
+        "Huang, Zhongyi",
+        "Ji, Donglei",
+        "Jiang, Siqi",
+        "Jiang, Wei",
+        "Jiang, Yunpu",
+        "Jiang, Zhuo",
+        "Kim, Ashley",
+        "Kong, Jianan",
+        "Lai, Zhichao",
+        "Lao, Shanshan",
+        "Leng, Yichong",
+        "Li, Ai",
+        "Li, Feiya",
+        "Li, Gen",
+        "Li, Huixia",
+        "Li, JiaShi",
+        "Li, Liang",
+        "Li, Ming",
+        "Li, Shanshan",
+        "Li, Tao",
+        "Li, Xian",
+        "Li, Xiaojie",
+        "Li, Xiaoyang",
+        "Li, Xingxing",
+        "Li, Yameng",
+        "Li, Yifu",
+        "Li, Yiying",
+        "Liang, Chao",
+        "Liang, Han",
+        "Liang, Jianzhong",
+        "Liang, Ying",
+        "Liang, Zhiqiang",
+        "Liao, Wang",
+        "Liao, Yalin",
+        "Lin, Heng",
+        "Lin, Kengyu",
+        "Lin, Shanchuan",
+        "Lin, Xi",
+        "Lin, Zhijie",
+        "Ling, Feng",
+        "Liu, Fangfang",
+        "Liu, Gaohong",
+        "Liu, Jiawei",
+        "Liu, Jie",
+        "Liu, Jihao",
+        "Liu, Shouda",
+        "Liu, Shu",
+        "Liu, Sichao",
+        "Liu, Songwei",
+        "Liu, Xin",
+        "Liu, Xue",
+        "Liu, Yibo",
+        "Liu, Zikun",
+        "Liu, Zuxi",
+        "Lyu, Junlin",
+        "Lyu, Lecheng",
+        "Lyu, Qian",
+        "Mu, Han",
+        "Nie, Xiaonan",
+        "Ning, Jingzhe",
+        "Pan, Xitong",
+        "Peng, Yanghua",
+        "Qin, Lianke",
+        "Qu, Xueqiong",
+        "Ren, Yuxi",
+        "Shen, Kai",
+        "Shi, Guang",
+        "Shi, Lei",
+        "Song, Yan",
+        "Song, Yinglong",
+        "Sun, Fan",
+        "Sun, Li",
+        "Sun, Renfei",
+        "Sun, Yan",
+        "Sun, Zeyu",
+        "Tang, Wenjing",
+        "Tang, Yaxue",
+        "Tao, Zirui",
+        "Wang, Feng",
+        "Wang, Furui",
+        "Wang, Jinran",
+        "Wang, Junkai",
+        "Wang, Ke",
+        "Wang, Kexin",
+        "Wang, Qingyi",
+        "Wang, Rui",
+        "Wang, Sen",
+        "Wang, Shuai",
+        "Wang, Tingru",
+        "Wang, Weichen",
+        "Wang, Xin",
+        "Wang, Yanhui",
+        "Wang, Yue",
+        "Wang, Yuping",
+        "Wang, Yuxuan",
+        "Wang, Ziyu",
+        "Wei, Guoqiang",
+        "Wei, Wanru",
+        "Wu, Di",
+        "Wu, Guohong",
+        "Wu, Hanjie",
+        "Wu, Jian",
+        "Wu, Jie",
+        "Wu, Ruolan",
+        "Wu, Xinglong",
+        "Wu, Yonghui",
+        "Xia, Ruiqi",
+        "Xiang, Liang",
+        "Xiao, Fei",
+        "Xiao, XueFeng",
+        "Xie, Pan",
+        "Xie, Shuangyi",
+        "Xu, Shuang",
+        "Xue, Jinlan",
+        "Yan, Shen",
+        "Yang, Bangbang",
+        "Yang, Ceyuan",
+        "Yang, Jiaqi",
+        "Yang, Runkai",
+        "Yang, Tao",
+        "Yang, Yang",
+        "Yang, Yihang",
+        "Yang, ZhiXian",
+        "Yang, Ziyan",
+        "Yao, Songting",
+        "Yao, Yifan",
+        "Ye, Zilyu",
+        "Yu, Bowen",
+        "Yu, Jian",
+        "Yuan, Chujie",
+        "Yuan, Linxiao",
+        "Zeng, Sichun",
+        "Zeng, Weihong",
+        "Zeng, Xuejiao",
+        "Zeng, Yan",
+        "Zhang, Chuntao",
+        "Zhang, Heng",
+        "Zhang, Jingjie",
+        "Zhang, Kuo",
+        "Zhang, Liang",
+        "Zhang, Liying",
+        "Zhang, Manlin",
+        "Zhang, Ting",
+        "Zhang, Weida",
+        "Zhang, Xiaohe",
+        "Zhang, Xinyan",
+        "Zhang, Yan",
+        "Zhang, Yuan",
+        "Zhang, Zixiang",
+        "Zhao, Fengxuan",
+        "Zhao, Huating",
+        "Zhao, Yang",
+        "Zheng, Hao",
+        "Zheng, Jianbin",
+        "Zheng, Xiaozheng",
+        "Zheng, Yangyang",
+        "Zheng, Yijie",
+        "Zhou, Jiexin",
+        "Zhu, Jiahui",
+        "Zhu, Kuan",
+        "Zhu, Shenhan",
+        "Zhu, Wenjia",
+        "Zou, Benhui",
+        "Zuo, Feilong"
+      ]
+    },
+    {
+      "id": "dit",
+      "title": "Scalable Diffusion Models with Transformers",
+      "year": 2022,
+      "arxiv_id": "2212.09748",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2212.09748v2",
+      "arxiv_url": "https://arxiv.org/abs/2212.09748v2",
+      "pdf_url": "https://arxiv.org/pdf/2212.09748v2",
+      "edition": "arXiv 2212.09748v2",
+      "note_path": "papers/2022/dit.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "扩展规律基础"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "5fbb0ec35e3ae76826240171ca63ed4c27de6cb43180367453019e9d28a8b076",
+        "page_count": 25,
+        "bytes": 43824062,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Peebles, William",
+        "Xie, Saining"
+      ]
+    },
+    {
+      "id": "dancegrpo",
+      "title": "DanceGRPO: Unleashing GRPO on Visual Generation",
+      "year": 2025,
+      "arxiv_id": "2505.07818",
+      "arxiv_version": "v4",
+      "url": "https://arxiv.org/abs/2505.07818v4",
+      "arxiv_url": "https://arxiv.org/abs/2505.07818v4",
+      "pdf_url": "https://arxiv.org/pdf/2505.07818v4",
+      "edition": "arXiv 2505.07818v4",
+      "note_path": "papers/2025/dancegrpo.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "后训练与反馈"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "9600b2587fb5fff831ea34b29bdd8855db6cc4c7d5376099e1deebfbbe523708",
+        "page_count": 30,
+        "bytes": 26736080,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Xue, Zeyue",
+        "Wu, Jie",
+        "Gao, Yu",
+        "Kong, Fangyuan",
+        "Zhu, Lingting",
+        "Chen, Mengzhao",
+        "Liu, Zhiheng",
+        "Liu, Wei",
+        "Guo, Qiushan",
+        "Huang, Weilin",
+        "Luo, Ping"
+      ]
+    },
+    {
+      "id": "rewarddance",
+      "title": "RewardDance: Reward Scaling in Visual Generation",
+      "year": 2025,
+      "arxiv_id": "2509.08826",
+      "arxiv_version": "v1",
+      "url": "https://arxiv.org/abs/2509.08826v1",
+      "arxiv_url": "https://arxiv.org/abs/2509.08826v1",
+      "pdf_url": "https://arxiv.org/pdf/2509.08826v1",
+      "edition": "arXiv 2509.08826v1",
+      "note_path": "papers/2025/rewarddance.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "后训练与反馈"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "c09a20debfcafb853a3db836614913bd25d54dc09fbdd9b06a8dca5c70ce917c",
+        "page_count": 19,
+        "bytes": 11777715,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Wu, Jie",
+        "Gao, Yu",
+        "Ye, Zilyu",
+        "Li, Ming",
+        "Li, Liang",
+        "Guo, Hanzhong",
+        "Liu, Jie",
+        "Xue, Zeyue",
+        "Hou, Xiaoxia",
+        "Liu, Wei",
+        "Zeng, Yan",
+        "Huang, Weilin"
+      ]
+    },
+    {
+      "id": "seaweed-apt",
+      "title": "Diffusion Adversarial Post-Training for One-Step Video Generation",
+      "year": 2025,
+      "arxiv_id": "2501.08316",
+      "arxiv_version": "v3",
+      "url": "https://arxiv.org/abs/2501.08316v3",
+      "arxiv_url": "https://arxiv.org/abs/2501.08316v3",
+      "pdf_url": "https://arxiv.org/pdf/2501.08316v3",
+      "edition": "arXiv 2501.08316v3",
+      "note_path": "papers/2025/seaweed-apt.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "少步生成与推理成本"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "0f466f153647f4c9bb27a5bf88e79c83f3f0ebca5456d6edb1a1e1b7813f3b46",
+        "page_count": 16,
+        "bytes": 10178481,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Lin, Shanchuan",
+        "Xia, Xin",
+        "Ren, Yuxi",
+        "Yang, Ceyuan",
+        "Xiao, Xuefeng",
+        "Jiang, Lu"
+      ]
+    },
+    {
+      "id": "adaspa",
+      "title": "Training-free and Adaptive Sparse Attention for Efficient Long Video Generation",
+      "year": 2025,
+      "arxiv_id": "2502.21079",
+      "arxiv_version": "v1",
+      "url": "https://arxiv.org/abs/2502.21079v1",
+      "arxiv_url": "https://arxiv.org/abs/2502.21079v1",
+      "pdf_url": "https://arxiv.org/pdf/2502.21079v1",
+      "edition": "arXiv 2502.21079v1",
+      "note_path": "papers/2025/adaspa.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "稀疏注意力与推理成本"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "385f5c2a24921cff5db56e73b656c76d92203ab7885d040f0a78e489a0dfbc6b",
+        "page_count": 14,
+        "bytes": 22703832,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Xia, Yifei",
+        "Ling, Suhan",
+        "Fu, Fangcheng",
+        "Wang, Yujie",
+        "Li, Huixia",
+        "Xiao, Xuefeng",
+        "Cui, Bin"
+      ]
+    },
+    {
+      "id": "vincie",
+      "title": "VINCIE: Unlocking In-context Image Editing from Video",
+      "year": 2025,
+      "arxiv_id": "2506.10941",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2506.10941v2",
+      "arxiv_url": "https://arxiv.org/abs/2506.10941v2",
+      "pdf_url": "https://arxiv.org/pdf/2506.10941v2",
+      "edition": "arXiv 2506.10941v2",
+      "note_path": "papers/2025/vincie.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "视频数据到图像编辑"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "ad7a382e905151b286cf0aadd15b20282c17ff9259941bd706384514c19eaa39",
+        "page_count": 46,
+        "bytes": 51959377,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Qu, Leigang",
+        "Cheng, Feng",
+        "Yang, Ziyan",
+        "Zhao, Qi",
+        "Lin, Shanchuan",
+        "Shi, Yichun",
+        "Li, Yicong",
+        "Wang, Wenjie",
+        "Chua, Tat-Seng",
+        "Jiang, Lu"
+      ]
+    },
+    {
+      "id": "lora",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "year": 2021,
+      "arxiv_id": "2106.09685",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2106.09685v2",
+      "arxiv_url": "https://arxiv.org/abs/2106.09685v2",
+      "pdf_url": "https://arxiv.org/pdf/2106.09685v2",
+      "edition": "arXiv 2106.09685v2",
+      "note_path": "papers/2021/lora.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "低成本定制基础"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "e9a0d3128767db616085dc0f4e6e455e672e89af823e8ed1282793682787395a",
+        "page_count": 26,
+        "bytes": 1609513,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Hu, Edward J.",
+        "Shen, Yelong",
+        "Wallis, Phillip",
+        "Allen-Zhu, Zeyuan",
+        "Li, Yuanzhi",
+        "Wang, Shean",
+        "Wang, Lu",
+        "Chen, Weizhu"
+      ]
+    },
+    {
+      "id": "long-context-tuning",
+      "title": "Long Context Tuning for Video Generation",
+      "year": 2025,
+      "arxiv_id": "2503.10589",
+      "arxiv_version": "v1",
+      "url": "https://arxiv.org/abs/2503.10589v1",
+      "arxiv_url": "https://arxiv.org/abs/2503.10589v1",
+      "pdf_url": "https://arxiv.org/pdf/2503.10589v1",
+      "edition": "arXiv 2503.10589v1",
+      "note_path": "papers/2025/long-context-tuning.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "长视频与跨镜头一致性"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "2c301affc003325edf04177086e042c3a03b631084ea4ab02c041aeda76f0e1c",
+        "page_count": 11,
+        "bytes": 10168813,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Guo, Yuwei",
+        "Yang, Ceyuan",
+        "Yang, Ziyan",
+        "Ma, Zhibei",
+        "Lin, Zhijie",
+        "Yang, Zhenheng",
+        "Lin, Dahua",
+        "Jiang, Lu"
+      ]
+    },
+    {
+      "id": "phantom",
+      "title": "Phantom: Subject-consistent video generation via cross-modal alignment",
+      "year": 2025,
+      "arxiv_id": "2502.11079",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2502.11079v2",
+      "arxiv_url": "https://arxiv.org/abs/2502.11079v2",
+      "pdf_url": "https://arxiv.org/pdf/2502.11079v2",
+      "edition": "arXiv 2502.11079v2",
+      "note_path": "papers/2025/phantom.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "多图参考与主体一致性"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "643e477719f256bfcbe254622858bb1531bd15703d3ad3c3d90bbf65f25cdf20",
+        "page_count": 16,
+        "bytes": 32046961,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Liu, Lijie",
+        "Ma, Tianxiang",
+        "Li, Bingchuan",
+        "Chen, Zhuowei",
+        "Liu, Jiawei",
+        "Li, Gen",
+        "Zhou, Siyu",
+        "He, Qian",
+        "Wu, Xinglong"
+      ]
+    },
+    {
+      "id": "video-dit-scaling-laws",
+      "title": "Towards Precise Scaling Laws for Video Diffusion Transformers",
+      "year": 2024,
+      "arxiv_id": "2411.17470",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2411.17470v2",
+      "arxiv_url": "https://arxiv.org/abs/2411.17470v2",
+      "pdf_url": "https://arxiv.org/pdf/2411.17470v2",
+      "edition": "arXiv 2411.17470v2",
+      "note_path": "papers/2024/video-dit-scaling-laws.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "视频模型的尺度定律"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-19",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "b412e87304d7ab17a9aa4cec816fbf2d8ac4c220fc728c73590282a7c2f8a1fd",
+        "page_count": 16,
+        "bytes": 2075366,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Yin, Yuanyang",
+        "Zhao, Yaqi",
+        "Zheng, Mingwu",
+        "Lin, Ke",
+        "Ou, Jiarong",
+        "Chen, Rui",
+        "Huang, Victor Shea-Jay",
+        "Wang, Jiahao",
+        "Tao, Xin",
+        "Wan, Pengfei",
+        "Zhang, Di",
+        "Yin, Baoqun",
+        "Zhang, Wentao",
+        "Gai, Kun"
+      ]
+    },
+    {
+      "id": "rayflow",
+      "title": "RayFlow: Instance-Aware Diffusion Acceleration via Adaptive Flow Trajectories",
+      "year": 2025,
+      "arxiv_id": "2503.07699",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2503.07699v2",
+      "arxiv_url": "https://arxiv.org/abs/2503.07699v2",
+      "pdf_url": "https://arxiv.org/pdf/2503.07699v2",
+      "edition": "arXiv 2503.07699v2",
+      "note_path": "papers/2025/rayflow.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "Seedance 报告引用的蒸馏加速"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-19",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-19",
+        "sha256": "eff89a4ba2179d318ef0f6fe32a12f2e2854408d0916d75500e09f24e8919677",
+        "page_count": 23,
+        "bytes": 1532851,
+        "scope": "PDF identity, title and page text checked locally; not a scientific reproduction"
+      },
+      "authors": [
+        "Shao, Huiyang",
+        "Xia, Xin",
+        "Yang, Yuhong",
+        "Ren, Yuxi",
+        "Wang, Xing",
+        "Xiao, Xuefeng"
+      ]
+    },
+    {
+      "id": "magvit-v2",
+      "title": "Language Model Beats Diffusion — Tokenizer is Key to Visual Generation",
+      "year": 2023,
+      "arxiv_id": "2310.05737",
+      "arxiv_version": "v3",
+      "url": "https://arxiv.org/abs/2310.05737v3",
+      "arxiv_url": "https://arxiv.org/abs/2310.05737v3",
+      "pdf_url": "https://arxiv.org/pdf/2310.05737v3",
+      "edition": "arXiv 2310.05737v3",
+      "note_path": "papers/2023/magvit-v2.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "foundations",
+        "candidate-architecture"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "b393503a10d53239ff4ebc67124d99fcc96777e78e4d525b1dd17ba43a474537",
+        "page_count": 19,
+        "bytes": 3608249,
+        "scope": "PDF p.5 §3.2 / Figure 2; targeted text reading, no model reproduction"
+      }
+    },
+    {
+      "id": "rope",
+      "title": "RoFormer: Enhanced Transformer with Rotary Position Embedding",
+      "year": 2021,
+      "arxiv_id": "2104.09864",
+      "arxiv_version": "v1",
+      "url": "https://arxiv.org/abs/2104.09864v1",
+      "arxiv_url": "https://arxiv.org/abs/2104.09864v1",
+      "pdf_url": "https://arxiv.org/pdf/2104.09864v1",
+      "edition": "arXiv 2104.09864v1",
+      "note_path": "papers/2021/rope.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "foundations",
+        "candidate-architecture"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "2987844c31e154ee10c2e59b64b0ba2f793447bc0c6eeeb2bf435141ed0b69db",
+        "page_count": 12,
+        "bytes": 437245,
+        "scope": "§3.2 rotation construction; targeted text reading, no model reproduction"
+      }
+    },
+    {
+      "id": "tarsier2",
+      "title": "Tarsier2: Advancing Large Vision-Language Models from Detailed Video Description to Comprehensive Video Understanding",
+      "year": 2025,
+      "arxiv_id": "2501.07888",
+      "arxiv_version": "v1",
+      "url": "https://arxiv.org/abs/2501.07888v1",
+      "arxiv_url": "https://arxiv.org/abs/2501.07888v1",
+      "pdf_url": "https://arxiv.org/pdf/2501.07888v1",
+      "edition": "arXiv 2501.07888v1",
+      "note_path": "papers/2025/tarsier2.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "foundations",
+        "candidate-architecture"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "a975872d94e4dfe68911a00dfe260695eb316be2e957286082c30ac6f456a3d1",
+        "page_count": 46,
+        "bytes": 10390064,
+        "scope": "PDF pp.6–11, p.36 Table 12; targeted text reading, no model reproduction"
+      }
+    },
+    {
+      "id": "longlive",
+      "title": "LongLive: Real-time Interactive Long Video Generation",
+      "year": 2025,
+      "arxiv_id": "2509.22622",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2509.22622v2",
+      "arxiv_url": "https://arxiv.org/abs/2509.22622v2",
+      "pdf_url": "https://arxiv.org/pdf/2509.22622v2",
+      "edition": "arXiv 2509.22622v2",
+      "note_path": "papers/2025/longlive.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "foundations",
+        "candidate-architecture"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "c02db70004d281be6f35b760052457b86860eebbb6356abd3044690a96b54905",
+        "page_count": 21,
+        "bytes": 24388253,
+        "scope": "abstract and PDF pp.4–6 §3; targeted text reading, no model reproduction"
+      }
+    },
+    {
+      "id": "wan-2.1",
+      "title": "Wan: Open and Advanced Large-Scale Video Generative Models",
+      "year": 2025,
+      "arxiv_id": "2503.20314",
+      "arxiv_version": "v2",
+      "url": "https://arxiv.org/abs/2503.20314v2",
+      "arxiv_url": "https://arxiv.org/abs/2503.20314v2",
+      "pdf_url": "https://arxiv.org/pdf/2503.20314v2",
+      "edition": "arXiv 2503.20314v2",
+      "note_path": "papers/2025/wan-2.1.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "foundations",
+        "candidate-architecture"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "ca859378a8296fe1a09fb5127680bcdc7e6499fb340e989a598c904720424e9c",
+        "page_count": 60,
+        "bytes": 21903728,
+        "scope": "abstract and PDF pp.10–14; targeted text reading, no model reproduction"
+      }
+    },
+    {
+      "id": "alchemint",
+      "title": "AlcheMinT: Fine-grained Temporal Control for Multi-Reference Consistent Video Generation",
+      "year": 2025,
+      "arxiv_id": "2512.10943",
+      "arxiv_version": null,
+      "edition_id": "cvpr2026",
+      "url": "https://openaccess.thecvf.com/content/CVPR2026/html/Girish_AlcheMinT_Fine-grained_Temporal_Control_for_Multi-Reference_Consistent_Video_Generation_CVPR_2026_paper.html",
+      "arxiv_url": "https://arxiv.org/abs/2512.10943v1",
+      "pdf_url": "https://openaccess.thecvf.com/content/CVPR2026/papers/Girish_AlcheMinT_Fine-grained_Temporal_Control_for_Multi-Reference_Consistent_Video_Generation_CVPR_2026_paper.pdf",
+      "edition": "CVPR 2026 publisher edition",
+      "note_path": "papers/2025/alchemint.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "detailed-design"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "1657b4098352a2270c993764a9ab7d1d3408c5355d4eef4b179204e62aecede0",
+        "page_count": 11,
+        "bytes": 23772979,
+        "scope": "PDF pp.4–5 method/binding/data; p.5 equation 5 needs interpretation check; targeted reading, not reproduced"
+      }
+    },
+    {
+      "id": "geometry-as-context",
+      "title": "Geometry-as-context: Modulating Explicit 3D in Scene-consistent Video Generation to Geometry Context",
+      "year": 2026,
+      "arxiv_id": "2602.21929",
+      "arxiv_version": null,
+      "edition_id": "cvpr2026",
+      "url": "https://openaccess.thecvf.com/content/CVPR2026/html/Hu_Geometry-as-context_Modulating_Explicit_3D_in_Scene-consistent_Video_Generation_to_Geometry_CVPR_2026_paper.html",
+      "arxiv_url": "https://arxiv.org/abs/2602.21929v1",
+      "pdf_url": "https://openaccess.thecvf.com/content/CVPR2026/papers/Hu_Geometry-as-context_Modulating_Explicit_3D_in_Scene-consistent_Video_Generation_to_Geometry_CVPR_2026_paper.pdf",
+      "edition": "CVPR 2026 publisher edition",
+      "note_path": "papers/2026/geometry-as-context.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "detailed-design"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "b2817bb1c656909fbb8ed927b9a3edda07b7c9c8be0d07d0a982ad7404a464d4",
+        "page_count": 11,
+        "bytes": 8909729,
+        "scope": "PDF pp.3–6 geometry interleaving, camera gated attention, data and training; targeted reading, not reproduced"
+      }
+    },
+    {
+      "id": "vace",
+      "title": "VACE: All-in-One Video Creation and Editing",
+      "year": 2025,
+      "arxiv_id": "2503.07598",
+      "arxiv_version": "v2",
+      "edition_id": "v2",
+      "url": "https://arxiv.org/abs/2503.07598v2",
+      "arxiv_url": "https://arxiv.org/abs/2503.07598v2",
+      "pdf_url": "https://arxiv.org/pdf/2503.07598v2",
+      "edition": "arXiv 2503.07598v2",
+      "note_path": "papers/2025/vace.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "detailed-design"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "951af6f6398929a8c3d5e992d0180899db24a6366b637bf8b767380b54281ce3",
+        "page_count": 17,
+        "bytes": 20011191,
+        "scope": "PDF pp.3–5 VCU, reactive/inactive inputs, adapter and task data; targeted reading, not reproduced"
+      }
+    },
+    {
+      "id": "ltx-2",
+      "title": "LTX-2: Efficient Joint Audio-Visual Foundation Model",
+      "year": 2026,
+      "arxiv_id": "2601.03233",
+      "arxiv_version": "v1",
+      "edition_id": "v1",
+      "url": "https://arxiv.org/abs/2601.03233v1",
+      "arxiv_url": "https://arxiv.org/abs/2601.03233v1",
+      "pdf_url": "https://arxiv.org/pdf/2601.03233v1",
+      "edition": "arXiv 2601.03233v1",
+      "note_path": "papers/2026/ltx-2.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "detailed-design"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "6499eb067744ab8d2564888f22acc8ec8c11d4e2b50169619d70e7e0886091bf",
+        "page_count": 14,
+        "bytes": 3032343,
+        "scope": "PDF pp.4–8 dual-stream, temporal alignment, audio codec, modality CFG; original implementation read separately; targeted reading, not reproduced"
+      }
+    },
+    {
+      "id": "videocof",
+      "title": "VideoCoF: Unified Video Editing with Temporal Reasoner",
+      "year": 2025,
+      "arxiv_id": "2512.07469",
+      "arxiv_version": null,
+      "edition_id": "cvpr2026",
+      "url": "https://openaccess.thecvf.com/content/CVPR2026/html/Yang_VideoCoF_Unified_Video_Editing_with_Temporal_Reasoner_CVPR_2026_paper.html",
+      "arxiv_url": "https://arxiv.org/abs/2512.07469v1",
+      "pdf_url": "https://openaccess.thecvf.com/content/CVPR2026/papers/Yang_VideoCoF_Unified_Video_Editing_with_Temporal_Reasoner_CVPR_2026_paper.pdf",
+      "edition": "CVPR 2026 publisher edition",
+      "note_path": "papers/2025/videocof.md",
+      "topic_ids": [
+        "video-generation"
+      ],
+      "tags": [
+        "detailed-design"
+      ],
+      "reading_status": "partial",
+      "note_status": "draft",
+      "first_added": "2026-11-22",
+      "last_checked": "2026-11-22",
+      "file_check": {
+        "date": "2026-11-22",
+        "sha256": "f46af3ed9896877cff7c2f996f31f23f53552cd640d4d0f067f0d13318e51379",
+        "page_count": 10,
+        "bytes": 13193042,
+        "scope": "PDF pp.3–5 source/reason/target, position, loss, curation; targeted reading, not reproduced"
+      }
+    }
+  ]
+}

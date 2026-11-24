@@ -1,0 +1,123 @@
+% Imported from topics/video-generation/seedance-2.5/reference-timeline.md
+\chapter{M16 多参考绑定与时间控制}\label{seedance-m16}
+\moduleinfo{M16}{候选设计与工程选型；组合效果待验证}{\hyperref[src-alchemint]{\texttt{alchemint}}、\hyperref[src-phantom]{\texttt{phantom}}、\hyperref[src-ltx-2]{\texttt{ltx-2}}、\hyperref[src-vace]{\texttt{vace}}}
+
+
+多参考视频的困难不只在输入数量。两张人物图可能属于同一个角色的不同视角，也可能属于两个相似角色；一段视频只需要提供动作，其背景却不应该进入结果；一个角色还可能只应在第十到十五秒出现。解决这些问题，需要把参考内容、角色归属和时间范围同时建模。
+
+下面给出一套以联合音视频主干为基础的候选参考接口。它吸收主体参考与区间控制的方法，但参数和预算仍是设计选择，尚未通过训练验证。
+
+\section{一份参考先拆成三个对象}\label{seedance-m16-ux4e00ux4efdux53c2ux8003ux5148ux62c6ux6210ux4e09ux4e2aux5bf9ux8c61}
+
+第一层是原始资产，例如图片、视频或音频。第二层是主体，例如 \codepath{actor_a}、\codepath{car_b}、\codepath{speaker_a}。第三层是绑定规则，说明资产为哪个主体、哪个镜头、哪段时间提供哪类信息。
+
+\begin{verbatim}
+{
+  "asset_id": "portrait_a_front",
+  "subject_id": "actor_a",
+  "role": "identity",
+  "shot_ids": ["shot_2"],
+  "active_intervals_seconds": [[10, 15]],
+  "priority": 1
+}
+\end{verbatim}
+
+\codepath{asset_id} 用来区分文件，\codepath{subject_id} 用来合并同一人的多张视图，\codepath{role} 用来限制应当继承的属性。声音与人物之间另用 speaker-to-subject 映射，不能假设第一段音频必然属于第一张图片。
+
+时间区间使用列表，保留``出现、离开、再次出现''的间断。简单取首次和末次出现，会把中间缺席时段错误填满。
+
+\section{描述词与图像为什么需要相同绑定}\label{seedance-m16-ux63cfux8ff0ux8bcdux4e0eux56feux50cfux4e3aux4ec0ux4e48ux9700ux8981ux76f8ux540cux7ed1ux5b9a}
+
+如果场景里有两个男人，文本只写``男人转身''，模型就缺少区分依据。为每个参考分配不同的索引或角色表示，并让角色描述词与图像共享绑定，可以减少身份串用。
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={参考图、主体描述与时间区间共同进入模型 （论文示意，来源：alchemint）}]{assets/seedance/figures/timed-reference.png}}
+\caption{参考图、主体描述与时间区间共同进入模型 （论文示意，来源：alchemint）}
+\end{figure}
+
+图中参考不只包含图像，还附有实体词和区间；参考词与图像通过同一个索引关联。区间信息再影响它们与视频 token 的交互。这种``内容＋归属＋时间''的分解，比仅在长提示中写很多次角色名字更明确。
+
+归属 embedding 本身不包含身份外观，它只是标签。脸部、服装和物体细节仍须由图像特征提供；实际身份信息不足时，增加标签数量无法补回。
+
+\section{三种模态分别怎样编码}\label{seedance-m16-ux4e09ux79cdux6a21ux6001ux5206ux522bux600eux6837ux7f16ux7801}
+
+{\def\LTcaptype{table} % do not increment counter
+\small\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3900}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4200}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+输入
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+内容路径
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+需要分开的角色信息
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+图片 & 与目标视频相同的 VAE、空间投影、主体 crop & 身份、服装、场景、风格 \\
+视频 & VAE 时空特征；额外提取 pose、flow、相机轨迹 & 动作与相机不能默认继承人物身份 \\
+音频 & 同一音频 VAE 的时序特征、说话人分段与文字转录 & 音色、节奏、对白内容、音乐 \\
+\end{longtable}
+}
+
+图片和视频使用同一个视觉潜空间，避免再引入一个无法对齐的像素编码器。每份素材仍独立编码，不能先把不连续的视频直接拼在像素时间轴上，让因果 VAE 将前一素材混入后一素材。
+
+对仅控制动作的视频，优先使用姿态、光流和相机条件支路；外观 token 可以关闭。音频参考中的一句话也不能自动成为目标台词：音色参考和逐字对白是两类监督，前者需要跨文本同说话人配对，后者需要时间对齐的文字与波形。
+
+音色和风格可以压成摘要，精确对白、节拍或已有配乐则不能只靠32个摘要token承载。需要保持原声音和时序时，使用对齐到目标媒体时钟的完整干净音频条件，输出复用原波形；对应约25Hz的条件序列单独计入计算预算。这样要与``只借音色、生成新台词''的任务分开训练。
+
+\section{固定预算怎样保留细节}\label{seedance-m16-ux56faux5b9aux9884ux7b97ux600eux6837ux4fddux7559ux7ec6ux8282}
+
+候选起点为每图 32 个摘要 token、每视频 64 个、每音频 32 个。30 图和 10 视频共 1600 个视觉参考 token，10 音频共 320 个音频参考 token，分别位于 2048 与 512 的预算以内。
+
+这些是\textbf{压缩后的条件预算}，不是原始 VAE 序列长度，也不是已证明充分的容量。先用少量可学习 query 对每份素材独立汇聚：
+
+\[
+R_j=\operatorname{Attn}(Q_j^{\mathrm{pool}},K_j^{\mathrm{asset}},V_j^{\mathrm{asset}}).
+\]
+
+图像可保留少量高分辨率 crop token，视频按动作阶段分组，音频保留时间段和 speaker 标记，再附 role、subject 与位置表示。不能先把所有素材平均，之后才试图恢复属于哪个角色。
+
+每镜头只读取相关参考。若细 logo、纹理或音色在压缩后丢失，先增加相应主体的预算，或改用确定性合成，而不是继续增加与当前镜头无关的文件。
+
+\section{时间控制放在哪里}\label{seedance-m16-ux65f6ux95f4ux63a7ux5236ux653eux5728ux54eaux91cc}
+
+区间控制可以改变参考的时间位置表示，也可以直接在参考交叉注意力中加入时间偏置。加权 RoPE 试图使参考在一段时间内持续可读，比只放在区间中点更能区分短区间与长区间；它仍是一种学习型偏置，不是语义事件的硬保证。
+
+为降低首版迁移风险，这套候选方案先保留主干原 RoPE，只在新增参考支路增加显式时间门：
+
+\[
+g_j(\tau)=\sum_k
+\sigma\!\left(\frac{\tau-a_{jk}}{\delta}\right)
+\sigma\!\left(\frac{b_{jk}-\tau}{\delta}\right).
+\]
+
+区间为 \([a_{jk},b_{jk})\)，\(\delta\) 控制边界过渡。实际将重叠区间合并，并把 \(g_j\) 限制到 \([0,1]\)。对应 attention bias 为：
+
+\[
+B_{ij}=\log\bigl(\varepsilon+(1-\varepsilon)g_j(\tau_i)\bigr).
+\]
+
+角色/镜头不相容的连接可直接屏蔽；时间边界则先用软门，给进入、离开和运动模糊保留过渡。还需一个始终可读的 null token，防止某个 query 的全部参考被屏蔽。
+
+空间query并不天然知道自己属于哪个主体。没有布局、源跟踪或可靠预测区域时，只按镜头允许的主体集合做粗筛，靠共享主体embedding与训练学习对应；有可靠区域时才加入空间约束。训练中若使用真值区域，推理也必须提供相同类型的条件，或在训练时混入预测误差，不能借用目标真值暗中完成绑定。
+
+\section{不能把``看不到参考''当成``角色一定不出现''}\label{seedance-m16-ux4e0dux80fdux628aux770bux4e0dux5230ux53c2ux8003ux5f53ux6210ux89d2ux8272ux4e00ux5b9aux4e0dux51faux73b0}
+
+即使区间外参考权重很低，主干也可能从文本或历史继续生成人物。真正的出场控制需要正负时间监督：既有区间内出现，也有区间外缺席和多人重叠出现的数据。
+
+数据制作可通过实体词提取、检测、分割跟踪获得逐帧可见性，再抽取与目标片段相隔较远的主体视图，减少复制。遮挡导致不可见与角色离场不同，标签应保留可见性置信度，不把所有检测失败都标成角色不存在。
+
+验收分别统计区间内身份、区间外误出现、边界误差、多人串用、动作跟随和背景泄漏。两图两个角色、相同中点不同区间长度、间断出场和同时出场，都是必须保留的对照。
+
+\section{极简代码与工程入口}\label{seedance-m16-ux6781ux7b80ux4ee3ux7801ux4e0eux5de5ux7a0bux5165ux53e3}
+
+单区间时间 bias 的计算见 \hyperref[code-reference-timing]{reference\_timing.py}，多区间需先按主体合并。参考支路的布尔可读mask见 \hyperref[code-reference-adapter]{reference\_adapter.py}；将时间bias与归属mask合成、添加null token由调用者完成。这些代码只说明机制，未执行。
+
+真实主体参考可从 \href{https://github.com/Phantom-video/Phantom}{Phantom-Wan} 阅读；时间控制方法的 \href{https://snap-research.github.io/Video-AlcheMinT/}{AlcheMinT 项目} 提供论文与展示。本方案采用显式时间门作为首版设计，不将它称为 WeRoPE 原实现，也不声称这些方法已被用于 Seedance 2.5。

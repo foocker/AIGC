@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "seaweed-project",
+      "type": "official_project",
+      "title": "Seaweed research project",
+      "url": "https://seaweed.video/",
+      "checked_on": "2026-11-19",
+      "notes": "展示 Seaweed 及 LCT、Phantom、APT 等相关研究；页面内容会继续变化。"
+    },
+    {
+      "id": "vincie-code",
+      "type": "official_repository",
+      "title": "ByteDance-Seed/VINCIE",
+      "url": "https://github.com/ByteDance-Seed/VINCIE",
+      "checked_on": "2026-11-22",
+      "notes": "多轮图像编辑、交错多模态；主要用于多轮图像编辑；不能把此入口称为时间戳视频编辑或直接替代 VINCIE-NExT。 已核对入口，未运行。",
+      "commit": "97cd2c5701e694dabcfea320c0cf59893d427fab"
+    },
+    {
+      "id": "seedance-product",
+      "type": "official_product",
+      "title": "Seedance 2.0 official page",
+      "url": "https://seed.bytedance.com/en/seedance2_0",
+      "checked_on": "2026-11-19",
+      "notes": "产品能力参考；技术与评测细节优先引用固定版本模型卡。"
+    },
+    {
+      "id": "profile-screenshot",
+      "type": "user_provided_screenshot",
+      "title": "29岁掌舵字节视频大模型：曾妍与Seedance的“技术豪赌”",
+      "url": null,
+      "local_path": "sources/media/2026-11-19-seedance-profile.md",
+      "checked_on": "2026-11-19",
+      "status": "unverified",
+      "notes": "来源是本次对话截图；作者、发布日期和原文 URL 未确认。人物、薪酬、组织和参数说法未按报道直接认定为事实。"
+    },
+    {
+      "id": "user-evolution-notes",
+      "type": "working_hypothesis",
+      "title": "用户提出的技术演进与业务落地主线",
+      "url": null,
+      "local_path": "research/2026-11-19-seedance/inputs/evolution-hypotheses.md",
+      "checked_on": "2026-11-19",
+      "status": "unverified",
+      "notes": "用户工作假设的摘要；用作检索问题，不作为独立原始证据。"
+    },
+    {
+      "id": "seedance-2.5-release",
+      "type": "official_release",
+      "title": "一镜成片，随心参考｜Seedance 2.5 正式发布",
+      "url": "https://seed.bytedance.com/blog/one-take-creation-flexible-referencing-introducing-seedance-2-5",
+      "published_on": "2026-07-31",
+      "checked_on": "2026-11-22",
+      "notes": "实际访问并阅读正文；支持产品能力和架构连续性陈述，不披露完整实现。API近期上线是发布时表述，未核查当前API文档。"
+    },
+    {
+      "id": "seedance-2.5-product",
+      "type": "official_product",
+      "title": "Seedance 2.5 product page",
+      "url": "https://seed.bytedance.com/en/seedance2_5",
+      "checked_on": "2026-11-22",
+      "notes": "动态英文页；30秒、延长两次、参考/编辑/白模/绿幕。与发布页“多轮延长”分别保留范围。"
+    },
+    {
+      "id": "user-deepseek-extract",
+      "type": "user_provided_model_notes",
+      "title": "用户与 DeepSeek 讨论后的学习摘录",
+      "url": null,
+      "local_path": "talk2deepseek.md",
+      "checked_on": "2026-11-22",
+      "status": "unverified",
+      "notes": "原始输入完整保留；含重复段与待核查推断，不作为独立原始技术证据。纠正见2026-11-22研究轮次。"
+    },
+    {
+      "id": "wan21-code",
+      "type": "official_repository",
+      "title": "Wan-Video/Wan2.1",
+      "url": "https://github.com/Wan-Video/Wan2.1",
+      "commit": "9737cba9c1c3c4d04b33fcad41c111989865d315",
+      "checked_on": "2026-11-22",
+      "notes": "视频基础推理、VAE、DiT；基础推理入口；不提供本仓库候选 reference adapter 的训练方案。 已核对入口，未运行。"
+    },
+    {
+      "id": "diffsynth-code",
+      "type": "official_repository",
+      "title": "modelscope/DiffSynth-Studio",
+      "url": "https://github.com/modelscope/DiffSynth-Studio",
+      "commit": "d32f72424cd22bc0ea8100cc57559149b4eac933",
+      "checked_on": "2026-11-22",
+      "notes": "Wan LoRA/全参训练与推理；真实训练框架；现成 LoRA 不自动提供多参考绑定或局部编辑能力。 已核对入口，未运行。"
+    },
+    {
+      "id": "phantom-code",
+      "type": "official_repository",
+      "title": "Phantom-video/Phantom",
+      "url": "https://github.com/Phantom-video/Phantom",
+      "commit": "bd84b602dcc949e23c89cbbf266b6f5975f2f025",
+      "checked_on": "2026-11-22",
+      "notes": "主体参考视频推理；发布的是 Phantom-Wan 适配，不能逐项当成论文中内部基座；该版本 README 的训练代码仍为未勾选。 已核对入口，未运行。"
+    },
+    {
+      "id": "longlive-code",
+      "type": "official_repository",
+      "title": "NVlabs/LongLive",
+      "url": "https://github.com/NVlabs/LongLive",
+      "commit": "31c70d9071cd7851d82939806dc9fac645fcabe5",
+      "checked_on": "2026-11-22",
+      "notes": "长视频因果推理、流式训练；固定阅读 LongLive1.0 子目录；仓库根目录另含2.0/Plug/Long-WAM，不能混用入口。 已核对入口，未运行。"
+    },
+    {
+      "id": "ltx-code",
+      "type": "official_repository",
+      "title": "Lightricks/LTX-2",
+      "url": "https://github.com/Lightricks/LTX-2",
+      "commit": "daa6b16fc7f0f1628f2c9e36a303e3312b333cc6",
+      "checked_on": "2026-11-22",
+      "notes": "联合音视频、条件生成、训练；当前固定版本同时覆盖多个 LTX 型号，模型/codec/LoRA 必须匹配；代码 Apache-2.0，模型另有 Community License。 已核对入口，未运行。"
+    },
+    {
+      "id": "dancegrpo-code",
+      "type": "official_repository",
+      "title": "XueZeyue/DanceGRPO",
+      "url": "https://github.com/XueZeyue/DanceGRPO",
+      "commit": "15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344",
+      "checked_on": "2026-11-22",
+      "notes": "视觉 GRPO、SDE 采样与奖励优化；固定版 README 将 Wan-2.1 路线当作图像生成并用 HPS 奖励，不能当成已验证的完整视频对齐配方。 已核对入口，未运行。"
+    },
+    {
+      "id": "tarsier-code",
+      "type": "official_repository",
+      "title": "bytedance/tarsier",
+      "url": "https://github.com/bytedance/tarsier",
+      "commit": "63de87a760c2aec6b31470a08046969a13787126",
+      "checked_on": "2026-11-22",
+      "notes": "视频描述生产与评价；区分 Tarsier/Tarsier2 checkpoint 和其 processor/config；自动描述仍需事实抽检。 已核对入口，未运行。"
+    },
+    {
+      "id": "ltx-original-code",
+      "type": "official_repository",
+      "title": "Lightricks/LTX-2 / ltx-original-code",
+      "url": "https://github.com/Lightricks/LTX-2",
+      "commit": "bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638",
+      "checked_on": "2026-11-22",
+      "notes": "原系列联合音视频基座与训练接口；固定2026-01原系列版本；不能与后来LTX2.5的checkpoint、文本和codec混用。该历史commit根LICENSE为LTX-2 Community License，不能套用当前版本Apache代码许可。 未执行。"
+    },
+    {
+      "id": "vace-code",
+      "type": "official_repository",
+      "title": "ali-vilab/VACE / vace-code",
+      "url": "https://github.com/ali-vilab/VACE",
+      "commit": "48eb44f1c4be87cc65a98bff985a26976841e9f3",
+      "checked_on": "2026-11-22",
+      "notes": "统一帧/mask条件、预处理与视频编辑；VACE不同基座分支不自动兼容本方案LTX-2；不是其现成插件。 未执行。"
+    },
+    {
+      "id": "videocof-code",
+      "type": "official_repository",
+      "title": "knightyxp/VideoCoF / videocof-code",
+      "url": "https://github.com/knightyxp/VideoCoF",
+      "commit": "f45b8009616b3ef8e2024a7da585249b4c74fc2b",
+      "checked_on": "2026-11-22",
+      "notes": "区域中间表示视频编辑与训练；Wan/VideoX-Fun工程；论文联合区域/目标去噪不等于本文显式两阶段实现。 未执行。"
+    },
+    {
+      "id": "ltx-original-model",
+      "type": "official_model_repository",
+      "title": "Lightricks/LTX-2 original dev model metadata",
+      "url": "https://huggingface.co/Lightricks/LTX-2/tree/64f65d09e0b76c96202b5bc09997673184cf9b5d",
+      "revision": "64f65d09e0b76c96202b5bc09997673184cf9b5d",
+      "checked_on": "2026-11-22",
+      "notes": "Original dev identity, repository configs and 603120-byte native safetensors header read; tensor payload not downloaded; remote LFS hash is not a local full-file check. Detailed metadata: research/2026-11-22-implementation-contracts/model-config-check.json"
+    }
+  ]
+}

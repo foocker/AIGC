@@ -1,0 +1,479 @@
+\chapter{极简机制代码}
+
+\label{seedance-code}
+
+本章收录来源仓库自行编写的16份教学机制片段，以便离线对照正文。代码省略生产接口与边界处理，未在本次任务中执行；它们不是完整训练框架或闭源模型实现。
+
+\Needspace{12\baselineskip}
+\section{attention\_layout.py}
+\label{code-attention-layout}
+\begin{verbatim}
+"""用单头 SDPA 展示连接范围；省略 QKV 投影、位置编码、残差和 FFN。"""
+import torch
+import torch.nn.functional as F
+
+
+def attend(sequence):
+    # sequence: [groups,N,d]；Q=K=V 仅用于突出序列组织。
+    x = sequence.unsqueeze(1)
+    return F.scaled_dot_product_attention(x, x, x).squeeze(1)
+
+
+def spatial_attention(x):
+    b, t, h, w, d = x.shape
+    return attend(x.reshape(b * t, h * w, d)).reshape(b, t, h, w, d)
+
+
+def temporal_attention(x):
+    b, t, h, w, d = x.shape
+    seq = x.permute(0, 2, 3, 1, 4).reshape(b * h * w, t, d)
+    return attend(seq).reshape(b, h, w, t, d).permute(0, 3, 1, 2, 4)
+
+
+def window_temporal_attention(x, window=(2, 2)):
+    b, t, h, w, d = x.shape
+    wh, ww = window
+    assert h % wh == w % ww == 0  # 为便于阅读，省略余数 padding。
+    nh, nw = h // wh, w // ww
+    seq = x.reshape(b, t, nh, wh, nw, ww, d)
+    seq = seq.permute(0, 2, 4, 1, 3, 5, 6).reshape(b * nh * nw, t * wh * ww, d)
+    out = attend(seq).reshape(b, nh, nw, t, wh, ww, d)
+    return out.permute(0, 3, 1, 4, 2, 5, 6).reshape(b, t, h, w, d)
+
+
+def multimodal_attention(qv, kv, vv, qt, kt, vt):
+    # 各模态先独立投影为 [B,heads,N,d_head]，再在 token 轴拼接。
+    n_visual = qv.shape[-2]
+    out = F.scaled_dot_product_attention(torch.cat((qv, qt), dim=-2),
+                                        torch.cat((kv, kt), dim=-2),
+                                        torch.cat((vv, vt), dim=-2))
+    return out[..., :n_visual, :], out[..., n_visual:, :]
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{audio\_video\_exchange.py}
+\label{code-audio-video-exchange}
+\begin{verbatim}
+"""说明双向交换的数据依赖；省略 codec、多头、时间 mask 和噪声调制。"""
+from torch import nn
+
+
+class AudioVideoExchange(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.video_reads_audio = nn.MultiheadAttention(dim, num_heads=1, batch_first=True)
+        self.audio_reads_video = nn.MultiheadAttention(dim, num_heads=1, batch_first=True)
+
+    def forward(self, video, audio):
+        # video: [B,Nv,d]，audio: [B,Na,d]；两边都读更新前的输入。
+        dv, _ = self.video_reads_audio(video, audio, audio, need_weights=False)
+        da, _ = self.audio_reads_video(audio, video, video, need_weights=False)
+        return video + dv, audio + da
+
+
+# 同步不能靠 token index 一一对应，实际实现还需映射到同一物理时间轴。
+# 缺失音轨应跳过音频目标；真实静音仍是有效目标。
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{block\_causal\_mask.py}
+\label{code-block-causal-mask}
+\begin{verbatim}
+"""四类音视频注意力的块间因果关系；仅用于解释，未运行。
+
+block IDs已由codec覆盖区间与共同时间边界生成。每行至少有当前块key。
+返回True表示可读；真实长序列应使用块稀疏kernel而非稠密矩阵。
+"""
+
+
+def block_allowed(query_blocks, key_blocks):
+    return key_blocks[None, :] <= query_blocks[:, None]
+
+
+def audiovisual_masks(video_blocks, audio_blocks):
+    return {
+        "video_self": block_allowed(video_blocks, video_blocks),
+        "audio_self": block_allowed(audio_blocks, audio_blocks),
+        "video_reads_audio": block_allowed(video_blocks, audio_blocks),
+        "audio_reads_video": block_allowed(audio_blocks, video_blocks),
+    }
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{cache\_context.py}
+\label{code-cache-context}
+\begin{verbatim}
+"""展示缓存失效规则；不是完整自回归 attention/KV-cache。"""
+import hashlib
+import json
+
+
+def cache_key(context):
+    # context 应包含 model/adapter/prompt/reference/history/noise/position/mask 版本。
+    encoded = json.dumps(context, sort_keys=True, separators=(',', ':'), allow_nan=False)
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+class FixedContextCache:
+    def __init__(self):
+        self.key, self.layers = None, {}
+
+    def switch_context(self, context):
+        key = cache_key(context)
+        if key != self.key:
+            self.layers.clear()  # prompt/timestep/历史变了就不能复用旧状态。
+            self.key = key
+
+    def remember(self, layer_id, k, v):
+        self.layers[layer_id] = (k.detach(), v.detach())
+
+
+# 仅适用于已固定条件的推理缓存；当前正在去噪的 token 仍需重算 Q/K/V。
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{camera\_rays.py}
+\label{code-camera-rays}
+\begin{verbatim}
+"""相机射线与 Plücker 条件；R为camera→world，尺度与坐标由调用者保证。"""
+import torch
+
+
+def plucker_rays(pixel_homogeneous, intrinsics, rotation, camera_center):
+    camera_dirs = torch.linalg.solve(intrinsics, pixel_homogeneous.reshape(-1, 3).T).T
+    directions = camera_dirs @ rotation.T
+    directions = directions / directions.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+    moments = torch.linalg.cross(camera_center.expand_as(directions), directions)
+    return torch.cat((directions, moments), dim=-1).reshape(*pixel_homogeneous.shape[:-1], 6)
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{causal\_conv.py}
+\label{code-causal-conv}
+\begin{verbatim}
+"""因果三维卷积的教学实现；不包含完整 VAE、归一化或分块缓存。"""
+import torch.nn.functional as F
+from torch import nn
+
+
+class CausalConv3d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel=(3, 3, 3),
+                 temporal_stride=1, temporal_dilation=1):
+        super().__init__()
+        kt, kh, kw = kernel
+        assert kh % 2 == kw % 2 == 1  # 空间保持尺寸，示例只讨论奇数核。
+        self.pad = (kw // 2, kw // 2, kh // 2, kh // 2,
+                    temporal_dilation * (kt - 1), 0)
+        self.conv = nn.Conv3d(in_channels, out_channels, kernel,
+                              stride=(temporal_stride, 1, 1),
+                              dilation=(temporal_dilation, 1, 1), padding=0)
+
+    def forward(self, x):
+        # x: [B,C,T,H,W]；时间只左补，因此输出 j 最远读取 j*stride。
+        return self.conv(F.pad(x, self.pad))
+
+
+# 例：CausalConv3d(3, 48, temporal_stride=4)
+# 输入 [B,3,121,H,W] → 输出 [B,48,31,H,W]。
+# 这里只压缩时间；完整 VAE 还需要空间下采样和编码/解码结构。
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{condition\_state.py}
+\label{code-condition-state}
+\begin{verbatim}
+"""每token干净条件/带噪目标的教学构造；省略codec边界与采样器。
+
+clean/noise: [B,N,C]；active: [B,N] bool；sigma/sigma_next: [B]。
+训练时确保每条参与该模态loss的样本至少有一个活动位置。
+"""
+import torch
+
+
+def prepare_target(clean, noise, active, sigma):
+    token_sigma = sigma[:, None] * active.to(clean.dtype)
+    s = token_sigma[..., None]
+    state = (1 - s) * clean + s * noise
+    velocity_target = noise - clean
+    return state, token_sigma, velocity_target, active
+
+
+def euler_active(state, velocity, active, sigma, sigma_next, clean):
+    step = (sigma_next - sigma)[:, None, None]
+    updated = state + step * velocity
+    return torch.where(active[..., None], updated, clean)
+
+
+# 这只定义latent更新。是否处理隐藏状态、是否存在音频，是另外两个开关。
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{condition\_unit.py}
+\label{code-condition-unit}
+\begin{verbatim}
+"""统一视频条件的最小表示；省略编码器和 context adapter。"""
+from dataclasses import dataclass
+import torch
+
+
+@dataclass
+class VideoConditionUnit:
+    frames: torch.Tensor  # [B,C,F,H,W]
+    mask: torch.Tensor    # [B,1,F,H,W]，1=允许重生成，0=保留条件内容
+    kind: str              # source / reference / depth / pose / layout
+
+    def split_concepts(self):
+        return self.frames * self.mask, self.frames * (1 - self.mask)
+
+
+def edit_mask(frame_pts, spatial_mask, start, end):
+    time = ((frame_pts >= start) & (frame_pts < end)).to(spatial_mask)
+    return time[None, None, :, None, None] * spatial_mask
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{flow\_matching.py}
+\label{code-flow-matching}
+\begin{verbatim}
+"""极简流匹配：统一 t=0 数据、t=1 噪声；不直接适配任何基座 scheduler。"""
+import torch
+
+
+def training_pair(clean, time):
+    # clean: [B,C,T,H,W]；time: [B]。
+    noise = torch.randn_like(clean)
+    t = time.reshape(-1, 1, 1, 1, 1)
+    noisy = (1 - t) * clean + t * noise
+    return noisy, noise - clean
+
+
+def velocity_loss(prediction, target, valid):
+    # valid 可为 [B,1,T,H,W]；只对有效元素平均，不能把 padding 计进去。
+    weights = valid.to(prediction).expand_as(prediction)
+    assert weights.sum() > 0
+    return ((prediction - target).square() * weights).sum() / weights.sum()
+
+
+@torch.no_grad()
+def euler_sample(model, noise, condition, steps=20):
+    assert steps > 0
+    x = noise
+    times = torch.linspace(1, 0, steps + 1, device=x.device)
+    for t, next_t in zip(times[:-1], times[1:]):
+        velocity = model(x, t.expand(x.shape[0]), condition)
+        x = x + (next_t - t) * velocity
+    return x
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{gated\_condition.py}
+\label{code-gated-condition}
+\begin{verbatim}
+"""单头候选参考残差；不执行训练，不是上游LTX模块。
+
+h: [B,N,width], memory: [B,R,512], bias: [B,1,N,R]。
+调用者必须提供有效null位置，保证每行至少一个有限logit。
+"""
+import torch
+from torch import nn
+from torch.nn import functional as F
+
+
+class GatedReference(nn.Module):
+    def __init__(self, width, memory_width=512, inner=512):
+        super().__init__()
+        self.q = nn.Linear(width, inner, bias=False)
+        self.k = nn.Linear(memory_width, inner, bias=False)
+        self.v = nn.Linear(memory_width, inner, bias=False)
+        self.out = nn.Linear(inner, width, bias=False)
+        self.gate = nn.Parameter(torch.zeros(()))
+
+    def forward(self, h, memory, bias):
+        norm = F.rms_norm(h, (h.shape[-1],))
+        q = self.q(norm)[:, None]
+        k, v = self.k(memory)[:, None], self.v(memory)[:, None]
+        delta = F.scaled_dot_product_attention(q, k, v, attn_mask=bias)
+        return h + self.gate.tanh() * self.out(delta[:, 0])
+
+
+# gate=0，投影正常初始化；首步可学gate，后续才更新读取支路。
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{local\_edit.py}
+\label{code-local-edit}
+\begin{verbatim}
+"""时间区间、已知 latent 覆盖与最终像素合成；三者不是同一个 mask。"""
+
+
+def frames_in_interval(frame_pts, start, end):
+    # frame_pts 为真实秒数 [F]；可变帧率也按 PTS 选择，区间为 [start,end)。
+    return (frame_pts >= start) & (frame_pts < end)
+
+
+def clamp_known_latent(current, clean_source, fixed_noise, time, generate_mask):
+    # t=0 数据、t=1 噪声；generate_mask=1 的地方允许生成。
+    # fixed_noise 在同一采样链中复用；time 可为标量或可广播张量。
+    known_at_t = (1 - time) * clean_source + time * fixed_noise
+    return generate_mask * current + (1 - generate_mask) * known_at_t
+
+
+def composite_pixels(generated, source, edit_alpha):
+    # 输入布局相同；alpha 可广播到颜色通道，范围 [0,1]。
+    # alpha=0 的像素直接取源图，而不是要求 VAE 无损重建源图。
+    return edit_alpha * generated + (1 - edit_alpha) * source
+
+
+# latent mask 需考虑 VAE/patch 感受野，不能将像素 mask 随意缩放后冒充精确边界。
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{masked\_sample\_loss.py}
+\label{code-masked-sample-loss}
+\begin{verbatim}
+"""FP32逐样本有效元素MSE；pred/target [B,N,C], token_mask [B,N]。
+
+返回每样本loss与有效样本标记；调用者只平均有效样本。
+分布式与梯度累积的全局有效计数由trainer处理。
+"""
+import torch
+
+
+def masked_sample_mse(pred, target, token_mask):
+    error = (pred.float() - target.float()).square().mean(dim=-1)
+    weights = token_mask.float()
+    counts = weights.sum(dim=1)
+    valid = counts > 0
+    per_sample = (error * weights).sum(dim=1) / counts.clamp_min(1)
+    return per_sample, valid
+
+
+def mean_valid(per_sample, valid):
+    if not bool(valid.any()):
+        return None  # 此模态没有监督，调用者跳过，不添加伪造的零loss样本。
+    return per_sample[valid].mean()
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{preference\_objectives.py}
+\label{code-preference-objectives}
+\begin{verbatim}
+"""只展示两个目标的计算；不包含策略采样、答案 logp 或奖励模型。"""
+import torch.nn.functional as F
+
+
+def dpo_loss(chosen_logp, rejected_logp, ref_chosen_logp, ref_rejected_logp, beta=0.1):
+    # 四个输入均为 [B] 的有效答案 token logp 总和；ref 模型冻结。
+    margin = (chosen_logp - rejected_logp) - (ref_chosen_logp - ref_rejected_logp).detach()
+    return -F.logsigmoid(beta * margin).mean()
+
+
+def group_advantage(rewards, eps=1e-6):
+    # rewards: [B,G]；按同一 prompt 的 G 个候选计算，不跨 prompt 混合。
+    centered = rewards - rewards.mean(dim=-1, keepdim=True)
+    return centered / (rewards.std(dim=-1, keepdim=True, correction=0) + eps)
+
+
+def clipped_policy_loss(new_logp, old_logp, advantages, clip=0.2):
+    # 仅显示单步 surrogate；真实视觉 GRPO 还需要定义 SDE 转移密度与时间采样。
+    ratio = (new_logp - old_logp.detach()).exp()
+    objective = (ratio * advantages.detach()).minimum(
+        ratio.clamp(1 - clip, 1 + clip) * advantages.detach())
+    return -objective.mean()
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{reference\_adapter.py}
+\label{code-reference-adapter}
+\begin{verbatim}
+"""极简参考支路：单头、全 query 均有有效参考；不是 Phantom/Wan 的原实现。"""
+import torch
+import torch.nn.functional as F
+from torch import nn
+
+
+class ReferenceAdapter(nn.Module):
+    def __init__(self, video_dim, reference_dim):
+        super().__init__()
+        self.q = nn.Linear(video_dim, video_dim)
+        self.k = nn.Linear(reference_dim, video_dim)
+        self.v = nn.Linear(reference_dim, video_dim)
+        self.out = nn.Linear(video_dim, video_dim)
+        self.gate = nn.Parameter(torch.zeros(()))
+
+    def forward(self, video, reference, allowed):
+        # video: [B,N,d]；reference: [B,R,d_ref]。
+        # allowed: [B,N,R]，布尔 True 表示该 query 可读该参考。
+        assert allowed.dtype == torch.bool and allowed.any(dim=-1).all()
+        q = self.q(video).unsqueeze(1)
+        k = self.k(reference).unsqueeze(1)
+        v = self.v(reference).unsqueeze(1)
+        delta = F.scaled_dot_product_attention(q, k, v,
+                                              attn_mask=allowed.unsqueeze(1))
+        return video + self.gate.tanh() * self.out(delta.squeeze(1))
+
+
+# gate=0 时支路不改变原输出；首步先学习 gate，后续梯度再进入支路。
+# 投影保持正常初始化。无参考/空绑定应由调用者走纯基座路径。
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{reference\_timing.py}
+\label{code-reference-timing}
+\begin{verbatim}
+"""参考时间门教学代码；每行参考一个合法区间，只展示 soft bias。
+
+query_times: [N]秒；intervals: [R,2]秒且start<end；softness>0。
+多区间归并、主体/镜头mask、null token由调用者处理，不是完整adapter。
+"""
+import torch
+
+
+def interval_gate(query_times, intervals, softness=0.25):
+    tau = query_times[:, None]
+    start, end = intervals[None, :, 0], intervals[None, :, 1]
+    return torch.sigmoid((tau - start) / softness) * torch.sigmoid((end - tau) / softness)
+
+
+def attention_bias(query_times, intervals, eps=1e-4):
+    gate = interval_gate(query_times, intervals)
+    return (eps + (1 - eps) * gate).log()
+
+
+# 显式时间门，不是 WeRoPE 的原实现；仍需要区间外缺席的训练数据。
+\end{verbatim}
+
+\Needspace{12\baselineskip}
+\section{rope.py}
+\label{code-rope}
+\begin{verbatim}
+"""三轴 RoPE 的教学构造：相邻维配对，每轴独立频率；不兼容任意 checkpoint。"""
+import torch
+
+
+def rotate_axis(x, positions, base=10000):
+    # x: [B,heads,N,d_axis]，positions: [N]；d_axis 必须为偶数。
+    dim = x.shape[-1]
+    assert dim > 0 and dim % 2 == 0
+    omega = base ** (-torch.arange(0, dim, 2, device=x.device).float() / dim)
+    angles = positions.to(x.device).float()[:, None] * omega[None, :]
+    cos, sin = angles.cos().to(x.dtype), angles.sin().to(x.dtype)
+    even, odd = x[..., 0::2], x[..., 1::2]
+    pairs = torch.stack((even * cos - odd * sin,
+                         even * sin + odd * cos), dim=-1)
+    return pairs.flatten(-2)
+
+
+def rope_3d(q, k, coordinates, sections=(4, 4, 4)):
+    # q/k: [B,heads,N,d_head]；coordinates: [N,3]，依次为 t,y,x。
+    # sections 的单位是通道数，剩余通道保持不变。
+    assert sum(sections) <= q.shape[-1]
+    def apply(x):
+        parts, start = [], 0
+        for axis, width in enumerate(sections):
+            parts.append(rotate_axis(x[..., start:start + width],
+                                     coordinates[:, axis]))
+            start += width
+        return torch.cat(parts + [x[..., start:]], dim=-1)
+    return apply(q), apply(k)
+\end{verbatim}

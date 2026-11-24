@@ -1,0 +1,578 @@
+{
+  "schema_version": 1,
+  "updated": "2026-11-22",
+  "repositories": [
+    {
+      "source_id": "wan21-code",
+      "repository": "Wan-Video/Wan2.1",
+      "url": "https://github.com/Wan-Video/Wan2.1",
+      "commit": "9737cba9c1c3c4d04b33fcad41c111989865d315",
+      "checked_on": "2026-11-22",
+      "purpose": "视频基础推理、VAE、DiT",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE.txt",
+          "url": "https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/LICENSE.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      ],
+      "limits": "基础推理入口；不提供本仓库候选 reference adapter 的训练方案。",
+      "verification": "README, tree, license and selected source read; not executed",
+      "entries": [
+        {
+          "path": "generate.py",
+          "role": "推理 CLI",
+          "url": "https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/generate.py",
+          "sha256": "0b12bde63bb316a91ad1462a3db073db4388ec96c818f7548f4e6487939427a4"
+        },
+        {
+          "path": "wan/text2video.py",
+          "role": "文生视频采样与解码编排",
+          "url": "https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/text2video.py",
+          "sha256": "169f0929b273b27a7bc0e094d15a01d48183adc529a1dbce626b179dced29fe8"
+        },
+        {
+          "path": "wan/modules/vae.py",
+          "role": "CausalConv3d、Encoder3d、Decoder3d",
+          "url": "https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/modules/vae.py",
+          "sha256": "4912ffd7a9fbb17ceef9a17d4a9c4b8aee36ec37c32594f54e57693b29909498"
+        },
+        {
+          "path": "wan/modules/model.py",
+          "role": "WanModel、WanAttentionBlock、rope_apply",
+          "url": "https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/wan/modules/model.py",
+          "sha256": "c1572ade3bf7345bd4c00d4a19535788fab62f9c08b5aeb15f6d01f4435bb47a"
+        }
+      ]
+    },
+    {
+      "source_id": "diffsynth-code",
+      "repository": "modelscope/DiffSynth-Studio",
+      "url": "https://github.com/modelscope/DiffSynth-Studio",
+      "commit": "d32f72424cd22bc0ea8100cc57559149b4eac933",
+      "checked_on": "2026-11-22",
+      "purpose": "Wan LoRA/全参训练与推理",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/LICENSE",
+          "sha256": "d43b96112d60d83595395649e61c6bc215f568052a979320489556c6c1262eb1"
+        }
+      ],
+      "limits": "真实训练框架；现成 LoRA 不自动提供多参考绑定或局部编辑能力。",
+      "verification": "README, tree, license and selected source read; not executed",
+      "entries": [
+        {
+          "path": "examples/wanvideo/model_training/train.py",
+          "role": "WanTrainingModule 与数据/训练入口",
+          "url": "https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_training/train.py",
+          "sha256": "1bdd713d4267c96c73a60834da91b593340649e9a063f94795044c190e4675f8"
+        },
+        {
+          "path": "examples/wanvideo/model_training/lora/Wan2.1-T2V-1.3B.sh",
+          "role": "LoRA 官方配方",
+          "url": "https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_training/lora/Wan2.1-T2V-1.3B.sh",
+          "sha256": "2492731495371068b6946f9c58ab34bf92d3610fef4b373f6c9dd5eec2f69678"
+        },
+        {
+          "path": "examples/wanvideo/model_training/full/Wan2.1-T2V-1.3B.sh",
+          "role": "全参官方配方",
+          "url": "https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_training/full/Wan2.1-T2V-1.3B.sh",
+          "sha256": "e0e9ec6f6cee84b69c05015f69ea4a7fbc6427831b125e653ee8c692d178e537"
+        },
+        {
+          "path": "examples/wanvideo/model_inference/Wan2.1-T2V-1.3B.py",
+          "role": "基础推理样例",
+          "url": "https://github.com/modelscope/DiffSynth-Studio/blob/d32f72424cd22bc0ea8100cc57559149b4eac933/examples/wanvideo/model_inference/Wan2.1-T2V-1.3B.py",
+          "sha256": "f92320975f0665a42ab84a2016f1269da0451e1d845847b50d0fc897b7a6b58d"
+        }
+      ]
+    },
+    {
+      "source_id": "phantom-code",
+      "repository": "Phantom-video/Phantom",
+      "url": "https://github.com/Phantom-video/Phantom",
+      "commit": "bd84b602dcc949e23c89cbbf266b6f5975f2f025",
+      "checked_on": "2026-11-22",
+      "purpose": "主体参考视频推理",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE.txt",
+          "url": "https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/LICENSE.txt",
+          "sha256": "bcaef9fc0ed41ec93bc7a81aa1f53ba0886a68baf0d62ef5d5d56682eaa9254e"
+        }
+      ],
+      "limits": "发布的是 Phantom-Wan 适配，不能逐项当成论文中内部基座；该版本 README 的训练代码仍为未勾选。",
+      "verification": "README, tree, license and selected source read; not executed",
+      "entries": [
+        {
+          "path": "generate.py",
+          "role": "主体参考 CLI",
+          "url": "https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/generate.py",
+          "sha256": "3d86b3cc6ed55473b4fca47047fb35710cfd8dc80de43ee677024215415f7e9c"
+        },
+        {
+          "path": "phantom_wan/subject2video.py",
+          "role": "Subject-to-video 编排",
+          "url": "https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/phantom_wan/subject2video.py",
+          "sha256": "0d9765a5eefb4340fbc8014ed8ded6fe01f9d403f9c761bf7cb65b62ba63eb2e"
+        },
+        {
+          "path": "phantom_wan/modules/model.py",
+          "role": "参考条件进入 Wan 主干",
+          "url": "https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/phantom_wan/modules/model.py",
+          "sha256": "b2ac3c77aed9e9cbdd8f11beebfa224a01406dc564f65cdd73a138c3a8eb4357"
+        },
+        {
+          "path": "infer.sh",
+          "role": "推理启动例子",
+          "url": "https://github.com/Phantom-video/Phantom/blob/bd84b602dcc949e23c89cbbf266b6f5975f2f025/infer.sh",
+          "sha256": "9af096b48fcc32b96547d2697a16d9efe03f1e8e3a15e52a2bb5f78e2bc458b1"
+        }
+      ]
+    },
+    {
+      "source_id": "longlive-code",
+      "repository": "NVlabs/LongLive",
+      "url": "https://github.com/NVlabs/LongLive",
+      "commit": "31c70d9071cd7851d82939806dc9fac645fcabe5",
+      "checked_on": "2026-11-22",
+      "purpose": "长视频因果推理、流式训练",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      ],
+      "limits": "固定阅读 LongLive1.0 子目录；仓库根目录另含2.0/Plug/Long-WAM，不能混用入口。",
+      "verification": "README, tree, license and selected source read; not executed",
+      "entries": [
+        {
+          "path": "LongLive1.0/inference.py",
+          "role": "1.0 推理入口",
+          "url": "https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/inference.py",
+          "sha256": "73e9f57f73ef6df76a58d97b11e037a4accf6681433c31908363281b1250439b"
+        },
+        {
+          "path": "LongLive1.0/train.py",
+          "role": "1.0 训练入口",
+          "url": "https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/train.py",
+          "sha256": "4fe6e0764d1e43d71f3df8693bd85c8adbd7528ea7e6b7c85c8769e0c615991a"
+        },
+        {
+          "path": "LongLive1.0/pipeline/causal_inference.py",
+          "role": "因果采样与历史缓存",
+          "url": "https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/pipeline/causal_inference.py",
+          "sha256": "324a48049b0d5f21df0440c241127c40479cf7a4cc0d0644dfb9f456f9ffa186"
+        },
+        {
+          "path": "LongLive1.0/pipeline/streaming_training.py",
+          "role": "流式训练",
+          "url": "https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/pipeline/streaming_training.py",
+          "sha256": "2789feb7fe9ad62275132574e8fe93db1003df34a63bba22bc4a439c70720ae8"
+        },
+        {
+          "path": "LongLive1.0/wan/modules/causal_model.py",
+          "role": "CausalWanSelfAttention",
+          "url": "https://github.com/NVlabs/LongLive/blob/31c70d9071cd7851d82939806dc9fac645fcabe5/LongLive1.0/wan/modules/causal_model.py",
+          "sha256": "38cfa0c7f58cc640300a6c1bb2c49fe63e87c0bab8bb8792902978921e3e371c"
+        }
+      ]
+    },
+    {
+      "source_id": "vincie-code",
+      "repository": "ByteDance-Seed/VINCIE",
+      "url": "https://github.com/ByteDance-Seed/VINCIE",
+      "commit": "97cd2c5701e694dabcfea320c0cf59893d427fab",
+      "checked_on": "2026-11-22",
+      "purpose": "多轮图像编辑、交错多模态",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/LICENSE",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1"
+        }
+      ],
+      "limits": "主要用于多轮图像编辑；不能把此入口称为时间戳视频编辑或直接替代 VINCIE-NExT。",
+      "verification": "README, tree, license and selected source read; not executed",
+      "entries": [
+        {
+          "path": "generate.py",
+          "role": "VINCIEGenerator 图像编辑入口",
+          "url": "https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/generate.py",
+          "sha256": "79ea268de972ffd48efe90997b254cb479e3a96b98f0d20cad6c4577192ab1ff"
+        },
+        {
+          "path": "configs/generate.yaml",
+          "role": "生成配置",
+          "url": "https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/configs/generate.yaml",
+          "sha256": "4f4496896b3edd36ec9405d500f86e4b129d294a6c545e74767c5e655ad5cc5c"
+        },
+        {
+          "path": "models/dit/blocks/attention/mmattn.py",
+          "role": "MMAttention 与窗口变体",
+          "url": "https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/models/dit/blocks/attention/mmattn.py",
+          "sha256": "9ef4233a2bb2ad07d2871c556453a0d0ba0b14bba0cfe5bc1bea97530d6d79c7"
+        },
+        {
+          "path": "models/dit/rope.py",
+          "role": "多模态 RoPE",
+          "url": "https://github.com/ByteDance-Seed/VINCIE/blob/97cd2c5701e694dabcfea320c0cf59893d427fab/models/dit/rope.py",
+          "sha256": "51b5aa9292f3292587b1705cc566c5a40f1803d57cc4e4c1012371c57390c3d3"
+        }
+      ]
+    },
+    {
+      "source_id": "ltx-code",
+      "repository": "Lightricks/LTX-2",
+      "url": "https://github.com/Lightricks/LTX-2",
+      "commit": "daa6b16fc7f0f1628f2c9e36a303e3312b333cc6",
+      "checked_on": "2026-11-22",
+      "purpose": "联合音视频、条件生成、训练",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        },
+        {
+          "path": "LICENSE-2",
+          "url": "https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/LICENSE-2",
+          "sha256": "c325da090976a313b214bf0d6a1738003b96505c01c46043e80edc200a72c147"
+        },
+        {
+          "path": "LICENSE-2_x",
+          "url": "https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/LICENSE-2_x",
+          "sha256": "f0a06b1bf9228b2964477f0964e83ab1fd4f0c69807350fd1914de86c2543961"
+        }
+      ],
+      "limits": "当前固定版本同时覆盖多个 LTX 型号，模型/codec/LoRA 必须匹配；代码 Apache-2.0，模型另有 Community License。",
+      "verification": "README, tree, license and selected source read; not executed",
+      "entries": [
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/transformer/transformer.py",
+          "role": "BasicAVTransformerBlock",
+          "url": "https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-core/src/ltx_core/model/transformer/transformer.py",
+          "sha256": "6d24b7294be9afb28d69156b9a17d59477d01b43547156cf79767cee1f9f24d5"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/transformer/rope.py",
+          "role": "跨模态位置编码",
+          "url": "https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-core/src/ltx_core/model/transformer/rope.py",
+          "sha256": "6be5f15cc736544a49aa775fdf0befea35be3f10a9a2977160c0eaeb5bbd9fe4"
+        },
+        {
+          "path": "packages/ltx-pipelines/README.md",
+          "role": "推理流水线与入口选择",
+          "url": "https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-pipelines/README.md",
+          "sha256": "77d0bb71d84b38441f10aaeafafe90f90ac4c0c4ba8e340f97af419fb4b0d610"
+        },
+        {
+          "path": "packages/ltx-trainer/README.md",
+          "role": "LoRA/全参训练说明",
+          "url": "https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-trainer/README.md",
+          "sha256": "134e579b814bb166d73061cfe7636f77d63f111dc2ef6518281197823771198d"
+        },
+        {
+          "path": "packages/ltx-trainer/configs/av2av_ic_lora.yaml",
+          "role": "音视频条件训练配置",
+          "url": "https://github.com/Lightricks/LTX-2/blob/daa6b16fc7f0f1628f2c9e36a303e3312b333cc6/packages/ltx-trainer/configs/av2av_ic_lora.yaml",
+          "sha256": "c2402fcb24030513562ef3991b1a5da11680209b22fb982b13dc4e3ced631408"
+        }
+      ]
+    },
+    {
+      "source_id": "dancegrpo-code",
+      "repository": "XueZeyue/DanceGRPO",
+      "url": "https://github.com/XueZeyue/DanceGRPO",
+      "commit": "15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344",
+      "checked_on": "2026-11-22",
+      "purpose": "视觉 GRPO、SDE 采样与奖励优化",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/XueZeyue/DanceGRPO/blob/15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344/LICENSE",
+          "sha256": "5c7f173199fd7fb3cc83d86d24f3541e8ae0cb8c16e912ca519ed6a1435bd8f3"
+        }
+      ],
+      "limits": "固定版 README 将 Wan-2.1 路线当作图像生成并用 HPS 奖励，不能当成已验证的完整视频对齐配方。",
+      "verification": "README, tree, license and selected source read; not executed",
+      "entries": [
+        {
+          "path": "fastvideo/train_grpo_hunyuan.py",
+          "role": "视频 GRPO 训练实现",
+          "url": "https://github.com/XueZeyue/DanceGRPO/blob/15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344/fastvideo/train_grpo_hunyuan.py",
+          "sha256": "bdea0fb400aafda6349d244524d1a37915a78da9a2a6b805a415b0c9a8572f6a"
+        },
+        {
+          "path": "fastvideo/train_grpo_wan_2_1.py",
+          "role": "Wan 分支目标实现",
+          "url": "https://github.com/XueZeyue/DanceGRPO/blob/15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344/fastvideo/train_grpo_wan_2_1.py",
+          "sha256": "8e9971fe484958bf0dce593b46e70f08206747ae9c89fd00275b3518589c8a6e"
+        },
+        {
+          "path": "scripts/finetune/finetune_hunyuan_grpo.sh",
+          "role": "Hunyuan 训练启动配方",
+          "url": "https://github.com/XueZeyue/DanceGRPO/blob/15cc71d53cc2e6e18a68ee607d5fb6ba9a99e344/scripts/finetune/finetune_hunyuan_grpo.sh",
+          "sha256": "f2cfb5c3bcc233080baa6a68cd6a2693ea7a70906291d1170ee2937e0fdf97c7"
+        }
+      ]
+    },
+    {
+      "source_id": "tarsier-code",
+      "repository": "bytedance/tarsier",
+      "url": "https://github.com/bytedance/tarsier",
+      "commit": "63de87a760c2aec6b31470a08046969a13787126",
+      "checked_on": "2026-11-22",
+      "purpose": "视频描述生产与评价",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/LICENSE",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1"
+        }
+      ],
+      "limits": "区分 Tarsier/Tarsier2 checkpoint 和其 processor/config；自动描述仍需事实抽检。",
+      "verification": "README, tree, license and selected source read; not executed",
+      "entries": [
+        {
+          "path": "tasks/inference_caption.py",
+          "role": "批量 caption 入口",
+          "url": "https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/tasks/inference_caption.py",
+          "sha256": "e64dd3a4ec4ff5dc38993b209c19cfeee45ebea556d1c14333b87b8bfd1b08b4"
+        },
+        {
+          "path": "models/modeling_tarsier.py",
+          "role": "模型封装",
+          "url": "https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/models/modeling_tarsier.py",
+          "sha256": "4a754738b5c4fc0d59dd33022df39e65a92fcd0b54c988246fdb4ab5014e278d"
+        },
+        {
+          "path": "scripts/run_inference_caption.sh",
+          "role": "批量描述启动脚本",
+          "url": "https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/scripts/run_inference_caption.sh",
+          "sha256": "8e198cbc6a8c2930c36491fc4e12f26efc6899898303bbb522483a37762d49c9"
+        },
+        {
+          "path": "evaluation/evaluate.py",
+          "role": "评价入口",
+          "url": "https://github.com/bytedance/tarsier/blob/63de87a760c2aec6b31470a08046969a13787126/evaluation/evaluate.py",
+          "sha256": "3d38ccd1a0412ff92e0d337c6de00436cf1315e399aa6755e4ccb3ce401583d7"
+        }
+      ]
+    },
+    {
+      "source_id": "ltx-original-code",
+      "repository": "Lightricks/LTX-2",
+      "url": "https://github.com/Lightricks/LTX-2",
+      "commit": "bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638",
+      "checked_on": "2026-11-22",
+      "purpose": "原系列联合音视频基座与训练接口",
+      "code_license": "LTX-2 Community License (root LICENSE at this historical commit)",
+      "license_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/LICENSE",
+          "sha256": "1d60d351796cf0b5391ed1b599fde007135ed911acea03c4968fa0b346b65f1f"
+        }
+      ],
+      "limits": "固定2026-01原系列版本；不能与后来LTX2.5的checkpoint、文本和codec混用。该历史commit根LICENSE为LTX-2 Community License，不能套用当前版本Apache代码许可。",
+      "verification": "Selected source locations, model configuration, training strategies, parameter collection and checkpoint paths inspected as text; no execution",
+      "entries": [
+        {
+          "path": "packages/ltx-core/src/ltx_core/types.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/types.py",
+          "sha256": "52cc3c3eba53e05f5bc4db2ba01ec138a27015da571ced9ed443b9f5d6ae51ca",
+          "role": "types.py"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/transformer/transformer.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/transformer.py",
+          "sha256": "31f60addb15179c676296cc9f7cb391307770f94f6bfb209bae867c346c95064",
+          "role": "transformer.py"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/video_vae/video_vae.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/video_vae/video_vae.py",
+          "sha256": "2e86ee417c411ecae94b479e8a36617a9ccf566adb2af2f213189e5558fb5cc7",
+          "role": "video_vae.py"
+        },
+        {
+          "path": "packages/ltx-trainer/configs/ltx2_av_lora.yaml",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/configs/ltx2_av_lora.yaml",
+          "sha256": "a88c06e8431f68bead4d07bd4cc3fd5ba5a23201b548e9a2cc28c5795ef7d767",
+          "role": "ltx2_av_lora.yaml"
+        },
+        {
+          "path": "packages/ltx-trainer/configs/ltx2_v2v_ic_lora.yaml",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/configs/ltx2_v2v_ic_lora.yaml",
+          "sha256": "a168c479a838aa4de656641f216abad3e248b3c2588db2153ef3590430f60abc",
+          "role": "ltx2_v2v_ic_lora.yaml"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/transformer/model.py",
+          "role": "model.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/model.py",
+          "sha256": "81d300d7af3aa9ca7ad692640df90a95f49789007ab909dd3880ad02f843a8d0"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/transformer/modality.py",
+          "role": "modality.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/modality.py",
+          "sha256": "19c5a83c8e8ef49effbac662377a6f74539fc2ab12c62a6ce67982a50c3ff8fd"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/transformer/transformer_args.py",
+          "role": "transformer_args.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/transformer_args.py",
+          "sha256": "c1092f84f8ef68b44f8c879d7d2ece4a85a11ab1ed4459a8f33b93e64e9d43e4"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/transformer/model_configurator.py",
+          "role": "model_configurator.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/model_configurator.py",
+          "sha256": "cc9e5c4ca1beb9ea69a974da16da4f22b21d41091dbf06dcee4cb02f2f65d134"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/model/transformer/attention.py",
+          "role": "attention.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/model/transformer/attention.py",
+          "sha256": "acfdbb3f1423ebc709323b83c6e256c74acb33f768ad04a7a437f17adbf70b68"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/components/patchifiers.py",
+          "role": "patchifiers.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/components/patchifiers.py",
+          "sha256": "65ae83be774f1c10dbda5de16891d2a2554207da27e9bd1017468cdc39b4a07d"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/components/diffusion_steps.py",
+          "role": "diffusion_steps.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/components/diffusion_steps.py",
+          "sha256": "4b15c685bff2894885e42d6bbb784d1e14b7592f971fb52dbf0e5fa0e4e20339"
+        },
+        {
+          "path": "packages/ltx-core/src/ltx_core/components/schedulers.py",
+          "role": "schedulers.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-core/src/ltx_core/components/schedulers.py",
+          "sha256": "c0bf033667bae80714fc8441d88caf72a4a0cfb056f9a80f902eadc2d36800d1"
+        },
+        {
+          "path": "packages/ltx-trainer/src/ltx_trainer/training_strategies/base_strategy.py",
+          "role": "base_strategy.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/training_strategies/base_strategy.py",
+          "sha256": "b95be55e0ae74229cac8d4aad97bc33487ea44d7fcc760d9dcbfce46bc13327e"
+        },
+        {
+          "path": "packages/ltx-trainer/src/ltx_trainer/training_strategies/text_to_video.py",
+          "role": "text_to_video.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/training_strategies/text_to_video.py",
+          "sha256": "0334f9a7c5b73462a061c54f769305461ed74a488c2a02b0d70b02db9304bef0"
+        },
+        {
+          "path": "packages/ltx-trainer/src/ltx_trainer/training_strategies/video_to_video.py",
+          "role": "video_to_video.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/training_strategies/video_to_video.py",
+          "sha256": "0956265a39b9edfb3e1bfd586d2c78d23d3d9c49414c3813d903638cdecaca9c"
+        },
+        {
+          "path": "packages/ltx-trainer/src/ltx_trainer/timestep_samplers.py",
+          "role": "timestep_samplers.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/timestep_samplers.py",
+          "sha256": "d5ef8abfd3c49e1b3f8e308b3c304c603b187e5af52d972faea0f16b83c9bf6d"
+        },
+        {
+          "path": "packages/ltx-trainer/src/ltx_trainer/trainer.py",
+          "role": "trainer.py",
+          "url": "https://github.com/Lightricks/LTX-2/blob/bd92a5f408eb8c99f8c05e9fe2fcaaec8b56b638/packages/ltx-trainer/src/ltx_trainer/trainer.py",
+          "sha256": "054011d8963916097693c4f8881273bbc0651c57c5509901e0a3d9765025d010"
+        }
+      ]
+    },
+    {
+      "source_id": "vace-code",
+      "repository": "ali-vilab/VACE",
+      "url": "https://github.com/ali-vilab/VACE",
+      "commit": "48eb44f1c4be87cc65a98bff985a26976841e9f3",
+      "checked_on": "2026-11-22",
+      "purpose": "统一帧/mask条件、预处理与视频编辑",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE.txt",
+          "url": "https://github.com/ali-vilab/VACE/blob/48eb44f1c4be87cc65a98bff985a26976841e9f3/LICENSE.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      ],
+      "limits": "VACE不同基座分支不自动兼容本方案LTX-2；不是其现成插件。",
+      "verification": "Selected source, configuration and license read; not executed",
+      "entries": [
+        {
+          "path": "vace/vace_wan_inference.py",
+          "url": "https://github.com/ali-vilab/VACE/blob/48eb44f1c4be87cc65a98bff985a26976841e9f3/vace/vace_wan_inference.py",
+          "sha256": "cde0353136d4ee5c7712c8ed4b868638870391dd4c655fef1c3c336817694c08",
+          "role": "vace_wan_inference.py"
+        },
+        {
+          "path": "vace/vace_preproccess.py",
+          "url": "https://github.com/ali-vilab/VACE/blob/48eb44f1c4be87cc65a98bff985a26976841e9f3/vace/vace_preproccess.py",
+          "sha256": "61168e737c132ab3a6db70477b1676d2516cc349133426d45b794f97c635027f",
+          "role": "vace_preproccess.py"
+        },
+        {
+          "path": "vace/annotators/mask.py",
+          "url": "https://github.com/ali-vilab/VACE/blob/48eb44f1c4be87cc65a98bff985a26976841e9f3/vace/annotators/mask.py",
+          "sha256": "ea1227f2d96c76b4527d19a1b18d89e796513db8df3005d56c0865ad125131b6",
+          "role": "mask.py"
+        }
+      ]
+    },
+    {
+      "source_id": "videocof-code",
+      "repository": "knightyxp/VideoCoF",
+      "url": "https://github.com/knightyxp/VideoCoF",
+      "commit": "f45b8009616b3ef8e2024a7da585249b4c74fc2b",
+      "checked_on": "2026-11-22",
+      "purpose": "区域中间表示视频编辑与训练",
+      "code_license": "Apache-2.0",
+      "license_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/knightyxp/VideoCoF/blob/f45b8009616b3ef8e2024a7da585249b4c74fc2b/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      ],
+      "limits": "Wan/VideoX-Fun工程；论文联合区域/目标去噪不等于本文显式两阶段实现。",
+      "verification": "Selected source, configuration and license read; not executed",
+      "entries": [
+        {
+          "path": "examples/wan2.1/predict_v2v_cot_json.py",
+          "url": "https://github.com/knightyxp/VideoCoF/blob/f45b8009616b3ef8e2024a7da585249b4c74fc2b/examples/wan2.1/predict_v2v_cot_json.py",
+          "sha256": "146bfe38be0f00f6895f9f3b5cca2aa84ff263b47f7d89e11045246665bb62d5",
+          "role": "predict_v2v_cot_json.py"
+        },
+        {
+          "path": "scripts/wan2.1/train_joint_img_video_lora.py",
+          "url": "https://github.com/knightyxp/VideoCoF/blob/f45b8009616b3ef8e2024a7da585249b4c74fc2b/scripts/wan2.1/train_joint_img_video_lora.py",
+          "sha256": "63f322d9bfc3d96b024d7faa86e21fb5e7afb2c9600d335751fad5288a73773b",
+          "role": "train_joint_img_video_lora.py"
+        },
+        {
+          "path": "videox_fun/pipeline/pipeline_wan.py",
+          "url": "https://github.com/knightyxp/VideoCoF/blob/f45b8009616b3ef8e2024a7da585249b4c74fc2b/videox_fun/pipeline/pipeline_wan.py",
+          "sha256": "aec84e78001a6980a2a620444d2b233a772f8aae52908c7a3ad1f8df51ee2930",
+          "role": "pipeline_wan.py"
+        }
+      ]
+    }
+  ]
+}

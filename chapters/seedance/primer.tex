@@ -1,0 +1,231 @@
+\chapter{从图像扩散到音视频生成：数学与结构导读}
+\label{seedance-primer}
+
+图像扩散模型已经建立了“给数据加噪，再学习逆向生成”的基本框架。
+视频生成继续使用这个思路，但一个样本同时包含空间、媒体时间、主体状态和声音。
+真正需要补上的，是压缩表示、生成时间与媒体时间的区分、时空交互，
+以及参考和编辑条件的可计算定义。本章把这些环节接到同一条链上。
+
+本章是通用教学推导。后续的 LTX、Wan 和候选条件支路各自有接口约定，
+不据此认定 Seedance 2.5 使用某一条具体公式或实现。
+
+\section{统一记号与两种时间}
+
+记 $x^v\in\mathbb R^{B\times3\times F\times H\times W}$ 为视频像素，
+$x^a$ 为音频波形，$z_0^v=E_v(x^v)$、$z_0^a=E_a(x^a)$ 为各自的干净潜变量。
+$B$ 是批大小，$F,H,W$ 是帧数与分辨率。条件集合 $c$ 可含文本、参考、源视频、
+编辑掩码、说话人和相机。生成器学习条件联合分布
+\[
+ p_\theta(z_0^v,z_0^a\mid c).
+\]
+这里 $\tau$ 表示视频或声音中的物理时间，单位为秒；$t\in[0,1]$ 表示噪声时间。
+一段视频的全部帧可以共享同一个 $t$，而每帧有自己的 $\tau$。
+分镜异步去噪改变的是各镜头的 $t$，不会改变它们在成片中的 $\tau$。
+
+\begin{longtable}{@{}p{0.18\linewidth}p{0.75\linewidth}@{}}
+\toprule 记号 & 含义与单位 \\ \midrule
+$z_0,z_t,\epsilon$ & 干净潜变量、带噪潜变量、标准高斯噪声 \\
+$E_m,D_m$ & 模态 $m\in\{v,a\}$ 的编码器与解码器 \\
+$T_v,H_v,W_v$ & 潜空间时间和空间长度；不是原视频的秒数与像素数 \\
+$N_v,N_a,L$ & 视频 token 数、音频 token 数、文本 token 数 \\
+$d,d_h,h$ & 隐藏宽度、单头宽度、注意力头数，普通多头满足 $d=hd_h$ \\
+$u_\theta,s_\theta$ & 速度场预测与概率密度的分数预测；两者定义不同 \\
+$M,W,A$ & 允许编辑区域、有效损失权重、注意力可见性偏置 \\
+\bottomrule
+\end{longtable}
+
+\section{潜变量压缩先决定计算规模}
+
+VAE 并不是把视频文件换一种保存格式，而是学习有损的连续表示。
+对角高斯编码后验取
+\[
+q_\phi(z\mid x)=\mathcal N\!\left(\mu_\phi(x),
+ \operatorname{diag}(\sigma_\phi^2(x))\right),\qquad
+z=\mu_\phi(x)+\sigma_\phi(x)\odot\eta,
+\quad\eta\sim\mathcal N(0,I).
+\]
+由 $\log p_\psi(x)=\mathrm{ELBO}+D_{\mathrm{KL}}(q_\phi(z\mid x)\Vert p_\psi(z\mid x))$
+得到需要最小化的负证据下界
+\[
+\mathcal L_{\mathrm{VAE}}=
+ -\mathbb E_{q_\phi}\log p_\psi(x\mid z)
+ +D_{\mathrm{KL}}\!\left(q_\phi(z\mid x)\Vert\mathcal N(0,I)\right).
+\]
+其中高斯后验的 KL 可以直接计算：
+\[
+D_{\mathrm{KL}}=\tfrac12\sum_j
+ \left(\mu_j^2+\sigma_j^2-\log\sigma_j^2-1\right).
+\]
+感知损失、对抗损失和不同权重常用于实际视频 codec；加入这些项后应按真实目标说明，
+不能把所有工程损失都称为原始 ELBO。生成主干训练时通常使用已固定的 codec，
+其缩放、后验采样和归一化也是模型协议的一部分。
+
+若编码器保留首帧、其余时间压缩 $s_t$ 倍，空间各压缩 $s_h,s_w$ 倍，
+在帧网格合法时
+\[
+T_v=1+\frac{F-1}{s_t},\qquad
+H_v=H/s_h,\quad W_v=W/s_w,\qquad
+N_v=T_vH_vW_v.
+\]
+空间再切 patch 时，$N_v$ 还要按对应 patch 体积调整。
+压缩通道 $C$ 与 Transformer 隐藏宽度 $d$ 不是同一个量：
+每个 $C$ 维 token 先经线性投影到 $d$ 维，再进入主干。
+不同 codec 的坐标、统计分布与通道语义不能仅靠 reshape 互换。
+
+\section{从去噪回归推导速度场}
+
+统一约定 $t=0$ 为数据、$t=1$ 为噪声，构造直线路径
+\[
+z_t=(1-t)z_0+t\epsilon,\quad
+\epsilon\sim\mathcal N(0,I),\qquad
+\dot z_t=\epsilon-z_0.
+\]
+取平方回归目标
+\[
+\mathcal L_{\mathrm{FM}}=
+\mathbb E\left[ w(t)\lVert u_\theta(z_t,t,c)-(\epsilon-z_0)\rVert^2\right].
+\]
+对固定 $z,t,c$，平方误差的最优解是条件均值。令 $Y=\epsilon-z_0$，则
+\[
+\mathbb E[\lVert u-Y\rVert^2\mid z_t=z,t,c]
+=\lVert u-\mathbb E[Y\mid z,t,c]\rVert^2
+ +\mathbb E[\lVert Y-\mathbb E[Y\mid z,t,c]\rVert^2\mid z,t,c].
+\]
+后一项与 $u$ 无关，所以 $w(t)>0$ 的位置满足
+\[
+u^*(z,t,c)=\mathbb E[\epsilon-z_0\mid z_t=z,t,c].
+\]
+训练标签沿每条样本路径是常量，最优网络却是这些路径在当前位置的条件平均，
+并不意味着真实生成轨迹必然为直线，也不意味着一步采样可以无误差复原。
+
+在密度足够平滑、边界项可处理的条件下，这个边缘速度满足连续性方程
+\[
+\partial_t p_t(z\mid c)+\nabla_z\cdot\big(p_t(z\mid c)u^*(z,t,c)\big)=0.
+\]
+据此沿常微分方程 $\mathrm dz/\mathrm dt=u_\theta(z,t,c)$ 从噪声积分到数据。
+Euler 离散式为
+\[
+z_{i+1}=z_i+(t_{i+1}-t_i)u_\theta(z_i,t_i,c),\qquad t_{i+1}<t_i.
+\]
+时间差为负，不能把更新式中的符号与采用相反时间约定的 scheduler 混用。
+
+\section{速度、噪声、干净样本与分数如何关联}
+
+从 $u=\epsilon-z_0$ 和直线路径可解得
+\[
+z_0=z_t-tu,\qquad \epsilon=z_t+(1-t)u.
+\]
+网络预测代入后可构造 $\hat z_0=z_t-tu_\theta$ 和
+$\hat\epsilon=z_t+(1-t)u_\theta$。这只是本路径约定下的参数化换算。
+其它 $\alpha(t)z_0+\sigma(t)\epsilon$ 路径要重新解相应的线性方程组。
+
+对 $0<t<1$，条件扰动核为
+$p_t(z\mid z_0)=\mathcal N((1-t)z_0,t^2I)$，其分数为
+\[
+\nabla_z\log p_t(z\mid z_0)
+=-\frac{z-(1-t)z_0}{t^2}=-\frac{\epsilon}{t}.
+\]
+在可交换微分与积分的正则条件下，边缘分数满足
+\[
+s_t(z,c)=\nabla_z\log p_t(z\mid c)
+=-\frac{\mathbb E[\epsilon\mid z_t=z,c]}{t}
+=-\frac{z+(1-t)u^*(z,t,c)}{t}.
+\]
+因此速度预测与分数预测有联系，但不是同一对象。上式含端点除法，
+不能在 $t=0$ 直接代入；具体模型的端点处理应沿用配套采样器。
+DDPM 的噪声时间表、SDE 的漂移/扩散项与这里的直线路径也应分别定义。
+
+\section{把时空 token 与声音接进 Transformer}
+
+将视频潜变量投影为 $\mathbf h_v\in\mathbb R^{B\times N_v\times d_v}$，
+音频为 $\mathbf h_a\in\mathbb R^{B\times N_a\times d_a}$。
+一个注意力头计算
+\[
+\operatorname{Attn}(Q,K,V;A)
+=\operatorname{softmax}\!\left(QK^\top/\sqrt{d_h}+A\right)V.
+\]
+$A_{ij}=-\infty$ 屏蔽不可见位置，允许位置通常取0或有限偏置。
+若整行均被屏蔽，softmax 未定义；参考为空时需跳过支路或提供有效 null token。
+联合自注意力可让文本与视觉都产生 query，单向 cross-attention 则只更新 query 一侧；
+两种结构的计算图、梯度与缓存条件不同。
+
+RoPE 用旋转矩阵 $R(p)$ 编码坐标：
+\[
+q_i'=R(p_i)q_i,\quad k_j'=R(p_j)k_j,\qquad
+q_i'{}^\top k_j'=q_i^\top R(p_j-p_i)k_j.
+\]
+视频 token 具有时间与二维空间坐标，声音具有时间坐标。
+跨模态比较时要以秒建立共同时间：不能把每秒3个左右的视频 latent 位置与
+每秒25个左右的音频位置按下标配对。这些速率是具体 codec 的例子，
+并非通用常数。
+
+双向音视频交换应从同一组旧状态计算两边的更新：
+\[
+\begin{aligned}
+\Delta\mathbf h_v&=\operatorname{Attn}(\mathbf h_vW_q^v,\mathbf h_aW_k^a,\mathbf h_aW_v^a;A_{va}),\\
+\Delta\mathbf h_a&=\operatorname{Attn}(\mathbf h_aW_q^a,\mathbf h_vW_k^v,\mathbf h_vW_v^v;A_{av}).
+\end{aligned}
+\]
+投影必须让两侧的头维兼容。先更新视频、再让声音读取更新后视频，
+会得到不同的有序计算图；实现应和选定模型一致。联合计算提供同步机制，
+可靠的嘴形、音色与事件同步仍依赖对齐数据和任务监督。
+
+\section{候选系统结构与模块边界}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\small,
+ box/.style={draw=structurecolor!65,rounded corners,fill=structurecolor!4,
+ align=center,minimum height=10mm,text width=11.5cm},
+ arr/.style={-{Stealth[length=2mm]},thick,draw=structurecolor!80},node distance=7mm]
+\node[box] (task) {任务编译：镜头、主体与 speaker、物理时间、编辑与保持范围};
+\node[box,below=of task] (cond) {匹配的文本编码器 \quad 参考记忆 \quad 源/结构条件};
+\node[box,below=of cond] (main) {视频流 DiT $\longleftrightarrow$ 音频流 DiT\\
+  噪声状态、时空位置、流内建模与跨模态交换};
+\node[box,below=of main] (sample) {沿固定时间表更新活动目标；已知条件与目标分开};
+\node[box,below=of sample] (decode) {配套 codec 解码、裁切、原像素/音轨合成、分项验收};
+\draw[arr] (task)--(cond);\draw[arr] (cond)--(main);
+\draw[arr] (main)--(sample);\draw[arr] (sample)--(decode);
+\end{tikzpicture}
+\caption{本书的教学候选系统图。它用于说明接口分工，不是 Seedance 官方架构图。}
+\end{figure}
+
+参考支路可写成 $H'=H+\tanh(g)\operatorname{Attn}(HW_q,RW_k,RW_v)W_o$。
+令门控 $g=0$ 可以保持初始主干输出；投影则需正常初始化。
+若门控与输出投影同时为零，起始梯度可能相互阻断。
+这种局部结构选择仍需训练，不能仅靠给提示词增加角色名称获得同等机制。
+
+编辑任务至少区分可读条件、去噪更新、损失监督和最终合成四种 mask。
+一个明确的回归口径是先对每个样本的有效标量求平均：
+\[
+\ell_b=\frac{\sum_i W_{bi}(u_{bi}-u^*_{bi})^2}{\sum_i W_{bi}}.
+\]
+无有效目标的样本不参与该模态平均。
+严格的外区保持可由最终合成 $y=M\odot\hat x+(1-M)\odot x_{\rm src}$ 保证，
+这里保证的是指定合成域中的外区；有损重编码后不保证文件字节不变。
+
+\section{复杂度、缓存与可验证边界}
+
+取每帧 $P$ 个空间 token、潜时间长度 $T$。全时空注意力的连接数为 $T^2P^2$，
+逐帧空间加逐位置时间注意力为 $TP^2+PT^2$。
+这只是交互项；普通 MHA 的投影与交互 FLOPs 约为
+$8Nd^2+4N^2d$，还需加 FFN、codec、条件编码和跨模态计算。
+Flash attention 改变显存读写与中间存储，dense 情况下不会消除二次算术项。
+
+例如采用后文 LTX 原系列的公开替代规格，30秒、24fps、$512\times896$ 输出
+内部取721帧，得到 $N_v=91\times16\times28=40\,768$。
+32头、BF16 显式分数矩阵需要
+\[
+32\times40\,768^2\times2\ \mathrm{bytes}\approx99.1\ \mathrm{GiB}.
+\]
+这不是使用 Flash 后的峰值显存，也不是 Seedance 的资源需求。
+训练参数状态、激活、通信与外部组件需另算。
+
+冻结文本与不读动态目标的静态参考可以按版本缓存。
+双向主干的目标在每个去噪步变化，不能直接套用语言模型的历史 KV。
+因果派生还需让视频内部、声音内部及两个跨模态方向都不读未来，
+并以干净历史重算后提交缓存。编码因果与解码因果也必须分别核查。
+
+阅读后续章节时，可始终追问四件事：数据如何定义、条件如何进入、哪些参数更新、
+什么观测支持结论。公开论文支持局部机制；替代基座约束实现接口；
+候选方案给出可讨论的组合。三者各有边界，实际效果仍需独立验证。
