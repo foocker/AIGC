@@ -1,5 +1,5 @@
 # AIGC
-扩散模型算法基础文档、训练、实验、部署等仓库。待更。
+扩散模型算法基础文档、训练、实验、部署等仓库。
 
 ## 本地书稿（2026-11-24）
 
@@ -21,5 +21,3 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_books.ps1
 
 成品写到仓库根目录，编译中间文件保存在忽略的 `build/`。只编译原理篇可加 `-Target theory`，只编译 Seedance 专题可加 `-Target seedance`。
 
-- 组合代码，都会附上原始出处，代码块里面，会附上论文出处。
-- 最近时间有点尴尬，很难更新。。
