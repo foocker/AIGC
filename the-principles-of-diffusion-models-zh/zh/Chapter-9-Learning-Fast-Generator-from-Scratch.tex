@@ -7,14 +7,14 @@
 
 在\Cref{ch:distillation}中，我们看到扩散模型中的慢速迭代采样器可以通过蒸馏压缩为少步生成器。从工程角度来看，两阶段管道是实用的，因为它们将复杂的生成训练任务划分为清晰、独立的目标。第一阶段学习数据分布，第二阶段加速采样或提高质量。这种分离允许每个阶段独立优化，使整个系统更易于管理、更稳定、更可靠。
 
-然而，在本章中，焦点转移到推动深度生成建模进展的一个中心问题：
+本章讨论能否从头训练一个快速生成器。
 \begin{question}
     我们能否设计一个独立的生成原理，以稳定高效的方式进行训练，快速采样，并允许用户轻松指导或控制生成的内容？
 \end{question}
 在本章中，我们追求这个方向并讨论另一种方法：
 依靠预先训练的模型训练基于扩散的几步生成器 \emph{without}。
-我们的重点是 \emph{ 流图模型 }。这里，\emph{流映射}是
-ODE 的经典解图，一个植根于微分的概念
+我们的重点是 \emph{ 流映射模型 }。这里，\emph{流映射}是
+ODE 的经典解映射，一个植根于微分的概念
 方程和动力系统紧密相连，处于连续体和
 流体力学，跟随材料颗粒的运动。
 具体来说，$\bPsi_{s\to t}$ 将时间 $s$ 的状态变为
@@ -22,7 +22,7 @@ ODE 的经典解图，一个植根于微分的概念
 学习直接近似该映射，从而允许长轨迹
 在一个或几个网络评估中被遍历
 \footnote{参见 \Cref{eq:flow-map-def} 和周围的讨论
-流图的数学和历史背景。}。
+流映射的数学和历史背景。}。
 
 
 
@@ -35,7 +35,7 @@ ODE 的经典解图，一个植根于微分的概念
 
 \chapterlearning{
 
-  \item 将瞬时速度场与其 ODE 解图（流映射）区分开来；
+  \item 将瞬时速度场与其 ODE 解映射（流映射）区分开来；
 
   \item 了解精确 ODE 流的半群性质以及它如何激发基于一致性的学习目标；
 
@@ -82,7 +82,7 @@ ODE 的经典解图，一个植根于微分的概念
     \end{tikzpicture}
   }
 \caption{\textbfs{基于扩散的学习流映射的方法的时间线。}\;
-底层流映射是经典的ODE解图；此处显示的日期仅指蒸馏、近似或学习该映射的现代机器学习方法。我们使用 {\color{PersA}蓝色} 针对特殊情况 {\color{PersA}$\bPsi_{s\to 0}$} 和
+底层流映射是经典的ODE解映射；此处显示的日期仅指蒸馏、近似或学习该映射的现代机器学习方法。我们使用 {\color{PersA}蓝色} 针对特殊情况 {\color{PersA}$\bPsi_{s\to 0}$} 和
 {\color{PersB}橙色} 用于一般映射
 {\color{PersB}$\bPsi_{s\to t}$}.
 \figcredit{由作者创建。}}
@@ -94,7 +94,7 @@ ODE 的经典解图，一个植根于微分的概念
 
 \paragraph{流映射模型的动机。}
 在 \Cref{ch:distillation} 我们展示了 oracle flow-map 中不可访问的回归目标如何丢失
-$\mathcal{L}_{\mathrm{oracle}}(\btheta)$ （参见 \Cref{eq:general-cm-loss:rep}) 可以通过从预先训练的扩散模型中提取知识来估计，以获得少步生成器。这条路线有效且实用：可以设计两级管道以实现稳健性，并且通常在数据和计算效率方面保持竞争力。在本章中，我们将重点转向深度生成建模核心的更广泛挑战：
+$\mathcal{L}_{\mathrm{oracle}}(\btheta)$ （参见 \Cref{eq:general-cm-loss:rep}) 可以通过从预先训练的扩散模型中提取知识来估计，以获得少步生成器。这条路线有效且实用：可以设计两级管道以实现稳健性，并且通常在数据和计算效率方面保持竞争力。在本章中，我们将重点转向深度生成模型研究中一个更广泛的挑战：
 \emph{我们能否建立一个独立的生成原理，实现稳定、可扩展、高效的训练、快速采样和生成，并且可以根据用户意图轻松引导，而不依赖于预先训练的模型？}
 设计这种独立的原则是生成建模的核心。扩散模型提供了一个有用的设计原则：从连续时间前向过程开始，逐渐将数据转换为简单的先验（噪声）作为参考，并将建模任务框架为学习逆时传输，恢复该过程以匹配所需的边缘分布。与一次性生成图相比，这种依赖于时间的公式还可以更轻松地在中间步骤引导生成过程。专门针对扩散驱动的方法，这引出了一个问题：
 \begin{question}
@@ -134,7 +134,7 @@ $\rvx_s$ 在时间 $s$ 并将其直接传输到时间 $t$：
 \]
 而等效的参数化也是可能的（参见 \Cref{ch:all-equivalent}），常见的选择包括 $\rvx$ 预测和 $\rvv$ 预测形式。 
 
-在预言机损失最优时，学习模型恢复真实的流图
+在预言机损失最优时，学习模型恢复真实的流映射
 确切地说：
 \[
 \rmG^*(\rvx_s, s, t) = \bPsi_{s\to t}(\rvx_s), \quad \text{for all }\, s,t, \text{ and }\, \rvx_s \sim p_s.
@@ -178,7 +178,7 @@ $\rvx_s$ 在时间 $s$ 并将其直接传输到时间 $t$：
 其中 $\bPsi_{s\to s-\Delta s}(\rvx_s)$ 本身也必须近似。两个
 实用的策略有：（i）\emph{distillation}，它依赖于
 预训练的扩散模型，以及（ii）\emph{从头开始训练}，它使用
-没有老师指导的一点估计。
+没有教师模型指导的一点估计。
 
 \paragraph{一般流映射。} 两种代表性方法是 \emph{一致性轨迹模型} （CTM）和 \emph{平均流} （MF）。
 \subparagraph{一致性轨迹模型。} \emph{一致性轨迹模型} （CTM）\\~\citep{kim2023consistency} 是学习通用流映射的第一个作品 $\bPsi_{s\to t}$ 任意开始和结束时间，可以看作是统一目标下的具体实例 \Cref{eq:general-cm-loss:rep}。 CTM 采用欧拉启发的参数化，将预言流映射表示为
@@ -194,7 +194,7 @@ $\rvx_s$ 在时间 $s$ 并将其直接传输到时间 $t$：
 \rmG_{\btheta}(\rvx_s,s,t)
 := \frac{t}{s}\,\rvx_s + \frac{s-t}{s}\,\rvg_\btheta(\rvx_s,s,t),
 \]
-其中 $\rvg_\btheta$ 是一个经过训练的神经网络 $\bPsi_{s\to t}(\rvx_s)\approx \rmG_{\btheta}(\rvx_s,s,t)$。自从神谕 $\bPsi_{s\to t}(\rvx_s)$ 无法访问，CTM针对a进行训练 \emph{停止渐变} 在中间时间评估的目标 $u$:
+其中 $\rvg_\btheta$ 是一个经过训练的神经网络 $\bPsi_{s\to t}(\rvx_s)\approx \rmG_{\btheta}(\rvx_s,s,t)$。自从神谕 $\bPsi_{s\to t}(\rvx_s)$ 无法访问，CTM针对a进行训练 \emph{停止梯度} 在中间时间评估的目标 $u$:
 \[
 \bPsi_{s\to t}(\rvx_s)
  \approx 
@@ -379,16 +379,16 @@ $u=s-\Delta s$ 中的 \Cref{eq:semi-group}）。
     \mathcal{L}_{\methodl{oracle}{CM}}(\btheta) 
     := \E_{s} \E_{\rvx_s\sim p_s} \left[ w(s)  d \left(\rvf_\btheta(\rvx_s,s), \bPsi_{s\to 0}(\rvx_s)\right)\right].
 \]
-该目标强制每个噪声样本 $\rvx_s$ 映射回其干净端点 $\bPsi_{s\to 0}(\rvx_s)$。挑战在于预言图 $\bPsi_{s\to 0}(\rvx_s)$ 实际中不可用。为了克服这个问题， \citet{song2023consistency} 利用 \emph{半群性质}：任何噪声状态及其沿着相同 PF-ODE 轨迹的连续步骤必须映射到相同的干净端点。具体来说，oracle 目标被替换为 \emph{停止渐变} 从轨迹上稍早的点获取的目标：
+该目标强制每个噪声样本 $\rvx_s$ 映射回其干净端点 $\bPsi_{s\to 0}(\rvx_s)$。挑战在于预言图 $\bPsi_{s\to 0}(\rvx_s)$ 实际中不可用。为了克服这个问题， \citet{song2023consistency} 利用 \emph{半群性质}：任何噪声状态及其沿着相同 PF-ODE 轨迹的连续步骤必须映射到相同的干净端点。具体来说，oracle 目标被替换为 \emph{停止梯度} 从轨迹上稍早的点获取的目标：
 \begin{align*}
     \bPsi_{s\to 0}(\rvx_s) 
     &= \bPsi_{s-\Delta s \to 0} \left(\bPsi_{s\to s-\Delta s}(\rvx_s)\right) \\
     &\approx \rvf_{\btheta^-} \left(\bPsi_{s\to s-\Delta s}(\rvx_s),\,s-\Delta s\right), 
     \qquad \Delta s > 0,
 \end{align*}
-其中 $\bm{\theta}^-$ 是停止梯度算子下的参数。另一个困难是中间状态 $\bPsi_{s\to s-\Delta s}(\rvx_s)$ 也没有闭合形式，其本身必须是近似的。提出了两种实用的制度：
+其中 $\bm{\theta}^-$ 是停止梯度算子下的参数。另一个困难是中间状态 $\bPsi_{s\to s-\Delta s}(\rvx_s)$ 也没有闭形式，其本身必须是近似的。提出了两种实用的制度：
 
-\paragraph{具有预先训练的扩散模型（稠度蒸馏）。}
+\paragraph{具有预先训练的扩散模型（一致性蒸馏）。}
 假设我们可以访问预先训练的扩散模型。一致性蒸馏（CD）利用教师模型来近似中间状态 $\bPsi_{s\to s-\Delta s}(\rvx_s)$ 通过仅模拟单个向后 ODE 步骤：
 \[
  \bPsi_{s\to s-\Delta s}(\rvx_s)  \approx  \mathtt{Solver}_{s \to s-\Delta s}(\rvx_s).
@@ -679,7 +679,7 @@ $T>\tau_1 > \tau_2 > \cdots > \tau_{M-1}=0$，从初始噪声开始 $\hat\rvx_T$
 
 \section{特殊流映射：连续时间的一致性模型}\label{sec:conti-cm}
 
-我们现在超越了一致性模型的离散时间设置，并考虑连续时间的视角。与固定时间网格并仅在那些采样点上进行训练的离散方法不同，连续公式将流图视为针对所有时间定义的。这种转变消除了对任意离散化的依赖，并提供了与潜在动态的更有原则的一致性。它还有助于减少离散积分自然产生的近似误差，并确保全局一致性，而不仅仅是在选定的步骤上。
+我们现在超越了一致性模型的离散时间设置，并考虑连续时间的视角。与固定时间网格并仅在那些采样点上进行训练的离散方法不同，连续公式将流映射视为针对所有时间定义的。这种转变消除了对任意离散化的依赖，并提供了与潜在动态的更有原则的一致性。它还有助于减少离散积分自然产生的近似误差，并确保全局一致性，而不仅仅是在选定的步骤上。
 
 \subsection{连续时间一致性模型}\label{subsec:conti-ct}
 为了激发连续时间公式，我们首先重新审视
@@ -799,7 +799,7 @@ $\tfrac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)$ 表示总计
 训练连续时间 CM 后，采样遵循与
 离散时间情况 (\Cref{subsec:cm-sampling})。
 
-\paragraph{连续时间稠度蒸馏.}
+\paragraph{连续时间一致性蒸馏.}
 如果预训练的扩散模型可用，使得
 $\rvv_{\bm{\phi}^\times} \approx \rvv^*$，则切向量
 $\tfrac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)$中
@@ -948,7 +948,7 @@ $\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$,
 \footnote{直观上，三角函数及其导数都是有界的，这有助于防止规模爆炸，例如 $\frac{\diff}{\diff s} \rvf_{\bm{\theta}^-}$。稍后将提供详细讨论。
 }。此外，它们还包含标准差 $\sigma_{\mathrm{d}}$ 数据分布 $p_{\mathrm{data}}$，符合EDM的设计 \Cref{subsec:D-design-edm}:
 \begin{align}\label{eq:trig-scm}
-    \rvx_s := \cos(s) \rvx_0 + \sin(s) \rvz, \quad \text{where } \rvz \sim \mathcal{N}(\bm{0}, \sigma_{\mathrm{d}}^2 \rmI).
+    \rvx_s := \cos(s) \rvx_0 + \sin(s) \rvz, \quad \text{其中 } \rvz \sim \mathcal{N}(\bm{0}, \sigma_{\mathrm{d}}^2 \rmI).
 \end{align}
 
 这个公式是完全通用的。对于任何形式的扩散过程 $\rvx_s = \alpha_s \rvx_0 + \sigma_s \bm{\epsilon}$ 与 $\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$，我们可以等效地写：
@@ -1208,7 +1208,7 @@ $(\alpha_t,\sigma_t)=(1,t)$ 或 $(1-t,t)$，扩散时间中的普通欧拉步骤
 = \rvx_s - (s-t)\,\frac{\rvx_s - \E[\rvx|\rvx_s]}{s}
 = \frac{t}{s}\,\rvx_s + \Big(1 - \frac{t}{s}\Big)\E[\rvx|\rvx_s],
 \]
-其中 $\rvx_{s\to t}^{\mathrm{Euler}}$ 在时间上的近似解 $t$ 给定状态 $\rvx_s$ 当时 $s$。虽然 EDM 设置提供了一个简单的说明性案例，但 CTM 允许由任意线性高斯前向内核定义的更广泛的噪声调度 $(\alpha_t, \sigma_t)$ 
+其中 $\rvx_{s\to t}^{\mathrm{Euler}}$ 是从时刻 $s$ 的状态 $\rvx_s$ 出发，在时刻 $t$ 得到的近似解。EDM 是一个便于说明的例子，CTM 也适用于任意线性高斯前向转移核所定义的噪声调度 $(\alpha_t, \sigma_t)$
 并表示 PF-ODE $\rvv$-预测形式：
 \[
 \bPsi_{s\to t}(\rvx_s)
@@ -1295,7 +1295,7 @@ $\mathbf{G}_{\bm{\theta}}(\cdot, s, t) \approx \bPsi_{s\to t}(\cdot, s, t)$。�
 
 
 \subsection{CTM 中的一致性损失}\label{subsec:ctm-consistency}
-CTM旨在逼近预言机解图
+CTM旨在逼近预言机解映射
 \[
 \mathbf{G}_{\bm{\theta}}(\cdot, s, t) \approx \bPsi_{s\to t}(\cdot, s, t),
 \]
@@ -1304,7 +1304,7 @@ CTM旨在逼近预言机解图
 \[
 \bPsi_{u\to t}\circ \bPsi_{s\to u} = \bPsi_{s\to t}.
 \]
-根据是否有预训练的扩散模型，流图 $\bPsi_{s\to t}$ 可以用不同的方式近似。在整个过程中，我们假设 $s \ge u \ge t \in [0,T]$.
+根据是否有预训练的扩散模型，流映射 $\bPsi_{s\to t}$ 可以用不同的方式近似。在整个过程中，我们假设 $s \ge u \ge t \in [0,T]$.
 
 
 \paragraph{通过蒸馏进行训练。}
@@ -1336,9 +1336,9 @@ $u \sim \mathcal{U}[t,s)$，然后让学生从 $u$ 至 $t$:
 \end{align}
 其中 $\bm{\theta}^-$ 是停止梯度副本 $\mathbf{G}_{\bm{\theta}}$。通过改变 $u$，CTM 在全局和局部监督之间进行插值：
 \begin{itemize}
-    \item \textbfs{全球一致性} ($u=t$): 老师在整个区间内解决了 $s\to t$，因此目标减少到一次完整的教师过渡 $t$.
+    \item \textbfs{全局一致性} ($u=t$): 用教师模型在整个 $s\to t$ 区间求解，因此训练目标就是教师在时刻 $t$ 给出的完整转移结果。
 
-    \item \textbfs{局部一致性} ($u=s-\Delta s$): 学生从距离老师一步近的地方学习 $s$;当 $t=0$，这减少了稠度蒸馏。
+    \item \textbfs{局部一致性} ($u=s-\Delta s$): 学生通过教师模型在 $s$ 附近的一小步来学习。当 $t=0$ 时，这就退化为一致性蒸馏。
 \end{itemize}
 
 为了在对齐轨迹的同时增强样本质量，两个预测都映射到时间 $0$ 通过停止梯度学生并在特征空间度量中进行比较 $d$:
@@ -1391,8 +1391,8 @@ $\rvg_{\bm{\theta}^-}(\cdot,\tau,\tau)$ 准确恢复目标局部动态。下面�
  \approx 
 \underbrace{\mathbf{G}_{\bm{\theta}^-} \big(\mathtt{Solver}_{s\to u}(\rvx_s;\bm{\theta}^-),\, u,\, t\big)}_{\approx\, \bPsi_{u\to t}(\bPsi_{s\to u}(\rvx_s))},
 \]
-其中 $u \sim \mathcal{U}[t,s)$ 和 $\bm{\theta}^-$ 是学生的停止梯度副本。蒸馏的唯一变化是外部老师
-$\rvv_{\bm{\phi}^\times}$ 被自诱导老师取代
+其中 $u \sim \mathcal{U}[t,s)$ 和 $\bm{\theta}^-$ 是学生的停止梯度副本。蒸馏的唯一变化是外部教师模型
+$\rvv_{\bm{\phi}^\times}$ 被自诱导教师模型取代
 $\rvg_{\bm{\theta}^-}$。为了将轨迹匹配与样本质量结合起来，两个预测都映射到时间 $0$ 使用停止梯度学生并在特征空间中进行比较。没有任何预训练模型的目标是
 \[
 \hat{\rvx}_{\mathrm{target}}
@@ -1471,7 +1471,7 @@ $\mathcal L_{\mathrm{DM}}$ 提高准确度 $t$ 接近 $s$ 通过明确监督沿�
 $D_{\bm{\zeta}}$ 区分真实的 $\rvx_{0}\sim p_{\mathrm{data}}$ 来自生成 $\rvx_{\mathrm{est}}(\rvx_{s},s,t)$，目标是
 \begin{align*} 
 &\mathcal{L}_{\mathrm{GAN}}(\bm{\theta}, \bm{\zeta}) := \\ &\mathbb{E}_{\mathbf{x}_0} \big[\log D_{\bm{\zeta}}(\mathbf{x}_0)\big] + \mathbb{E}_{s \in [0, T]} \mathbb{E}_{t \in [0, s]} \mathbb{E}_{\mathbf{x}_0} \mathbb{E}_{\mathbf{x}_s \vert \mathbf{x}_0} \big[\log (1 - D_{\bm{\zeta}}( \mathbf{x}_{\mathrm{est}}(\mathbf{x}_s, s, t)))\big], \end{align*}
-其中 $D_{\bm{\zeta}}$ 最大化并且 $\rmG_{\bm{\theta}}$ 已最小化。直观上，鉴别器充当自适应感知距离，鼓励现实细节。理论上，GAN 项驱动之间的分布匹配（詹森-香农散度） $p_{\mathrm{data}}$ 以及由以下引起的模型分布 $\rmG_{\bm{\theta}}$~\citep{goodfellow2014generative}，可以提高超出老师的保真度。
+其中 $D_{\bm{\zeta}}$ 最大化并且 $\rmG_{\bm{\theta}}$ 已最小化。直观上，鉴别器充当自适应感知距离，鼓励现实细节。理论上，GAN 项驱动之间的分布匹配（詹森-香农散度） $p_{\mathrm{data}}$ 以及由以下引起的模型分布 $\rmG_{\bm{\theta}}$~\citep{goodfellow2014generative}，可以提高超出教师模型的保真度。
 
 \paragraph{总体 CTM 目标。}
 总之，CTM 将（自）蒸馏、扩散和 GAN 损失统一到一个训练框架中：
@@ -1483,7 +1483,7 @@ $D_{\bm{\zeta}}$ 区分真实的 $\rvx_{0}\sim p_{\mathrm{data}}$ 来自生成 $
 + \lambda_{\mathrm{GAN}} \mathcal{L}_{\mathrm{GAN}}(\bm{\theta},\bm{\zeta}),
 \end{align*}
 \end{mdframed}
-教师是外部预训练模型 $\bm{\phi}^\times$ 还是自引老师 $\bm{\theta}^-$。回归样式组件
+教师是外部预训练模型 $\bm{\phi}^\times$ 还是自引教师模型 $\bm{\theta}^-$。回归样式组件
 $\mathcal{L}_{\mathrm{consist}}$ 和 $\mathcal{L}_{\mathrm{DM}}$ 充当强大的正则化器，而可选的 GAN 项可在不牺牲稳定性的情况下改善精细尺度细节~\citep{kim2024pagoda}.
 
 
@@ -1556,14 +1556,14 @@ $，从 $p_T$。然后
 \end{itemize}
 
 
-\paragraph{CTM 支持扩散推理。} 由于CTM直接通过学习分数函数（或降噪器） $\rvg_{\bm{\theta}}$，由于其参数化 \Cref{eq:ctm_para_1}，它与最初为扩散模型开发的推理技术兼容。例如，我们可以计算精确的可能性（\Cref{subsec:sde-sample}) 或应用高级采样器，例如 DDIM 或 DPM (\Cref{ch:solvers}) 生成，通过使用 $\rvg_{\bm{\theta}}(\cdot, s, s)$.
+\paragraph{CTM 支持扩散推理。} 由于CTM直接通过学习分数函数（或降噪器） $\rvg_{\bm{\theta}}$，由于其参数化 \Cref{eq:ctm_para_1}，它与最初为扩散模型开发的推理技术兼容。例如，我们可以计算精确似然（\Cref{subsec:sde-sample}) 或应用高级采样器，例如 DDIM 或 DPM (\Cref{ch:solvers}) 生成，通过使用 $\rvg_{\bm{\theta}}(\cdot, s, s)$.
 
 
 
 
 \newpage
 
-\section{\texorpdfstring{一般流图：平均流}{一般流图：平均流}}\label{sec:MF}
+\section{\texorpdfstring{一般流映射：平均流}{一般流映射：平均流}}\label{sec:MF}
 
 
 正如扩散模型承认许多等效的参数化和训练目标一样，通用流映射 $\bPsi_{s\to t}$ 也可以通过多种看似合理的方式来学习。在本节中，我们介绍 \emph{平均流} （MF）~\citep{geng2025mean}，后来通用流映射家族的代表 $\bPsi_{s\to t}$ 这说明了如何有效学习此类映射的另一种但有原则的观点。
@@ -1622,7 +1622,7 @@ $，从 $p_T$。然后
 \end{align*}
 
 在实践中，预言机速度 $\rvv^*$ 无法以封闭形式计算，必须进行近似计算。有两种常见的策略可用：依靠预先训练的扩散模型（\emph{蒸馏}) 或根据数据构建直接估计器 (\emph{从头开始训练}）。无论选择如何，最终都需要计算一个
-\emph{雅可比行列式——矢量积}  目标网络的（JVP）
+\emph{雅可比矩阵与向量的乘积}  目标网络的（JVP）
 $\rvh_{\btheta^-}$:
 \[ 
 \left[\partial_\rvx \rvh_{\btheta^-}, \partial_s \rvh_{\btheta^-}, \partial_t \rvh_{\btheta^-}\right]^\top \cdot \left[\rvv^*, 1, 0\right]
@@ -1688,7 +1688,7 @@ $\rvx_T\sim p_{\mathrm{prior}}$，一步生成干净样本是
 \[
 \rvg_\btheta(\rvx_s,s,t) := \rvx_s - s \rvh_\btheta(\rvx_s,s,t),
 \]
-以$d(\rvx,\rvy):=\|\rvx-\rvy\|^2$为例。代入 \Cref{eq:general-cm-loss:rep} 并将 $\rmG_\btheta$ 视为 CTM 的流图参数化 (\Cref{eq:ctm_para_1}) 给出
+以$d(\rvx,\rvy):=\|\rvx-\rvy\|^2$为例。代入 \Cref{eq:general-cm-loss:rep} 并将 $\rmG_\btheta$ 视为 CTM 的流映射参数化 (\Cref{eq:ctm_para_1}) 给出
 \begin{align} &~d\big(\rmG_\btheta(\rvx_s,s,t), \bPsi_{s\to t}(\rvx_s)\big) \notag \\ = &~\norm{\rmG_\btheta(\rvx_s,s,t) - \bPsi_{s\to t}(\rvx_s)}^2 \notag \\ = &~\norm{\left(\frac{t}{s}\rvx_s + \frac{s-t}{s} \rvg_\btheta(\rvx_s,s,t)\right)-\left(\frac{t}{s}\rvx_s + \frac{s-t}{s}\Big[\rvx_s + \frac{s}{s-t}\int_s^t \rvv^*(\rvx_u,u) \diff u\Big]\right)}^2 \notag \\ = &~\left(\frac{s-t}{s}\right)^2\norm{\rvg_\btheta(\rvx_s,s,t)-\left(\rvx_s + \frac{s}{s-t}\int_s^t \rvv^*(\rvx_u,u) \diff u\right)}^2 \label{eq:g-para} \\ = &~\left(\frac{s-t}{s}\right)^2\norm{\left(\rvx_s - s \rvh_\btheta(\rvx_s,s,t)\right)-\left(\rvx_s + \frac{s}{s-t}\int_s^t \rvv^*(\rvx_u,u) \diff u\right)}^2 \notag \\ = &~\left(\frac{s-t}{s}\right)^2\norm{\left(\rvx_s - s \rvh_\btheta(\rvx_s,s,t)\right)-\left(\rvx_s + \frac{s}{s-t}\int_s^t \rvv^*(\rvx_u,u) \diff u\right)}^2 \notag \\ = &~\left(s-t\right)^2\norm{ \rvh_\btheta(\rvx_s,s,t)- \left(\frac{1}{t-s}\int_s^t \rvv^*(\rvx_u,u)\diff u \right)}^2 \label{eq:h-para} \end{align}
 因此，
 \begin{align*} 
@@ -1742,13 +1742,13 @@ CTM 和 MF 之间的关系类似于
 
 \section{结束语}\label{sec:ch11_cr}
 
-最后一章使我们的探索完整了：从缓慢的迭代扩散采样器到快速的几步生成器（从头开始学习）。本章中的方法背后的公共对象是中介绍的oracle流映射 \Cref{eq:general-cm-loss:rep}:
+最后一章使我们的探索完整了：从缓慢的迭代扩散采样器到快速的几步生成器（从头开始学习）。本章中的方法背后的共同的学习对象是中介绍的oracle流映射 \Cref{eq:general-cm-loss:rep}:
 \[
 \bPsi_{s\to t}(\rvx_s)
 =
 \rvx_s+\int_s^t \rvv^*(\rvx_\tau,\tau)\,\diff \tau.
 \]
-学习这张映射可以通过一次或几次学习的跳跃来替换许多小的数值更新。此时，退出各个算法是很有用的。知识蒸馏（\Cref{sec:distillation-prologue})，渐进式蒸馏 (\Cref{sec:PD}), CM (\Cref{sec:discrete-cm}), CTM (\Cref{sec:CTM}) 和 MF (\Cref{sec:MF}) 是通过不同的训练结构引入的，但它们都显式或隐式地利用相同的 ODE 解图结构。流映射本身是微分方程和动力系统中的经典对象，与连续介质和流体力学中基于粒子和基于场的描述密切相关；看到
+学习这张映射可以通过一次或几次学习的跳跃来替换许多小的数值更新。此时，退出各个算法是很有用的。知识蒸馏（\Cref{sec:distillation-prologue})，渐进式蒸馏 (\Cref{sec:PD}), CM (\Cref{sec:discrete-cm}), CTM (\Cref{sec:CTM}) 和 MF (\Cref{sec:MF}) 是通过不同的训练结构引入的，但它们都显式或隐式地利用相同的 ODE 解映射结构。流映射本身是微分方程和动力系统中的经典对象，与连续介质和流体力学中基于粒子和基于场的描述密切相关；看到
 \Cref{eq:flow-map-def} 以及周围的历史讨论。在这里，我们使用同一 ODE 流程的三种经典描述，即 \emph{半群}, \emph{拉格朗日}, 和 \emph{欧拉} 观点，作为上面开发的现代学习方法的组织镜头
 \footnote{在现代生成建模中， \citet{boffi2024flow} 汇集 PD、CM、CTM 和 MF 中已经出现的结构思想，并使用它们以通用语言描述扩散 PF-ODE 流映射的学习。因此，主要成分很大程度上来自这些现有的工作。我们在这部分的演示和插图也来自于以下的阐述： \citet{dieleman2026flowmaps}.}
 
@@ -1878,7 +1878,7 @@ $t$。然后终点沿着相同的轨迹移动：
         \includegraphics[width=\linewidth]{Images/PartD/eulerian-2.pdf}
         \caption{移动启动时间 $s'$.}
         \label{fig:eulerian-moved}
-    \end{subfigure}\caption{\textbfs{E流图的ulerian一致性。}
+    \end{subfigure}\caption{\textbfs{E流映射的ulerian一致性。}
     结束时间 $t$ 固定，而开始时间从 $s$ 移至
     $s'$。由于相应的起点位于同一个 PF-ODE 上
 轨迹，终点保持不变：
@@ -2025,7 +2025,7 @@ $\rvx_\tau=\bPsi_{s\to \tau}(\rvx_s)$，因此
 
 \paragraph{关闭.}
 本章探讨的中心转变是学习局部速度
-领域来学习其 ODE 解图的有限部分。一个常规的
+领域来学习其 ODE 解映射的有限部分。一个常规的
 扩散采样器反复评估局部场并进行数值计算
 整合它。相反，流映射模型分摊了此集成的一部分
 在训练过程中，可以用一个或几个来遍历很长的区间
@@ -2040,9 +2040,9 @@ $\rvx_\tau=\bPsi_{s\to \tau}(\rvx_s)$，因此
 从这个角度来看，流映射学习并不是一个新的动态概念，而是一个新的动态概念。
 围绕经典学习策略建立的现代学习策略。它保留了
 基于轨迹的扩散模型基础，同时扩大设计
-高效发电的空间。目标不再只是整合
+高效生成的空间。目标不再只是整合
 生成 ODE 在推理时更有效，但学习有用
-直接对其解图进行有限时间转换。
+直接对其解映射进行有限时间转换。
 
 
 

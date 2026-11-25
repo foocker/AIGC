@@ -377,19 +377,19 @@ Stanford University
 
 我们从三个互补的视角形式化这一思想。受变分自编码器启发的\emph{变分视角}，将扩散看作逐步学习去噪：通过一系列局部去噪目标，教会模型将噪声还原为数据。源于能量模型的\emph{分数视角}，学习演化中分布的对数密度梯度，以确定应当如何将样本推向概率更高的区域。与归一化流相关的\emph{流视角}，则将生成看作在学习得到的速度场作用下，沿平滑路径把噪声样本传输到数据分布。
 
-这些视角共享同一核心结构：一个学习得到、随时间变化的速度场，其诱导的流将简单先验分布传输为数据分布。在这个框架下，采样就是求解微分方程，使噪声沿连续的生成轨迹演化为数据。在此基础上，本书讨论用于可控生成的\emph{引导方法}、用于高效采样的\emph{高阶数值求解器}，以及受扩散模型启发、直接学习轨迹上任意两个时刻之间映射的\emph{流映射模型}。
+三种视角都有一个共同结构。通过学习得到的含时速度场产生一个流，将简单先验分布传输到数据分布。采样时，求解微分方程即可让噪声沿连续的轨迹演化为数据。本书还讨论用于可控生成的\emph{引导方法}、用于高效采样的\emph{先进数值求解器}，以及受扩散模型启发、直接学习轨迹上任意两个时刻之间映射的\emph{流映射模型}。
 
 本书面向具备基本深度学习背景，希望从概念和数学层面清晰理解扩散模型的读者。书中阐述这一领域的核心原理，解释统一不同表述的思想，并为在这一迅速发展的领域继续学习奠定基础。它既可作为研究人员的原理参考，也可作为学生与初学者的入门读物。配套材料见原著网站：
 {\centering\url{https://the-principles-of-diffusion-models.github.io/}\par}
 
 \medskip
-\noindent\textbf{译本说明。}本文件是基于 arXiv:2510.21890v3（2026年8月27日）的非官方中文初译，整理日期为2026年11月25日。正文采用机器初译，并统一部分术语；摘要、出版标识与通用界面文字另行整理。尚未逐段完成人工学术审校。公式、数学符号、交叉引用和文献标识保留原文；原始配图与参考文献条目保留原语。阅读涉及定理条件、证明细节和算法实现的内容时，可对照同目录的官方英文源码。
+\noindent\textbf{译本说明。}本文件是基于 arXiv:2510.21890v3（2026年8月27日）的非官方中文初译，整理日期为2026年11月25日。正文在机器初译基础上统一术语，前言、第一章和选定段落已对照英文校订。逐段学术审校尚未完成。公式、数学符号、引用标识、原始插图和参考文献条目沿用原著。英文源码收录于译本目录。
 \end{abstract}
 
 \begin{acknowledgements}
 我们衷心感谢社区中提出宝贵反馈、帮助发现勘误的各位同仁。特别感谢以下人士，姓名按字母顺序排列：\emph{Francis Bach}、\emph{Ilia Badanin}、\emph{Rwiddhi Chakraborty}、\emph{Mauricio Delbracio}、\emph{Jacob Lessing}、\emph{Kaiming He}、\emph{Yutong (Kelly) He}、\emph{Durk Kingma}、\emph{Shucheng Li}、\emph{Ramtin Moslemi}、\emph{Rukmangadh Sai Myana}、\emph{Stefano Peluchetti}、\emph{Yuri Plotkin}、\emph{François Rozet}、\emph{Yair Shenfeld}、\emph{Molei Tao}、\emph{Mohamad Ternanni}和\emph{Baojian Zhou}，以及匿名审稿人与其他热心提供反馈的读者。
 
-作者也特别感谢首尔市立大学与韩国高等科学院（KIAS）的\emph{Dohyun Kwon}教授，感谢他慷慨投入时间和精力参与本书的讨论。他仔细审阅了\Cref{ch:ot-eot}的部分内容，帮助确保陈述与证明的正确性，并通过多次富有价值的讨论澄清了表述。他不仅提出技术建议，还提供了深思熟虑的反馈，乐于分享自己的观点，在全书写作过程中给予我们持续的鼓励。我们衷心感谢他的支持与同事情谊，这些帮助使本书的最终版本更加完善。
+我们还特别感谢首尔市立大学与韩国高等科学院（KIAS）的 \emph{Dohyun Kwon} 教授。他投入时间和精力审阅了 \Cref{ch:ot-eot} 的部分内容，帮助核对陈述和证明，并在多次讨论中帮助我们把表述写得更清楚。他的技术建议、细致反馈和乐于分享的态度，在全书写作过程中给了我们鼓励。他的支持和同事情谊让本书更加完善。
 \end{acknowledgements}
 
 
@@ -397,7 +397,7 @@ Stanford University
 
 \input{Preface}
 \input{notations}
-\part{深度生成建模导论}
+\part{深度生成模型导论}
 \input{Prologue-Deep-Generative-Modeling}
 \part{扩散模型的基础与视角}
 \input{Part-B-diagram}

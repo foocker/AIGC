@@ -4,25 +4,24 @@
     \textit{数学是一门给不同事物赋予相同名称的艺术。
 }}{亨利·庞加莱}
 
-本章提出了一个系统的观点，将变化的、基于分数的和基于流程的观点连接到一个连贯的画面中。尽管出于不同的直觉，这些方法都集中在现代扩散模型的相同核心机制上：定义一个追踪边缘分布路径的前向扰动过程，然后学习局部扰动过程。
-构建反向遵循此路径的生成动力学所需的数量。在 \Cref{ch:variational,ch:score-based,ch:score-sde,ch:flow-based} 的基础上，我们观察到一个常见的方法：定义一个跟踪边缘路径的前向扰动过程，然后学习一个时变向量场，该向量场在沿着该路径的数据分布之前传输简单的先验向量。
+本章把变分、分数和流三种视角放进同一框架。三种方法的出发点各不相同，但都先用前向扰动过程规定边缘分布的演化路径，再学习构造反向生成过程所需的局部量。根据 \Cref{ch:variational,ch:score-based,ch:score-sde,ch:flow-based}，可以把这套做法概括为：先规定前向边缘分布路径，再学习含时向量场，使简单先验分布沿同一路径反向演化为数据分布。
 
-贯穿所有观点的一个关键要素是 \Cref{sec:conditional-trick} 中引入的调节技巧，它将棘手的边缘目标转化为易于处理的条件目标，从而实现稳定和高效的训练。
+三种视角都用到 \Cref{sec:conditional-trick} 的条件化方法。它把难以计算的边缘训练目标转化为可计算的条件目标，使训练更稳定、更高效。
 
 在 \Cref{sec:elucidating} 中，我们系统地分析了训练目标，确定了其基本组成部分，并阐明了如何在变分、基于分数和基于流的观点中制定损失函数。
 
 
-\Cref{sec:equivalent-parametrizations} 表明任何 $\rvx_t = \alpha_t \rvx_0 + \sigma_t \beps$ 形式的仿射前向噪声注入都可以等效地转换为标准线性表 $\rvx_t = (1 - t)\rvx_0 + t\beps$。此外，噪声预测、干净数据预测、分数预测和速度预测等常见参数化在梯度层面上是可以互换的。因此，噪声调度器和参数化的选择都遵循相同的建模原则。
+\Cref{sec:equivalent-parametrizations} 表明任何 $\rvx_t = \alpha_t \rvx_0 + \sigma_t \beps$ 形式的仿射前向噪声注入都可以等效地转换为标准线性调度 $\rvx_t = (1 - t)\rvx_0 + t\beps$。此外，噪声预测、干净数据预测、分数预测和速度预测等常见参数化在梯度层面上是可以互换的。因此，噪声调度器和参数化的选择都遵循相同的建模原则。
 
 
 
-最后，\Cref{sec:comparison-connection} 将讨论集中起来并确定了控制规则：福克-普朗克方程。无论是被视为变分方案（离散时间去噪）、基于分数的方法（SDE 公式）还是基于流的方法（ODE 公式），每种方法都会构造一个其边缘遵循相同密度演化的生成器。因此，福克-普朗克方程成为所有三种观点都遵守的通用约束，仅在参数化和训练目标方面存在差异。\chapterlearning{
-  \item 认识到变分、基于分数和基于流程的训练背后的共同条件反射原理：可以通过易于处理的条件目标来学习难以处理的边缘目标；
+最后，\Cref{sec:comparison-connection} 将讨论集中起来并确定了控制规则：福克尔-普朗克方程。无论是被视为变分方案（离散时间去噪）、基于分数的方法（SDE 公式）还是基于流的方法（ODE 公式），每种方法都会构造一个其边缘遵循相同密度演化的生成器。因此，福克尔-普朗克方程成为所有三种观点都遵守的通用约束，仅在参数化和训练目标方面存在差异。\chapterlearning{
+  \item 认识到变分、基于分数和基于流程的训练背后的共同的条件化原理：可以通过易于处理的条件目标来学习难以处理的边缘目标；
   \item 了解四种常见的预测类型——干净数据、噪声、分数和速度——并在前向调度非退化时在其预言机预测之间进行转换；
   \item 解开扩散训练中的主要设计选择：前向噪声调度、预测目标、时间采样分布和时间加权，并了解哪些变化是数学重新参数化，哪些变化仍然会影响实际优化；
   \item 区分“等效”的不同概念：表示相同的预言机信息，在加权或加性常数方面具有等效的总体目标，跟踪相同的边缘密度路径，并且与实际训练或采样算法表现相同；
   \item 了解不同的仿射概率路径如何通过时间重新参数化和空间重新缩放相关联，同时跟踪这些变换保留和不保留的内容；
-  \item 了解连续性和 Fokker-Planck 方程如何提供连接扩散模型的变分、确定性 ODE 和随机 SDE 描述的密度级原理。
+  \item 了解连续性和 福克尔-普朗克方程如何提供连接扩散模型的变分、确定性 ODE 和随机 SDE 描述的密度级原理。
 }{
 本章是本书的概念基石。对于第一遍，聚焦
 根据条件作用原理，四种预测之间的关系
@@ -104,7 +103,7 @@ $\mathcal{J}_{\text{FM}}$）仅由一个独立于的常数
 \underbrace{\text{conditional oracle}}_{\text{tractable given }\rvx_0}
 \right].
 \]
-也就是说，对干净样品 $\rvx_0$ 进行调节给出了一个易于处理的目标，
+也就是说，对干净样本 $\rvx_0$ 进行调节给出了一个易于处理的目标，
 并对可能的干净样本取这些条件目标的平均值
 与 $\rvx_t$ 一致恢复所需的边缘预言。具体来说，
 
@@ -156,7 +155,7 @@ p_t(\rvx_t|\rvx_0^{(i)})
 =
 \mathcal{N}\left(\rvx_t;\alpha_t \rvx_0^{(i)}, \sigma_t^2 \rmI\right),
 \]
-所以条件可能性是明确的。然而，在群体层面，后验 $p(\rvx_0|\rvx_t)$ 仍然需要对完整数据分布 $p_{\text{data}}$ 进行平均。
+因此，这个条件似然可以显式写出。然而，在群体层面，后验 $p(\rvx_0|\rvx_t)$ 仍然需要对完整数据分布 $p_{\text{data}}$ 进行平均。
 
 如果我们现在用经验测量代替 $p_{\text{data}}$
 \[
@@ -189,11 +188,11 @@ p^*(\rvx_{t-\Delta t}|\rvx_t)
 w_i(\rvx_t,t) 
 p(\rvx_{t-\Delta t}|\rvx_t,\rvx_0^{(i)}).
 \]
-这里每个条件反向内核
+这里每个条件反向转移核
 \[
 p(\rvx_{t-\Delta t}|\rvx_t,\rvx_0^{(i)})
 \]
-本身在高斯扩散下可以以闭合形式获得；事实上，它是高斯分布，如引理~\ref{ddpm-reverse-kernel} 所示。因此，真正的反向内核只是显式高斯桥的后验加权混合。 
+本身在高斯扩散下可以以闭形式获得；事实上，它是高斯分布，如引理~\ref{ddpm-reverse-kernel} 所示。因此，真正的反向转移核只是显式高斯桥的后验加权混合。
 
 \paragraph{基于分数的视图.}
 同样，预言机分数变为
@@ -230,7 +229,7 @@ w_i(\rvx_t,t)
 w_i(\rvx_t,t) 
 \mathbf{v}_t(\rvx_t|\rvx_0^{(i)}).
 \]
-同样，构建块是明确的。相应的条件速度场具有闭合形式：
+同样，构建块是明确的。相应的条件速度场具有闭形式：
 \[
 \mathbf{v}_t(\rvx_t|\rvx_0^{(i)})
 =
@@ -294,7 +293,7 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
         \mathcal{L}_{\text{clean}}(\bm{\phi}) := \mathbb{E}_t \left[\omega(t) \mathbb{E}_{\mathbf{x}_0, \bm{\epsilon}} \left\| \mathbf{x}_{\bm{\phi}}(\mathbf{x}_t,t) - \mathbf{x}_0 \right\|_2^2 \right].
     \]
     这里，$\rvx^*$ 表示在给定噪声观测值 $\rvx_t$ 的情况下，所有合理的干净猜测的平均值。
-\end{enumerate}\paragraph{Score-Based View.} 预测噪声级别 $t$ 的分数函数，该函数指向平均方向，将 $\mathbf{x}_t$ 降噪回所有可能生成它的干净样本：
+\end{enumerate}\paragraph{分数视角。} 预测噪声级别 $t$ 的分数函数，该函数指向平均方向，将 $\mathbf{x}_t$ 降噪回所有可能生成它的干净样本：
 \begin{enumerate}
     \item[3.] \textbfs{分数预测} \citep{song2019generative,song2020score}：
     \begin{equation}\label{eq:score-def}
@@ -375,7 +374,7 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
               & $A_t$ & $B_t$ \\
        \midrule
     洁净 & $1 $ & $0$ \\
-      噪音 & $0$ & $1$\\
+      噪声 & $0$ & $1$\\
     条件分数 & $0 $ & -$\frac{1}{\sigma_t}$ \\
      条件速度 & $\alpha_t' $ & $\sigma_t'$ \\
  \bottomrule
@@ -385,7 +384,7 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
 \end{table}
 在扩散训练中通常有两种选择：
 \emph{什么数量网络直接预测}和\emph{哪个数量
-在训练loss}中进行比较。干净的数据、噪音、分数和速度可以
+在训练loss}中进行比较。干净的数据、噪声、分数和速度可以
 用于任一目的。
 
 \subparagraph{匹配预测和损失.}
@@ -766,7 +765,7 @@ $p_{\text{time}}(t)\omega(t)>0$。
 标准简化 $\beps$ 预测和 FM/RF 物镜
 ~\citep{ho2020denoising,lipman2022flow,liu2022rectified}。
 其他权重强调不同的噪声状况，也可以携带
-可能性或变分解释。例如，对于分数匹配
+似然或变分解释。例如，对于分数匹配
 目标，似然权重 $\omega(t)=g^2(t)$ 产生上限
 在适当的规律性条件下的负对数似然
 ~\citep{song2021maximum}。更一般地说，依赖于 SNR 的权重提供了
@@ -774,7 +773,7 @@ $p_{\text{time}}(t)\omega(t)>0$。
 ~\citep{kingma2021variational,kingma2023understanding}。
 
 \subparagraph{单调加权和带有增强视图的ELBO。}
-描述腐败程度的一个有用方法是通过
+描述扰动程度的一个有用方法是通过
 \emph{log信噪比}（log-SNR）
 \[
 \Lambda_t
@@ -796,7 +795,7 @@ $w(\Lambda)$ 在 $\Lambda$ 中不增加（相当于，它的重量不增加）
 参数，作为高斯扰动数据上的平均负 ELBO
 \footnote{
 要了解为什么单调性很重要，请定义剩余的变分成本：
-噪音水平 $t$ 起为
+噪声水平 $t$ 起为
 \[
 L(t;\rvx_0)
 :=
@@ -809,7 +808,7 @@ p_{\bm{\phi}}(\rvx_{[t,T]})
 \]
 其中 $\rvx_{[t,T]}:=\{\rvx_s\}_{s\in[t,T]}$ 表示剩余的
 连续的扩散路径。这是连续时间对应的
-\Cref{eq:ddpm-elbo} 中的负 ELBO，从腐败级别 $t$ 开始；
+\Cref{eq:ddpm-elbo} 中的负 ELBO，从扰动水平 $t$ 开始；
 更准确地说，它等于扰动样本的预期负 ELBO
 $\rvx_t$，直至独立于 $\bm{\phi}$ 的条款。
 
@@ -843,14 +842,14 @@ C,
 如果 $w(\Lambda)$ 在 $\Lambda$ 中不增加，则
 $\frac{\diff}{\diff t}w(\Lambda_t)\geq0$ 因为 $\Lambda_t$ 随
 $t$。因此，归一化后，上述各项形成非负权重
-在不同高斯腐败水平下的 ELBO 上，这给出了
+在不同高斯噪声水平下的 ELBO 上，这给出了
 ELBO 高斯增强解释。
 }。
 
 因此，单调加权有一个具体的概率解释：
-不仅仅是强调某些噪音水平而不是其他噪音水平，它可以
+不仅仅是强调某些噪声水平而不是其他噪声水平，它可以
 被视为对高斯损坏版本的变分训练进行平均
-不同腐败强度的数据。\paragraph{结论.}
+不同扰动强度的数据。\paragraph{结论.}
 就我们的目的而言，主要的教训是许多明显的设计选择
 扩散训练可以通过它们如何重塑
 对目标中的噪声水平进行有效加权。这个权重
@@ -887,7 +886,7 @@ ELBO 高斯增强解释。
     \item \textbfs{训练目标.}
     以不同预测类型编写的平方误差目标可能会有所不同
     正向时间相关因素，同时共享相同的逐点预言
-    最小化器。这些因素决定了噪音水平的差异程度
+    最小化器。这些因素决定了噪声水平的差异程度
     训练时称重。
     
     \item \textbfs{仿射正向过程.}
@@ -903,7 +902,7 @@ ELBO 高斯增强解释。
     在密度水平上，不同的确定性和随机动力学可以
     产生相同的边缘路径 $\{p_t\}_{t\in[0,T]}$。他们的样本
     轨迹可能会有所不同，而 $p_t$ 的演变则受
-    相应的连续性或福克-普朗克方程。
+    相应的连续性或福克尔-普朗克方程。
 \end{itemize}
 我们开发了从预测到采样的这些联系。
 \Cref{subsec:four-equiv-para} 首先讲述四种常见的预言机预测
@@ -1281,7 +1280,7 @@ $c(t)=\alpha_t+\sigma_t$ 和 $\tau(t)=\sigma_t/(\alpha_t+\sigma_t)$。微分给�
 在继续之前，我们区分两种类型的速度场以避免歧义。的 \emph{条件速度}，作为易于处理的训练目标，定义为
 \[
 \rvv_t(\rvx_t |\rvz) = \rvx_t' = \alpha_t' \rvx_0 + \sigma_t' \beps, 
-\quad \text{where } \rvz = (\rvx_0, \beps),
+\quad \text{其中 } \rvz = (\rvx_0, \beps),
 \]
 虽然 \emph{预言机（边缘化）速度}，用于在 PF-ODE 求解推理期间移动样本，由下式给出
 \[
@@ -1293,7 +1292,7 @@ $c(t)=\alpha_t+\sigma_t$ 和 $\tau(t)=\sigma_t/(\alpha_t+\sigma_t)$。微分给�
 \[
 \rvv_t(\rvx_t |\rvz)
 =\zeta'(t)(\beps-\rvx_0),
-\quad\text{where } \rvz=(\rvx_0,\beps).
+\quad\text{其中 } \rvz=(\rvx_0,\beps).
 \]
 
 
@@ -1617,7 +1616,7 @@ PF-ODE，而其他预测类型代表相同的预言机
 
 
 
-\section{ 一切的背后：福克-普朗克方程}\label{sec:comparison-connection}
+\section{ 一切的背后：福克尔-普朗克方程}\label{sec:comparison-connection}
 
 
 \begin{figure}[htbp]
@@ -1718,7 +1717,7 @@ PF-ODE，而其他预测类型代表相同的预言机
 
 在本节中，我们将展示扩散模型的三个主要观点——变分模型、基于分数的模型和基于流的模型——并不是独立的结构，而是源于一个单一的统一原则：在选定的前向过程下控制密度演化的连续性（福克-普朗克）方程。
 
-首先，我们回顾一下中的分析 \Cref{eq:heuristic-fpe-sde} 将基于离散核和贝叶斯规则的变分视角与基于分数的连续动态 SDE 视角相结合。我们通过证明变分模型充当基础正向和反向 SDE 的一致离散化来建立这种联系。具体来说，通过离散核逐步计算的边缘密度以与控制连续时间动态的福克-普朗克方程一致的方式演化。这证实了这两种观点在根本上是等同的。然后我们连接基于流和基于分数的视图。在 \Cref{subsec:flow-score}我们证明了 ODE 流决定了一条密度路径，其边缘总是可以通过一系列随机过程来实现。这将确定性流和随机 SDE 置于同一家族中。总之，这些结果将三个观点统一在一个框架下（见 \Cref{fig:unified_framework}）。最后，我们总结这一章 \Cref{subsec:takeaway-dm-gaussianfm}.
+首先，我们回顾一下中的分析 \Cref{eq:heuristic-fpe-sde} 将基于离散核和贝叶斯规则的变分视角与基于分数的连续动态 SDE 视角相结合。我们通过证明变分模型充当基础正向和反向 SDE 的一致离散化来建立这种联系。具体来说，通过离散核逐步计算的边缘密度以与控制连续时间动态的福克尔-普朗克方程一致的方式演化。这证实了这两种观点在根本上是等同的。然后我们连接基于流和基于分数的视图。在 \Cref{subsec:flow-score}我们证明了 ODE 流决定了一条密度路径，其边缘总是可以通过一系列随机过程来实现。这将确定性流和随机 SDE 置于同一家族中。总之，这些结果将三个观点统一在一个框架下（见 \Cref{fig:unified_framework}）。最后，我们总结这一章 \Cref{subsec:takeaway-dm-gaussianfm}.
 
 
 
@@ -1833,7 +1832,7 @@ PF-ODE，而其他预测类型代表相同的预言机
 
 
 
-\subsection{基于流程的方法与分数SDE的连接}\label{subsec:flow-score}
+\subsection{流方法与分数 SDE 的联系}\label{subsec:flow-score}
 
 扩散模型的一个显着方面在于不同的动态系统（确定性或随机性）如何能够追踪概率分布的相同演化。在本节中，我们揭示了基于 ODE 的流之间的自然而优雅的联系 \Cref{sec:flow-matching-framework} 并对 SDE 进行评分。具体来说，我们证明了定义生成 ODE 的速度场可以转换为遵循相同福克-普朗克动力学的随机对应物，从而在确定性插值和随机采样之间提供了原则上的桥梁。这为我们提供了从 ODE 到 SDE 的一系列连续模型，它们生成相同的数据分布路径。我们考虑连续时间设置，其中扰动内核由下式给出
 \[
@@ -1849,7 +1848,7 @@ p_t(\rvx_t|\rvx_0) = \mathcal{N}(\rvx_t; \alpha_t \rvx_0, \sigma_t^2 \rmI),
 \begin{question}
 是否存在一个 SDE，其动态从 $p_{\mathrm{prior}}$，产生与 ODE 相同的边缘密度 \Cref{eq:ode-velocity}?
 \end{question}
-该陈述确认存在一系列反时 SDE，它们产生与相应 PF-ODE 相同的边缘密度路径。这些 SDE 引起的密度满足该路径的相同 Fokker-Planck 方程，因此它们的一次性边缘与规定的插值一致 $\{p_t\}_{t\in[0,T]}$\footnote{为了完整起见，前向 SDE 表示（此处不需要）是
+该陈述确认存在一系列反时 SDE，它们产生与相应 PF-ODE 相同的边缘密度路径。这些 SDE 引起的密度满足该路径的相同 福克尔-普朗克方程，因此它们的一次性边缘与规定的插值一致 $\{p_t\}_{t\in[0,T]}$\footnote{为了完整起见，前向 SDE 表示（此处不需要）是
 \[
 \diff \rvx(t)=f(t) \rvx(t) \diff t+g(t) \diff \rvw(t),
 \]
@@ -1909,7 +1908,7 @@ $\rvs^*(\rvx,t):=\nabla_{\rvx}\log p_t(\rvx)$ 是分数函数，与速度场有�
     {\alpha_t'\sigma_t-\alpha_t\sigma_t'} .
 \end{align}
 }{
-反时福克-普朗克方程，相对于原始时间变量编写 $t$ 虽然工艺向后集成，但
+反时福克尔-普朗克方程，相对于原始时间变量编写 $t$ 虽然工艺向后集成，但
 \[
 \partial_t p_t
 =
@@ -1937,7 +1936,7 @@ $\{p_t\}$。见附录~A.2--A.3 \citet{ma2024sit}.
 
 
 在命题的预言机级别~\ref{rev-sde-interpolant},
-$\gamma(t)$ 可以任意选择而不改变规定的边缘密度路径： $\gamma$相关漂移和扩散项在福克-普朗克方程中完全抵消。一些有代表性的选择是：
+$\gamma(t)$ 可以任意选择而不改变规定的边缘密度路径： $\gamma$相关漂移和扩散项在福克尔-普朗克方程中完全抵消。一些有代表性的选择是：
 \begin{itemize}
     \item 设置 $\gamma(t) = 0$ 恢复 ODE \Cref{eq:ode-velocity}.
     \item 当 $\gamma(t) = g(t)$, \Cref{eq:general-reverse-sde} 成为反时SDE \Cref{eq:sde_backward}，自从oracle速度 $\rvv(\rvx, t)$ 满足（参见命题~\ref{equi-para}):
@@ -1946,7 +1945,7 @@ $\gamma(t)$ 可以任意选择而不改变规定的边缘密度路径： $\gamma
     \]
     \item 其他选择 $\gamma(t)$ 已探索；例如， \citet{ma2024sit} 选择 $\gamma(t)$ 最小化之间的KL差距 $p_{\mathrm{data}}$ 以及 $t=0$ 求解得到的密度 \Cref{eq:general-reverse-sde} 来自 $t=T$.
 \end{itemize}
-遵循 Score SDE，训练后的速度场 $\rvv_{\bm{\phi}^\times}(\rvx, t)$ 可以转换为参数化评分函数 $\rvs_{\bm{\phi}^\times}(\rvx, t)$ 通过 \Cref{eq:score-velocity}。将其插入 \Cref{eq:general-reverse-sde} 定义 \emph{经验逆时 SDE}，可以通过数值积分来采样 $t=T$ 与 $\bar\rvx(T) \sim p_{\mathrm{prior}}$.这个命题凸显了扩散模型的显着灵活性：
+遵循 Score SDE，训练后的速度场 $\rvv_{\bm{\phi}^\times}(\rvx, t)$ 可以转换为参数化分数函数 $\rvs_{\bm{\phi}^\times}(\rvx, t)$ 通过 \Cref{eq:score-velocity}。将其插入 \Cref{eq:general-reverse-sde} 定义 \emph{经验逆时 SDE}，可以通过数值积分来采样 $t=T$ 与 $\bar\rvx(T) \sim p_{\mathrm{prior}}$.这个命题凸显了扩散模型的显着灵活性：
 一旦 \emph{ 边缘密度路径 } $\{p_t\}_{t\in[0,T]}$ 由
 正向过程，可以通过整个反向时间系列来实现
 动力学，包括 PF-ODE 和反时 SDE
@@ -1963,7 +1962,7 @@ $\gamma(t)$ 可以任意选择而不改变规定的边缘密度路径： $\gamma
 \gamma(t)\geq0,
 \]
 从 $t=T$ 到 $t=0$。虽然 $\gamma(t)$ 改变了个体的随机动力学
-轨迹，相应的福克-普朗克方程都减少，对于
+轨迹，相应的福克尔-普朗克方程都减少，对于
 规定的密度路径，到相同的控制密度方程：
 \[
 \partial_t p_t
@@ -1996,7 +1995,7 @@ $\gamma$ 相关的漂移和扩散项在密度水平上抵消。
 
 本章是我们理论探索的基石，将变分、基于分数和基于流程的观点综合成一个单一的、有凝聚力的框架。我们已经证明，这三种看似不同的方法不仅是并行的，而且是深刻且根本上相互关联的。
 
-我们的统一基于两个核心见解。首先，我们确定了所有框架共有的秘密武器：一种调节技巧，将棘手的边缘训练目标转化为易于处理的条件目标，从而实现稳定和高效的学习。其次，我们确定福克-普朗克方程是控制概率密度演化的普遍规律。所有三种观点都以自己的方式构建了一个尊重这一基本动力的生成过程。
+我们的统一基于两个核心见解。首先，我们确定了所有框架共有的秘密武器：一种调节技巧，将棘手的边缘训练目标转化为易于处理的条件目标，从而实现稳定和高效的学习。其次，我们确定福克尔-普朗克方程是控制概率密度演化的普遍规律。所有三种观点都以自己的方式构建了一个尊重这一基本动力的生成过程。
 
 
 此外，我们还证明了预言机噪声、干净数据、分数和速度

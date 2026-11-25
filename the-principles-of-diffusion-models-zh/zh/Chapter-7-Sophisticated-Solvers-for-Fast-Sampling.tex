@@ -1,4 +1,4 @@
-\chapter{用于快速采样的高阶求解器}\label{ch:solvers}
+\chapter{扩散快速采样的数值求解器}\label{ch:solvers}
 
 
 扩散模型的生成过程（将噪声映射到数据样本）可以通过反时 SDE 或其
@@ -138,7 +138,7 @@ $\tilde{\rvx}_{t_M}$用作生成的样本。
 \begin{enumerate}
     \item \textbfs{预测参数化.}
     预训练的扩散模型提供了哪些数量：
-    分数 $\rvs_{\bm{\phi}^\times}$，噪音
+    分数 $\rvs_{\bm{\phi}^\times}$，噪声
     $\beps_{\bm{\phi}^\times}$，干净的数据
     $\rvx_{\bm{\phi}^\times}$，或速度
     $\rvv_{\bm{\phi}^\times}$？
@@ -157,7 +157,7 @@ $\tilde{\rvx}_{t_M}$用作生成的样本。
 \paragraph{求解器如何使用模型评估？}
 组织数值求解器的一种有用方法是询问下一次更新的信息来自哪里。从当前状态开始，求解器可以获取附加信息 \emph{在当前步骤内} 或重复使用来自 \emph{之前的步骤}.
 
-A \emph{单步法} 仅使用当前状态和同一时间间隔内生成的评估来构造下一个状态。欧拉方法是最简单的示例，仅使用当前速度。高阶龙格-库塔 (RK) 方法可以在完成该步骤之前评估一个或多个中间状态的速度。因此，“单步”并不意味着“一个函数评估”；这意味着不需要先前完成的步骤中的信息。一个 \emph{多步法} 重用之前已完成步骤中的信息。存储的模型评估提供有关动态最近如何变化的信息，允许进行更高阶的更新，而无需在当前步骤中进行多次新的评估。 Adams--Bashforth（AB）家族是一个典型的典型例子。另一个想法是改变跨时间更新的安排方式。我们可以多次初始化状态并重复纠正它们，直到它们与 ODE 一致，而不是严格按顺序计算所有时间点。这种定点迭代可以允许在不同时间点并行进行模型评估。代表性的经典例子，包括欧拉、RK、AB 和皮卡德迭代，在
+A \emph{单步法} 仅使用当前状态和同一时间间隔内生成的评估来构造下一个状态。欧拉方法是最简单的示例，仅使用当前速度。高阶龙格-库塔 (RK) 方法可以在完成该步骤之前评估一个或多个中间状态的速度。因此，“单步”并不意味着“一个函数评估”；这意味着不需要先前完成的步骤中的信息。一个 \emph{多步法} 重用之前已完成步骤中的信息。存储的模型评估提供有关动态最近如何变化的信息，允许进行更高阶的更新，而无需在当前步骤中进行多次新的评估。 Adams--Bashforth（AB）家族是一个典型的典型例子。另一个想法是改变跨时间更新的安排方式。我们可以多次初始化状态并重复纠正它们，直到它们与 ODE 一致，而不是严格按顺序计算所有时间点。这种不动点迭代可以允许在不同时间点并行进行模型评估。代表性的经典例子，包括欧拉、RK、AB 和皮卡迭代，在
 \Cref{app:de-solver-examples};它们的结构组织总结为
 \Cref{eq:classic-solvers}.
 
@@ -172,7 +172,7 @@ A \emph{单步法} 仅使用当前状态和同一时间间隔内生成的评估�
 有条件和无条件模型预测，因此大约翻倍
 每个采样步骤的神经网络评估成本。
 
-这个经典的分类法告诉我们 \emph{ 数字信息来自哪里}
+这个经典的分类法告诉我们 \emph{ 数值计算使用的信息来自哪里}
 以及需要多少模型评估费用。扩散 PF-ODE 提供了额外的
 机会：并非矢量场的每个部分都同样未知。取决于
 在预测参数化上，确定了部分动态
@@ -371,7 +371,7 @@ f(t)\rvx(t)
 }_{\text{nonlinear neural part}}.
 \end{equation}
 乘以神经预测的系数完全可以从
-噪音时间表；第二项中唯一学到的量是
+噪声时间表；第二项中唯一学到的量是
 $\beps_{\bm{\phi}^\times}(\rvx(t),t)$。
 
 \begin{table}[th!]
@@ -648,7 +648,7 @@ DEIS； DPM-Solver\texttt{++}(2M) &
 
 \graymidrule
 
-Picard型定点迭代 &
+Picard型不动点迭代 &
 一起更新几个时间点并反复细化它们的状态。 &
 ParaDiGMS &
 \Cref{sec:picard} \\
@@ -945,7 +945,7 @@ $(\alpha_\tau,\sigma_\tau)$ 提供已知的时间相关权重。
 
 
 然而，分数和速度的表现不同。 DDIM 保留推断的
-干净/噪音对 $(\widehat\rvx_0,\widehat\beps)$ 已修复，但分数和
+干净/噪声对 $(\widehat\rvx_0,\widehat\beps)$ 已修复，但分数和
 从这对获得的速度通常随时间变化。
 
 例如，转换固定（在时间 $s$) 噪声估计以在中间时间对预测进行评分 $\tau$ 给出
@@ -1560,7 +1560,7 @@ DPM-Solver-1 正是 DDIM。然而，除了一阶之外，坐标
 
 
 
-\subsection{（选读） DDIM}\label{subsec:ddim} 的原始变分视角
+\subsection{（选读）DDIM 最初的变分解释}\label{subsec:ddim}
 
 上面的 PF-ODE 视角将确定性 DDIM 解释为数值
 求解器。然而，从历史上看，DDIM 是从变分法引入的
@@ -1799,7 +1799,7 @@ $c_{t,s}$的特殊选择，如下所述。其他选择定义
 边缘一致核
 ${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$中
 \Cref{eq:ddim-reverse-kernel-result} 仍处于未知清洁状态
-样品$\rvx_0$。在生成过程中，DDIM 将 $\rvx_0$ 替换为 clean-data
+样品$\rvx_0$。在生成过程中，DDIM 将 $\rvx_0$ 替换为 干净数据
 从预先训练的扩散模型获得的估计。下
 $\beps$-预测，我们定义
 \[
@@ -1899,7 +1899,7 @@ ${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$ 则与
 
 \item \textbfs{确定性 DDIM ($\eta=0$).}
 在另一个极端，设置 $c_{t,s}=0$ 会删除所有新注入的
-噪音。实际更新变成
+噪声。实际更新变成
 \[
 \rvx_t
 =
@@ -1924,7 +1924,7 @@ $\rvx_s=\alpha_s\rvx_0+\sigma_s\beps$，然后是确定性转变
 =
 \alpha_t\rvx_0+\sigma_t\beps.
 \]
-因此，不会引入新的噪音；携带同一对 $(\rvx_0,\beps)$
+因此，不会引入新的噪声；携带同一对 $(\rvx_0,\beps)$
 跨步骤，而只有已知的进度系数发生变化。
 
 \item \textbfs{插补.}
@@ -2038,7 +2038,7 @@ $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 给出
 +
 \sigma_t'\beps^*(\rvx,t),
 \end{align*}
-我们使用的地方
+这里用到了关系式
 \[
 \rvx^*(\rvx,t)
 =
@@ -2484,7 +2484,7 @@ $\rho_t=\sigma_t/\alpha_t$（围绕\Cref{eq:ddim-coordinate-ode-t}讨论）到$\
 从一阶 DDIM 更新到高阶扩散求解器。
 
 
-\subsection{DPM-Solver的见解：通过 Log-SNR} 进行时间重新参数化
+\subsection{DPM-Solver 的思路：用对数信噪比重参数化时间}
 \label{subsec:dpm-method}   
 
 我们现在使 \Cref{eq:lambda} 中的对数 SNR 重新参数化变得精确且
@@ -2660,16 +2660,7 @@ $|\lambda'(t)|$ 较小。重新参数化本身不会改变 PF-ODE 求解路径�
 \frac{1}{\lambda'(t)}
 \frac{\diff \rvx_t}{\diff t}.
 \]
-因此，哪里 $|\lambda'(t)|$ 很大，相对于轨迹的变化相同 $t$ 代表更大范围 $\lambda$.更重要的是，$\lambda(t)$ 通过扩散过程衡量进展情况
-直接就信号和噪声之间的相对平衡而言。一个固定的
-$\Delta\lambda$ 对应于固定的乘法变化
-$\alpha_t/\sigma_t$，或相当于对数SNR的固定加性变化，
-而相同的 $\Delta t$ 可能对应于非常不同的变化
-不同时期的腐败程度。因此，选择数值节点
-$\lambda$ 中的统一提供了一种自然的方式来重新分配分辨率
-扩散轨迹。原时间精确感应间距
-变量 $t$ 取决于所选的噪声表。两个简单的例子
-说明这个效果：
+在 $|\lambda'(t)|$ 较大的区间，同样的时间步长对应更大的 $\lambda$ 变化。$\lambda(t)$ 直接衡量信号与噪声的相对强弱。固定的 $\Delta\lambda$ 对应 $\alpha_t/\sigma_t$ 乘以一个固定倍数，也等价于对数信噪比增加一个固定量。同一个 $\Delta t$ 在不同时间段可能对应很不一样的噪声变化。因此，在 $\lambda$ 上均匀放置求解节点，可以重新分配轨迹各段的步长。这些节点在原时间 $t$ 上的间距取决于噪声调度。下面用两个例子说明。
 
 \begin{itemize}
 \item \textbfs{$(\alpha_t,\sigma_t)=(1-t,t)$.}
@@ -2868,7 +2859,7 @@ $n$第-次订单更新。 DPM-Solver 通过从附加模型评估中逼近这些�
 DPM-Solver-$n$ 与 $n \geq 2$ 需要评估 $k^{\text{th}}$-导数 {\color{cyan}$\hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}(\hat\rvx_\lambda, \lambda)$} 用于 $k \leq n-1$。然而，在实践中直接计算高阶导数的计算成本很高。 \citet{lu2022dpm} 还提出了这些导数的有效近似方法，这将在下一小节中详细介绍。
 
  
-\subsection{DPM-Solver的实现-$n$}\label{subsec:dpm-n-method} 
+\subsection{DPM-Solver-$n$ 的实现}\label{subsec:dpm-n-method}
 
 \paragraph{DPM-Solver-$n$ 与 $n \geq 2$.}
 在实践中，实现高阶 DPM-Solver-$n$ 包含以下内容：
@@ -3103,13 +3094,7 @@ e^h-h-1=\mathcal O(h^2),
 所以它的诱发误差是$\mathcal O(h^3)$。因此，得到的方法是
 对于任何固定的 $\gamma\in(0,1]$ 来说，二阶精度。
 
-这种单步构造需要两次模型求值，分别位于
-$(\tilde\rvx_s,s)$以及预测中间阶段
-$(\rvx^{\mathrm{mid}},s^{\mathrm{mid}})$。选择$\gamma$不
-改变了形式上的二阶精度，但它改变了阶段位置
-和误差常数。特别是，$\gamma=\tfrac12$ 排名第二
-在 log-SNR 区间的中点进行评估，给出常用的
-DPM-Solver-2 的中点版本。
+这个单步法要调用模型两次。第一次在步首 $(\tilde\rvx_s,s)$ 求值，第二次在预测的中间阶段 $(\rvx^{\mathrm{mid}},s^{\mathrm{mid}})$ 求值。方法在形式上保持二阶精度，$\gamma$ 的取值会改变中间阶段的位置和误差常数。取 $\gamma=\tfrac12$ 时，第二次求值落在对数信噪比区间的中点，这就是常用的 DPM-Solver-2 中点法。
 }
 
 \paragraph{实现细节：采样时间步长的选择。}
@@ -3532,7 +3517,7 @@ DPM-Solver-1 正是 DDIM，而高阶 DPM-Solvers 使用额外的
 \section{\texorpdfstring{DPM-Solver\texttt{++}}{DPM-Solver\texttt{++}}}\label{sec:dpm++}
 
 
-\subsection{从 DPM-Solver到 DPM-Solver\texttt{++} 用于引导采样}
+\subsection{从 DPM-Solver 到 DPM-Solver\texttt{++}：加速引导采样}
 
 DPM-Solver\texttt{++}~\citep{lu2022dpm2} 的开发是为了改进
 强指导下的高阶抽样。在这个制度下，有两个实际的
@@ -3552,7 +3537,7 @@ DPM-Solver\texttt{++} 通过两种互补的方式解决这些问题。它
 二阶求解器。
 
 
-\subsection{DPM-Solver\texttt{++}的方法论}
+\subsection{DPM-Solver\texttt{++} 的方法}
 
 DPM-Solver\texttt{++} 保持对数 SNR 坐标 $\lambda$ 引入
 DPM-Solver，而是通过数据预测来表达经验 PF-ODE
@@ -3628,7 +3613,7 @@ t_\lambda(\lambda)
 并且应该与下面的数字顺序分析分开看待。
 }
 
-\subsection{DPM-Solver\texttt{++} 泰勒展开式单步}
+\subsection{DPM-Solver\texttt{++} 的单步法：泰勒展开}
 \label{subsec:dpm-solver++-single}
 
 按照 \Cref{subsec:dpm-method-2} 中的 DPM-Solver构建，
@@ -3859,7 +3844,7 @@ $\mathcal O(h_i^3)$ 因此保留了二阶精度。
 \end{algorithm}
 
 
-\subsection{DPM-Solver\texttt{++} 按回收历史记录进行多步骤}
+\subsection{DPM-Solver\texttt{++} 的多步法：复用历史预测}
 \label{subsec:dpm-solver++-multi}
 
 DPM-Solver\texttt{++}（2S）通过引入额外的模型评估获得二阶信息 \emph{在当前步骤内}。 DPM-Solver\texttt{++}(2M) 采用不同的路线：它重用之前已完成步骤的模型预测来估计相同的局部变化。初始化后，每个步骤仅需要一次新模型评估，从而在相同的 NFE 预算下允许更多、因此更小的数值步骤。这在强指导下特别有用，因为大的步长会降低数值稳定性。这个想法很简单。回想一下，二阶展开式
@@ -4185,7 +4170,7 @@ DPM-Solver\texttt{++}(2S) 是二阶信息的来源：
     \end{algorithmic}
 \end{algorithm}
 
-\subsection{ DPM-Solver\texttt{++}(2M) 与 DEIS} 的关系
+\subsection{DPM-Solver\texttt{++}(2M) 与 DEIS 的关系}
 \label{subsec:dpm-deis}
 
 DPM-Solver\texttt{++}(2M) 和 DEIS 使用相同的基本多步思想：
@@ -4527,7 +4512,7 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
     + \int_{T}^{t}\rvv_{\bphi^\times}\big(\rvx(\tau),\tau\big)\diff\tau,
     \quad \rvx(T)\sim p_{\mathrm{prior}}.
 \end{equation}
-时间步长方案使用基于过去时间步长的离散更新来近似该积分。在本节中，我们转向 \emph{时间平行} 方法，示例为 \emph{ParaDiGMS}，它建立在经典皮卡德迭代的基础上，以实现跨时间的并行集成。 ParaDiGMS 背后的关键思想是 \emph{交换计算资源以加快模拟速度}.
+时间步长方案使用基于过去时间步长的离散更新来近似该积分。在本节中，我们转向 \emph{时间并行} 方法，示例为 \emph{ParaDiGMS}，它建立在经典皮卡迭代的基础上，以实现跨时间的并行集成。 ParaDiGMS 背后的关键思想是 \emph{交换计算资源以加快模拟速度}.
 
 
 
@@ -4535,7 +4520,7 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
 \subsection{ParaDiGMS 方法论}
 
 
-\paragraph{从轨迹到作为定点更新的皮卡德迭代。}
+\paragraph{用皮卡迭代求轨迹的不动点。}
 修复逆时采样的初始状态，
 \[
 \rvx_T\sim p_{\mathrm{prior}}.
@@ -4552,7 +4537,7 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
 t\in[0,T].
 \]
 也就是说， $\mathcal{L}$ 保持初始状态 $\rvx_T$ 使用沿候选路径评估的速度修复并更新轨迹的其余部分。解轨迹 $\rvx^*(\cdot)$ 经验 PF-ODE 的
-$\rvx^*(T)=\rvx_T$ 正是一个 \emph{定点} 这张映射的：
+$\rvx^*(T)=\rvx_T$ 正是这个映射的\emph{不动点}：
 \[
 \rvx^*(t)
 =
@@ -4565,7 +4550,7 @@ $\rvx^*(T)=\rvx_T$ 正是一个 \emph{定点} 这张映射的：
 \]
 因此，我们可以搜索与该积分方程一致的整个轨迹，而不是严格地一步一步地构造轨迹。从最初的猜测开始 $\rvx^{(0)}(\cdot)$ 满意
 $\rvx^{(0)}(T)=\rvx_T$，例如常量路径
-$\rvx^{(0)}(t)\equiv\rvx_T$，皮卡德迭代重复应用此图：
+$\rvx^{(0)}(t)\equiv\rvx_T$，皮卡迭代重复应用此图：
 \begin{align}\label{eq:picard_iter_T_to_t}
 \rvx^{(k+1)}(t)
 =
@@ -4677,7 +4662,7 @@ $\rvx^{(k)}_\ell$ 用作窗口的锚点。减号
 \subparagraph{步骤 3. 进度控制和窗口前进。}
 在当前窗口上形成左锚定累积更新（Step~2），
 我们现在决定将该窗口滑动多远。我们测量局部收敛
-通过逐点皮卡德变化
+通过逐点皮卡变化
 \[
 \mathtt{error}_j
 :=
@@ -4688,7 +4673,7 @@ $\rvx^{(k)}_\ell$ 用作窗口的锚点。减号
 更新。如果这个数字很小，则表明两者之间存在局部一致性
 逐次逼近，从而实现定点的局部收敛
 在该节点进行迭代。如果很大，说明该节点还没有稳定下来，需要
-更多皮卡德平滑。
+更多皮卡平滑。
 
 
 \emph{stride} 被选为窗口中失败的第一个索引
@@ -4729,14 +4714,14 @@ $p \leftarrow \min\{p,\,M-\ell\}$ 并继续。
       \State $J \gets \min(p,  M-\ell)$   \Comment{当前窗口长度}
       \State \textbfs{第 1 步：并行} 
       \State 对于 $i=0,\ldots,J-1$: $g_i \gets \rvv_{\bphi^\times} \big(\rvx^{(k)}_{\ell+i},\, t_{\ell+i}\big)$ 
-      \Statex \Comment{与先前迭代的偏差（皮卡德冻结）}
+      \Statex \Comment{与先前迭代的偏差（皮卡冻结）}
       \State 计算前缀和 $S_j \gets \sum_{i=0}^{j} g_i$ 用于 $j=0,\ldots,J-1$ 
       \Statex \Comment{扫描窗口漂移}
       \State \textbfs{步骤 2：累积更新} 
       \State 对于 $j=0,\ldots,J-1$: $\displaystyle \rvx^{(k+1)}_{\ell+j+1} \gets \rvx^{(k)}_{\ell} - \Delta t\, S_j$ 
       \Statex \Comment{左锚定更新；参见\ \Cref{eq:window_update}}
       \State \textbfs{步骤 3：进度控制和窗口前进} 
-      \State 对于 $j=1,\ldots,J-1$: $\mathtt{error}_j \gets \big\|\rvx^{(k+1)}_{\ell+j}-\rvx^{(k)}_{\ell+j}\big\|^2$ \Statex \Comment{逐点皮卡德变化}
+      \State 对于 $j=1,\ldots,J-1$: $\mathtt{error}_j \gets \big\|\rvx^{(k+1)}_{\ell+j}-\rvx^{(k)}_{\ell+j}\big\|^2$ \Statex \Comment{逐点皮卡变化}
       \State $\displaystyle \mathtt{stride} \gets \min \Big(\,\{\,j\in\{1,\ldots,J-1\}:~\mathtt{error}_j>\mathtt{tol}_{\ell+j}\,\}\ \cup\ \{J\}\Big)$
       \State \textbfs{初始化新节点} 
         \State 对于 $r=1,\ldots,\min\{\mathtt{stride},\,M-\ell-J\}$:
@@ -4756,7 +4741,7 @@ $p \leftarrow \min\{p,\,M-\ell\}$ 并继续。
 \subsection{与时间步进求解器的关系}
 
 \paragraph{滑动窗口尺寸的选择。}
-要了解窗口大小的作用，首先考虑最小的选择 $p=1$。在这种情况下，不存在时间并行性，并且该方法简化为其顺序基础更新。对于左端点离散化 \Cref{eq:window_update}，这只是一个简单的欧拉步骤。更一般地说，ParaDiGMS 指定了如何并行化不同时间点的计算，而每个步骤使用的数值更新可以单独选择。例如，Euler 更新可以替换为 DDIM 或 DPM-Solver，给出 ParaDDIM 或 ParaDPMSolver。增加 $p$ 然后将更多时间点暴露给并行计算，而不改变底层时间网格或总步数 $M$。皮卡德迭代反复修正这些状态，使其与所选的基本求解器保持一致，并由规定的局部容差控制收敛。
+要了解窗口大小的作用，首先考虑最小的选择 $p=1$。在这种情况下，不存在时间并行性，并且该方法简化为其顺序基础更新。对于左端点离散化 \Cref{eq:window_update}，这只是一个简单的欧拉步骤。更一般地说，ParaDiGMS 指定了如何并行化不同时间点的计算，而每个步骤使用的数值更新可以单独选择。例如，Euler 更新可以替换为 DDIM 或 DPM-Solver，给出 ParaDDIM 或 ParaDPMSolver。增加 $p$ 然后将更多时间点暴露给并行计算，而不改变底层时间网格或总步数 $M$。皮卡迭代反复修正这些状态，使其与所选的基本求解器保持一致，并由规定的局部容差控制收敛。
 
 \paragraph{与高阶求解器（例如 DPM）的兼容性。}
 Picard 框架决定了如何并行更新和评估不同时间点的状态，而用于近似每个步骤的数值规则可以单独选择。例如，而不是左端点规则
@@ -4782,11 +4767,11 @@ Picard 框架决定了如何并行更新和评估不同时间点的状态，而�
 其中 $j=0,\ldots,p-1$。对于 $j=0$，这是熟悉的一步梯形更新，使用两个
 端点漂移。对于较大的$j$，同样的规则累加梯形
 跨过窗口的贡献。由于所有漂移都是使用
-之前的皮卡德迭代，它们仍然可以并行计算，而
+之前的皮卡迭代，它们仍然可以并行计算，而
 内部贡献可以通过前缀和来累积。
 
 更一般地，ParaDiGMS 可以使用现有的顺序采样器，例如
-DDIM 或 DPM-Solver 作为其基础离散化。在这种情况下，皮卡德
+DDIM 或 DPM-Solver 作为其基础离散化。在这种情况下，皮卡
 更新是根据相应的基求解器增量构造的，而不是
 与上面的梯形公式相比。精确的形式取决于
 选择的求解器，因为高阶方法可能使用中间阶段或
@@ -4795,7 +4780,7 @@ DDIM 或 DPM-Solver 作为其基础离散化。在这种情况下，皮卡德
 对于基于给定顺序求解器的 ParaDiGMS 构造，精确
 定点收敛恢复相应的顺序离散
 轨迹。在有限停止容差的情况下，最终结果还包含
-除了离散化之外的剩余定点迭代误差
+除了离散化之外的剩余不动点迭代误差
 基本求解器的误差。
 
 \newpage

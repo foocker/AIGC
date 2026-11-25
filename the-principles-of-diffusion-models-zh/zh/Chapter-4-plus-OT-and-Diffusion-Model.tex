@@ -2,13 +2,7 @@
 
 
 
-将一个分布映射到另一个分布（生成是一种特殊情况） 
-是一个核心挑战。流匹配通过学习来解决这个问题 
-将质量从源传输到目标的与时间相关的速度场。 
-这自然与运输理论相关：经典最优运输 
-寻求分布之间的最小成本路径，而其熵 
-正则化形式 Schr\"odinger 电桥选择最有可能的 
-相对于布朗运动等参考的受控扩散。 
+生成可以看作从一个分布传输到另一个分布的特例。流匹配通过学习含时速度场，将概率质量从源分布传输到目标分布。经典最优传输寻找代价最低的传输方案。带熵正则化的关联问题是薛定谔桥，它在满足端点分布约束的受控扩散中，寻找相对于布朗运动等参考过程最可能的一种。
 
 在本章中，我们回顾了最优传输、熵的基础 
 最优传输，以及 Schr\"odinger 桥作为 
@@ -20,11 +14,11 @@
 熵最优传输，而 PF-ODE 则不然 
 通常对应于任何已知的运输目标。这个缺口留下 
 一个悬而未决的问题：在什么条件下可以考虑扩散模型 
-作为解决最优运输问题？
+作为解决最优传输问题？
 
 \chapterlearning{
 
-  \item 区分传输耦合、确定性传输图、动态传输流和随机 Schr\"odinger 桥，并将这些概念在概念上连接到深度生成建模；
+  \item 区分传输耦合、确定性传输映射、动态传输流和随机 Schr\"odinger 桥，并说明这些概念与深度生成模型的关系；
 
   \item 了解经典 OT、熵 OT 和 Schr\"odinger 桥问题优化的内容，以及这些公式之间的关系；
 
@@ -55,7 +49,7 @@
 
 
 为了解决这个问题，我们首先澄清“最优性”的含义
-\Cref{sec:ot-intro}。我们回顾经典 \emph{最优传输 (OT)} 静态 Monge--Kantorovich 形式（\Cref{eq:ot}）及其动态Benamou-Brenier公式（\Cref{eq:bb-ot};最小化符合连续性方程的动能），以及熵正则化变量（\emph{熵 OT}) 在 \Cref{eq:eot-epsilon}，相当于 \emph{施尔\"奥丁格桥问题} (\Cref{eq:sb-kinetic}）。从动态角度来看，OT 引起满足连续性方程的确定性流动，而 SB 引起受控扩散，其边缘由 Fokker-Planck 方程演化。我们提供了这些配方之间的高级图 \Cref{sec:relation-ot}。然后我们将讨论分为两个部分。首先，在 \Cref{sec:dm-and-sb}我们解释说，标准扩散模型中使用的固定前向噪声 SDE 本身并不是 Schr\"任意之间的odinger桥 $p_{\mathrm{src}}$ 和
+\Cref{sec:ot-intro}。我们回顾经典 \emph{最优传输 (OT)} 静态 Monge--Kantorovich 形式（\Cref{eq:ot}）及其动态Benamou-Brenier公式（\Cref{eq:bb-ot};最小化符合连续性方程的动能），以及熵正则化变量（\emph{熵 OT}) 在 \Cref{eq:eot-epsilon}，相当于 \emph{施尔\"奥丁格桥问题} (\Cref{eq:sb-kinetic}）。从动态角度来看，OT 引起满足连续性方程的确定性流动，而 SB 引起受控扩散，其边缘由 福克尔-普朗克方程演化。我们提供了这些配方之间的高级图 \Cref{sec:relation-ot}。然后我们将讨论分为两个部分。首先，在 \Cref{sec:dm-and-sb}我们解释说，标准扩散模型中使用的固定前向噪声 SDE 本身并不是 Schr\"任意之间的odinger桥 $p_{\mathrm{src}}$ 和
 $p_{\mathrm{tgt}}$：正向过程是选定的参考扩散，并且正向时间或反向时间 SDE 通常不会强制执行与指定目标的精确端点匹配。因此，除非明确解决这些端点的 SB 问题，否则它不是熵 OT 最优的；虽然它是半桥问题的最佳解决方案，因为它以一个起点为基础。其次，在 \Cref{sec:pfode-ot}，我们返回到生成设置
 $p_{\mathrm{src}}=p_{\mathrm{prior}}$ （高斯）和
 $p_{\mathrm{tgt}}=p_{\mathrm{data}}$。 PF-ODE 定义了一个确定性映射，用于传输
@@ -75,7 +69,7 @@ $p_{\mathrm{prior}}$ 至 $p_{\mathrm{data}}$ 通过施工。然而，该流程�
 \begin{figure}[th!]
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/ot_2d_coupling_comparison.pdf}
-    \caption{\textbfs{同一联轴器之间的两个联轴器 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$ 二维。}
+    \caption{\textbfs{同一对二维分布 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$ 的两种耦合。}
     左：独立（随机）配对会产生高成本的交叉路径。右图：最优传输耦合在质量附近配对，避免交叉。
     \figcredit{由作者使用人工智能辅助编码创建。}}
     \label{fig:ot-2d-coupling}
@@ -83,7 +77,7 @@ $p_{\mathrm{prior}}$ 至 $p_{\mathrm{data}}$ 通过施工。然而，该流程�
 
 \paragraph{Monge--OT 问题的 Kantorovich（静态）表述。}
 我们修复成本函数 $c:\R^D\times\R^D\to\R$ 指定发送概率质量的费用 $\rvx$ 至 $\rvy$。目标是改变源分布 $p_{\mathrm{src}}$ 进入目标分布 $p_{\mathrm{tgt}}$ 尽可能便宜。为了定义成本，我们必须知道哪些对 $(\rvx,\rvy)$ 匹配。这个角色由一个
-\emph{联轴器}: 联合分布 $\gamma$ 开 $\R^D\times\R^D$ 其边缘是
+\emph{耦合}: 联合分布 $\gamma$ 定义在 $\R^D\times\R^D$ 上，其边缘分布是
 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$。换句话说，采样 $(\rvx,\rvy)\sim\gamma$ 表示我们匹配
 $\rvx$ 来自源 $\rvy$ 来自目标。如果 $\gamma$ 承认密度 $\gamma(\rvx,\rvy)$ 关于勒贝格测度，边缘约束为
 \[
@@ -103,7 +97,7 @@ $\rvx$ 来自源 $\rvy$ 来自目标。如果 $\gamma$ 承认密度 $\gamma(\rvx
     $\rvx$ 直接到 $\rmT(\rvx)$.
 \end{enumerate}
 
-一次联轴器 $\gamma$ 是固定的，运输成本只是该计划下的平均单位成本：
+固定耦合 $\gamma$ 后，传输代价就是对该耦合取期望的单位代价。
 \[
 \int c(\rvx,\rvy)\,\diff\gamma(\rvx,\rvy)
 =\E_{(\rvx,\rvy)\sim\gamma}\!\big[c(\rvx,\rvy)\big].
@@ -141,7 +135,7 @@ Wasserstein-2 距离是具有二次成本的 Monge--Kantorovich 问题的特例 
 
 因此，Wasserstein-2 距离表示与给定边缘匹配的所有耦合或传输映射中的最小预期平方传输成本。由 $\rmT^*(\mathbf{x})$ 表示的最优传输图（称为 \emph{Monge 图}）产生将 $p_{\mathrm{src}}$ 转换为 $p_{\mathrm{tgt}}$ 的最有效方法。
 
-\paragraph{Benamou--OT.}的Brenier（动态）配方 
+\paragraph{Benamou--Brenier 的动态最优传输表述。}
 \begin{figure}[th!]
     \centering
     \includegraphics[width=0.8\linewidth]{Images/PartB/ot_illustration.pdf}
@@ -188,14 +182,14 @@ Benamou-Brenier 公式\footnote{Benamou-Brenier 公式描述了如何通过最�
 
 \subsection{熵正则最优传输 (EOT)}
 
-为了具体激励 EOT，请考虑根据样本构建的经验分布。假设 $p_{\mathrm{src}}$ 点支持 $\{\rvx^{(i)}\}_{i=1}^n \subset \R^D$ 带配重 $a_i$, 和 $p_{\mathrm{tgt}}$ 开 $\{\rvy^{(j)}\}_{j=1}^n \subset \R^D$ 带配重 $b_j$。那么联轴器就是 $n\times n$ 非负矩阵 $\gamma=(\gamma_{ij})$ 其行总和匹配 $a$ 与列总和匹配 $b$。每个条目 $\gamma_{ij}$ 代表从 $\rvx^{(i)}$ 至 $\rvy^{(j)}$\footnote{经验（离散）测量为连续分布提供了原则性代理。当地面成本为 $c(x,y)=d(x,y)^p$ （因此 OT 值等于 $W_p^p$) 并且测量值是有限的 $p$第 时刻，经验测量值收敛于总体 $W_p$ 带定量费率；看到 \citet{fournier2015rate} 以及概述 \citet{peyre2019computational}.}.
+为了具体激励 EOT，请考虑根据样本构建的经验分布。假设 $p_{\mathrm{src}}$ 点支持 $\{\rvx^{(i)}\}_{i=1}^n \subset \R^D$ 权重为 $a_i$, 和 $p_{\mathrm{tgt}}$ 开 $\{\rvy^{(j)}\}_{j=1}^n \subset \R^D$ 权重为 $b_j$。那么耦合就是 $n\times n$ 非负矩阵 $\gamma=(\gamma_{ij})$ 其行总和匹配 $a$ 与列总和匹配 $b$。每个条目 $\gamma_{ij}$ 代表从 $\rvx^{(i)}$ 至 $\rvy^{(j)}$\footnote{经验（离散）测量为连续分布提供了原则性代理。当基础代价为 $c(x,y)=d(x,y)^p$ （因此 OT 值等于 $W_p^p$) 并且测量值是有限的 $p$第 时刻，经验测量值收敛于总体 $W_p$ 带定量费率；看到 \citet{fournier2015rate} 以及概述 \citet{peyre2019computational}.}.
 
 \paragraph{为什么要规范 OT？}
 这种离散设置中的经典 OT（通过在连续配方中采取计数措施获得） \Cref{eq:ot}) 减少到最小化
 \[
 \min_{\gamma=(\gamma_{ij})}\sum_{i,j} C_{ij}\,\gamma_{ij},
 \]
-在所有可行的联轴器上 $\gamma=(\gamma_{ij})$，其中 $C_{ij} = c(\rvx^{(i)},\rvy^{(j)})$ 是从源点移动一个单位质量的成本 $\rvx^{(i)}$ 到目标点 $\rvy^{(j)}$，对于规定的地面费用 
+在所有可行的耦合上 $\gamma=(\gamma_{ij})$，其中 $C_{ij} = c(\rvx^{(i)},\rvy^{(j)})$ 是从源点移动一个单位质量的成本 $\rvx^{(i)}$ 到目标点 $\rvy^{(j)}$，对于规定的基础代价
 $c:\R^D\times\R^D\to\R_{\ge 0}$ (e.g., $c(\rvx,\rvy)=\|\rvx-\rvy\|_2^2$).
 
 出现两个主要问题：
@@ -222,7 +216,7 @@ $c:\R^D\times\R^D\to\R_{\ge 0}$ (e.g., $c(\rvx,\rvy)=\|\rvx-\rvy\|_2^2$).
 \begin{enumerate}
   \item \textbfs{大规模传播。}
   自 $t\mapsto t\log t$ 是凸的并且对于大的情况快速增长 $t$，最小化 $\int \gamma\log\gamma$
-  处罚 \emph{尖峰} 联轴器（部分 $\gamma(\rvx,\rvy)$ 非常大，最接近零）。对于固定总质量 $\int \gamma=1$，它有利于计划 $\gamma(\rvx,\rvy)$ 分布更均匀 $(\rvx,\rvy)\in\mathbb{R}^D\times\mathbb{R}^D$。同样，香农熵最大化会促进更高的“不确定性”（扩散性）。
+  处罚 \emph{尖峰} 耦合（部分 $\gamma(\rvx,\rvy)$ 非常大，最接近零）。对于固定总质量 $\int \gamma=1$，它有利于计划 $\gamma(\rvx,\rvy)$ 分布更均匀 $(\rvx,\rvy)\in\mathbb{R}^D\times\mathbb{R}^D$。同样，香农熵最大化会促进更高的“不确定性”（扩散性）。
 
   \item \textbfs{严格凸性和唯一性。}
   因为 $\mathcal{H}$ 严格凹，物镜在 \Cref{eq:eot-epsilon} 严格凸于 $\gamma$，产生 \emph{独特} 最小化器 $\gamma^*_\varepsilon$ 这持续取决于 $(p_{\mathrm{src}},p_{\mathrm{tgt}},c)$.
@@ -233,7 +227,7 @@ $c:\R^D\times\R^D\to\R_{\ge 0}$ (e.g., $c(\rvx,\rvy)=\|\rvx-\rvy\|_2^2$).
   \[
   \gamma^*_\varepsilon(\rvx,\rvy) = u(\rvx)\, \exp \bigl(-\tfrac{c(\rvx,\rvy)}{\varepsilon}\bigr)  \,v(\rvy)p_{\mathrm{src}}(\rvx) p_{\mathrm{tgt}}(\rvy),
   \]
-  用于正缩放函数 $u,v$ （全球范围内唯一）。在实践中，连续公式是用有限样本近似的，将 EOT 简化为有限（采样）Sinkhorn 迭代。熵目标是严格凸的，缩放（Sinkhorn/IPFP）算法可以有效解决它~\citep{sinkhorn1964relationship,cuturi2013sinkhorn}。对于密集问题 $n$ 每条边缘的支撑点（ $n\times n$ 内核），每次 Sinkhorn 迭代成本 $\mathcal{O}(n^2)$ 时间和 $\mathcal{O}(n^2)$ 内存，使得该方法更具可扩展性和实用性~\citep{altschuler2017near}.
+  用于正缩放函数 $u,v$ （全局唯一）。在实践中，连续公式是用有限样本近似的，将 EOT 简化为有限（采样）Sinkhorn 迭代。熵目标是严格凸的，缩放（Sinkhorn/IPFP）算法可以有效解决它~\citep{sinkhorn1964relationship,cuturi2013sinkhorn}。对于密集问题 $n$ 每条边缘的支撑点（ $n\times n$ 内核），每次 Sinkhorn 迭代成本 $\mathcal{O}(n^2)$ 时间和 $\mathcal{O}(n^2)$ 内存，使得该方法更具可扩展性和实用性~\citep{altschuler2017near}.
 
   \item \textbfs{限制在 $\varepsilon$.}
 如 $\varepsilon \to 0$，最优方案 $\gamma^*_\varepsilon$ 变得越来越集中，接近（可能是单一的）经典 OT 耦合（我们将在 \Cref{subsec:eot-ot}）。作为 $\varepsilon$ 增加， $\gamma^*_\varepsilon$ 逐渐展开并接近独立耦合 $p_{\mathrm{src}}\otimes p_{\mathrm{tgt}}$. 
@@ -374,7 +368,7 @@ $\partial_t \rho_t + \nabla \cdot (\rho_t \tilde{\rvv}_t)=0$，则布朗参考 S
 
 
 \paragraph{为什么我们需要指定参考分布？}
-经典 OT 不需要参考路径分布，因为规定的地面成本已经告诉我们将源点与目标点配对的成本有多大。因此，优化直接通过该成本来比较允许的耦合。然而，在 SB 问题中，我们比较整个随机轨迹，而不仅仅是它们的端点。因此我们需要一个参考路径度量 $R$ 指定不受控制的动态通常是什么样子。数量
+经典 OT 不需要参考路径分布，因为规定的基础代价已经告诉我们将源点与目标点配对的成本有多大。因此，优化直接通过该成本来比较允许的耦合。然而，在 SB 问题中，我们比较整个随机轨迹，而不仅仅是它们的端点。因此我们需要一个参考路径度量 $R$ 指定不受控制的动态通常是什么样子。数量
 $\mathcal{D}_{\mathrm{KL}}(P\|R)$ 然后测量可接受的过程有多少
 $P$ 必须偏离这些参考动态以满足规定的端点分布。
 
@@ -586,7 +580,7 @@ $
     {(iii)};
 \draw[arrow, <->] (ode) -- ([yshift=0.3cm] ot.west)
     node[label, below]
-    {$p_t = \bPsi_t\#\gamma^*$ where $\bPsi_t(\rvx,\rvy) = (1-t) \rvx + t \rvy$};
+    {$p_t = \bPsi_t\#\gamma^*$，其中 $\bPsi_t(\rvx,\rvy) = (1-t) \rvx + t \rvy$};
     
 \end{tikzpicture}
 }
@@ -634,7 +628,7 @@ $\varepsilon\to0$. \figcredit{由作者创建。}}
     \caption{\textbfs{E正则化参数$\varepsilon$对
     熵最优传输（连接（iii）和（iv））.}
     随着 $\varepsilon$ 的增加，有两件事同时发生变化：
-    联轴器 $\gamma^*_\varepsilon$ 将质量传播到更远的地方
+    耦合 $\gamma^*_\varepsilon$ 将质量传播到更远的地方
     目标，并且运输路径变得越来越随机。
     左 ($\varepsilon=0.01$)：路径几乎是直的，并且每个
     源点映射到附近的单个目标，恢复经典 OT。
@@ -710,7 +704,7 @@ $(\rvx_0,\rvx_T)$ 诱导耦合
 \[
 \gamma^*:=(\rvx_0,\rvx_T)_\#P^*,
 \]
-和 $\gamma^*$ 是对应EOT问题的最优运输方案。相反，从最佳 EOT 耦合开始 $\gamma^*$，我们可以首先采样一对端点
+和 $\gamma^*$ 是对应EOT问题的最优传输方案。相反，从最佳 EOT 耦合开始 $\gamma^*$，我们可以首先采样一对端点
 $(\rvx_0,\rvx_T)\sim\gamma^*$ 然后，以这些端点为条件，从以连接为条件的参考扩散中采样轨迹
 $\rvx_0$ 至 $\rvx_T$。根据以下条件混合这些条件扩散路径 $\gamma^*$ 恢复最优SB路径分布 $P^*$。换句话说，动态 SB 问题的最优随机过程引发了静态 EOT 问题的最优端点耦合。相反，最佳 EOT 耦合指定端点应如何配对，而参考扩散指定每对端点组之间的最佳随机路径。得出这一事实的关键思想是路径上的 KL 散度可以根据端点进行分解，这意味着 Schr\"odinger 桥问题简化为 KL 散度，正好位于 的联合分布上 $(\rvx_0,\rvx_T)$。对于布朗运动，之间的过渡密度 $\rvx$ 和 $\rvy$ 具有高斯形式，因此其负对数是二次的：
 \[
@@ -735,7 +729,7 @@ c(\rvx,\rvy)
 
 
 
-\subsection{EOT$_\varepsilon$ 减少为 OT 为 $\varepsilon\to 0$}\label{subsec:eot-ot}
+\subsection{$\varepsilon\to 0$ 时，EOT$_\varepsilon$ 趋于 OT}\label{subsec:eot-ot}
 
 
 让 $\gamma^*_\varepsilon$ 表示最优计划
@@ -776,9 +770,9 @@ $\Gamma$-收敛参数。
 
 
 
-\subsection{SB$_\varepsilon$ 减少为 OT 作为 $\varepsilon\to 0$}\label{subsec:sb-ot} 
+\subsection{$\varepsilon\to 0$ 时，SB$_\varepsilon$ 趋于 OT}\label{subsec:sb-ot}
 用于直接比较 \Cref{eq:bb-ot}，我们重新调整时间，以便
-$T=1$ 贯穿本小节。对于每个 $\varepsilon > 0$，让 $\mathbf{v}_t^\varepsilon$ 最小化 SB 问题，如 \Cref{eq:sb-epsilon-kinetic}，让 $p_t^\varepsilon$ 受控 SDE 的边缘分布 $\mathbf{x}_t$ 引起 $\mathbf{v}_t^\varepsilon$。然后 $p_t^\varepsilon$ 满足相关的福克-普朗克方程。相反，表示为 $(p_t^0, \mathbf{v}_t^0)$ 最优传输的 Benamou-Brenier 公式的最小化（参见 \Cref{eq:bb-ot}）。以下定理\footnote{严格的配方使用 $\Gamma$-适当重新缩放的 Schr 的收敛\"奥丁格泛函。与适当的紧凑性假设一起，这会产生最优值和最小化器的相应极限点的收敛。由于这需要更多的技术背景，因此我们在这里省略细节，仅陈述概念结果。} 声明为 $\varepsilon \to 0$，SB问题收敛到OT问题。由于与定理中类似的原因，该结果实际上很重要~\ref{thm:eot-ot}。目标 $ \mathrm{SB}_\varepsilon $ 可以使用 Sinkhorn 类型算法进行有效求解，产生数值上易于处理且可微分的代理，以实现最优传输。这在高维或大规模设置中尤其有价值，因为直接求解器（例如，基于 Benamou-Brenier 公式）的计算成本很高。
+$T=1$ 贯穿本小节。对于每个 $\varepsilon > 0$，让 $\mathbf{v}_t^\varepsilon$ 最小化 SB 问题，如 \Cref{eq:sb-epsilon-kinetic}，让 $p_t^\varepsilon$ 受控 SDE 的边缘分布 $\mathbf{x}_t$ 引起 $\mathbf{v}_t^\varepsilon$。然后 $p_t^\varepsilon$ 满足相关的福克尔-普朗克方程。相反，表示为 $(p_t^0, \mathbf{v}_t^0)$ 最优传输的 Benamou-Brenier 公式的最小化（参见 \Cref{eq:bb-ot}）。以下定理\footnote{严格的配方使用 $\Gamma$-适当重新缩放的 Schr 的收敛\"奥丁格泛函。与适当的紧凑性假设一起，这会产生最优值和最小化器的相应极限点的收敛。由于这需要更多的技术背景，因此我们在这里省略细节，仅陈述概念结果。} 声明为 $\varepsilon \to 0$，SB问题收敛到OT问题。由于与定理中类似的原因，该结果实际上很重要~\ref{thm:eot-ot}。目标 $ \mathrm{SB}_\varepsilon $ 可以使用 Sinkhorn 类型算法进行有效求解，产生数值上易于处理且可微分的代理，以实现最优传输。这在高维或大规模设置中尤其有价值，因为直接求解器（例如，基于 Benamou-Brenier 公式）的计算成本很高。
 
 
 
@@ -819,7 +813,7 @@ $\mathbf{v}_t^\varepsilon$ 收敛，在适当的弱意义上，沿着
 \mathcal{W}_2^2(p_{\mathrm{src}},p_{\mathrm{tgt}}).
 \]
 
-同时，边缘密度 $p_t^\varepsilon$ 满足 Fokker-Planck 方程：
+同时，边缘密度 $p_t^\varepsilon$ 满足 福克尔-普朗克方程：
 \[
 \partial_t p_t^\varepsilon + \nabla \cdot \left(p_t^\varepsilon \mathbf{v}_t^\varepsilon\right) = \frac{\varepsilon}{2}\,\Delta p_t^\varepsilon.
 \]
@@ -844,7 +838,7 @@ SB 框架通过在任意源分布和目标分布之间启用非线性插值来�
 \]
 这种泛化允许模型超越标准高斯先验，并从更广泛的分布中生成样本。
 
-\paragraph{连接至扩散模型。}扩散模型是 SB 框架的一个特例。假设电势恒定，$\Psi(\mathbf{x}, t) \equiv 1$。在此假设下，\Cref{eq:pde-schrodinger} 中的第二个偏微分方程可简化为标准福克-普朗克方程，其解为参考过程的边缘密度：
+\paragraph{连接至扩散模型。}扩散模型是 SB 框架的一个特例。假设电势恒定，$\Psi(\mathbf{x}, t) \equiv 1$。在此假设下，\Cref{eq:pde-schrodinger} 中的第二个偏微分方程可简化为标准福克尔-普朗克方程，其解为参考过程的边缘密度：
 \begin{align}\label{eq:sb-backward-potential}
     \widehat{\Psi}(\mathbf{x}, t) = p_t^{\mathrm{SB}}(\mathbf{x}).
 \end{align}
@@ -962,7 +956,7 @@ $p_{\mathrm{prior}}$;因此它不是规定对之间的全桥 $(p_{\mathrm{data}}
     \[
         P^{(1)} = \argmin_{P : P_T = p_{\text{prior}}} \mathcal{D}_{\text{KL}}(P  \|  P^{(0)}).
     \]
-    这是通过使用神经网络近似预言评分函数来实现的 $\mathbf{s}_{\bm{\phi}^\times}$，这会导致逆时 SDE：
+    这是通过使用神经网络近似预言分数函数来实现的 $\mathbf{s}_{\bm{\phi}^\times}$，这会导致逆时 SDE：
     \[
         \mathrm{d} \mathbf{x}_t = \left[ \mathbf{f}(\mathbf{x}_t, t) - g^2(t) \mathbf{s}_{\bm{\phi}^\times}(\mathbf{x}_t, t) \right] \mathrm{d} t + g(t)  \mathrm{d} \bar{\mathbf{w}}_t,
     \]
@@ -1012,7 +1006,7 @@ $p_{\mathrm{prior}}$;因此它不是规定对之间的全桥 $(p_{\mathrm{data}}
 \quad\text{that is,}\quad
 p_t(\rvy) = \int_{\mathbb{R}^D} \delta(\rvy - \mathbf{S}_t(\rvx))   p_0(\rvx) \diff \rvx.
 \]
-这些密度 $p_t$ 通过 Fokker-Planck 方程演化：
+这些密度 $p_t$ 通过 福克尔-普朗克方程演化：
 \[
 \frac{\partial p_t}{\partial t} = \nabla \cdot (\rvx p_t) + \Delta p_t.
 \]
@@ -1062,7 +1056,7 @@ p_t(\rvy) = \int_{\mathbb{R}^D} \delta(\rvy - \mathbf{S}_t(\rvx))   p_0(\rvx) \d
 
 
 
-\subparagraph{步骤 1：布雷尼尔定理。}  根据布雷尼尔定理，任何来自高斯的最优传输图的雅可比行列式必须是对称且半正定的。因此， 
+\subparagraph{步骤 1：布雷尼尔定理。}  根据布雷尼尔定理，任何来自高斯的最优传输映射的雅可比矩阵必须是对称且半正定的。因此，
 \[
 \mathrm{D} \mathbf{T}_t(\rvx) = \mathrm{D} \mathbf{S}_t(\mathbf{S}_\infty^{-1}(\rvx)) \mathrm{D} (\mathbf{S}_\infty^{-1})(\rvx)
 \]
@@ -1088,7 +1082,7 @@ p_t(\rvy) = \int_{\mathbb{R}^D} \delta(\rvy - \mathbf{S}_t(\rvx))   p_0(\rvx) \d
 \left( -\rmI - \mathrm{D}^2 \log p_0(\mathbf{S}_\infty^{-1}(\rvx)) \right) \cdot \mathrm{D} (\mathbf{S}_\infty^{-1})(\rvx) \quad \text{is symmetric}.
 \]
 
-\subparagraph{步骤 3：换相条件。}  自 $\mathbf{T}_0 = \mathbf{S}_\infty^{-1}$ 假设是最优的，其雅可比行列式 $D\mathbf{T}_0 = \mathrm{D}(\mathbf{S}_\infty^{-1})$ 对称。此外，Hessian矩阵 $\mathrm{D}^2\log p_0$ 对称。回想一下，当且仅当两个对称矩阵可交换时，它们才会相乘为对称矩阵。因此，对于所有 $\mathbf{x}\in\mathbb{R}^D$,
+\subparagraph{步骤 3：换相条件。}  自 $\mathbf{T}_0 = \mathbf{S}_\infty^{-1}$ 假设是最优的，其雅可比矩阵 $D\mathbf{T}_0 = \mathrm{D}(\mathbf{S}_\infty^{-1})$ 对称。此外，黑塞矩阵 $\mathrm{D}^2\log p_0$ 对称。回想一下，当且仅当两个对称矩阵可交换时，它们才会相乘为对称矩阵。因此，对于所有 $\mathbf{x}\in\mathbb{R}^D$,
 \[
 \mathrm{D}^2\log p_0\bigl(\mathbf{S}_\infty^{-1}(\mathbf{x})\bigr)
 \quad\text{must commute with}\quad
@@ -1127,14 +1121,14 @@ u(\mathbf{x}) = \frac{1}{2} \|\mathbf{x}\|^2 + \varepsilon \phi(\mathbf{x}), \qu
 \[
 \phi(x_1, x_2) = x_1 x_2 + x_1^4
 \]
-提供了一个反例，其中 Hessian $\mathrm{D}^2 \log p_0$ 和雅可比行列式 $\mathrm{D}^2 u$ 不通勤。这个矛盾表明 $\mathbf{T}_t$ 无法对所有人都是最佳的 $t \geq 0$。因此，存在一些 $t_0 \geq 0$ 这样的映射 $\mathbf{T}_{t_0 \to \infty}$ 不是最佳的。
+提供了一个反例，其中 黑塞矩阵 $\mathrm{D}^2 \log p_0$ 与雅可比矩阵 $\mathrm{D}^2 u$ 不可交换。这个矛盾表明 $\mathbf{T}_t$ 无法对所有人都是最佳的 $t \geq 0$。因此，存在一些 $t_0 \geq 0$ 这样的映射 $\mathbf{T}_{t_0 \to \infty}$ 不是最佳的。
 
 \newpage
 
 \subsection{标准线性流与reflow能否生成 OT映射？}\label{subsec:ot-linear-reflow} 
 我们已经看到PF-ODE（尤其是VP类型的前向核）通常不是OT图。现在一个自然的问题是：
 \begin{question}
-线性插补是否流畅 $(1-t)\rvx_0 + t \rvx_1$ 与 $\rvx_0\sim p_{\mathrm{src}}$ 和 $\rvx_1\sim p_{\mathrm{tgt}}$，应用于独立联轴器时 $\pi(\rvx_0, \rvx_1) = p_{\mathrm{src}}(\rvx_0)p_{\mathrm{tgt}}(\rvx_1)$，恢复OT图吗？
+线性插补是否流畅 $(1-t)\rvx_0 + t \rvx_1$ 与 $\rvx_0\sim p_{\mathrm{src}}$ 和 $\rvx_1\sim p_{\mathrm{tgt}}$，应用于独立耦合时 $\pi(\rvx_0, \rvx_1) = p_{\mathrm{src}}(\rvx_0)p_{\mathrm{tgt}}(\rvx_1)$，恢复OT图吗？
 \end{question}
 问题的答案是否定的。然而，将线性路径与给定耦合相结合提供了真实 OT 成本的实际上限。在所有可能的路径中，线性插值提供了最严格的上限，正如我们将在下面的讨论中看到的。
 
@@ -1149,7 +1143,7 @@ u(\mathbf{x}) = \frac{1}{2} \|\mathbf{x}\|^2 + \varepsilon \phi(\mathbf{x}), \qu
     \int_0^1 \int_{\mathbb{R}^D} \|\rvv_t(\rvx)\|^2 p_t(\rvx) \diff\rvx \diff t.
 \end{equation*}
 与静态 Monge 公式不同（\Cref{eq: Monge's Formulation})，其中计算最优映射需要求解 Monge--Amp\`方程 (\Cref{eq:monge-ampere})，Benamou-Brenier 问题在引入动量场后承认凸重构
-$\rvm_t := p_t \rvv_t$。尽管如此，在网格上离散化这个凸问题 $\mathbb{R}^D$ 在高维度中仍然难以处理。虽然求解 Benamou-Brenier 公式通常很棘手，  \citet{liu2022rectified,lipman2024flow} 揭示其动能有一个实用的上限。这是通过将搜索限制在更简单的家族中来实现的 \emph{条件流}，其中每条路径由其固定端点定义 $(\rvx_0, \rvx_1)$ 由联轴器引出 $\pi_{0,1}$ 源和目标发行版的。在此范围内 \emph{条件流} 家族中，规范线性插值成为最佳选择，如下形式所示。
+$\rvm_t := p_t \rvv_t$。尽管如此，在网格上离散化这个凸问题 $\mathbb{R}^D$ 在高维度中仍然难以处理。虽然求解 Benamou-Brenier 公式通常很棘手，  \citet{liu2022rectified,lipman2024flow} 揭示其动能有一个实用的上限。这是通过将搜索限制在更简单的家族中来实现的 \emph{条件流}，其中每条路径由其固定端点定义 $(\rvx_0, \rvx_1)$ 由耦合引出 $\pi_{0,1}$ 源和目标发行版的。在此范围内 \emph{条件流} 家族中，规范线性插值成为最佳选择，如下形式所示。
 
 \proppp{通过条件流确定 OT 动能的上限}{ot-conditional-flow}{
 让 $\pi_{0,1}$ 是之间的任何耦合 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$.
@@ -1169,15 +1163,15 @@ $\rvm_t := p_t \rvv_t$。尽管如此，在网格上离散化这个凸问题 $\m
 \end{enumerate}
 }{在用欧拉-拉格朗日方程解决简化变分问题之前，证明依赖于詹森不等式和条件期望塔性质的直接应用；我们指的是 \citep{lipman2024flow}完整的论点参见第 4.7 节。}
 
-换句话说，线性插值 $\bm{\Psi}^*_t$ （即流匹配和整流流使用的前向内核）最小化任何选定耦合的真实动能上限 $\pi_{0,1}$.
+换句话说，线性插值 $\bm{\Psi}^*_t$ （即流匹配和整流流使用的前向转移核）最小化任何选定耦合的真实动能上限 $\pi_{0,1}$.
 
 我们强调此类条件流中的最优性并不能保证边缘分布的全局最优性。 
 
 
 
 
-\paragraph{回流焊和最优传输。} 
-两个分布之间最简单的传输计划是使用简单的独立耦合将它们的样本用直线连接起来。然而，这种方法显然不是最佳的，因为失败不在于直线路径本身，而在于低效的初始点配对。回流焊程序可能会提供建设性的响应。它是专门为纠正这种配对而设计的迭代算法，最重要的是，每一步都保证成本不增加 \citep{liu2022flow}。这一特性表明 Reflow 系统地将传输计划推向更优化的配置，这自然引发了其收敛的核心问题。
+\paragraph{Reflow和最优传输。}
+两个分布之间最简单的传输计划是使用简单的独立耦合将它们的样本用直线连接起来。然而，这种方法显然不是最佳的，因为失败不在于直线路径本身，而在于低效的初始点配对。Reflow程序可能会提供建设性的响应。它是专门为纠正这种配对而设计的迭代算法，最重要的是，每一步都保证成本不增加 \citep{liu2022flow}。这一特性表明 Reflow 系统地将传输计划推向更优化的配置，这自然引发了其收敛的核心问题。
 \begin{question}
     如果我们应用会发生什么 \texttt{Rectify} 迭代运算符？由此产生的运输计划序列能否收敛到最佳计划，或者回流流程的固定点是否会产生 OT映射？
 \end{question}
@@ -1193,14 +1187,14 @@ $\rvm_t := p_t \rvv_t$。尽管如此，在网格上离散化这个凸问题 $\m
 \[
 \pi^{(k+1)}(\rvx_0, \rvx_1) := p_{\mathrm{src}}(\rvx_0)\, \delta\big(\rvx_1 - \bm{\Psi}_1^{(k)}(\rvx_0)\big),
 \]
-其中 $\bm{\Psi}_1^{(k)}$ 表示此时的解图 $t=1$ 积分得到 $\rvv_t^{(k)}$ 从初始条件 $\rvx_0$。已观察到 \citep{liu2022flow} 用于联轴器 $\pi$ 之间 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$，速度场的存在 $\rvv_t$ 最小化回流焊损耗，即满足 $\mathcal{L}(\rvv_t |\pi) = 0$，并不一定意味着传输是最佳的。受 Benamou-Brenier 框架的启发，其中已知最优传输速度是势函数的梯度， \citet{liu2022rectified} 提出了一个附加约束：速度场 $\rvv_t$ 应该是势场。因此，目标 \Cref{eq:reflow-loss} 修改为限制 $\rvv_t$ 梯度向量场空间，也称为势流：
+其中 $\bm{\Psi}_1^{(k)}$ 表示此时的解图 $t=1$ 积分得到 $\rvv_t^{(k)}$ 从初始条件 $\rvx_0$。已观察到 \citep{liu2022flow} 用于耦合 $\pi$ 之间 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$，速度场的存在 $\rvv_t$ 最小化Reflow损耗，即满足 $\mathcal{L}(\rvv_t |\pi) = 0$，并不一定意味着传输是最佳的。受 Benamou-Brenier 框架的启发，其中已知最优传输速度是势函数的梯度， \citet{liu2022rectified} 提出了一个附加约束：速度场 $\rvv_t$ 应该是势场。因此，目标 \Cref{eq:reflow-loss} 修改为限制 $\rvv_t$ 梯度向量场空间，也称为势流：
 \begin{align}\label{eq:reflow-loss-gradient}
     \rvw_t^{(k)} \in \argmin_{\substack{\rvu_t:\, \rvu_t=\nabla\varphi \\ \text{for some }\varphi\colon\mathbb{R}^D\to\mathbb{R}}} \, \mathcal{L}(\rvu_t\big\vert\pi^{(k)}),
 \end{align}
 其余过程与中相同 \texttt{Rectify}。我们将此关联运算符表示为 $\texttt{Rectify}_{\perp}$，强调到无旋矢量场的投影。 令$\pi$为$p_{\mathrm{src}}$和$p_{\mathrm{tgt}}$之间的耦合。 \citet{liu2022flow} 猜想以下等价表征最优性：
 \begin{enumerate}[label=(\textit{\roman*})]
-  \item $\pi$ \textit{是一种最优传输联轴器。}
-  \item $\pi$ \textit{是电位整流算子的定点：}
+  \item $\pi$ \textit{是一种最优传输耦合。}
+  \item $\pi$ \textit{是势函数整流算子的不动点：}
   \[
     \pi = \texttt{Rectify}_{\perp}(\pi).
   \]
@@ -1215,7 +1209,7 @@ $\rvm_t := p_t \rvv_t$。尽管如此，在网格上离散化这个凸问题 $\m
   \item 即使两个端点分布都是高斯分布，也存在损耗任意小但与最佳耦合的偏差任意大的耦合。
 \end{enumerate}
 
-因此，虽然修正流可能会产生强大的生成模型，但它们作为最优传输求解器的可靠性仍然有限。这凸显了生成模型和原则性最优运输理论之间的重要差距，从而引发了对它们交叉点的进一步研究。
+因此，虽然修正流可能会产生强大的生成模型，但它们作为最优传输求解器的可靠性仍然有限。这凸显了生成模型和原则性最优传输理论之间的重要差距，从而引发了对它们交叉点的进一步研究。
 
 最后，我们注意到运输成本并不总是与下游绩效相关；因此，计算精确的最优传输图可能不一定会带来更好的实际结果。尽管如此，最优传输的变体仍然是科学和工程中许多问题的基础。扩散模型为探索这些挑战提供了强大的框架。
 
@@ -1260,7 +1254,7 @@ Dacorogna--Moser Approach~\citep{dacorogna1990partial} 构造平滑
 其诱导流推动简单源分布的矢量场
 朝着目标。这张习得的映射不必与 Brenier 重合
 映射或任何其他经典的规范结构，一般来说它
-不能解决规定的最优运输问题。尽管如此，它
+不能解决规定的最优传输问题。尽管如此，它
 提供了一种实用且富有表现力的基于映射的采样途径
 维度，其中显式传输映射结构通常是
 不可用或难以计算。从这个意义上说，扩散流是

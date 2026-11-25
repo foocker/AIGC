@@ -18,7 +18,7 @@
 
 % Box around diffusion models
 \node[draw, rounded corners, minimum width=13.6cm, minimum height=1.0cm, thick, above=3.5cm of ebm, label=above:{\parbox{5cm}{ \centering {章}~\ref{ch:overview-dgm} 
- }}] (dgm) {深度生成建模概览};
+ }}] (dgm) {深度生成模型概览};
  
 % Top layer: 起源
 \node[model, above=1.5cm of vae] (variational-based) {\large\textbfs{变分视角}};
@@ -43,7 +43,7 @@
 \node[draw, rounded corners, thick, fit={(ddpm) (score) (gfm) (scoresde)}, inner sep=0.3cm, label=below:{\parbox{5cm}{\centering\textbfs{\\ \large 统一原理}  \\ \vspace{0.2cm}\small {章}~\ref{ch:all-equivalent} 
 \begin{itemize}
     \item 条件化策略
-    \item Fokker--Planck方程
+    \item 福克尔-普朗克方程
 \end{itemize} }}] (box) {};
 
 

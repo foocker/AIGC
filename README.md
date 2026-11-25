@@ -15,7 +15,7 @@
 | **自编 AIGC 完整书稿** | 手写数学笔记＋Seedance2.5完整方案人机梳理，包含扩散模型原理、部署与应用、音视频生成专题 | [203页](StabelDiffusion.pdf) | [源码](StabelDiffusion.tex) |
 | **扩散模型理论基础** | 保留原稿推导，补充生成目标、流匹配、最优传输与桥、引导对齐、快速生成及离散扩散 | [66页](AIGCTheory.pdf) | [源码](AIGCTheory.tex) |
 | **Seedance 2.5 专题** | 从完整候选网络出发，梳理表示、参考条件、联合模块、采样、长视频与训练流程 | [137页](Seedance25.pdf) | [源码](Seedance25.tex) |
-| **《扩散模型原理》中文初译** | 参考书 *The Principles of Diffusion Models* 的独立译本，基于 arXiv v3，含12章与4个附录 | [438页](the-principles-of-diffusion-models-zh/principles-diffusion-models-zh.pdf) | [源码与说明](the-principles-of-diffusion-models-zh/README.md) |
+| **《扩散模型原理》中文初译** | 参考书 *The Principles of Diffusion Models* 的独立译本，基于 arXiv v3，含12章与4个附录 | [436页](the-principles-of-diffusion-models-zh/principles-diffusion-models-zh.pdf) | [源码与说明](the-principles-of-diffusion-models-zh/README.md) |
 
 ## 可以从这里开始
 
@@ -38,7 +38,7 @@
 
 Seedance2.5完整方案人机梳理参考 [multimodal-journey](https://github.com/foocker/multimodal-journey) 的 M00–M27，包含 VAE、流匹配、DiT、位置编码、联合音视频、多参考、编辑、长上下文、训练与推理。书中分别标注公开依据与候选设计；候选完整方案尚未经过模型训练验证。网络总图与正文顺序的说明见[专题修订记录](docs/seedance-style.md)。
 
-《扩散模型原理》为非官方中文初译，已经统一部分术语并检查公式、引用和编译，尚未逐段完成人工学术审校。[译本说明](the-principles-of-diffusion-models-zh/README.md)记录了版本、来源和处理方式。
+《扩散模型原理》为非官方中文初译，本轮统一全书术语，重校前言、第一章和各章重点段落，并检查公式、引用和编译。逐段学术审校尚未完成。[译本说明](the-principles-of-diffusion-models-zh/README.md)记录了版本、来源和处理方式。
 
 ## 本地编译
 

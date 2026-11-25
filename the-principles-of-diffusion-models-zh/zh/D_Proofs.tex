@@ -3,7 +3,7 @@
 
 
 \subsection{定理~\ref{thm:equiv-marginal-kl}: 边缘 KL 最小化和条件 KL 最小化之间的等价}\label{subsec:proof-equiv-marginal-kl}
-\paragraph{\textit{证明。}} \textbfs{的推导 \Cref{eq:kl-matching}.}
+\paragraph{\textit{证明。}} \textbfs{推导 \Cref{eq:kl-matching}。}
 
 我们首先扩展右侧期望：
 \begin{align*}
@@ -257,7 +257,7 @@ p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
 
 \section{基于分数的视角}\label{app-sec:score-proof}
 
-\subsection{提议~\ref{sm-trace}: 通过分部积分进行易于处理的分数匹配}\label{app-sec:sm-trace}
+\subsection{命题~\ref{sm-trace}: 通过分部积分进行易于处理的分数匹配}\label{app-sec:sm-trace}
 \paragraph{\textit{证明。}}
 
  \textbfs{扩展 $\mathcal{L}_{\text{SM}}(\bm{\phi})$. }
@@ -507,13 +507,13 @@ R(\rmD;\rvx):=\E \left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2| \rvx\right].
 \subsection{定理~\ref{thm:fpe}: 通过 Fokker–Planck 进行边缘对齐}\label{app-sec:scoresde-fpe-proof}
 
 \paragraph{\textit{证明。}}
-\paragraph{第 1 部分：正向 SDE 的 Fokker-Planck 方程。}
+\paragraph{第 1 部分：正向 SDE 的 福克尔-普朗克方程。}
 
 考虑前向 SDE：
 \[
 \diff \rvx(t) = \rvf(\rvx(t), t)  \diff t + g(t)  \diff \rvw(t).
 \]
-扩散矩阵为 $\sigma(t) = g(t) I_D$，所以 $\sigma(t) \sigma(t)^T = g^2(t) I_D$。边缘密度的 Fokker-Planck 方程 $p_t(\rvx)$ 的 $\rvx(t)$ 是：
+扩散矩阵为 $\sigma(t) = g(t) I_D$，所以 $\sigma(t) \sigma(t)^T = g^2(t) I_D$。边缘密度的 福克尔-普朗克方程 $p_t(\rvx)$ 的 $\rvx(t)$ 是：
 \[
 \partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvf(\rvx, t) p_t(\rvx) \bigr] + \frac{1}{2} \sum_{i,j=1}^D \frac{\partial^2}{\partial x_i \partial x_j} \bigl[ (g^2(t) \delta_{ij}) p_t(\rvx) \bigr].
 \]
@@ -545,7 +545,7 @@ R(\rmD;\rvx):=\E \left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2| \rvx\right].
 \[
 \partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr],
 \]
-验证两种形式的 Fokker-Planck 方程。
+验证两种形式的 福克尔-普朗克方程。
 
 \paragraph{第 2 部分：PF-ODE 边缘密度。}
 
@@ -581,7 +581,7 @@ R(\rmD;\rvx):=\E \left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2| \rvx\right].
 \[
 \partial_s \tilde p_{T-s}(\rvx) = \nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, T - s) \tilde p_{T-s}(\rvx) \bigr].
 \]
-自 $\tilde\rvx(T) \sim p_T$，我们有 $\tilde p_T = p_T$。福克-普朗克方程 $p_t$ 在 $t = T - s$ 是：
+自 $\tilde\rvx(T) \sim p_T$，我们有 $\tilde p_T = p_T$。福克尔-普朗克方程 $p_t$ 在 $t = T - s$ 是：
 \[
 \partial_t p_{T-s}(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, T - s) p_{T-s}(\rvx) \bigr].
 \]
@@ -618,7 +618,7 @@ g^2(T-s)\nabla_{\rvx}\log p_{T-s}(\rvy(s))
 +
 g(T-s)\diff\rvw^{\mathrm{rev}}(s),
 \]
-其中 $\rvw^{\mathrm{rev}}$ 是正向运行时钟下的标准维纳过程 $s$。让 $q_s$ 表示密度 $\rvy(s)$。其福克-普朗克方程为
+其中 $\rvw^{\mathrm{rev}}$ 是正向运行时钟下的标准维纳过程 $s$。让 $q_s$ 表示密度 $\rvy(s)$。其福克尔-普朗克方程为
 \begin{align*}
 \partial_s q_s(\rvx)
 &=
@@ -669,7 +669,7 @@ g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx)
 \tfrac12 g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx).
 \end{align*}
 
-另一方面，前向福克-普朗克方程给出
+另一方面，前向福克尔-普朗克方程给出
 \[
 \partial_t p_t(\rvx)
 =
@@ -692,7 +692,7 @@ g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx)
 -
 \tfrac12g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx).
 \end{align*}
-这正是逆过程的福克-普朗克方程。最后， $q_0=p_T$，与初始分布匹配
+这正是逆过程的福克尔-普朗克方程。最后， $q_0=p_T$，与初始分布匹配
 $\rvy(0)\sim p_T$。在保证福克-普朗克解唯一性的正则性假设下，
 \[
 q_s=p_{T-s},
@@ -705,7 +705,7 @@ q_s=p_{T-s},
 因此，当逆时 SDE 从 $t=T$ 至 $t=0$，它遵循与前向 SDE 相同的边缘分布，但顺序相反。
 \hfill$\blacksquare$
 
-\subsection{提议~\ref{dsm-minimizer}: SM 和 DSM 的最小化}\label{app-sec:min-dsm}
+\subsection{命题~\ref{dsm-minimizer}: SM 和 DSM 的最小化}\label{app-sec:min-dsm}
 
 \paragraph{\textit{证明。}} 找到最小化器 $\mathbf{s}^*$，我们首先考虑固定时间 $t$ 并分析目标函数中的内在期望：
 \begin{align*}
@@ -838,28 +838,28 @@ p(\tilde{\rvx} | \rvx) = \frac{1}{(2\pi)^{D/2} |\bm{\Sigma}|^{1/2}} \exp\left( -
 
 \section{基于流的视角}\label{app-sec:flow-proof}
 
-\subsection{引理~\ref{instant-change-of-var}: 变量瞬时变化}
+\subsection{引理~\ref{instant-change-of-var}: 瞬时变量变换}
 \paragraph{\textit{证明。}}
 
-\textbfs{方法 1：变量替换公式。 } 我们表示 $p(\rvx(t), t)$ 通过 $p_t(\rvx_t)$。从ODE离散化开始
+\textbfs{方法 1：变量变换公式。 } 我们表示 $p(\rvx(t), t)$ 通过 $p_t(\rvx_t)$。从ODE离散化开始
 \[
 \rvz_{t+\Delta t} = \rvz_t + \Delta t  \rmF(\rvz_t, t),
 \]
-归一化流的变量替换公式（\Cref{eq:nf-change-of-var-log}) 给出
+归一化流的变量变换公式（\Cref{eq:nf-change-of-var-log}) 给出
 \begin{align*}
     \log p_{t+\Delta t}(\rvz_{t+\Delta t}) 
     &= \log p_t(\rvz_t) - \log \Big| \det\big(\rmI + \Delta t \nabla_{\rvz} \rmF(\rvz_t, t)\big) \Big| \\
     &= \log p_t(\rvz_t) - \Tr\Big(\log(\rmI + \Delta t \nabla_{\rvz} \rmF(\rvz_t, t)) \Big) \\
     &= \log p_t(\rvz_t) - \Delta t  \Tr\big(\nabla_{\rvz} \rmF(\rvz_t, t)\big) + \mathcal{O}(\Delta t^2),
 \end{align*}
-我们使用的地方 $\log \det = \Tr \log$ 以及小型扩展 $\Delta t$。采取极限 $\Delta t \to 0$ 生成对数密度的连续时间微分方程。事实上，同样的技巧也适用于 \Cref{eq:log-det-tr}.
+这里用了恒等式 $\log \det = \Tr \log$，并对小时间步 $\Delta t$ 作展开。令 $\Delta t \to 0$，得到对数密度的连续时间微分方程。同一方法也适用于 \Cref{eq:log-det-tr}。
 
 \vspace{0.3cm}
-\textbfs{方法 2：连续性方程。 } 我们还可以利用连续性方程，它本质上是变量替换公式：
+\textbfs{方法 2：连续性方程。 } 我们还可以利用连续性方程，它本质上是变量变换公式：
 \[
 \partial_t p(\rvz,t) = - \nabla_{\rvz} \cdot \big(\rmF(\rvz,t) p(\rvz,t)\big).
 \]
-扩大分歧，
+展开散度项，得到
 \[
 \partial_t p = - \big( (\nabla_{\rvz} \cdot \rmF) p + \rmF \cdot \nabla_{\rvz} p \big).
 \]
@@ -957,7 +957,7 @@ p_0^{\mathrm{fwd}}(\mathbf{x}) = p_0(\bm{\Psi}_0^{-1}(\mathbf{x})) \left| \det\l
 \[
 \frac{\partial p}{\partial t} + \mathbf{v}_t \cdot \nabla p + p \nabla \cdot \mathbf{v}_t = 0.
 \]
-这是一阶线性偏微分方程。假设 $ \mathbf{v}_t $ 连续可微分且全局 Lipschitz，并且 $ p_t $ 足够光滑，特征方法保证光滑函数空间中的唯一解。自从 $ p_t $ 和 $ p_t^{\mathrm{fwd}} $ 满足相同的偏微分方程和初始条件，我们得出结论：
+这是一阶线性偏微分方程。假设 $ \mathbf{v}_t $ 连续可微分且全局利普希茨连续，并且 $ p_t $ 足够光滑，特征方法保证光滑函数空间中的唯一解。自从 $ p_t $ 和 $ p_t^{\mathrm{fwd}} $ 满足相同的偏微分方程和初始条件，我们得出结论：
 \[
 p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
 \]
@@ -971,7 +971,7 @@ p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
 
 \section{理论补充：扩散模型的统一系统观点}\label{app-sec:equiv-para}
 
-\subsection{提议~\ref{equi-para}: 参数化的等价}
+\subsection{命题~\ref{equi-para}: 参数化的等价}
 
 \paragraph{\textit{证明：}} 
 如定理中所示~\ref{dsm-minimizer} 关于DSM损失，匹配损失的全局最优
@@ -982,7 +982,7 @@ p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
 \[
 \mathbb{E}_{\rvx_0,\bm{\epsilon}}\left[\|\cdot\|_2^2\right]
 \]
-针对每个固定最小化 $t$。由于这是一个标准均方误差问题，因此最小值是唯一的。从去噪分数匹配~\citep{vincent2011connection}, 定理~\ref{dsm-minimizer} 表示最优评分函数满足
+针对每个固定最小化 $t$。由于这是一个标准均方误差问题，因此最小值是唯一的。从去噪分数匹配~\citep{vincent2011connection}, 定理~\ref{dsm-minimizer} 表示最优分数函数满足
 \begin{align*}
     \rvs^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}\left[\nabla_{\rvx}\log p_t(\rvx_t|\rvx_0)\right] = \nabla_{\rvx_t} \log p_t(\rvx_t).
 \end{align*}
@@ -1081,7 +1081,7 @@ $(\partial_\btheta\hat\rvx_t)\,\diff\btheta$。因此，VSD梯度可以写为
 \right)
 \right].
 \]
-因此，分数不匹配提供了数据空间梯度信号，而生成器雅可比行列式将该信号映射回参数空间；梯度下降然后沿相反方向更新参数。这是分布级传输视图的参数对应部分
+因此，分数不匹配提供了数据空间梯度信号，而生成器的雅可比矩阵将该信号映射回参数空间；梯度下降然后沿相反方向更新参数。这是分布级传输视图的参数对应部分
 \Cref{sec:wgf-distribution-level-training}.
 
 
@@ -1337,7 +1337,7 @@ $\sigma_{s'}-\sigma_s=\mathcal{O}(\Delta s)$，因此
 \hfill$\blacksquare$
 
 
-\subsection{提议~\ref{continuous-time-ct}: CT 梯度的连续时间极限}
+\subsection{命题~\ref{continuous-time-ct}: CT 梯度的连续时间极限}
 
 \paragraph{\textit{证明：}}
 
@@ -1467,10 +1467,8 @@ $\sigma_{s'}-\sigma_s=\mathcal{O}(\Delta s)$，因此
 
 
 \newpage
-\section{（选读）阐明扩散模型 (EDM)}\label{sec:edm}我们在中介绍了神经网络参数化设计的具体标准
-$\rvx$ 预测模型，如阐明扩散模型中提出的
-(电火花加工)~\citep{karras2022elucidating}。 EDM 提供了一个简单的 
-使训练过程更容易优化且更可靠的配方。
+\section{（选读）EDM 的模型设计}\label{sec:edm}
+这里介绍 EDM~\citep{karras2022elucidating} 为 $\rvx$ 预测提出的神经网络参数化准则。这些准则让训练更容易优化，也更可靠。
 $\rvx$ 预测模型表示为与时间相关的跳跃连接与
 缩放残差 (\Cref{eq:D-parametrization})。中心思想是将输入和回归目标标准化为
 始终保持单位方差，并调整跳跃路径以使残差
@@ -1583,7 +1581,7 @@ c_{\mathrm{skip}}(0) \approx 1 \quad \text{and} \quad c_{\mathrm{out}}(0) \appro
 它为$\rmF_{\bm{\phi}}$提供噪声级嵌入；任何
 噪声水平 $\sigma_t$（例如，$c_{\mathrm{noise}}(t)=\log \sigma_t$）的一对一映射是合适的。
 
-\subsection{A 标准EDM的一个特例：$\alpha_t = 1$、$\sigma_t = t$}
+\subsection{标准 EDM 的一个特例：$\alpha_t = 1$、$\sigma_t = t$}
 
 我们考虑 EDM 中使用的简化噪声表，其中
 $\alpha_t = 1$ 和 $\sigma_t = t$，也出现在讨论中

@@ -3,21 +3,13 @@
 
 \epigraph{
     \textit{一切都在流动。
-}}{H拉克利特}
+}}{赫拉克利特}
 
 
-\emph{变量替换公式}，概率的基石
-理论~\citep{tabak2010density,tabak2013family}，在现代焕发新的生命
-生成建模。在\Cref{ch:score-sde}中，我们看到福克--普朗克
-方程描述了扩散过程中概率密度如何演变，
-并且也可以实现相同的边缘密度演化
-通过相关的 PF-ODE 确定性地。这自然表明
-直接从确定性的角度研究生成建模
-概率传输。
+\emph{变量变换公式}是概率论的基本工具~\citep{tabak2010density,tabak2013family}，在生成模型中也很有用。\Cref{ch:score-sde} 用福克尔-普朗克方程描述了扩散过程中密度如何演化。相应的概率流 ODE 虽然是确定性的，却给出相同的边缘分布演化。这提示我们可以直接从确定性的概率传输来理解生成。
 
-\paragraph{密度变量替换公式.}
-给定一个可逆变换 $\rvf$，密度为
-$\rvx=\rvf(\rvz)$，其中 $\rvz\sim p_{\mathrm{prior}}$ 是
+\paragraph{概率密度的变量变换公式。}
+给定可逆变换 $\rvf$，令 $\rvx=\rvf(\rvz)$，其中 $\rvz\sim p_{\mathrm{prior}}$。那么 $\rvx$ 的密度为
 \begin{mdframed}
 \begin{align}\label{eq:nf-change-of-var}
 p(\rvx)
@@ -28,14 +20,11 @@ p_{\mathrm{prior}}(\rvz)
 \frac{\partial \rvf^{-1}(\rvx)}{\partial \rvx}
 \right|,
 \qquad
-\text{where }
+\text{其中 }
 \rvz=\rvf^{-1}(\rvx).
 \end{align}
 \end{mdframed}
-这个看似简单的公式可以实现样品的双向传输
-$\rvf$ 易于处理时的密度，形成归一化的基础
-流程，我们在 \Cref{sec:flow-based-method} 中介绍。但会发生什么
-当这个转变在时间上连续地观察时？
+当 $\rvf$ 易于计算时，这个公式可以在变换的两端换算密度，是 \Cref{sec:flow-based-method} 中归一化流的基础。下面讨论如何把这样一个变换延伸到连续时间。
 
 在本章中，我们遵循从归一化流到神经常微分方程的思想
 然后进行流匹配。与\Cref{ch:score-sde}的关键连接特别是
@@ -151,8 +140,8 @@ path中的score通过中间的转换决定了速度，所以
 条件速度可以轻松计算。为了支持对本章的深入理解，我们提供了
 \Cref{app:continuity} 直观、独立的不同概述
 变量变化原理的形式，是从普通原理发展而来的
-将变量替换公式转化为连续性方程，并且具有随机性
-动力学，到福克-普朗克方程。
+将变量变换公式转化为连续性方程，并且具有随机性
+动力学，到福克尔-普朗克方程。
 
 \chapterlearning{
   \item 通过传输概率分布的共同思想（从离散可逆变换到连续时间速度场）连接归一化流、神经常微分方程和流匹配；
@@ -181,7 +170,7 @@ NF 通过对简单的基分布应用一系列可逆变换来实现灵活且易�
 \begin{figure}[th!]
     \centering
     \includegraphics[width=0.76\linewidth]{Images/PartB/flow_density.pdf}
-    \caption{\textbfs{可逆映射下 NF 样本移动的图示。} 它由一系列可逆函数组成 $\rvf: \rvz \mapsto \rvx$ 转换潜变量 $\rvz$ 写入数据 $\rvx$，连同逆映射 $\rvf^{-1}: \rvx \mapsto \rvz$ 重建数据。 NF 类似于编码器-解码器结构，但编码器实现为平滑可逆映射，而解码器则由其逆映射精确给出。相应的密度变化可以通过变量替换公式计算，如下所示 \Cref{eq:nf-change-of-var}. \figcredit{由作者创建。}}
+    \caption{\textbfs{可逆映射下 NF 样本移动的图示。} 它由一系列可逆函数组成 $\rvf: \rvz \mapsto \rvx$ 转换潜变量 $\rvz$ 写入数据 $\rvx$，连同逆映射 $\rvf^{-1}: \rvx \mapsto \rvz$ 重建数据。 NF 类似于编码器-解码器结构，但编码器实现为平滑可逆映射，而解码器则由其逆映射精确给出。相应的密度变化可以通过变量变换公式计算，如下所示 \Cref{eq:nf-change-of-var}. \figcredit{由作者创建。}}
     \label{fig:sample-and-change-of-variable}
 \end{figure}
 
@@ -191,7 +180,7 @@ NF~\citep{rezende2015variational} 对复杂的数据分布进行建模 $p_{\text
 \[
 \rvf_{\bm{\phi}}: \mathbb{R}^D \to \mathbb{R}^D,
 \]
-与 $\rvx = \rvf_{\bm{\phi}}(\rvz)$ 和 $\rvz \sim p_{\text{prior}}$。在这里， $\rvx$ 和 $\rvz$ 尺寸相同。使用变量替换公式 \Cref{eq:nf-change-of-var}，模型似然为\footnote{如果映射进一步约束为凸势的梯度，
+与 $\rvx = \rvf_{\bm{\phi}}(\rvz)$ 和 $\rvz \sim p_{\text{prior}}$。在这里， $\rvx$ 和 $\rvz$ 尺寸相同。使用变量变换公式 \Cref{eq:nf-change-of-var}，模型似然为\footnote{如果映射进一步约束为凸势的梯度，
 $\rvf_\bphi = \nabla \psi_\bphi$ 与 $\psi_\bphi$ 凸，则
 \Cref{eq:nf-change-of-var-log} 简化为 Monge--Ampère 关系 \Cref{eq:monge-ampere}。该偏微分方程描述了在二次成本下从一种分布到另一种分布的最优转换。参见 \Cref{ch:ot-eot} 和 \citep{huangconvex} 了解更多详情。
 }
@@ -203,7 +192,7 @@ $\rvf_\bphi = \nabla \psi_\bphi$ 与 $\psi_\bphi$ 凸，则
 
 
 \paragraph{训练目标。}
-参数 $\bm{\phi}$ 通过最大化数据的可能性来学习：
+参数 $\bm{\phi}$ 通过最大化数据的似然来学习：
 \begin{align}\label{eq:nf-training}
 \mathcal{L}_{\text{NF}}(\bm{\phi}) = \mathbb{E}_{\rvx \sim p_{\text{data}}} \left[ \log p_{\bm{\phi}}(\rvx) \right].
 \end{align}
@@ -310,9 +299,9 @@ $\rvf_{\bm{\phi}} = \rvf_{L-1} \circ \rvf_{L-2} \circ \cdots \circ \rvf_0$。转
 \begin{align}\label{eq:residual-flow}
 \rvf(\rvz) = \rvz + \rvv(\rvz),
 \end{align}
-与 $\rvv$ 收缩（Lipschitz 常数 $< 1$）。这通过巴纳赫不动点定理确保了可逆性。
+与 $\rvv$ 收缩（利普希茨常数 $< 1$）。这通过巴拿赫不动点定理确保了可逆性。
 
-雅可比行列式的对数行列式简化为迹展开式：
+雅可比矩阵行列式的对数简化为迹展开式：
 \begin{align}\label{eq:log-det-tr}
     \log \Bigg|\det \frac{\partial \rvf(\rvz)}{\partial \rvz} \Bigg| &= \log \left( \det \frac{\partial \rvf(\rvz)}{\partial \rvz} \right) \nonumber\\
     &= \Tr\left(\log\left(\frac{\partial \rvf(\rvz)}{\partial \rvz}\right)\right) \nonumber\\
@@ -322,7 +311,7 @@ $\rvf_{\bm{\phi}} = \rvf_{L-1} \circ \rvf_{L-2} \circ \cdots \circ \rvf_0$。转
 通过跟踪估计器~\citep{hutchinson1989stochastic} 提高评估效率。
 
 \paragraph{采样与推理.}
-从 NF 中采样非常简单：绘制 $\rvx_0 \sim p_{\text{prior}}$ 并计算 $\rvx = \rvf_{\bm{\phi}}(\rvx_0)$。确切的可能性从 \Cref{eq:multi-nf-density} 获得。
+从 NF 中采样非常简单：抽取 $\rvx_0 \sim p_{\text{prior}}$ 并计算 $\rvx = \rvf_{\bm{\phi}}(\rvx_0)$。精确似然从 \Cref{eq:multi-nf-density} 获得。
 
 
 \subsection{神经常微分方程}\label{subsec:NODE}
@@ -421,13 +410,13 @@ t_k=k\Delta t,
 
 
 
-\paragraph{连续时间变量替换公式.}
+\paragraph{连续时间变量变换公式.}
 类似于 \Cref{eq:nf-change-of-var} 或 \Cref{eq:multi-nf-density}，
 \citet{chen2018neural} 导出了连续时间模拟
-变量替换公式。对于随时间变化的密度
+变量变换公式。对于随时间变化的密度
 $p_{\bm{\phi}}(\rvx(t),t)$ 下演变的进程 $\rvx(t)$
 \Cref{eq:neural-ode}，即所谓\emph{瞬时
-变量替换公式}为
+变量变换公式}为
 \[
 \frac{\diff}{\diff t}
 \log p_{\bm{\phi}}(\rvx(t),t)
@@ -452,7 +441,7 @@ $p_{\bm{\phi}}(\rvx(t),t)$ 下演变的进程 $\rvx(t)$
 该表达式通过数值积分提供似然评估，
 这反过来又可以实现模型的最大似然训练。
 
-虽然这个公式乍一看可能有些陌生，但它与福克-普朗克方程密切相关。特别地，它可以理解为沿轨迹的形式 \emph{连续性方程}，这是福克-普朗克方程的确定性零扩散情况（参见 \Cref{app:continuity}）。它也可以解释为离散变量替换公式的连续时间极限
+虽然这个公式乍一看可能有些陌生，但它与福克尔-普朗克方程密切相关。特别地，它可以理解为沿轨迹的形式 \emph{连续性方程}，这是福克尔-普朗克方程的确定性零扩散情况（参见 \Cref{app:continuity}）。它也可以解释为离散变量变换公式的连续时间极限
 \Cref{eq:multi-nf-density}。我们将结果总结如下。
 
 \lemp{变量瞬时变化}{instant-change-of-var}{
@@ -476,7 +465,7 @@ $p(\rvz(t),t)$，并假设它根据 ODE 演化
 
 
 \subparagraph{与离散时间公式的连接。}  
-节点可能性 \Cref{eq:NODE-likelihood},
+NODE 的似然 \Cref{eq:NODE-likelihood},
 \[
 \log p_{\bm{\phi}}(\rvx(T), T) = \log p_{\text{prior}}(\rvx(0), 0) - \int_0^T \nabla_\rvx \cdot \rvv_{\bm{\phi}}(\rvx(t), t) \diff t,
 \]
@@ -497,7 +486,7 @@ p_{\bm{\phi}}(\cdot, T) \approx p_{\text{data}},
 \]
 
 \subparagraph{精确的对数似然计算。} 
-计算 $\log p_{\bm{\phi}}(\mathbf{x}, T)$ 用于数据点 $\mathbf{x}$，我们对变量替换公式进行积分 \eqref{eq:NODE-likelihood}:
+计算 $\log p_{\bm{\phi}}(\mathbf{x}, T)$ 用于数据点 $\mathbf{x}$，我们对变量变换公式进行积分 \eqref{eq:NODE-likelihood}:
 \begin{align}
 \log p_{\bm{\phi}}(\mathbf{x}, T) = \log p_{\text{prior}}(\mathbf{z}(0)) - \int_0^T \nabla_{\mathbf{z}} \cdot \mathbf{v}_{\bm{\phi}}(\mathbf{z}(t), t) \diff t.
 \end{align}
@@ -521,11 +510,11 @@ p_{\bm{\phi}}(\cdot, T) \approx p_{\text{data}},
 \]
 因此，可以使用随机迹有效地估计散度
 估计器，例如 Hutchinson 估计器~\citep{hutchinson1989stochastic}，
-无需明确构建完整的雅可比行列式。这使得可能性
+无需明确构建完整的雅可比矩阵。这样就能计算似然
 评估在高维环境中更加实用。然而，因为
 然后从随机样本中估计轨迹，得到的数值
 对数似然估计是随机的，而不是对
-分歧。
+散度。
 
 在\Cref{fig:bijection-continuity}中看到了多少个小双射
 接近连续传输流，我们现在问一个实际问题：
@@ -682,7 +671,7 @@ p_t(\rvx_t) := \int p_t(\rvx_t |\rvx_0)  p_{\text{data}}(\rvx_0) \mathrm{d}\rvx_
 方差增加 $\sigma_t^2$ 条件高斯驱动演化 $p_t$ 朝向高斯先验。
 
 \paragraph{第 2 步：速度场。}
-边缘密度的时间演化 $p_t$ 由速度场控制 $\rvv_t : \mathbb{R}^D \to \mathbb{R}^D$，由 Fokker-Planck 方程导出：
+边缘密度的时间演化 $p_t$ 由速度场控制 $\rvv_t : \mathbb{R}^D \to \mathbb{R}^D$，由 福克尔-普朗克方程导出：
 \begin{align}\label{eq:dm-velocity}
     \rvv_t(\rvx) := f(t)\rvx - \frac{1}{2}g^2(t)\nabla_{\rvx} \log p_t(\rvx),
 \end{align}
@@ -785,8 +774,8 @@ $\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0)$ 或 $\nabla_{\rvx_t}\log p_t(\rvx_t)$.
     \label{fig:conditional-marginal}
 \end{figure}
 
-\paragraph{基本规则：福克-普朗克方程。}
-边缘密度 $p_t$ 根据福克-普朗克方程演化：
+\paragraph{基本规则：福克尔-普朗克方程。}
+边缘密度 $p_t$ 根据福克尔-普朗克方程演化：
 \begin{mdframed}
 \begin{align*}
     \frac{\partial p_t(\rvx)}{\partial t} + \nabla \cdot \Bigg( \underbrace{\left(f(t)\rvx - \frac{1}{2}g^2(t) \nabla_\rvx \log p_t(\rvx)\right)}_{\rvv_t(\rvx)}  p_t(\rvx) \Bigg) = 0.
@@ -799,7 +788,7 @@ $\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0)$ 或 $\nabla_{\rvx_t}\log p_t(\rvx_t)$.
       p_{\mathrm{prior}}(\rvx_1) \mathrm{d}\rvx_1.
 \end{align}
 
-福克-普朗克方程确保诱导密度路径与相同的演化密度一致：
+福克尔-普朗克方程确保诱导密度路径与相同的演化密度一致：
 \begin{align}\label{eq:p_t-fwd-rev}
 p_t^{\mathrm{rev}} = p_t.
 \end{align}
@@ -854,7 +843,7 @@ t\in[0,1],
 $\mathbf{x}(0)\sim p_{\text{src}}$ 至 $p_{\text{tgt}}$，或从
 $\mathbf{x}(1)\sim p_{\text{tgt}}$ 至 $p_{\text{src}}$
 （参见 \Cref{subsec:fm-theory} 用于更正式的讨论）。该要求由 \emph{连续性方程}\footnote{
-福克-普朗克方程的确定性模拟，没有扩散项。}:
+福克尔-普朗克方程的确定性模拟，没有扩散项。}:
 \begin{mdframed}
 \begin{equation}\label{eq:continuity_eq}
     \frac{\partial p_t(\mathbf{x})}{\partial t}
@@ -1275,7 +1264,7 @@ p_{\text{tgt}} = p_1 =  \mathcal{N}\left(\rvx; \bm{\mu}(1), \sigma^2(1) \rmI\rig
 对于定义的高斯路径 $p_t$ （所有的高斯 $t$)，速度场 $\rvv_t(\cdot)$ 引入 ODE 流 \Cref{eq:gaussian-sol-map} 具有独特的分析特征如下~\citep{lipman2022flow}:
 
 \proppp{高斯密度路径的封闭式速度场}{closed-form-vf}{
-让 $p_t$ 是高斯路径 \Cref{eq:gaussian-density-path}。那么速度场 $\rvv_t(\cdot)$ 生成 ODE 流 \Cref{eq:gaussian-sol-map} 对于定义的来说是唯一的 $\bPsi_{0\to t}$ 并且具有闭合形式表达式：
+让 $p_t$ 是高斯路径 \Cref{eq:gaussian-density-path}。那么速度场 $\rvv_t(\cdot)$ 生成 ODE 流 \Cref{eq:gaussian-sol-map} 对于定义的来说是唯一的 $\bPsi_{0\to t}$ 并且具有闭形式表达式：
 \begin{equation*}
     \rvv_t(\rvx) = \frac{\sigma'(t)}{\sigma(t)} \left( \rvx - \bm{\mu}(t) \right) + \bm{\mu}'(t).
 \end{equation*}
@@ -1501,7 +1490,7 @@ p_t(\cdot|\rvz) = \bigl(\bPsi_{0\to t}( \cdot ;\rvz)\bigr)_{\#} p_{\mathrm{src}}
 \qquad
 p_t(\cdot)  =  \int p_t(\cdot|\rvz)\pi(\rvz)\diff\rvz.
 \]
-最终重要的是 $\mathcal{L}_{\mathrm{CFM}}$ 如何从中采样：第一次绘制 $\rvz \sim \pi$，然后画 $\rvx_0 \sim p_{\mathrm{src}}$，最后设置
+最终重要的是 $\mathcal{L}_{\mathrm{CFM}}$ 如何从中采样：第一次抽取 $\rvz \sim \pi$，然后画 $\rvx_0 \sim p_{\mathrm{src}}$，最后设置
 \[
 \rvx_t = \bm\mu_t(\rvz) + \rmA_t(\rvz)\rvx_0.
 \]
@@ -1754,7 +1743,7 @@ $p_t(\cdot|\rvz)$.
 \]
 具有吸引人的几何特性：以特定端点对为条件 $(\rvx_0,\rvx_1)$，插补为等速直线 $\rvx_1-\rvx_0$。这种直线度的条件概念广泛用于流匹配和整流流。然而，区分这些直线度很重要
 \emph{条件插值路径} 从直线度
-\emph{边缘 ODE 轨迹} 在生成时使用。在联轴器下 $\pi(\rvx_0,\rvx_1)$，群体最优边缘速度为
+\emph{边缘 ODE 轨迹} 在生成时使用。在耦合下 $\pi(\rvx_0,\rvx_1)$，总体意义下的最优边缘速度为
 \[
 \rvv^\star(\rvx,t)
 =
@@ -1828,7 +1817,7 @@ z_{1/2} = \frac{z_0}{\sqrt{2}} \neq z_0.
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/straightness_counterexample.pdf}
     \caption{\textbfs{边缘 ODE 轨迹在规范仿射插值下不是直的。}
-    我们将$x_0 \sim \mathcal{N}(0, \sigma_0^2)$和$x_1 \sim \mathcal{N}(0, \sigma_1^2)$与$\sigma_0=2$、$\sigma_1=3$以及独立联轴器一起使用。
+    我们将$x_0 \sim \mathcal{N}(0, \sigma_0^2)$和$x_1 \sim \mathcal{N}(0, \sigma_1^2)$与$\sigma_0=2$、$\sigma_1=3$以及独立耦合一起使用。
     灰线显示采样条件路径 $(1-t)x_0 + tx_1$，其结构是直的。
     实线显示精确的边缘 ODE 轨迹 $z_t = z_0\sqrt{(1-t)^2 + (\sigma_1/\sigma_0)^2 t^2}$，虚线显示从 $z_0$ 到 $z_1$ 的相应直线插值。
     实线和虚线之间的可见间隙证实了 $t$ 中的边缘 ODE 轨迹不是仿射的，即使每个条件路径都是直线。
@@ -1876,7 +1865,7 @@ a_t = 1 - t, \qquad b_t = t,
 
 \subsection{整流（Rectified Flow）：从嘈杂的猜测到结构化配对}\label{subsec:rectify}
 
-\paragraph{为什么要更换联轴器？}
+\paragraph{为什么要更换耦合？}
 独立耦合下
 \[
 \pi(\rvx_0,\rvx_1)
@@ -1975,7 +1964,7 @@ $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 \paragraph{这 \texttt{Reflow} 程序。}
 每次迭代执行两个步骤：
 \begin{itemize} 
-    \item \textbfs{重新安装流程：} 从当前耦合的样本训练新的速度场： \begin{align} \bm{\phi}_{k+1} &= \arg\min_{\bm{\phi}} \mathcal{L}\left(\bm{\phi}\Big\vert \pi^{(k)}\right), \quad \text{where} \notag \\ \mathcal{L}\left(\bm{\phi}\Big\vert \pi^{(k)}\right) &:= \mathbb{E}_{t, (\rvz_0^{(k)}, \hat\rvz_1^{(k)})\sim \pi^{(k)}} \left[\left\|\rvv_{\bm{\phi}}(\rvz_t, t) - (\hat\rvz_1^{(k)} - \rvz_0^{(k)})\right\|^2\right] \label{eq:reflow-loss} \end{align} 与 $\rvz_t = (1-t)\rvz_0^{(k)} + t\hat\rvz_1^{(k)}$. 
+    \item \textbfs{重新拟合流：} 从当前耦合的样本训练新的速度场： \begin{align} \bm{\phi}_{k+1} &= \arg\min_{\bm{\phi}} \mathcal{L}\left(\bm{\phi}\Big\vert \pi^{(k)}\right), \quad \text{其中} \notag \\ \mathcal{L}\left(\bm{\phi}\Big\vert \pi^{(k)}\right) &:= \mathbb{E}_{t, (\rvz_0^{(k)}, \hat\rvz_1^{(k)})\sim \pi^{(k)}} \left[\left\|\rvv_{\bm{\phi}}(\rvz_t, t) - (\hat\rvz_1^{(k)} - \rvz_0^{(k)})\right\|^2\right] \label{eq:reflow-loss} \end{align} 与 $\rvz_t = (1-t)\rvz_0^{(k)} + t\hat\rvz_1^{(k)}$.
     \item \textbfs{生成新耦合：} 从新的源样本开始求解学习的 ODE $\rvz_0^{(k+1)} \sim p_{\text{src}}$: \[ \hat\rvz_1^{(k+1)} \gets \rvz_0^{(k+1)} + \int_0^1 \rvv_{\bm{\phi}_{k+1}}(\rvz(t), t) \mathrm{d}t, \] 并定义更新的耦合： \[ \pi^{(k+1)}(\rvz_0, \rvz_1) := p_{\text{src}}(\rvz_0) \delta\left(\rvz_1 - \hat\rvz_1^{(k+1)}\right). \] \end{itemize}
 换句话说， \texttt{Reflow} 可以视为重复应用 \texttt{Rectify} 操作员，产生一系列逐渐细化的耦合：
 \begin{align}\label{eq:rectify-op}
@@ -1985,12 +1974,12 @@ $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 
 
 
-\subsection{的属性 \texttt{Reflow}}\label{subsec:reflow-properties}
+\subsection{\texttt{Reflow} 的性质}\label{subsec:reflow-properties}
 
 两个关键的理论特性推动了 \texttt{Reflow}：它降低了运输成本并拉直了轨迹。
 
 \paragraph{I. \texttt{Reflow} 永远不会增加运输成本。}
-让 $c(\rvy)$ 是凸成本函数（例如， $\|\rvy\|_2^p$ 与 $p \geq 1$）。每个 \texttt{Rectify} 台阶形成新联轴器 $(\rvz_0, \hat\rvz_1)$ 其成本不比原来差：
+让 $c(\rvy)$ 是凸成本函数（例如， $\|\rvy\|_2^p$ 与 $p \geq 1$）。每个 \texttt{Rectify} 台阶形成新耦合 $(\rvz_0, \hat\rvz_1)$ 其成本不比原来差：
 \proppp{\texttt{Rectify} 可以降低运输成本}{rec-transport-cost}{
 假设理想速度场 $\rvv^* = \rvv_{\bm{\phi}^\times}$，我们有：
 \[
@@ -2028,8 +2017,8 @@ $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 \paragraph{三．连接到最优传输。}
 最后，我们注意到直线耦合在最优传输（OT）意义上不一定是最佳的。这涉及到一些术语，稍后会介绍 \Cref{sec:ot-intro};因此，我们建议不熟悉旧约的读者阅读该部分。二次成本最优传输的一个标志是粒子沿直线运动：粒子在 $\rvx_0$ 移至 $\rmT(\rvx_0)$ 通过 $\rvx_t = (1 - t)\rvx_0 + t \rmT(\rvx_0)$，其中 $\rmT$ 是最优传输图。然而，并不是每张映射 $\rmS$ 生成这样的直线路径，即 $\rvx_t = (1 - t)\rvx_0 + t \rmS(\rvx_0)$，是最佳的。映射 $\rmS$ 仅当 Monge 成本最小化时才产生最佳流 $\mathbb{E}[\|\rvx_0 - \rmS(\rvx_0)\|^2]$。因此，虽然直线路径是必要的，但它们还不够。最优性还取决于正确的端点图 $\rmT$.
 
-\exm{直联轴器不一定是最佳的}{
-让 $p_{\text{src}} = p_{\text{tgt}} = \mathcal{N}(\bm{0}, \rmI)$。为了成本 $c(\rvx, \rvy) = \|\rvx - \rvy\|^p$ 与 $p > 0$， $c$-最佳耦合是恒等耦合 $\pi^{*}$，其中 $\pi^{*}$ 是定律 $(\rvx, \rvx)$ 与 $\rvx \sim p_{\text{src}}$。现在考虑耦合 $\pi_{\rmA}$ 定义为定律 $(\rvx, \rmA \rvx)$，其中 $\rvx \sim p_{\text{src}}$ 和 $\rmA$ 是满足的旋转矩阵 $\rmA^\top \rmA = \rmI$, $\det(\rmA) = 1$, $\rmA \neq \rmI$, 和 $-1$ 不是特征值。然后 $\pi_{\rmA}$ 是有效的耦合 $p_{\text{src}}$ 和 $p_{\text{tgt}}$，并且对应于之间的直线路径 $\rvx$ 和 $\rmA \rvx$，但事实并非如此 $c$-对于任何二次可微的严格凸成本来说是最佳的 $c$ 具有可逆 Hessian 矩阵。次优性是由旋转变换引起的。正如中所讨论的 \Cref{eq:reflow-loss-gradient}，即使移除旋转也可能不会导致最佳耦合。
+\exm{直线耦合未必最优}{
+让 $p_{\text{src}} = p_{\text{tgt}} = \mathcal{N}(\bm{0}, \rmI)$。为了成本 $c(\rvx, \rvy) = \|\rvx - \rvy\|^p$ 与 $p > 0$， $c$-最佳耦合是恒等耦合 $\pi^{*}$，其中 $\pi^{*}$ 是定律 $(\rvx, \rvx)$ 与 $\rvx \sim p_{\text{src}}$。现在考虑耦合 $\pi_{\rmA}$ 定义为定律 $(\rvx, \rmA \rvx)$，其中 $\rvx \sim p_{\text{src}}$ 和 $\rmA$ 是满足的旋转矩阵 $\rmA^\top \rmA = \rmI$, $\det(\rmA) = 1$, $\rmA \neq \rmI$, 和 $-1$ 不是特征值。然后 $\pi_{\rmA}$ 是有效的耦合 $p_{\text{src}}$ 和 $p_{\text{tgt}}$，并且对应于之间的直线路径 $\rvx$ 和 $\rmA \rvx$，但事实并非如此 $c$-对于任何二次可微的严格凸成本来说是最佳的 $c$ 具有可逆 黑塞矩阵。次优性是由旋转变换引起的。正如中所讨论的 \Cref{eq:reflow-loss-gradient}，即使移除旋转也可能不会导致最佳耦合。
 }
 
 我们将继续探索与 OT 的联系 \Cref{subsec:ot-linear-reflow}.
@@ -2040,7 +2029,7 @@ $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 \newpage
 \section{结束语}\label{sec:ch5_cr}
      
-本章阐明了扩散模型的第三个也是最后一个基本观点，该观点植根于确定性流的原理。我们的探索从归一化流（NF）开始，它利用变量替换公式来学习简单先验和数据分布之间的精确可逆映射。然后，我们看到这个概念演变为神经常微分方程的连续时间过程，其中学习的速度场控制着转换。然而，这种方法有一个显着的缺点，即需要在训练循环中进行昂贵的 ODE 模拟。
+本章阐明了扩散模型的第三个也是最后一个基本观点，该观点植根于确定性流的原理。我们的探索从归一化流（NF）开始，它利用变量变换公式来学习简单先验和数据分布之间的精确可逆映射。然后，我们看到这个概念演变为神经常微分方程的连续时间过程，其中学习的速度场控制着转换。然而，这种方法有一个显着的缺点，即需要在训练循环中进行昂贵的 ODE 模拟。
 
 
 
@@ -2054,7 +2043,7 @@ $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 在下一章中，我们最终将把这些并行线程综合到一个统一的框架中。我们将：
 \begin{enumerate}
     \item 正式证明变分、基于分数和基于流程的观点不仅相似，而且在基本层面上在数学上是等效的。
-    \item 展示福克-普朗克方程如何作为控制所有三种视图中密度演化的普遍法则，揭示它们只是描述相同核心生成原理的不同镜头。
+    \item 展示福克尔-普朗克方程如何作为控制所有三种视图中密度演化的普遍法则，揭示它们只是描述相同核心生成原理的不同镜头。
 \end{enumerate}
 
 这个统一的视角将提供对现代扩散范式的完整和系统的理解。

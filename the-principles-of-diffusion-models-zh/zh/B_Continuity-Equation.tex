@@ -1,25 +1,18 @@
-\chapter{密度演化：从变量替换到Fokker--Planck方程}\label{app:continuity}
+\chapter{密度演化：从变量变换到福克尔-普朗克方程}\label{app:continuity}
 
-了解概率密度在变换下如何演变是概率论和生成模型的基础。特别是，扩散模型旨在构建生成过程，其诱导的密度路径反转预定义的前向过程。这种演化由连续性方程控制，或者在随机情况下由福克-普朗克方程控制。
+理解变换如何改变概率密度，是概率论和生成模型的一项基础。扩散模型要构造一个生成过程，使概率密度沿预先定义的前向过程反向演化。确定性流的密度遵循连续性方程，随机过程的密度则遵循福克尔-普朗克方程。
 
-尽管这些名称可能听起来陌生或令人生畏，但它们实际上是基本微积分中变量替换公式的连续时间类似物。在 \Cref{sec:cov} 中，它通过提出一系列变量替换公式来构建它们，从确定性双射开始，最终形成随机微分方程。这种进展自然地连接了离散映射和连续时间流动动力学。有关此统一框架的概述，请参阅 \Cref{fig:unified_framework_CoV}。
+这两个方程可以看作微积分中变量变换公式的连续时间推广。\Cref{sec:cov} 从确定性双射的变量变换公式出发，逐步推广到连续流和随机微分方程。\Cref{fig:unified_framework_CoV} 汇总了这几种情形。
 
-在 \Cref{sec:intuition-continuity} 中，我们提供了连续性方程的物理和直观解释，强调其与动力系统中密度守恒的联系。
+\Cref{sec:intuition-continuity} 从概率质量守恒出发，给出连续性方程的物理解释。
 
 \chapterlearning{
-  \item 将变量替换公式与 ODE 的连续性方程和 SDE 的 Fokker--Planck 方程联系起来；
-
-  \item 将连续性方程理解为概率质量守恒，区分粒子运动与密度演化；
-
-  \item 区分拉格朗日和欧拉的传输观点，包括为什么仅靠密度路径不需要确定唯一的速度场；
-
-  \item 了解为什么 SDE 及其概率流 ODE 可以共享相同的边缘密度，同时具有不同的样本路径。
+  \item 理解变量变换公式与 ODE 的连续性方程、SDE 的福克尔-普朗克方程之间的关系。
+  \item 从概率质量守恒出发理解连续性方程，区分粒子运动与密度演化。
+  \item 区分拉格朗日和欧拉两种传输视角，理解同一条密度路径为何可以对应多个速度场。
+  \item 理解 SDE 与对应的概率流 ODE 如何在各自样本路径不同的情况下具有相同的边缘密度。
 }{
-关键原则是变量替换公式描述了如何
-移动样本会改变它们的概率分布。本附录
-将这一想法从确定性映射发展为连续性和
-Fokker--Planck 方程，Wasserstein 梯度流作为可选
-扩展到分销层面的训练。
+变量变换公式描述样本移动时概率分布怎样变化。本附录从确定性映射推导至连续性方程和福克尔-普朗克方程。选读部分进一步用 Wasserstein 梯度流解释如何在分布层面训练模型。
 }
 
 \begin{figure}[ht!]
@@ -91,22 +84,22 @@ Fokker--Planck 方程，Wasserstein 梯度流作为可选
 
 \end{tikzpicture}
 }
-\caption{A统一\emph{变量替换公式}。从上到下：（1）单双射； (2) 多重双射的复合； (3) 由 ODE 和相关连续性方程控制的连续时间确定性流； (4) 通过 SDE 和相应的 Fokker-Planck 方程模拟随机流。 \figcredit{由作者创建。}}
+\caption{A统一\emph{变量变换公式}。从上到下：（1）单双射； (2) 多重双射的复合； (3) 由 ODE 和相关连续性方程控制的连续时间确定性流； (4) 通过 SDE 和相应的 福克尔-普朗克方程模拟随机流。 \figcredit{由作者创建。}}
 \label{fig:unified_framework_CoV}
 \end{figure}
 
 \newpage
 
-\section{变量替换公式：\\从确定性映射到随机流}\label{sec:cov}
+\section{变量变换公式：\\从确定性映射到随机流}\label{sec:cov}
 
-在本节中，我们的目标是通过类比微积分中的经典变量替换公式来揭开连续性方程和福克-普朗克方程的神秘面纱。我们从熟悉的单变量情况开始，将其扩展到多变量设置和概率密度（\Cref{subsec:cov-det})，然后推广到双射映射的组合，其连续时间极限导致连续性方程 (\Cref{subsec:cov-continuity-eq}）。最后，我们通过引入随机噪声来结合随机性，这自然地将连续性方程扩展到 Fokker-Planck 方程（\Cref{subsec:cov-fpe}).
-
-
+在本节中，我们的目标是通过类比微积分中的经典变量变换公式来揭开连续性方程和福克尔-普朗克方程的神秘面纱。我们从熟悉的单变量情况开始，将其扩展到多变量设置和概率密度（\Cref{subsec:cov-det})，然后推广到双射映射的组合，其连续时间极限导致连续性方程 (\Cref{subsec:cov-continuity-eq}）。最后，我们通过引入随机噪声来结合随机性，这自然地将连续性方程扩展到 福克尔-普朗克方程（\Cref{subsec:cov-fpe}).
 
 
 
-\subsection{确定性映射的变量替换公式}\label{subsec:cov-det}
-我们根据确定性图移动粒子并研究它们如何 \emph{法律} （密度）不断发展。关键原理是概率质量守恒，基于微积分和概率的基本结果：变量替换公式。该公式描述了积分以及概率密度在平滑双射映射下如何变换。为了建立直觉，我们首先考虑单个更新步骤，然后将讨论扩展到顺序转换。
+
+
+\subsection{确定性映射的变量变换公式}\label{subsec:cov-det}
+让粒子按确定性映射移动，并研究粒子的分布及其密度如何变化。关键原理是概率质量守恒，基于微积分和概率的基本结果：变量变换公式。该公式描述了积分以及概率密度在平滑双射映射下如何变换。为了建立直觉，我们首先考虑单个更新步骤，然后将讨论扩展到顺序转换。
 
 
 \paragraph{单个更新。}
@@ -117,7 +110,7 @@ $\bm{\Psi}:\R^D \to \R^D$ 一个时间单位。从初始粒子状态开始 $\rvx
 \]
 
 \paragraph{基础图案（密度）及其移动方式。}
-如果初始状态遵循由密度描述的潜在“法则/模式” $p_0$ (i.e., $\rvx_0\sim p_0$)，然后申请 $\bm{\Psi}$ 产生新的密度 $p_1$ 用于 $\rvx_1$ (i.e., $\rvx_1\sim p_1$）。假设 $\bm{\Psi}$ 是平滑双射， $p_1$ 获取自 $p_0$ 通过标准 \emph{变量替换公式}:
+如果初始状态遵循由密度描述的潜在“法则/模式” $p_0$ (i.e., $\rvx_0\sim p_0$)，然后申请 $\bm{\Psi}$ 产生新的密度 $p_1$ 用于 $\rvx_1$ (i.e., $\rvx_1\sim p_1$）。假设 $\bm{\Psi}$ 是平滑双射， $p_1$ 获取自 $p_0$ 通过标准 \emph{变量变换公式}:
 \begin{mdframed}
 \begin{equation}\label{eq:change-of-variable-density}
 p_{1}(\rvx_1) = p_{0}(\bm{\Psi}^{-1}(\rvx_1)) \cdot \left| \det \left( \frac{\partial \bm{\Psi}^{-1}}{\partial \rvx_1} \right) \right|.
@@ -140,7 +133,7 @@ p_1(\rvx_1)\;=\;p_0(\rmA^{-1}\rvx_1)\,\big|\det \rmA^{-1}\big|.
 \end{array}
 \]
 
-\paragraph{为什么 \Cref{eq:change-of-variable-density} 变量替换公式？}
+\paragraph{为什么 \Cref{eq:change-of-variable-density} 变量变换公式？}
 这直接来自微积分中熟悉的规则。
 
 \subparagraph{单变量情况。}
@@ -148,7 +141,7 @@ p_1(\rvx_1)\;=\;p_0(\rmA^{-1}\rvx_1)\,\big|\det \rmA^{-1}\big|.
 \[
 \int g(y)\,\diff y = \int g(\Psi(x)) \cdot |\Psi'(x)|\,\diff x,
 \]
-哪里 $|\Psi'(x)|$ 补偿间隔拉伸或压缩，确保面积保留。
+其中，$|\Psi'(x)|$ 补偿区间的拉伸或压缩，使区间对应的概率质量保持不变。
 
 \subparagraph{多变量情况。}
 对于 $\bm{\Psi}: \R^D \to \R^D$ 与 $\rvy=\bm{\Psi}(\rvx)$,
@@ -244,11 +237,11 @@ p_t(\rvx)
 \end{align}
 \end{mdframed}
 这里是散度项 $\nabla \cdot (p_t \rvf)$ 测量流动如何局部膨胀或压缩密度，确保总概率保持不变 $1$.该偏微分方程 (PDE) 确保当流体移动粒子时概率质量守恒。  
-事实上，它可以被视为变量替换公式的连续时间模拟。
+事实上，它可以被视为变量变换公式的连续时间模拟。
 
 
-\paragraph{通过变量替换公式推导连续性方程。} 从概念上讲，连续性方程也可以通过取\Cref{eq:cov-multi-layer-nolog}的连续时间极限来获得。然而，这里我们采用基于\Cref{eq:change-of-variable-density}的更直接的推导。
-\subparagraph{离散化和变量替换公式.}
+\paragraph{通过变量变换公式推导连续性方程。} 从概念上讲，连续性方程也可以通过取\Cref{eq:cov-multi-layer-nolog}的连续时间极限来获得。然而，这里我们采用基于\Cref{eq:change-of-variable-density}的更直接的推导。
+\subparagraph{离散化和变量变换公式.}
 考虑 
 \[
 \mathbf{x}_{t+\Delta t} := \bm{\Psi}(\mathbf{x}_t) = \mathbf{x}_t + \Delta t\, \rvf(\mathbf{x}_t, t),
@@ -264,7 +257,7 @@ p_t(\rvx)
 \]
 这使用标准扩展 $\det(\rmI + \Delta t\, \mathbf{A}) = 1 + \Delta t\, \Tr(\mathbf{A}) + \mathcal{O}(\Delta t^2)$ 作为 $\Delta t \to 0$ 以及 $\nabla \cdot \rvf = \Tr(\nabla_{\mathbf{x}} \rvf)$。
 
-应用变量替换公式，对数密度演变为
+应用变量变换公式，对数密度演变为
 \begin{align*}
 \log p_{t+\Delta t}(\mathbf{x}_{t+\Delta t}) = \log p_t(\mathbf{x}_t) - \Delta t\, \nabla \cdot \rvf(\mathbf{x}_t, t) + \mathcal{O}(\Delta t^2).
 \end{align*}
@@ -340,7 +333,7 @@ p_t(\rvx)
 \[
 \dfrac{\diff \rvx(t)}{\diff t} = \rvf(\rvx(t), t)
 \]
-精确产生密度 $p_t$ 通过流映射 $\bm{\Psi}_{0\to t}$。也就是说，当 $p_t$ 和 $\rvf$ 一起满足 \Cref{eq:continuity-cov}。直观地说，可实现性意味着快照 $p_t$ 随着时间的推移，可以用粒子在某些速度场下移动来解释，而不是任意的分布序列。当这个条件成立时，密度 $p_t$ 无非就是初始密度的前推 $p_0$ 沿流映射 $\bm{\Psi}_{0\to t}$。在这种情况下，应用熟悉的变量替换公式：
+精确产生密度 $p_t$ 通过流映射 $\bm{\Psi}_{0\to t}$。也就是说，当 $p_t$ 和 $\rvf$ 一起满足 \Cref{eq:continuity-cov}。直观地说，可实现性意味着快照 $p_t$ 随着时间的推移，可以用粒子在某些速度场下移动来解释，而不是任意的分布序列。当这个条件成立时，密度 $p_t$ 无非就是初始密度的前推 $p_0$ 沿流映射 $\bm{\Psi}_{0\to t}$。在这种情况下，应用熟悉的变量变换公式：
 \begin{align*}
     p_t = \big(\bm{\Psi}_{0\to t}\big)_{\#} p_0 
 = p_0\!\big(\bm{\Psi}_{t\to 0}(\rvx)\big)\,
@@ -393,13 +386,13 @@ p_t(\rvx)=\int p_t(\rvx|\rvz)\pi(\rvz)\diff\rvz.
 
 
 
-\subsection{随机过程：福克-普朗克方程}\label{subsec:cov-fpe}
+\subsection{随机过程：福克尔-普朗克方程}\label{subsec:cov-fpe}
 
 添加噪声时，动态遵循 SDE，如下所示 \Cref{eq:sde}:
 \[
 \diff \rvx(t) = \rvf(\rvx(t), t)\diff t + g(t)\diff \rvw(t).
 \]
-那么，密度 $ p_t(\rvx) $ 满足福克-普朗克方程：
+那么，密度 $ p_t(\rvx) $ 满足福克尔-普朗克方程：
 \begin{mdframed}
     \begin{align*}
     \frac{\partial p_t(\rvx)}{\partial t}
@@ -424,7 +417,7 @@ $\bPsi_{s\to t}(\rvx_s)$。对于 SDE，新的布朗噪声在一段时间后注�
 
 
 
-Fokker-Planck方程的推导比较复杂；我们建议读者参考 \Cref{subsec:rigorous-proof-fpe}.
+福克尔-普朗克方程的推导比较复杂；我们建议读者参考 \Cref{subsec:rigorous-proof-fpe}.
 
 
 
@@ -496,7 +489,7 @@ j_x(x + \Delta x, y, z, t) \Delta y \Delta z.
 这个方程有一个简单的解释：如果 $\nabla\cdot\mathbf{j}(\mathbf{x},t)>0$，流出小盒子的数量多于流入小盒子的数量，因此里面的密度减小。如果 $\nabla\cdot\mathbf{j}(\mathbf{x},t)<0$，流入的数量多于流出的数量，因此内部的密度增加。
 
 
-\subsection{守恒定律连续性方程的推导}
+\subsection{从守恒定律推导连续性方程}
 
 上面的小盒子论证给出了局部直觉。现在，我们在任意控制体积上以无坐标形式编写相同的守恒定律。连续性方程形式化了动态系统中物理量（例如质量或电荷）的守恒。让 $p(\mathbf{x}, t)$ 表示该位置守恒量的密度 $\mathbf{x} \in \mathbb{R}^D$ 和时间 $t \in [0, T]$，让 $\mathbf{v}(\mathbf{x}, t)$ 表示速度场。当数量通过以速度运动的粒子传输时 $\mathbf{v}(\mathbf{x},t)$，通量为
 \[
@@ -580,7 +573,7 @@ p(\mathbf{x}_t,t)\nabla\cdot\mathbf{v}(\mathbf{x}_t,t).
 
 \section{（选读）Wasserstein 梯度流作为分布级训练}
 \label{sec:wgf-distribution-level-training}我们现在从特定于扩散的动态中退一步，采取更广泛的方法
-深度生成建模的分布级视图。  我们已经讨论过连续性方程描述了概率如何
+从分布演化看深度生成模型。  我们已经讨论过连续性方程描述了概率如何
 当其粒子移动时，分布也会移动。   也可以使用相同的语言
 了解深度生成模型的训练：训练算法更新
 模型参数，更新后的生成器移动生成的粒子，以及
@@ -613,7 +606,7 @@ $p_{\bphi}$ 如何处理数据分布 $p_{\mathrm{data}}$。
 \begin{question}
 我们可以先描述一下移动模型分布的理想方式吗
 $p_{\bphi}$朝向$p_{\mathrm{data}}$，然后更新神经网络
-参数以便发电机大致实现该运动？
+参数以便生成器大致实现该运动？
 \end{question}
 
 在整个可选部分中，$\tau$ 表示 \emph{ 训练时间}：
@@ -624,7 +617,7 @@ $p_{\bphi}$朝向$p_{\mathrm{data}}$，然后更新神经网络
 
 \paragraph{通过移动粒子来移动模型分布.}
 在会计之前，我们首先描述理想的分布级别演变
-用于神经发生器的有限维参数化。
+用于神经生成器的有限维参数化。
 假设当前模型分布中的粒子按照
 训练时速度场 $\rvw_\tau$：
 \[
@@ -659,16 +652,9 @@ $p_{\bphi_\tau}$ 朝向 $p_{\mathrm{data}}$。  让
 在移动的几何形状下最直接地减少这种差异
 概率质量。
 
-为了选择速度场，我们首先要问当速度场
-电流分布受到无限小的扰动。  想想
-$\mathcal{D}(p,p_{\mathrm{data}})$作为全球能源的分销
-$p$。  它的第一个变体给出了逐点能量势：它告诉我们
-哪些空间区域对于当前分布而言成本较高，哪些区域
-是有利的。
+为了选取速度场，先考察对当前分布作无穷小扰动时，目标函数如何变化。可将 $\mathcal{D}(p,p_{\mathrm{data}})$ 看作分布 $p$ 的整体能量。它的一阶变分给出定义在空间各点的能量势，指明对当前分布而言，哪些区域代价较高，哪些区域更有利。
 
-具体来说，对于小扰动 $p+\epsilon h$，其中
-$\epsilon>0$ 较小，而 $\int h(\rvx)\diff\rvx=0$，第一个变体是
-定义为
+具体来说，给定小扰动 $p+\epsilon h$，其中 $\epsilon>0$ 很小，且 $\int h(\rvx)\diff\rvx=0$，一阶变分由下式定义。
 \[
     \mathcal{D}(p+\epsilon h,p_{\mathrm{data}})
     =
@@ -729,11 +715,11 @@ $-\nabla_{\rvx}E_\tau$ 给出了降低粒子速度的理想粒子速度
 
 \paragraph{用神经网络实现分布速度。}
 上面的速度是一个分布级别的对象：它表示如何生成
-粒子应该移动。  然而，神经发生器无法移动每个粒子
+粒子应该移动。  然而，神经生成器无法移动每个粒子
 独立。  它只能通过共享参数更新来移动粒子
 $\bphi$。
 
-在训练时间$\tau$，电流发生器产生粒子
+在训练时间$\tau$，当前生成器产生粒子
 \[
     \rvx_i
     =
@@ -793,7 +779,7 @@ Wasserstein 的一个小步骤将这些粒子移动到
 
 \paragraph{Forward-KL训练：数据端似然学习.}
 经典的分布级目标是数据侧或前向 KL
-分歧：
+散度：
 \[
     \mathcal{D}_{\mathrm{FKL}}(p_{\bphi},p_{\mathrm{data}})
     :=
@@ -820,10 +806,10 @@ Wasserstein 的一个小步骤将这些粒子移动到
     \big].
 \]
 这是许多基于似然的模型背后的分布级别视图。
-自回归模型和归一化流优化了精确的可能性；
+自回归模型和归一化流直接优化可精确计算的似然；
 基于似然的 VAE 优化变分下界；能量模型
-通过正向和负向阶段优化可能性；和扩散模型
-可以通过其与可能性或分数匹配代理相关
+通过正相和负相优化似然；和扩散模型
+可以通过其用似然或分数匹配的替代目标来训练
 变分和去噪目标。
 
 从 Wasserstein 梯度流的角度来看，前向 KL 首先
@@ -848,13 +834,13 @@ Wasserstein 的一个小步骤将这些粒子移动到
 该表达式涉及密度比
 $p_{\mathrm{data}}/p_{\bphi_\tau}$，通常很难估计
 对于隐式生成器。在实践中，前向 KL 或最大似然
-当可能性、变分界限或合适时，训练是最直接的
+当似然、变分界或合适时，训练是最直接的
 似然梯度的近似值是可用的。分数匹配
 通过匹配分数提供不同的分布学习途径
 函数而不是直接实现前向 KL Wasserstein 流。
 
 前向KL训练的主要优势在于它是数据覆盖和
-当可能性或变分替代项是统计上有充分依据的
+当似然或变分替代目标是统计上有充分依据的
 可用。  它的局限性在于它通常需要易于处理的密度，
 变分界限、分数匹配替代项或昂贵的负采样，
 这使得它与任意隐式生成器不太直接兼容。
@@ -899,7 +885,7 @@ $p_{\mathrm{data}}/p_{\bphi_\tau}$，通常很难估计
 目前的车型分布已经过于集中。在扩散蒸馏和分布匹配中（参见\Cref{sec:VSD}），这种想法通常是
 适用于噪声水平 $s$。  让 $p_s$ 表示教师或噪声数据
 分布，并让 $p_{\bphi_\tau,s}$ 表示噪声分布
-电流发生器样本。  反向KL目标
+当前生成器样本。  反向KL目标
 \[
     \E_s
     \left[
@@ -943,7 +929,7 @@ $\hat\rvx_s\sim p_{\bphi_\tau,s}$，获得以下形式的梯度
 共享神经参数化，如上所述。这种分数差梯度是基本的分配级别机制
 基于反向 KL 的方法（例如 DMD 和 VSD）背后：估计目标并
 对生成的样本进行模型评分，并使用它们的差异来更新
-发电机。
+生成器。
 
 反向 KL 训练的主要优势在于它与
 一旦可以估计相关分数，就可以使用隐式生成器。  这也是

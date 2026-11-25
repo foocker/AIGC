@@ -1,8 +1,8 @@
 \chapter{微分方程速成}\label{app:de}
 
-微分方程 (DE) 是动态系统建模的基本工具，可大致分为 \emph{ 常微分方程 } (ODE)、\emph{ 随机微分方程 } (SDE) 和 \emph{ 偏微分方程}（偏微分方程）。 
+微分方程 (DE) 是动态系统建模的基本工具，可大致分为 \emph{ 常微分方程 } (ODE)、\emph{ 随机微分方程 } (SDE) 和 \emph{偏微分方程}（PDE）。
 
-ODE 描述了系统的状态如何根据精确的规则随时间变化，因此知道起点就可以准确地确定未来的路径。 SDE 为这种演化增加了随机性，对噪声或不确定性如何影响系统行为进行建模，使结果具有概率性而非固定性。偏微分方程解释了取决于时间和空间等多个变量的函数如何一起演化，捕获热扩散、波移动等现象，或 \emph{ 随机系统中概率密度的时间演化}（剧透：福克-普朗克方程）。这些类型的微分方程形成了一种基本语言，用于理解系统在确定性和随机影响下如何随时间和空间演化。
+ODE 描述了系统的状态如何根据精确的规则随时间变化，因此知道起点就可以准确地确定未来的路径。 SDE 为这种演化增加了随机性，对噪声或不确定性如何影响系统行为进行建模，使结果具有概率性而非固定性。偏微分方程解释了取决于时间和空间等多个变量的函数如何一起演化，捕获热扩散、波移动等现象，或 \emph{ 随机系统中概率密度的时间演化}（如福克尔-普朗克方程）。这些类型的微分方程形成了一种基本语言，用于理解系统在确定性和随机影响下如何随时间和空间演化。
 
 在本章中，我们提供微分方程的基本先决条件。
 
@@ -11,7 +11,7 @@ ODE 描述了系统的状态如何根据精确的规则随时间变化，因此�
 
   \item 使用积分因子来揭示半线性 ODE 的线性结构，并理解为什么这种结构对于扩散 ODE 求解器有用；
 
-  \item 区分单步、多步和时间并行数值观点，并以欧拉、龙格-库塔、亚当斯-巴什福斯和皮卡德迭代为代表；
+  \item 区分单步、多步和时间并行数值观点，并以欧拉、龙格-库塔、亚当斯-巴什福斯和皮卡迭代为代表；
 
   \item 了解 SDE 如何使用布朗噪声扩展确定性动力学，其微分符号如何与 It\^o 积分相关，以及 Euler-Maruyama 如何离散所得的随机动力学。
 }{
@@ -64,47 +64,48 @@ ODE 描述了系统的状态如何根据精确的规则随时间变化，因此�
     如果我们选择一个起点，我们能否确定确实存在一条遵循这些方向的路径？如果存在，那条路径是唯一的，还是粒子会突然跳到不同的轨道上？
 \end{question}
 
-回答这些问题至关重要，因为它告诉我们是否可以从起始位置可靠地预测系统的行为。的 \emph{存在唯一性定理} 提供向量场上的条件，保证从任何给定初始点开始的恰好一条路径。这确保了解的行为一致，并构成了 ODE 理论的基石。  
+要从初始位置可靠地预测系统的行为，就要知道从那里出发的轨迹是否存在、是否唯一。\emph{存在唯一性定理}给出了向量场应满足的条件，是 ODE 理论的基础。
 
 
 \paragraph{局部（时间）存在唯一性定理。}
 
 
-下面，我们声明一个 \emph{本地} 定理的版本，断言给定初始条件的初始时间邻域内解的存在性和唯一性。
+给定初始条件，下面的局部定理保证解在初始时刻的某个邻域内存在且唯一。
 
-\thmp{本地存在且唯一}{ode-local}{
-让 $\mathbf{v}(\mathbf{x}, t)$ 是关于以下的连续函数 $\mathbf{x}$ 和 $t$ 在域中 $D \subseteq \mathbb{R}^D \times \mathbb{R}$。如果 $\mathbf{v}$ 满足 Lipschitz 条件 $\mathbf{x}$:
+\thmp{局部存在唯一性定理}{ode-local}{
+设 $\mathbf{v}(\mathbf{x}, t)$ 在区域 $D \subseteq \mathbb{R}^D \times \mathbb{R}$ 上关于 $\mathbf{x}$ 和 $t$ 连续，并且关于 $\mathbf{x}$ 满足利普希茨条件
 \[
 \|\mathbf{v}(\mathbf{x}_1, t) - \mathbf{v}(\mathbf{x}_2, t)\| \leq L \|\mathbf{x}_1 - \mathbf{x}_2\| \quad \forall (\mathbf{x}_1, t), (\mathbf{x}_2, t) \in D,
 \]
-哪里 $L > 0$ 是一个常数，那么对于每个初始条件 $\mathbf{x}(t_0) = \mathbf{x}_0$，存在唯一解 $\mathbf{x}(t)$ 至 \Cref{eq:general_ode} 在某个间隔上定义 $[t_0 - \delta, t_0 + \delta]$.}{（证明大纲）存在唯一性定理可以使用 Picard-Lindel 建设性地证明\"迭代法。该方法生成一系列函数 $\{\mathbf{x}_n(t)\}$ 收敛到解 $\mathbf{x}(t)$。迭代定义为：
+其中 $L > 0$ 为常数。那么，对每个初始条件 $\mathbf{x}(t_0) = \mathbf{x}_0$，\Cref{eq:general_ode} 在某个区间 $[t_0 - \delta, t_0 + \delta]$ 上存在唯一解 $\mathbf{x}(t)$。}{（证明概要）用 Picard--Lindel\"of 迭代可以构造性地证明该定理。以下迭代生成的函数列 $\{\mathbf{x}_n(t)\}$ 收敛到解 $\mathbf{x}(t)$。
 \[
 \mathbf{x}_{n+1}(t) = \mathbf{x}_0 + \int_{t_0}^t \mathbf{v}(\mathbf{x}_n(s), s) \diff s.
 \]
 \begin{itemize}
-    \item 从初步猜测开始 $\mathbf{x}_0(t) = \mathbf{x}_0$.
-    \item 迭代细化 $\mathbf{x}_n(t)$ 采用积分形式。
-    \item 通过应用收缩映射定理，在 Lipschitz 条件下保证收敛。
+    \item 取初始近似 $\mathbf{x}_0(t) = \mathbf{x}_0$。
+    \item 按上述积分公式逐次更新 $\mathbf{x}_n(t)$。
+    \item 在利普希茨条件下，用巴拿赫不动点定理可证明迭代收敛。
 \end{itemize}
 }
-证明的本质植根于Picard-Lindelöf迭代方法，其核心思想也被利用于 \Cref{sec:picard} 加速扩散模型的采样过程。
+\Cref{sec:picard} 还利用这一迭代思想加速扩散模型采样。
 
 
 \paragraph{全局（时间）存在唯一性定理。}
-虽然局部存在唯一性定理保证了小时间间隔上解的存在性，但“全局（时间）存在唯一性定理”将此结果扩展到整个时间间隔 $[t_0, T]$ 在附加规律性条件下。此类别中的一个众所周知的结果是 \emph{卡拉西奥多里定理}，在两个关键假设下确保 ODE 解的全局存在性和唯一性：状态变量中的局部 Lipschitz 连续性和线性增长界限。\begin{enumerate}[label=(\roman*)]
-    \item \textbfs{ $\mathbf{x}$:} 中的局部 Lipschitz 条件 存在一个函数 $\mathrm{Lip}(t)$，可积在 $[0, T]$ 上，使得对于所有 $\mathbf{x}_1, \mathbf{x}_2 \in \mathbb{R}^D$，
+加上适当的正则性条件，解的存在唯一性可以从初始时刻附近扩展到整个区间 $[t_0, T]$。\emph{卡拉泰奥多里定理}给出了这样一组条件，其中两项关键假设是关于状态变量的局部利普希茨连续性和线性增长界。
+\begin{enumerate}[label=(\roman*)]
+    \item \textbfs{关于 $\mathbf{x}$ 的局部利普希茨条件。} 存在 $[0, T]$ 上可积的函数 $\mathrm{Lip}(t)$，使得对任意 $\mathbf{x}_1, \mathbf{x}_2 \in \mathbb{R}^D$ 均有
     \[
     \|\rvv(\mathbf{x}_1, t) - \rvv(\mathbf{x}_2, t)\| \leq \mathrm{Lip}(t) \|\mathbf{x}_1 - \mathbf{x}_2\|.
     \]
     
-    \item \textbfs{线性增长条件：} 存在一个函数$M(t)$，可积在$[0, T]$上，使得对于所有$\mathbf{x} \in \mathbb{R}^D$，
+    \item \textbfs{线性增长条件。} 存在 $[0, T]$ 上可积的函数 $M(t)$，使得对任意 $\mathbf{x} \in \mathbb{R}^D$ 均有
     \[
     \|\rvv(\mathbf{x}, t)\| \leq M(t)(1 + \|\mathbf{x}\|).
     \]
 \end{enumerate}
 我们建议读者参考 \citep{reid1971ordinary} 来全面讨论该定理的假设、形式陈述和详细证明。
 
-\rmkb{为了将这些定理应用于扩散模型中的概率流ODE（参见\Cref{eq:prob_ode_gt}），可能需要对评分函数$\nabla_\rvx \log p_t(\rvx)$施加额外的假设，例如条件（i）和（ii）。不关注技术细节的读者可以合理地接受这些假设，无需进一步论证。
+\rmkb{为了将这些定理应用于扩散模型中的概率流ODE（参见\Cref{eq:prob_ode_gt}），可能需要对分数函数$\nabla_\rvx \log p_t(\rvx)$施加额外的假设，例如条件（i）和（ii）。不关注技术细节的读者可以合理地接受这些假设，无需进一步论证。
 }
 
 总之，当给与时间相关的速度场定义的 ODE 一个初始条件时，粒子流的轨迹是唯一确定的。
@@ -222,7 +223,7 @@ t_0 := \inf \{ t \in [0,T]|\mathbf{x}_1(t) = \mathbf{x}_2(t) \}.
 两边乘以指数流 $\mathcal{E}(s \shortrightarrow t)$ 得出解：
 \begin{align}\label{eq:exp-int-factor-integration}
     \rvx(t) = \underbrace{\mathcal{E}(s \shortrightarrow t)  \rvx(s)}_{\text{linear part}} + \underbrace{\int_s^t \mathcal{E}(\tau \shortrightarrow t) \rmN(\rvx(\tau), \tau)\diff \tau}_{\text{nonlinear part}} .
-\end{align}该解自然地分为线性和非线性分量。指数积分器通过以精确闭合形式求解线性部分并仅离散化非线性残差来利用这种结构。这确保了步长由非线性动力学决定，而不是由潜在的大线性系数决定（例如，参见 \Cref{sec:prologue-solvers} 中指数欧拉更新和普通欧拉更新之间的比较）。  
+\end{align}该解自然地分为线性和非线性分量。指数积分器通过以精确闭形式求解线性部分并仅离散化非线性残差来利用这种结构。这确保了步长由非线性动力学决定，而不是由潜在的大线性系数决定（例如，参见 \Cref{sec:prologue-solvers} 中指数欧拉更新和普通欧拉更新之间的比较）。
 
 
 \subsection{常微分方程数值求解器}
@@ -375,7 +376,7 @@ h_n=t_{n+1}-t_n<0.
 我们刻意保持清单简短。欧拉举例说明了最简单的
 单步更新；龙格--库塔方法说明了附加的使用
 当前步骤内的阶段；亚当斯--巴什福斯阐释了对过去的重用
-历史；皮卡德迭代说明了背后的定点观点
+历史；皮卡迭代说明了背后的定点观点
 时间并行方法。
 
 在下面的示例中，让
@@ -513,15 +514,15 @@ h
 多步系数取决于相邻步长。这个
 历史重用原则稍后将在特定扩散中再次出现
 多步求解器
-\Cref{sec:exponential,subsec:dpm-solver++-multi}。\paragraph{Picard迭代.}
+\Cref{sec:exponential,subsec:dpm-solver++-multi}。\paragraph{皮卡迭代。}
 上述方法通过构造局部轨迹来近似轨迹
-时间步进更新。皮卡德迭代遵循不同的想法：
+时间步进更新。皮卡迭代遵循不同的想法：
 通过积分形式反复细化整个候选轨迹
 的常微分方程。
 
 从最初的猜测开始
 $\mathbf{x}^{(0)}(t)$ 满意
-$\mathbf{x}^{(0)}(0)=\mathbf{x}(0)$，Picard 迭代定义
+$\mathbf{x}^{(0)}(0)=\mathbf{x}(0)$，皮卡迭代定义
 \[
 \mathbf{x}^{(k+1)}(t)
 =
@@ -534,19 +535,11 @@ $\mathbf{x}^{(0)}(0)=\mathbf{x}(0)$，Picard 迭代定义
 \bigr)
 \diff s.
 \]
-因此，每次迭代都会评估沿前一个候选的速度
-轨迹并使用这些评估来构建新的轨迹。
+每次迭代都沿上一条候选轨迹计算速度，再用这些速度构造新的轨迹。
 
-本次迭代的不动点满足原ODE积分方程。
-在 Picard--Lindel\" 定理的标准条件下，
-迭代局部收敛于 ODE 解。
+这一迭代的不动点满足原 ODE 的积分方程。在 Picard--Lindel\"of 定理的标准条件下，迭代在局部收敛到 ODE 的解。
 
-对于我们后面的目的，重要的观察是计算性的：
-在一次皮卡德迭代中，每次的速度取决于
-\emph{previous} 候选轨迹。不同时间点的评价
-因此可以独立进行，这开启了可能性
-时间并行计算。这一观点将在
-\Cref{sec:picard}。
+一次皮卡迭代中，各个时刻的速度只取决于\emph{上一条}候选轨迹，因此可以在时间维度上并行计算。\Cref{sec:picard} 会用到这个性质。
 
 
 
@@ -812,7 +805,7 @@ $\mathbf{x}^{(0)}(0)=\mathbf{x}(0)$，Picard 迭代定义
     \rvx_{t+\Delta t} = \rvx_t + \rvf(\rvx_t, t)\Delta t + g(t)\sqrt{\Delta t} \cdot \bm{\epsilon}_t,
     \label{eq:euler-sde}
 \end{equation}
-哪里
+其中
 \begin{itemize}
     \item $g: [0,T] \to \mathbb{R}$ 是扩散系数（可能取决于状态和时间，尽管这里假设仅取决于时间），
     \item $\bm{\epsilon}_t \sim \mathcal{N}(\bm{0}, \rmI_D)$ 是独立同分布的标准高斯向量。
@@ -851,13 +844,13 @@ $\mathbf{x}^{(0)}(0)=\mathbf{x}(0)$，Picard 迭代定义
 
 
 
-\subsection{\Cref{eq:sde}}的进一步说明
-\Cref{eq:sde}中的SDE应该理解为\emph{的积分形式}：
+\subsection{关于 \Cref{eq:sde} 的进一步说明}
+\Cref{eq:sde} 中的 SDE 应按其\emph{积分形式}理解。
 \begin{align}\label{eq:sde-integral-form}
     \rvx(t) = \rvx(0) + \int_0^t \rvf(\rvx(s), s) \diff s + \int_0^t g(s) \diff \rvw(s),
 \end{align}
 解释为 \emph{Itô 意义 }。
-这里，第一项是代表累积确定性漂移的经典（黎曼或勒贝格）积分，而第二项是 \emph{Itô 随机积分}，它相对于维纳过程 $ \rvw(t) $ 进行积分。我们不提供伊藤积分的完整严格构造，但提供以下直觉。\paragraph{It\^o积分的直观理解。}
+这里，第一项是代表累积确定性漂移的经典（黎曼或勒贝格）积分，而第二项是 \emph{伊藤随机积分}，它相对于维纳过程 $ \rvw(t) $ 进行积分。我们不提供伊藤积分的完整严格构造，但提供以下直觉。\paragraph{伊藤积分的直观理解。}
 It\^o 积分可以理解为离散和的极限
 形式 \footnote{ 对于平方可积被积函数，这种收敛在 $L^2$ 意义上（均方）成立，这又意味着概率收敛。 $L^2$ 观点是自然的，因为它直接连接到 It\^o 的等距，这是 It\^o 积分的标准和严格构造的关键恒等式。该等距将随机积分与期望的标准积分（$\E\bigl[\bigl\|\int_0^T \bm{\psi}(t)\,\mathrm{d}\rvw_t \bigr\|^2\bigr] = \E\bigl[\int_0^T \|\bm{\psi}(t)\|_F^2\,\mathrm{d}t\bigr]$ 与 Frobenius 范数）联系起来
 $\|\bm{\psi}(t)\|_F^2$）；我们在 \Cref{subsec:rigorous-proof-linear-sde}.} 中声明并使用它
@@ -877,7 +870,7 @@ $\|\bm{\psi}(t)\|_F^2$）；我们在 \Cref{subsec:rigorous-proof-linear-sde}.} 
 \paragraph{微分表示法的使用.}
 $ \diff \rvx(t) $、$ \diff t $ 和 $ \diff \rvw(t) $ 等表达式不是经典微分。相反，它们是表示各个过程的无限小的增量的正式符号。虽然是启发式的，但它们被广泛使用，因为它们可以方便地表达与 ODE 类似的 SDE，并促进伊藤演算中的正式操作。
 
-\Cref{app:Ito} 中将解释 Itô 微积分如何应用于扩散模型。
+\Cref{app:Ito} 中将解释 伊藤微积分如何应用于扩散模型。
 
 
 \paragraph{与常微分方程的比较.}
@@ -895,6 +888,6 @@ $ \diff \rvx(t) $、$ \diff t $ 和 $ \diff \rvw(t) $ 等表达式不是经典�
 
 因此，虽然 SDE 的微分表示法紧凑且直观，但严格的理解取决于使用 Itô 积分通过积分公式来解释它们。
 
-\subsection{SDE 数值求解器。} 与 ODE 一样，SDE \Cref{eq:sde} 承认独特的解决方案\footnote{解决方案在 \emph{强} sense，意思是 $\mathbf{x}(t)$ 满足 SDE 的积分形式（参见 \Cref{eq:sde-integral-form}) 对于给定的布朗运动 $\mathbf{w}(t)$ 在固定概率空间上。我们在此省略详细的技术定义。} 如果 $\mathbf{f}(\cdot, t)$ 和 $g(\cdot)$ 满足一些平滑条件： $\mathbf{f}(\cdot, t)$ 是 Lipschitz 且呈线性增长 $\mathbf{x}$, 和 $g(\cdot)$ 平方可积。对于一般的 SDE，如 \Cref{eq:sde}，闭式解通常不可用，因此需要数值方法。一种常见的方法是 \emph{欧拉-丸山法}，它概括了欧拉常微分方程的方法，事实上，我们已经在 \Cref{eq:euler-sde}。它近似于漂移项 $\rvf(\rvx(t), t)$ 在一个时间步长内 $\Delta t$ 并模拟随机噪声 $g(t) \diff \rvw(t)$ 使用高斯增量 $\sqrt{\Delta t} \, \boldsymbol{\epsilon}_t$ 与 $\boldsymbol{\epsilon}_t \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$。后来，在 \Cref{subsec:rigorous-proof-linear-sde}，我们将看到线性 SDE 承认闭式解。
+\subsection{SDE 数值求解器。} 与 ODE 一样，SDE \Cref{eq:sde} 存在唯一解\footnote{这里说的是\emph{强解}，即 $\mathbf{x}(t)$ 满足 SDE 的积分形式（参见 \Cref{eq:sde-integral-form}) 对于给定的布朗运动 $\mathbf{w}(t)$ 在固定概率空间上。我们在此省略详细的技术定义。} 如果 $\mathbf{f}(\cdot, t)$ 和 $g(\cdot)$ 满足一些平滑条件： $\mathbf{f}(\cdot, t)$ 是 利普希茨 且呈线性增长 $\mathbf{x}$, 和 $g(\cdot)$ 平方可积。对于一般的 SDE，如 \Cref{eq:sde}，闭式解通常不可用，因此需要数值方法。一种常见的方法是 \emph{欧拉-丸山法}，它概括了欧拉常微分方程的方法，事实上，我们已经在 \Cref{eq:euler-sde}。它近似于漂移项 $\rvf(\rvx(t), t)$ 在一个时间步长内 $\Delta t$ 并模拟随机噪声 $g(t) \diff \rvw(t)$ 使用高斯增量 $\sqrt{\Delta t} \, \boldsymbol{\epsilon}_t$ 与 $\boldsymbol{\epsilon}_t \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$。后来，在 \Cref{subsec:rigorous-proof-linear-sde}，我们将看到线性 SDE 承认闭式解。
 
 

@@ -1,9 +1,9 @@
 \chapter{变分视角：从VAE到DDPM}\label{ch:variational}
 
 
-在本章中，我们通过变分透镜来观察扩散模型。我们从变分自编码器（VAE）开始，它表示具有潜变量的数据，并通过最大化对数似然的易处理下界来进行训练。在这种设置中，学习的编码器将观察结果映射到潜变量，学习的解码器将潜变量映射回观察结果，从而关闭建模循环。 
+本章从变分视角介绍扩散模型。变分自编码器（VAE）用潜变量表示数据，训练时最大化一个可计算的对数似然下界。编码器从观测数据推断潜变量，解码器再根据潜变量重建观测数据。
 
-在此模式的基础上，分层变体（分层 VAE）堆叠多个潜在层以捕获多个尺度的结构。通过这种设置，去噪扩散概率模型（DDPM）在概念上遵循类似的模板：编码器被固定为逐渐将数据映射到噪声的前向噪声过程，而不是联合训练编码器和解码器，并且训练学习在连续的去噪步骤中反转该路径的解码器。从这个角度来看，VAE、分层 VAE 和扩散模型都优化了由变分界定义的似然代理，为这里介绍的方法提供了共同的基础。
+分层 VAE 在此基础上引入多层潜变量，用来表示不同尺度的结构。去噪扩散概率模型（DDPM）沿用了类似的结构。它把编码器固定为逐步将数据变成噪声的前向加噪过程，只训练解码器，让它一步步去噪并反转这一过程。VAE、分层 VAE 和 DDPM 的共同点，是用变分下界作为对数似然的替代训练目标。
 
 \chapterlearning{
   \item 了解为什么当精确的最大似然训练很困难时，VAE 会优化 ELBO；
@@ -150,9 +150,9 @@ q_{\bm{\theta}}(\rvz|\rvx) \;\approx\; p_{\bm{\phi}}(\rvz|\rvx).
 
 \subsection{通过证据下界 (ELBO) 进行训练}
 
-我们现在定义一个可计算的训练目标。虽然我们无法直接优化 $\log p_{\bm{\phi}}(\mathbf{x})$，我们可以最大化它的下界—— \emph{证据下限 (ELBO)}:
+我们现在定义一个可计算的训练目标。虽然我们无法直接优化 $\log p_{\bm{\phi}}(\mathbf{x})$，我们可以最大化它的下界—— \emph{证据下界 (ELBO)}:
 
-\thmp{证据下限 (ELBO)}{elbo}{
+\thmp{证据下界 (ELBO)}{elbo}{
 对于任何数据点 $\mathbf{x}$，对数似然满足：
 \[
 \log p_{\bm{\phi}}(\mathbf{x}) \geq \mathcal{L}_{\text{ELBO}}(\bm{\theta}, \bm{\phi}; \mathbf{x}),
@@ -319,7 +319,7 @@ p_{\bm{\phi}}(\mathbf{x}|\mathbf{z}) := \mathcal{N}\bigl(\mathbf{x}; \bm{\mu}_{\
 \subsection{标准VAE的缺点}\label{sec:drawback_standard_VAE}
 尽管 VAE 框架在理论上很有吸引力，但它有一个严重的缺点：它经常产生模糊的输出\footnote{我们在这里研究的限制特定于引入的常见 VAE 设置
 上图：通过平方重建训练的简单高斯解码器
-错误。在此设置中，群体最优解码器返回一个条件
+错误。在此设置中，总体最优解码器返回一个条件
 意思是。如果几个视觉上不同的输入对应于重叠的潜在
 区域，这种平均可能会显得模糊。这不应被解读为
 关于每个 VAE 架构或观察模型的通用声明。}。
@@ -689,7 +689,7 @@ p_i(\rvx_i|\rvx_0) = \mathcal{N}\left(\rvx_i; \bar{\alpha}_i \rvx_0, (1 - \bar{\
 \begin{align}\label{eq:ddpm-forward}
     \rvx_i = \bar{\alpha}_i \rvx_0 + \sqrt{1-\bar{\alpha}_i^2}   \bm{\epsilon}, \quad \bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI).
 \end{align}
-让噪音时间表 $ \{\beta_i\}_{i=1}^L $ 是一个递增序列，则前向过程的边缘分布收敛为
+让噪声时间表 $ \{\beta_i\}_{i=1}^L $ 是一个递增序列，则前向过程的边缘分布收敛为
 \[
 p_L(\mathbf{x}_L | \rvx_0) \longrightarrow \mathcal{N}(\mathbf{0}, \mathbf{I}) \quad \text{as } L \to \infty,
 \]
@@ -716,7 +716,7 @@ DDPM 的核心本质在于它们能够 \emph{反向} 前向扩散过程造成的
 \begin{figure}[tbh!]
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/vdm-backward.pdf}
-\caption{\textbfs{DDPM 逆向（去噪）过程的图示。} 从噪音开始 $\mathbf{x}_L \sim  p_{\mathrm{prior}}$，模型顺序采样 $\mathbf{x}_{i-1} \sim  p(\mathbf{x}_{i-1}|\mathbf{x}_i)$ 用于 $i=L,\ldots,1$ 获取新生成的数据 $\mathbf{x}_0$。甲骨文的转变 $p(\mathbf{x}_{i-1}|\mathbf{x}_i)$ 未知；因此，我们的目标是对其进行近似。
+\caption{\textbfs{DDPM 逆向（去噪）过程的图示。} 从噪声开始 $\mathbf{x}_L \sim  p_{\mathrm{prior}}$，模型顺序采样 $\mathbf{x}_{i-1} \sim  p(\mathbf{x}_{i-1}|\mathbf{x}_i)$ 用于 $i=L,\ldots,1$ 获取新生成的数据 $\mathbf{x}_0$。甲骨文的转变 $p(\mathbf{x}_{i-1}|\mathbf{x}_i)$ 未知；因此，我们的目标是对其进行近似。
 \figcredit{由作者创建。}
 }
 
@@ -729,14 +729,14 @@ DDPM 的核心本质在于它们能够 \emph{反向} 前向扩散过程造成的
 
 指导 DDPM 开发的根本挑战和核心问题就变成了：
 \begin{question}
-我们能否精确计算或至少有效地近似这些反向转换内核 $ p(\mathbf{x}_{i-1}|\mathbf{x}_i) $，特别是考虑到复杂的分布时 $\mathbf{x}_i \sim p_i(\mathbf{x}_i)$?
+我们能否精确计算或至少有效地近似这些反向转移核 $ p(\mathbf{x}_{i-1}|\mathbf{x}_i) $，特别是考虑到复杂的分布时 $\mathbf{x}_i \sim p_i(\mathbf{x}_i)$?
 \end{question}
 
 而不是像最初的 DDPM 论文那样立即深入研究证据下界 (ELBO) 的数学上复杂的推导（对此有待详细讨论） \Cref{subsec:ddpm-elbo}），我们将从更直观的角度来实现训练目标：通过利用条件概率来实现易于处理的公式。 
 
 
 \paragraph{概述：建模和训练目标。} 
-为了启用生成过程，我们的目标是逼近未知的真实反向转换内核， $p(\mathbf{x}_{i-1}|\mathbf{x}_i)$。我们通过引入可学习的参数模型来实现这一目标， $p_{\bm{\phi}}(\mathbf{x}_{i-1}|\mathbf{x}_i)$，并训练它以最小化预期的 KL 散度：
+为了启用生成过程，我们的目标是逼近未知的真实反向转移核， $p(\mathbf{x}_{i-1}|\mathbf{x}_i)$。我们通过引入可学习的参数模型来实现这一目标， $p_{\bm{\phi}}(\mathbf{x}_{i-1}|\mathbf{x}_i)$，并训练它以最小化预期的 KL 散度：
 \begin{align}\label{eq:marginal-kl-matching}
     \mathbb{E}_{p_i(\mathbf{x}_i)} \left[
     \mathcal{D}_{\mathrm{KL}}\big(p(\mathbf{x}_{i-1}|\mathbf{x}_i) \| p_{\bm{\phi}}(\mathbf{x}_{i-1}|\mathbf{x}_i)\big)
@@ -757,13 +757,13 @@ p_i(\rvx_i) = \int p_i(\rvx_i | \rvx_0) p_{\mathrm{data}}(\rvx_0) \mathrm{d}\rvx
     \caption{\textbfs{DDPM中的调节技巧。}
 \textbfs{(左)}
 对于固定噪声样本 $\rvx_i$，逆分布
-$p(\rvx_{i-1}|\rvx_i)$ 对所有可能的干净样品进行平均
+$p(\rvx_{i-1}|\rvx_i)$ 对所有可能的干净样本进行平均
 $\rvx_0$ 可能会产生 $\rvx_i$。因此它可以是一个
 复杂的混合物。
 \textbfs{(右)}
 然而，在训练期间，干净的样本 $\rvx_0$ 用于生成
 $\rvx_i$ 是已知的。对该样本进行调节给出
-$p(\rvx_{i-1}|\rvx_i,\rvx_0)$，具有闭合形式均值和的高斯
+$p(\rvx_{i-1}|\rvx_i,\rvx_0)$，具有闭形式均值和的高斯
 方差。因此，DDPM 可以使用这种易于处理的条件分布
 作为简单的回归目标。虽然每个训练示例条件
 仅在一个干净样本上，对条件训练目标进行平均
@@ -822,7 +822,7 @@ p^*(\mathbf{x}_{i-1}|\mathbf{x}_i) = \mathbb{E}_{p(\mathbf{x}_0|\mathbf{x}_i)} \
 稍后在引理中~\ref{reverse-kernel}，我们提出了一个更通用的公式，该公式超出了 DDPM 噪声过程中描述的范围 \Cref{eq:ddpm-forward}.
 
 
-\subsection{反向转换内核的建模 $p_{\bm{\phi}}(\mathbf{x}_{i-1}|\mathbf{x}_i)$} 利用定理中的梯度级等价~\ref{thm:equiv-marginal-kl} 以及相反条件的高斯形式 $p(\mathbf{x}_{i-1}|\mathbf{x}_i, \mathbf{x})$ 如引理中所示~\ref{ddpm-reverse-kernel}，DDPM 假设每个反向转换 $p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)$ 为高斯分布，参数化为
+\subsection{反向转移核的建模 $p_{\bm{\phi}}(\mathbf{x}_{i-1}|\mathbf{x}_i)$} 利用定理中的梯度级等价~\ref{thm:equiv-marginal-kl} 以及相反条件的高斯形式 $p(\mathbf{x}_{i-1}|\mathbf{x}_i, \mathbf{x})$ 如引理中所示~\ref{ddpm-reverse-kernel}，DDPM 假设每个反向转换 $p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)$ 为高斯分布，参数化为
 \begin{align}\label{eq:def-reverse}
     p_{\bm{\phi}}(\mathbf{x}_{i-1}|\mathbf{x}_i) := \mathcal{N}\big(\mathbf{x}_{i-1}; \bm{\mu}_{\bm{\phi}}(\mathbf{x}_i, i), \sigma^2(i) \mathbf{I}\big),
 \end{align}
@@ -844,7 +844,7 @@ p^*(\mathbf{x}_{i-1}|\mathbf{x}_i) = \mathbb{E}_{p(\mathbf{x}_0|\mathbf{x}_i)} \
 其中 $\rvx_0\sim p_{\mathrm{data}}$。我们注意到前向扰动核 $p_i(\rvx_i | \rvx_0)
 $
 在训练目标中起着重要的计算作用。它给出了噪声状态的分布 $\rvx_i$ 从干净的样品中获得 $\rvx_0$
-之后 $i$ 向前迈出一步。由于每个前向过渡都是线性且高斯分布的，因此它们的组成也具有闭合形式的高斯分布；请参阅周围的讨论 \Cref{eq:ddpm-forward}。因此，选择时间步后 $i$，我们可以取样 $\rvx_i \sim p_i(\rvx_i | \rvx_0)
+之后 $i$ 向前迈出一步。由于每个前向过渡都是线性且高斯分布的，因此它们的组成也具有闭形式的高斯分布；请参阅周围的讨论 \Cref{eq:ddpm-forward}。因此，选择时间步后 $i$，我们可以取样 $\rvx_i \sim p_i(\rvx_i | \rvx_0)
 $
 直接来自 $\rvx_0$，没有首先生成中间状态
 $\rvx_1,\ldots,\rvx_{i-1}$。因此，每个损失项可以仅使用干净的样本、选定的时间步长和直接损坏的样本来估计，从而使随机训练的计算效率更高。
@@ -908,7 +908,7 @@ $\rvx_1,\ldots,\rvx_{i-1}$。因此，每个损失项可以仅使用干净的样
 \begin{equation}\label{eq:ddpm-clean-noise}
     \rvx_i = \bar{\alpha}_i \rvx_{\bm{\phi}}(\rvx_i, i) + \sqrt{1 - \bar{\alpha}_i^2}   \boldsymbol{\epsilon}_{\bm{\phi}}(\rvx_i, i).
 \end{equation}
-也就是说，人们可以预测干净的样本 $\rvx_{\bm{\phi}}(\rvx_i, i)$ 或者噪音 $\boldsymbol{\epsilon}_{\bm{\phi}}(\rvx_i, i)$，这样它们的组合就会重现 $\rvx_i$ 在前向噪声过程下。 
+也就是说，人们可以预测干净的样本 $\rvx_{\bm{\phi}}(\rvx_i, i)$ 或者噪声 $\boldsymbol{\epsilon}_{\bm{\phi}}(\rvx_i, i)$，这样它们的组合就会重现 $\rvx_i$ 在前向噪声过程下。
 
 
 
@@ -1057,7 +1057,7 @@ $\rvx_{i-1} = \bar{\alpha}_{i-1}\,\rvx_0
           估计干净数据
           $\rvx_{\bm{\phi}^\times}(\rvx_i, i)$
           来自当前噪声输入 $\rvx_i$.
-    \item \textbfs{重新噪音。}
+    \item \textbfs{重新噪声。}
           以降低的级别添加回噪 $i{-}1$
           通过 \Cref{eq:ddpm-renoise}，正在制作样品 $\rvx_{i-1}$ 其噪声水平与步骤中的前向过程匹配 $i{-}1$.
 \end{enumerate}
@@ -1089,7 +1089,7 @@ $\rvx_{i-1} = \bar{\alpha}_{i-1}\,\rvx_0
 \section{结束语}\label{sec:ch2_cr}
 
 
-在本章中，我们通过变分透镜追溯了扩散模型的起源。我们从变分自编码器 (VAE) 开始，这是一种基础生成模型，可通过证据下界 (ELBO) 学习数据与结构化潜在空间之间的概率映射。我们看到了分层 VAE (HVAE) 如何通过堆叠潜在层来扩展这一想法，引入渐进式、从粗到细生成的强大概念。然而，这些模型面临着训练稳定性和样本质量的挑战。
+在本章中，我们通过变分视角追溯了扩散模型的起源。我们从变分自编码器 (VAE) 开始，这是一种基础生成模型，可通过证据下界 (ELBO) 学习数据与结构化潜在空间之间的概率映射。我们看到了分层 VAE (HVAE) 如何通过堆叠潜在层来扩展这一想法，引入渐进式、从粗到细生成的强大概念。然而，这些模型面临着训练稳定性和样本质量的挑战。
 
 
 
@@ -1104,7 +1104,7 @@ $\rvx_{i-1} = \bar{\alpha}_{i-1}\,\rvx_0
 虽然这个变分框架为 DDPM 提供了完整而强大的基础，但它并不是理解它们的唯一方法。基于能量的建模原理出现了另一种同样基本的观点。在下一章中，我们将探讨这种基于分数的观点：
 \begin{enumerate}
     \item 我们将把重点从学习去噪转移概率 $p_{\bm{\phi}}(\mathbf{x}_{i-1}\vert\mathbf{x}_{i})$ 转移到直接学习数据对数密度的梯度，即分数函数。
-    \item 我们将看到这种源自 EBM 的方法如何产生噪声条件分数网络 (NCSN)，并揭示在 DDPM 中学习的噪声预测（$\bm{\epsilon}$ 预测）与评分函数本身之间的深层数学等价性。
+    \item 我们将看到这种源自 EBM 的方法如何产生噪声条件分数网络 (NCSN)，并揭示在 DDPM 中学习的噪声预测（$\bm{\epsilon}$ 预测）与分数函数本身之间的深层数学等价性。
 \end{enumerate}
 
 这种替代观点不仅会提供新的见解，而且可以作为后续开发的统一、连续时间扩散模型框架的另一个基石。

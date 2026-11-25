@@ -1,15 +1,15 @@
 {
   "source": "arXiv:2510.21890v3",
   "date": "2026-11-25",
-  "translation_status": "Full-book machine-assisted initial draft; no paragraph-by-paragraph human academic review",
+  "translation_status": "Full-book translation with a terminology and selected-passage review; paragraph-by-paragraph academic review pending",
   "pdf": "principles-diffusion-models-zh.pdf",
-  "pdf_pages": 438,
-  "pdf_sha256": "cad24c081fffa92f7e4ccf865bfaecff617a419ebdc2f923520d492a09bf2096",
+  "pdf_pages": 436,
+  "pdf_sha256": "2b944f79cad7fcfece63edf90dd5b86cb2c37bb9c2f67fd186d1fd7c9e16c2da",
   "original_pdf_pages": 522,
   "chapter_and_appendix_bookmarks": [
     [
       2,
-      "深度生成建模",
+      "深度生成模型",
       19
     ],
     [
@@ -49,7 +49,7 @@
     ],
     [
       2,
-      "用于快速采样的高阶求解器",
+      "扩散快速采样的数值求解器",
       236
     ],
     [
@@ -74,29 +74,29 @@
     ],
     [
       2,
-      "密度演化：从变量替换到Fokker–Planck方程",
+      "密度演化：从变量变换到福克尔-普朗克方程",
       374
     ],
     [
       2,
-      "扩散模型背后的数学：Itô微积分与Girsanov定理",
+      "扩散模型背后的数学：伊藤微积分与吉尔萨诺夫定理",
       390
     ],
     [
       2,
       "补充材料与证明",
-      403
+      401
     ],
     [
       2,
       "参考文献",
-      428
+      426
     ]
   ],
   "missing_glyph_warnings": [],
   "unresolved_reference_or_citation_warnings": [],
   "placeholder_leaks": [],
-  "overfull_hbox_warnings": 1,
+  "overfull_hbox_warnings": 0,
   "content_files": [
     {
       "file": "Preface.tex",
@@ -124,8 +124,8 @@
       },
       "display_math_blocks": 0,
       "display_math_preserved": true,
-      "chinese_characters": 4120,
-      "sha256": "188435b225be53a7a94618b394631edf536e68ca78cb7fdb0ed518d4e447f212"
+      "chinese_characters": 3303,
+      "sha256": "f885d6a76b6735085cd1d418b33b7a9979fdcee9f9bd8c6e933602c2a14dfbe9"
     },
     {
       "file": "notations.tex",
@@ -155,10 +155,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 18,
+      "display_math_blocks": 31,
       "display_math_preserved": true,
-      "chinese_characters": 5396,
-      "sha256": "07170e786c12817ce3c14e4663051935bf07161facd281bbdb25b4480bac279a"
+      "chinese_characters": 4565,
+      "sha256": "172a410165ab7e7379ea4658bd9c3328c4f737b9c05285ed1ae78235acca217e"
     },
     {
       "file": "Chapter-0-Diffusion-High-Level.tex",
@@ -184,10 +184,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 1,
+      "display_math_blocks": 18,
       "display_math_preserved": true,
-      "chinese_characters": 2406,
-      "sha256": "e1fdf1fbdfcfdf2a0662f89aefad88cdbe66ec4d68b0a82514a3b9cc7c8c3560"
+      "chinese_characters": 2074,
+      "sha256": "101476cb1e463d59dac0904d50031f1cf533f3945696e1c71f868244e82344d4"
     },
     {
       "file": "Chapter-1-Varational-Perspective-From-VAE-to-DDPM.tex",
@@ -213,10 +213,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 28,
+      "display_math_blocks": 68,
       "display_math_preserved": true,
-      "chinese_characters": 8864,
-      "sha256": "91a725301f753cd27dae883ac3091162ce9e9a7c004423bdbe4b4440567be3be"
+      "chinese_characters": 8770,
+      "sha256": "426e53c8548fd6be56046fa1eae7296018b9b520f6409a15f40d7686e796a540"
     },
     {
       "file": "Chapter-2-Score-Based-Perspective-From-EBMs-to-NCSN.tex",
@@ -242,10 +242,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 25,
+      "display_math_blocks": 88,
       "display_math_preserved": true,
-      "chinese_characters": 9647,
-      "sha256": "39e937ca913e6de50d0d6b59e4c6afb3df069afe1b7a89e382094689a8eb771f"
+      "chinese_characters": 9576,
+      "sha256": "780b591e0408bea097626d5164ece06d8f95e94993a5caa6f8a324771f0cf31b"
     },
     {
       "file": "Chapter-3-Diffusion-Models-Today-Score-SDE-Framework.tex",
@@ -271,10 +271,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 58,
+      "display_math_blocks": 147,
       "display_math_preserved": true,
-      "chinese_characters": 12298,
-      "sha256": "ae05073bb213432f65c9285563bd9254295472882f3a4ee3493482e256690ec8"
+      "chinese_characters": 12375,
+      "sha256": "c70d2e18e3b9a262a210032d5b864678a6e84033e951a0624a3583390a928f70"
     },
     {
       "file": "Chapter-4-Flow-Based-Perspective-From-NFs-to-Flow-Matching.tex",
@@ -300,10 +300,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 38,
+      "display_math_blocks": 134,
       "display_math_preserved": true,
-      "chinese_characters": 14370,
-      "sha256": "596cf6509d1903156e813a6ebe36d895bf852d6d0467488467b61de25151f04b"
+      "chinese_characters": 14367,
+      "sha256": "ff49ed1a476a63526dfc2d7eb200071d5160acd91a59e0f7d09a15c46ecb4890"
     },
     {
       "file": "Chapter-5-They-Are-All-Equivalent.tex",
@@ -329,10 +329,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 19,
+      "display_math_blocks": 103,
       "display_math_preserved": true,
-      "chinese_characters": 11477,
-      "sha256": "b5a99b8d848e5833ac9b4cd8ad0c9192f4c13141c0319599067f2a5c2c339d14"
+      "chinese_characters": 11426,
+      "sha256": "1f01eb28cd05a8b43a3ecab2d5efeec3ae1f6ee9de3cc6b83068dd9c23e9e3e4"
     },
     {
       "file": "Chapter-4-plus-OT-and-Diffusion-Model.tex",
@@ -358,10 +358,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 29,
+      "display_math_blocks": 97,
       "display_math_preserved": true,
-      "chinese_characters": 12811,
-      "sha256": "57ed3e77377340de61ba7c8bbf8f742f5e621143469adb2f4f17dec3c4dcd3c6"
+      "chinese_characters": 12813,
+      "sha256": "d747b565be92ff9fba578f1ff53f209f5cbf50cc76ea487cf3486cdc1ab256d0"
     },
     {
       "file": "Chapter-6-Guidance.tex",
@@ -387,10 +387,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 37,
+      "display_math_blocks": 99,
       "display_math_preserved": true,
-      "chinese_characters": 11188,
-      "sha256": "4f3eb3510adc2af3579755bf9fe401b24ec7cae69379d303e79775db55ce9143"
+      "chinese_characters": 11050,
+      "sha256": "3fea4fc04a53b10453641b6bd2a3019925dbe451c3494afe88e4aae3c363fafb"
     },
     {
       "file": "Chapter-7-Sophisticated-Solvers-for-Fast-Sampling.tex",
@@ -416,10 +416,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 61,
+      "display_math_blocks": 256,
       "display_math_preserved": true,
-      "chinese_characters": 21968,
-      "sha256": "31b855de5ec561e168981fa400cb74159586bd697cf6fbeb2b55f14b58f7348d"
+      "chinese_characters": 21937,
+      "sha256": "e4fb47c2b54a3ea5046d1783d19f6c48b992c1bf134357bf88dac7da6a7f500b"
     },
     {
       "file": "Chapter-8-Post-Training-Methods-for-Fast-Sampling.tex",
@@ -445,10 +445,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 15,
+      "display_math_blocks": 47,
       "display_math_preserved": true,
-      "chinese_characters": 6585,
-      "sha256": "fad12e99ce2fc248f1da577e392615a21de3300b700d82140f5394b50b5cd1ec"
+      "chinese_characters": 6547,
+      "sha256": "b23565416ba9b084aeaf937a254c97c18ed79c0abd02f0abc3eef0ca2b6be150"
     },
     {
       "file": "Chapter-9-Learning-Fast-Generator-from-Scratch.tex",
@@ -474,10 +474,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 66,
+      "display_math_blocks": 151,
       "display_math_preserved": true,
-      "chinese_characters": 13503,
-      "sha256": "f7fc63abd7057d95600ba6d29f63b102654838a666b800e04b49c38be1a51c86"
+      "chinese_characters": 13535,
+      "sha256": "b40e089bda87e99eba6543c674be81f2d3b5cd6042a3c0925abfbd812c3c3001"
     },
     {
       "file": "Chapter-10-Epilogue-and-Outlook.tex",
@@ -503,10 +503,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 8,
+      "display_math_blocks": 44,
       "display_math_preserved": true,
-      "chinese_characters": 11822,
-      "sha256": "c7aed957a2fede8ed01d0d51979b53f0f22f609710dd8533c99eed39adfc3536"
+      "chinese_characters": 11796,
+      "sha256": "acf0c6e555cfb9efb822760c3199bb83f82496d6882f3ec5b509df2de310c505"
     },
     {
       "file": "A_Crash-Course-of-DE.tex",
@@ -532,10 +532,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 13,
+      "display_math_blocks": 52,
       "display_math_preserved": true,
-      "chinese_characters": 5898,
-      "sha256": "523f59fb02a3613f607fee14f3c422d32cb3f46eaa09bbb38837ba761ac731f6"
+      "chinese_characters": 5767,
+      "sha256": "a08f51dea00a2e6a2ece3e9efd7bd24a0562187f15ca94d3ea12018805818009"
     },
     {
       "file": "B_Continuity-Equation.tex",
@@ -561,10 +561,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 14,
+      "display_math_blocks": 87,
       "display_math_preserved": true,
-      "chinese_characters": 5971,
-      "sha256": "5baaac61f5cc8bb45b5d42eabc1f4cdad8d03eefae47c586080484993889ab9b"
+      "chinese_characters": 5944,
+      "sha256": "e61fab2d2400ba857729a00f35eb43314beb0a6de5c2a17ea87a18e174866e6b"
     },
     {
       "file": "C_SDE-and-Ito.tex",
@@ -590,10 +590,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 16,
+      "display_math_blocks": 63,
       "display_math_preserved": true,
-      "chinese_characters": 3889,
-      "sha256": "7a76768cecd1bcbd14ef7ddbe56aa802321ccdc72fa905a60504fa2861d0ef26"
+      "chinese_characters": 3700,
+      "sha256": "9fa5908f20383e5fa7450b0f1910a28564b705e326d41cc5b38b1e8ac8b2b875"
     },
     {
       "file": "D_Proofs.tex",
@@ -619,10 +619,10 @@
           "same_sequence": true
         }
       },
-      "display_math_blocks": 74,
+      "display_math_blocks": 187,
       "display_math_preserved": true,
-      "chinese_characters": 4347,
-      "sha256": "59ce31bd9b98c4a7b9d385aa3773c00ab1cb9c04f08f576aef2e32b6f40b95de"
+      "chinese_characters": 4341,
+      "sha256": "2d881e7b3da8e598e927ac209ee3c91084cfa9b3acfeab702d7ea9ff00108d88"
     }
   ],
   "editorial_changes": [
@@ -634,18 +634,5 @@
     "Wider text block for long formulas",
     "One mathrm reference changed to text for Chinese glyphs"
   ],
-  "original_figures_and_bibliography_kept_in_original_language": true,
-  "rendered_visual_review_pdf_pages": [
-    6,
-    15,
-    16,
-    17,
-    64,
-    78,
-    233,
-    260,
-    269,
-    438
-  ],
-  "layout_note": "One 2.09pt overfull box remains in a footnote; within the physical page margins. Final rendered samples show no clipping or overlapping text."
+  "original_figures_and_bibliography_kept_in_original_language": true
 }

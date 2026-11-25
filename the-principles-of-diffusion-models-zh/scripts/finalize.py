@@ -6,7 +6,7 @@ from pathlib import Path
 from translate import ROOT, SOURCE, DEST, TEX_FILES, protect, strip_comments
 
 CHAPTERS = {
- 'Prologue-Deep-Generative-Modeling.tex': '深度生成建模',
+ 'Prologue-Deep-Generative-Modeling.tex': '深度生成模型',
  'Chapter-1-Varational-Perspective-From-VAE-to-DDPM.tex': '变分视角：从VAE到DDPM',
  'Chapter-2-Score-Based-Perspective-From-EBMs-to-NCSN.tex': '分数视角：从能量模型到NCSN',
  'Chapter-3-Diffusion-Models-Today-Score-SDE-Framework.tex': '当代扩散模型：分数SDE框架',
@@ -14,13 +14,13 @@ CHAPTERS = {
  'Chapter-5-They-Are-All-Equivalent.tex': '扩散模型的统一与系统视角',
  'Chapter-4-plus-OT-and-Diffusion-Model.tex': '扩散模型与最优传输（选读）',
  'Chapter-6-Guidance.tex': '引导与可控生成',
- 'Chapter-7-Sophisticated-Solvers-for-Fast-Sampling.tex': '用于快速采样的高阶求解器',
+ 'Chapter-7-Sophisticated-Solvers-for-Fast-Sampling.tex': '扩散快速采样的数值求解器',
  'Chapter-8-Post-Training-Methods-for-Fast-Sampling.tex': '基于蒸馏的快速采样方法',
  'Chapter-9-Learning-Fast-Generator-from-Scratch.tex': '从头学习快速生成器',
  'Chapter-10-Epilogue-and-Outlook.tex': '结语与展望',
  'A_Crash-Course-of-DE.tex': '微分方程速成',
- 'B_Continuity-Equation.tex': '密度演化：从变量替换到Fokker--Planck方程',
- 'C_SDE-and-Ito.tex': '扩散模型背后的数学：Itô微积分与Girsanov定理',
+ 'B_Continuity-Equation.tex': '密度演化：从变量变换到福克尔-普朗克方程',
+ 'C_SDE-and-Ito.tex': '扩散模型背后的数学：伊藤微积分与吉尔萨诺夫定理',
  'D_Proofs.tex': '补充材料与证明',
 }
 MATH_BLOCK = re.compile(r'\\begin\{(equation\*?|align\*?|alignat\*?|gather\*?|multline\*?|eqnarray\*?|flalign\*?|displaymath|math|tikzpicture|pspicture|verbatim|lstlisting)\}.*?\\end\{\1\}', re.S)

@@ -14,14 +14,27 @@ def tokens(s, command):
 
 def math_blocks(s):
     from finalize import MATH_BLOCK
-    out=[]
-    visible=re.sub(r'(?m)(?<!\\)%[^\n]*',lambda m:' '*len(m[0]),s)
-    for m in MATH_BLOCK.finditer(visible):
-        if m[1] not in ('tikzpicture','pspicture','verbatim','lstlisting'):
-            block=strip_comments(s[m.start():m.end()])
-            # A text-mode reference is a typography fix, not an equation edit.
-            block=re.sub(r'\\(?:mathrm|text)\{(\\Cref\{[^}]+\})\}',r'\1',block)
-            out.append(re.sub(r'\s+','',block))
+
+    visible = re.sub(r'(?m)(?<!\\)%[^\n]*', lambda m: ' ' * len(m[0]), s)
+    excluded = ('tikzpicture', 'pspicture', 'verbatim', 'lstlisting')
+    named_blocks = list(MATH_BLOCK.finditer(visible))
+    # Mask named environments before finding bracketed displays, so a line
+    # break with optional spacing inside a named block cannot be a match.
+    outside = list(visible)
+    for match in named_blocks:
+        outside[match.start():match.end()] = ' ' * len(match[0])
+    bracketed = re.finditer(r'(?<!\\)\\\[.*?(?<!\\)\\\]', ''.join(outside), re.S)
+    displays = sorted(
+        [match for match in named_blocks if match[1] not in excluded] + list(bracketed),
+        key=lambda match: match.start(),
+    )
+    out = []
+    for match in displays:
+        block = strip_comments(s[match.start():match.end()])
+        # The translated reference and introductory prose leave the formula intact.
+        block = re.sub(r'\\(?:mathrm|text)\{(\\Cref\{[^}]+\})\}', r'\1', block)
+        block = re.sub(r'\\text\{\s*(?:where|其中)\s*\}', r'\\text{where}', block)
+        out.append(re.sub(r'\s+', '', block))
     return out
 
 
@@ -55,7 +68,7 @@ def main():
     missing=re.findall(r'Missing character[^\n]*',log)
     unresolved=re.findall(r'[^\n]*(?:undefined on input|undefined references|Citation .+ undefined|multiply defined)[^\n]*',log)
     leaks=[x for x in ['ZXQ','QXZ','TODO:','本小节内容将在后续任务中添加'] if x in alltext]
-    report={'source':'arXiv:2510.21890v3','date':'2026-11-25','translation_status':'Full-book machine-assisted initial draft; no paragraph-by-paragraph human academic review',
+    report={'source':'arXiv:2510.21890v3','date':'2026-11-25','translation_status':'Full-book translation with a terminology and selected-passage review; paragraph-by-paragraph academic review pending',
             'pdf':pdf.name,'pdf_pages':len(doc),'pdf_sha256':hashlib.sha256(pdf.read_bytes()).hexdigest(),
             'original_pdf_pages':len(pymupdf.open(ROOT/'original/principles-diffusion-models-v3-en.pdf')),
             'chapter_and_appendix_bookmarks':[x for x in doc.get_toc() if x[0]==2],

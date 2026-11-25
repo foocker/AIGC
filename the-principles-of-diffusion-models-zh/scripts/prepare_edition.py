@@ -59,7 +59,7 @@ SUPPORT = {
 DIAGRAMS = {
     'Variational \\\\Autoencoder': '变分\\\\自编码器',
     'Energy-Based Model': '能量模型', 'Normalizing Flows': '归一化流',
-    'Overview of Deep Generative Modeling': '深度生成建模概览',
+    'Overview of Deep Generative Modeling': '深度生成模型概览',
     'Variational View': '变分视角', 'Score-Based View': '分数视角', 'Flow-Based View': '流视角',
     'Denoising Diffusion\\\\Probabilistic Model': '去噪扩散\\\\概率模型',
     'Noise Conditional\\\\Score Network': '噪声条件\\\\分数网络',
@@ -108,7 +108,7 @@ def main():
     b = s.index('\\end{acknowledgements}', a) + len('\\end{acknowledgements}')
     s = s[:a] + FRONT + s[b:]
     parts = {
-        'Introduction to Deep Generative Modeling': '深度生成建模导论',
+        'Introduction to Deep Generative Modeling': '深度生成模型导论',
         'Foundations and Perspectives of Diffusion Models': '扩散模型的基础与视角',
         'Sampling of Diffusion Models': '扩散模型的采样',
         'Toward Learning Fast Diffusion-Based Generators': '学习快速的扩散生成器',
