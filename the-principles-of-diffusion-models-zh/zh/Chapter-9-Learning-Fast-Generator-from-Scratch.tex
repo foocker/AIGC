@@ -194,7 +194,7 @@ $\rvx_s$ 在时间 $s$ 并将其直接传输到时间 $t$：
 \rmG_{\btheta}(\rvx_s,s,t)
 := \frac{t}{s}\,\rvx_s + \frac{s-t}{s}\,\rvg_\btheta(\rvx_s,s,t),
 \]
-哪里 $\rvg_\btheta$ 是一个经过训练的神经网络 $\bPsi_{s\to t}(\rvx_s)\approx \rmG_{\btheta}(\rvx_s,s,t)$。自从神谕 $\bPsi_{s\to t}(\rvx_s)$ 无法访问，CTM针对a进行训练 \emph{停止渐变} 在中间时间评估的目标 $u$:
+其中 $\rvg_\btheta$ 是一个经过训练的神经网络 $\bPsi_{s\to t}(\rvx_s)\approx \rmG_{\btheta}(\rvx_s,s,t)$。自从神谕 $\bPsi_{s\to t}(\rvx_s)$ 无法访问，CTM针对a进行训练 \emph{停止渐变} 在中间时间评估的目标 $u$:
 \[
 \bPsi_{s\to t}(\rvx_s)
  \approx 
@@ -386,7 +386,7 @@ $u=s-\Delta s$ 中的 \Cref{eq:semi-group}）。
     &\approx \rvf_{\btheta^-} \left(\bPsi_{s\to s-\Delta s}(\rvx_s),\,s-\Delta s\right), 
     \qquad \Delta s > 0,
 \end{align*}
-哪里 $\bm{\theta}^-$ 是停止梯度算子下的参数。另一个困难是中间状态 $\bPsi_{s\to s-\Delta s}(\rvx_s)$ 也没有闭合形式，其本身必须是近似的。提出了两种实用的制度：
+其中 $\bm{\theta}^-$ 是停止梯度算子下的参数。另一个困难是中间状态 $\bPsi_{s\to s-\Delta s}(\rvx_s)$ 也没有闭合形式，其本身必须是近似的。提出了两种实用的制度：
 
 \paragraph{具有预先训练的扩散模型（稠度蒸馏）。}
 假设我们可以访问预先训练的扩散模型。一致性蒸馏（CD）利用教师模型来近似中间状态 $\bPsi_{s\to s-\Delta s}(\rvx_s)$ 通过仅模拟单个向后 ODE 步骤：
@@ -454,7 +454,7 @@ $\rvs_{\bm{\phi}^\times}(\rvx_s, s) \approx \nabla_{\rvx_s}\log p_s(\rvx_s)$。�
 &= \alpha_{s'}\rvx_0+\sigma_{s'}\beps, 
 \end{aligned}
 \end{align}
-哪里\footnote{最后一个恒等式直接来自前向扰动过程 $\rvx_s=\alpha_s \rvx_0+\sigma_s \beps$ 通过初等代数。}
+其中\footnote{最后一个恒等式直接来自前向扰动过程 $\rvx_s=\alpha_s \rvx_0+\sigma_s \beps$ 通过初等代数。}
 $\rvx_0$ 是相同的数据样本 $\beps$ 与用于构造的高斯噪声相同 $\rvx_s$。这导致了预言机目标的无教师离散时间代理 $\mathcal{L}_{\methodl{oracle}{CM}}$，写为
 \begin{mdframed}
 \begin{align}\label{eq:ct-discrete-approx-N}
@@ -517,7 +517,7 @@ $\mathcal{O}(\Delta s^2)$，如下形式化。
 \mathcal{L}_{\mathrm{CT}}(\btheta,\btheta^-)
 &:= \E_{s,\rvx_0,\beps} \big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\rvx_{s'},s')\big)\big],
 \end{align*}
-哪里
+其中
 \[
 \rvx_{s'}^{\mathrm{DDIM}}
 := \frac{\alpha_{s'}}{\alpha_s}\rvx_s
@@ -560,7 +560,7 @@ $\mathcal{L}_{\mathrm{CT}}
       + c_{\mathrm{out}}(s)\,
         \rmF_{\bm{\theta}} \left(c_{\mathrm{in}}(s)\,\rvx,\, c_{\mathrm{noise}}(s)\right),
 \]
-哪里 $\rmF_{\bm{\theta}}$ 是一个神经网络，系数如下
+其中 $\rmF_{\bm{\theta}}$ 是一个神经网络，系数如下
 \Cref{eq:edm-simple-coefficients}。该参数化具有重要的边界性质
 \[
     \rvf_{\bm{\theta}}(\rvx, 0) = \rvx,
@@ -1208,7 +1208,7 @@ $(\alpha_t,\sigma_t)=(1,t)$ 或 $(1-t,t)$，扩散时间中的普通欧拉步骤
 = \rvx_s - (s-t)\,\frac{\rvx_s - \E[\rvx|\rvx_s]}{s}
 = \frac{t}{s}\,\rvx_s + \Big(1 - \frac{t}{s}\Big)\E[\rvx|\rvx_s],
 \]
-哪里 $\rvx_{s\to t}^{\mathrm{Euler}}$ 在时间上的近似解 $t$ 给定状态 $\rvx_s$ 当时 $s$。虽然 EDM 设置提供了一个简单的说明性案例，但 CTM 允许由任意线性高斯前向内核定义的更广泛的噪声调度 $(\alpha_t, \sigma_t)$ 
+其中 $\rvx_{s\to t}^{\mathrm{Euler}}$ 在时间上的近似解 $t$ 给定状态 $\rvx_s$ 当时 $s$。虽然 EDM 设置提供了一个简单的说明性案例，但 CTM 允许由任意线性高斯前向内核定义的更广泛的噪声调度 $(\alpha_t, \sigma_t)$ 
 并表示 PF-ODE $\rvv$-预测形式：
 \[
 \bPsi_{s\to t}(\rvx_s)
@@ -1236,7 +1236,7 @@ $(\alpha_t,\sigma_t)=(1,t)$ 或 $(1-t,t)$，扩散时间中的普通欧拉步骤
     \rmG_{\btheta}(\rvx_s,s,t)
 := \frac{t}{s}\,\rvx_s + \frac{s-t}{s}\,\rvg_{\btheta}(\rvx_s,s,t),
 \end{align}
-哪里 $\rvg_{\btheta}$ 是一个神经网络，旨在 $\rvg_{\btheta} \approx \rvg^*$，因此 $\rmG_{\btheta}(\rvx_s,s,t)$ 经过训练以近似预言机流映射，
+其中 $\rvg_{\btheta}$ 是一个神经网络，旨在 $\rvg_{\btheta} \approx \rvg^*$，因此 $\rmG_{\btheta}(\rvx_s,s,t)$ 经过训练以近似预言机流映射，
 \[
 \rmG_{\btheta}(\rvx_s,s,t) \approx \bPsi_{s\to t}(\rvx_s).
 \]
@@ -1334,7 +1334,7 @@ $u \sim \mathcal{U}[t,s)$，然后让学生从 $u$ 至 $t$:
  \approx 
 \underbrace{\mathbf{G}_{\bm{\theta}^-} \big(\mathtt{Solver}_{s\to u}(\rvx_s;\bm{\phi}^\times), u, t\big)}_{\approx\, \bPsi_{u\to t}(\bPsi_{s\to u}(\rvx_s))},
 \end{align}
-哪里 $\bm{\theta}^-$ 是停止梯度副本 $\mathbf{G}_{\bm{\theta}}$。通过改变 $u$，CTM 在全局和局部监督之间进行插值：
+其中 $\bm{\theta}^-$ 是停止梯度副本 $\mathbf{G}_{\bm{\theta}}$。通过改变 $u$，CTM 在全局和局部监督之间进行插值：
 \begin{itemize}
     \item \textbfs{全球一致性} ($u=t$): 老师在整个区间内解决了 $s\to t$，因此目标减少到一次完整的教师过渡 $t$.
 
@@ -1391,7 +1391,7 @@ $\rvg_{\bm{\theta}^-}(\cdot,\tau,\tau)$ 准确恢复目标局部动态。下面�
  \approx 
 \underbrace{\mathbf{G}_{\bm{\theta}^-} \big(\mathtt{Solver}_{s\to u}(\rvx_s;\bm{\theta}^-),\, u,\, t\big)}_{\approx\, \bPsi_{u\to t}(\bPsi_{s\to u}(\rvx_s))},
 \]
-哪里 $u \sim \mathcal{U}[t,s)$ 和 $\bm{\theta}^-$ 是学生的停止梯度副本。蒸馏的唯一变化是外部老师
+其中 $u \sim \mathcal{U}[t,s)$ 和 $\bm{\theta}^-$ 是学生的停止梯度副本。蒸馏的唯一变化是外部老师
 $\rvv_{\bm{\phi}^\times}$ 被自诱导老师取代
 $\rvg_{\bm{\theta}^-}$。为了将轨迹匹配与样本质量结合起来，两个预测都映射到时间 $0$ 使用停止梯度学生并在特征空间中进行比较。没有任何预训练模型的目标是
 \[
@@ -1471,7 +1471,7 @@ $\mathcal L_{\mathrm{DM}}$ 提高准确度 $t$ 接近 $s$ 通过明确监督沿�
 $D_{\bm{\zeta}}$ 区分真实的 $\rvx_{0}\sim p_{\mathrm{data}}$ 来自生成 $\rvx_{\mathrm{est}}(\rvx_{s},s,t)$，目标是
 \begin{align*} 
 &\mathcal{L}_{\mathrm{GAN}}(\bm{\theta}, \bm{\zeta}) := \\ &\mathbb{E}_{\mathbf{x}_0} \big[\log D_{\bm{\zeta}}(\mathbf{x}_0)\big] + \mathbb{E}_{s \in [0, T]} \mathbb{E}_{t \in [0, s]} \mathbb{E}_{\mathbf{x}_0} \mathbb{E}_{\mathbf{x}_s \vert \mathbf{x}_0} \big[\log (1 - D_{\bm{\zeta}}( \mathbf{x}_{\mathrm{est}}(\mathbf{x}_s, s, t)))\big], \end{align*}
-哪里 $D_{\bm{\zeta}}$ 最大化并且 $\rmG_{\bm{\theta}}$ 已最小化。直观上，鉴别器充当自适应感知距离，鼓励现实细节。理论上，GAN 项驱动之间的分布匹配（詹森-香农散度） $p_{\mathrm{data}}$ 以及由以下引起的模型分布 $\rmG_{\bm{\theta}}$~\citep{goodfellow2014generative}，可以提高超出老师的保真度。
+其中 $D_{\bm{\zeta}}$ 最大化并且 $\rmG_{\bm{\theta}}$ 已最小化。直观上，鉴别器充当自适应感知距离，鼓励现实细节。理论上，GAN 项驱动之间的分布匹配（詹森-香农散度） $p_{\mathrm{data}}$ 以及由以下引起的模型分布 $\rmG_{\bm{\theta}}$~\citep{goodfellow2014generative}，可以提高超出老师的保真度。
 
 \paragraph{总体 CTM 目标。}
 总之，CTM 将（自）蒸馏、扩散和 GAN 损失统一到一个训练框架中：

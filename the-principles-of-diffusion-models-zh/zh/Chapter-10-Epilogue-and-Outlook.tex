@@ -401,7 +401,7 @@ $[t,\,t{+}\Delta t]$.
 \;=\; \rmI + \rmQ_t\,\Delta t + \mathcal{O}(\Delta t^2),
 \label{eq:generator-expansion}
 \end{equation}
-哪里 $\rmQ_t \in \R^{K \times K}$ 是 \emph{速率矩阵}，也称为生成器，当时 $t$。如果 $\rmQ_t$ 在时间上足够规则，余数可以写为 $\mathcal{O}(\Delta t^2)$ 本地。的条目 $\rmQ_t$ 是瞬时的
+其中 $\rmQ_t \in \R^{K \times K}$ 是 \emph{速率矩阵}，也称为生成器，当时 $t$。如果 $\rmQ_t$ 在时间上足够规则，余数可以写为 $\mathcal{O}(\Delta t^2)$ 本地。的条目 $\rmQ_t$ 是瞬时的
 \emph{费率} 而不是概率。具体来说：
 \begin{itemize}[leftmargin=2em]
     \item $[\rmQ_t]_{ij} \geq 0$ 用于 $i \neq j$: 这是进程从状态跳转的速率~$\rve_i$ 说明~$\rve_j$。乘以 $\Delta t$ 给出短间隔内的前导跳跃概率。
@@ -500,7 +500,7 @@ $\bm{\pi}_{\mathrm{unif}}=\frac{1}{K}\mathbf{1}$。  一代人逆转了
       = \mathrm{Cat}\bigl(\rvx_t;\;
           \alpha_t\,\rvx_0 + (1-\alpha_t)\,\rvm\bigr),
       \]
-      哪里
+      其中
       \[
       \alpha_t
       =
@@ -530,7 +530,7 @@ $\bm{\pi}_{\mathrm{unif}}=\frac{1}{K}\mathbf{1}$。  一代人逆转了
           \alpha_t\,\rvx_0 + (1-\alpha_t)\,\bm{\pi}_{\mathrm{unif}}
         \bigr),
       \]
-      哪里
+      其中
       $\bm{\pi}_{\mathrm{unif}}=\tfrac{1}{K}\mathbf{1}\in\R^K$ 是
       均匀概率向量。  在上述速率标准化下，
       衰减因子是
@@ -571,7 +571,7 @@ $\Pr(\rvx_{k-1}|\rvx_k, \rvx_0)$ 是封闭形式的高斯，并且定理~\ref{th
 \rvx_0 \;\xrightarrow{\;\rmP_0\;}\; \rvx_1 \;\xrightarrow{\;\rmP_1\;}\;
 \cdots \;\xrightarrow{\;\rmP_{L-1}\;}\; \rvx_L,
 \]
-哪里 $\rvx_0$ 从数据分布中得出 $\rvx_L$ 接近简单的参考分布，例如全掩模或均匀分布。现在，转换是分类的而不是高斯的，但变分结构是相同的：
+其中 $\rvx_0$ 从数据分布中得出 $\rvx_L$ 接近简单的参考分布，例如全掩模或均匀分布。现在，转换是分类的而不是高斯的，但变分结构是相同的：
 \begin{itemize}[leftmargin=2em]
     \item 真正的相反 $p(\rvx_{k-1}|\rvx_k)$ 很棘手，因为它取决于步长的边缘~$k$.
     \item 调节 $\rvx_0$ 通过贝叶斯规则使前后可处理：

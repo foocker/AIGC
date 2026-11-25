@@ -1839,11 +1839,11 @@ PF-ODE，而其他预测类型代表相同的预言机
 \[
 p_t(\rvx_t|\rvx_0) = \mathcal{N}(\rvx_t; \alpha_t \rvx_0, \sigma_t^2 \rmI),
 \]
-哪里 $\rvx_0 \sim p_{\mathrm{data}}$。这种条件分布会产生边缘密度路径 $p_t(\rvx_t) = \mathbb{E}_{\rvx_0 \sim p_{\mathrm{data}}}[p(\rvx_t|\rvx_0)]$ 像往常一样，与 $p_T\approx p_{\mathrm{prior}}$。为了匹配此密度路径，请考虑 ODE
+其中 $\rvx_0 \sim p_{\mathrm{data}}$。这种条件分布会产生边缘密度路径 $p_t(\rvx_t) = \mathbb{E}_{\rvx_0 \sim p_{\mathrm{data}}}[p(\rvx_t|\rvx_0)]$ 像往常一样，与 $p_T\approx p_{\mathrm{prior}}$。为了匹配此密度路径，请考虑 ODE
 \begin{align}\label{eq:ode-velocity}
     \frac{\diff\rvx(t)}{\diff t} = \mathbf{v}_t(\rvx(t)), \quad t \in [0,T],
 \end{align}
-哪里 $\mathbf{v}_t(\rvx) =\E\left[\alpha_t'\rvx_0+\sigma_t'\beps|\rvx\right]$ 是预言机速度，如图所示 \Cref{eq:marginal-oracle-velocity} （注意时间被翻转以遵循扩散模型约定）。整合 \eqref{eq:ode-velocity} 从 $\rvx(T)\sim p_{\mathrm{prior}}$ 产生样本 $p_0$.
+其中 $\mathbf{v}_t(\rvx) =\E\left[\alpha_t'\rvx_0+\sigma_t'\beps|\rvx\right]$ 是预言机速度，如图所示 \Cref{eq:marginal-oracle-velocity} （注意时间被翻转以遵循扩散模型约定）。整合 \eqref{eq:ode-velocity} 从 $\rvx(T)\sim p_{\mathrm{prior}}$ 产生样本 $p_0$.
 
 虽然此 ODE 足以生成高质量样本，但纳入随机性可能会提高样本多样性。这引发了以下问题：
 \begin{question}

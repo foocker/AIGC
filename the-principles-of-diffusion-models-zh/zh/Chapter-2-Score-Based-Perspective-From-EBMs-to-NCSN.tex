@@ -262,7 +262,7 @@
 \log p(\rvx) 
 = \log p(\rvx_0) + \int_0^1 \rvs(\rvx_0 + t(\rvx - \rvx_0))^\top (\rvx - \rvx_0)  \diff t,
 \]
-哪里 $\rvx_0$ 是参考点并且 $\log p(\rvx_0)$ 通过标准化修复。因此，对分数进行建模与建模一样具有表现力 $p(\rvx)$ 本身，虽然通常更容易进行生成建模。
+其中 $\rvx_0$ 是参考点并且 $\log p(\rvx_0)$ 通过标准化修复。因此，对分数进行建模与建模一样具有表现力 $p(\rvx)$ 本身，虽然通常更容易进行生成建模。
 
 
 \subsection{通过分数匹配训练 EBM}\label{subsec:training-ebm}
@@ -284,7 +284,7 @@
 + \tfrac{1}{2}  \|\nabla_{\mathbf{x}} E_{\bm{\phi}}(\rvx)\|_2^2
 \right] + C,
 \]
-哪里 $\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}(\rvx)$ 是 Hessian 矩阵 $E_{\bm{\phi}}$ 和 $C$ 是一个独立于 $\bm{\phi}$。这种公式很有吸引力，因为它消除了配分函数并避免在训练期间从模型中采样。它的主要缺点是需要二阶导数：尽管只需要 Hessian 矩阵的迹（$\Tr \big(\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}\big)$)，而不是完整的 Hessian 矩阵，该项的精确计算通常需要聚合输入坐标上的二阶导数信息，因此其成本通常随着输入维度的增加而增加 $D$。我们将在本章后面重新讨论解决这一限制的方法。
+其中 $\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}(\rvx)$ 是 Hessian 矩阵 $E_{\bm{\phi}}$ 和 $C$ 是一个独立于 $\bm{\phi}$。这种公式很有吸引力，因为它消除了配分函数并避免在训练期间从模型中采样。它的主要缺点是需要二阶导数：尽管只需要 Hessian 矩阵的迹（$\Tr \big(\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}\big)$)，而不是完整的 Hessian 矩阵，该项的精确计算通常需要聚合输入坐标上的二阶导数信息，因此其成本通常随着输入维度的增加而增加 $D$。我们将在本章后面重新讨论解决这一限制的方法。
 
 
 
@@ -423,7 +423,7 @@ EBM 表明生成仅取决于分数，该分数指向更高概率的区域，而�
         \begin{align*}
             \mathcal{L}_{\text{SM}}(\bm{\phi}) = \widetilde{\mathcal{L}}_{\text{SM}}(\bm{\phi}) + C.
         \end{align*}
-        哪里
+        其中
         \begin{align}\label{eq:sm-alternative}
             \widetilde{\mathcal{L}}_{\text{SM}}(\bm{\phi})
             := \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[
@@ -580,7 +580,7 @@ p_{\sigma}(\tilde{\rvx}|\rvx) = \mathcal{N}(\tilde{\rvx}; \rvx, \sigma^2 \mathbf
 \begin{align}\label{eq:score-matching}
     \mathcal{L}_{\text{SM}}(\bm{\phi}; \sigma) = \mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma) + C,
 \end{align}
-哪里 $C$ 是与参数无关的常数 $\bm{\phi}$。此外，最小化 $\rvs^*(\cdot, \sigma)$ 两个损失都满足
+其中 $C$ 是与参数无关的常数 $\bm{\phi}$。此外，最小化 $\rvs^*(\cdot, \sigma)$ 两个损失都满足
 \[
     \rvs^*(\tilde{\rvx}, \sigma) = \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}), \quad \text{for almost every } \tilde{\rvx}.
 \]
@@ -622,7 +622,7 @@ p_{\sigma}(\tilde{\rvx}|\rvx) = \mathcal{N}(\tilde{\rvx}; \rvx, \sigma^2 \rmI).
 \end{aligned}
 \end{align}
 \end{mdframed}
-哪里 $\bm{\epsilon} \sim \mathcal{N}(\mathbf{0}, \rmI)$。该目标构成（基于分数的）扩散模型的核心。在固定的噪声水平下 $\sigma>0$，DSM学习高斯平滑分布的分数
+其中 $\bm{\epsilon} \sim \mathcal{N}(\mathbf{0}, \rmI)$。该目标构成（基于分数的）扩散模型的核心。在固定的噪声水平下 $\sigma>0$，DSM学习高斯平滑分布的分数
 \[
 p_\sigma
 =
@@ -726,7 +726,7 @@ p(\boldsymbol\eta|\tilde{\rvx})
 \nabla_{\tilde{\rvx}}^{2}\lambda(\tilde{\rvx})=\Cov[\boldsymbol\eta|\tilde{\rvx}],\quad
 \nabla_{\tilde{\rvx}}^{(k)}\lambda(\tilde{\rvx})=\kappa_k(\boldsymbol\eta|\tilde{\rvx})\quad(k\ge 3),
 \]
-哪里 $\kappa_k$ 是 \emph{条件累积量} 订购 $k$ 随机向量的 $\boldsymbol\eta$ 给定 $\tilde{\rvx}$，通过标准矩累积关系获得。这些是高阶 Tweedie 公式。专门研究高斯位置模型 $\boldsymbol\eta=\rvx/\sigma^2$ 产生熟悉的导数形式 $\log p_\sigma(\tilde{\rvx})$:
+其中 $\kappa_k$ 是 \emph{条件累积量} 订购 $k$ 随机向量的 $\boldsymbol\eta$ 给定 $\tilde{\rvx}$，通过标准矩累积关系获得。这些是高阶 Tweedie 公式。专门研究高斯位置模型 $\boldsymbol\eta=\rvx/\sigma^2$ 产生熟悉的导数形式 $\log p_\sigma(\tilde{\rvx})$:
 \[
 \E[\rvx|\tilde{\rvx}]
 =\tilde{\rvx}+\sigma^2\nabla_{\tilde{\rvx}}\log p_\sigma(\tilde{\rvx}),
@@ -745,7 +745,7 @@ p(\boldsymbol\eta|\tilde{\rvx})
 \tilde{\rvx} = \rvx + \sigma \bm{\epsilon}, 
 \qquad \bm{\epsilon} \sim \mathcal{N}(\mathbf{0},\rmI),
 \]
-哪里 $\rvx \in \R^D$ 是未知的干净信号， $\tilde{\rvx}$ 是观察到的噪声版本。降噪器是任何（弱可微）映射 $\rmD:\R^D \to \R^D$ 产生估计值 $\rmD(\tilde{\rvx})$ 的 $\rvx$。自然质量度量是条件 MSE
+其中 $\rvx \in \R^D$ 是未知的干净信号， $\tilde{\rvx}$ 是观察到的噪声版本。降噪器是任何（弱可微）映射 $\rmD:\R^D \to \R^D$ 产生估计值 $\rmD(\tilde{\rvx})$ 的 $\rvx$。自然质量度量是条件 MSE
 \[
 R(\rmD;\rvx) := \E_{\tilde{\rvx}|\rvx}\left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2 \,\big|\, \rvx\right].
 \]
@@ -756,7 +756,7 @@ R(\rmD;\rvx) := \E_{\tilde{\rvx}|\rvx}\left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2 \,\b
 + 2\sigma^2\,\nabla_{\tilde{\rvx}}\cdot \rmD(\tilde{\rvx})
 - D\sigma^2,
 \end{align}
-哪里 $\nabla_{\tilde{\rvx}}\cdot \rmD(\tilde{\rvx})$ 表示散度 $\rmD$。我们强调 $\mathrm{SURE}(\rmD;\tilde{\rvx})$ 仅需要噪声观测 $\tilde\rvx$，不干净 $\rvx$。直观地说， $\mathrm{SURE}$ 由相辅相成的两部分组成。术语 $\|\rmD(\tilde{\rvx})-\tilde{\rvx}\|^2$ 测量降噪器的输出与噪声输入的距离；就其本身而言，这低估了真正的误差，因为 $\tilde{\rvx}$ 已损坏。散度项充当校正：它捕获降噪器对其输入中的小扰动的敏感程度，有效地考虑噪声引入的方差。重要的是，对于任何固定但未知的 $\rvx$,
+其中 $\nabla_{\tilde{\rvx}}\cdot \rmD(\tilde{\rvx})$ 表示散度 $\rmD$。我们强调 $\mathrm{SURE}(\rmD;\tilde{\rvx})$ 仅需要噪声观测 $\tilde\rvx$，不干净 $\rvx$。直观地说， $\mathrm{SURE}$ 由相辅相成的两部分组成。术语 $\|\rmD(\tilde{\rvx})-\tilde{\rvx}\|^2$ 测量降噪器的输出与噪声输入的距离；就其本身而言，这低估了真正的误差，因为 $\tilde{\rvx}$ 已损坏。散度项充当校正：它捕获降噪器对其输入中的小扰动的敏感程度，有效地考虑噪声引入的方差。重要的是，对于任何固定但未知的 $\rvx$,
 \[
 \E_{\tilde{\rvx}|\rvx}\left[\mathrm{SURE}(\rmD;\rvx+\sigma\beps) \,\big|\, \rvx\right]
 = R(\rmD;\rvx),
@@ -943,7 +943,7 @@ $\tilde\rvx=\alpha\rvx_0+\sigma\beps$，对应的标识包含
 \[
 0 < \sigma_1 < \sigma_2 < \cdots < \sigma_L,
 \]
-哪里 $\sigma_1$ 足够小，可以保留大部分数据的精细细节，并且 $\sigma_L$ 足够大，足以使分布足够平滑，有利于更轻松的训练。每个噪声样本都是通过扰动干净的数据点来构建的 $\rvx \sim p_{\text{data}}$ 如 $\rvx_{\sigma} = \rvx + \sigma \bm{\epsilon}$ 与 $ \bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$。这定义了  
+其中 $\sigma_1$ 足够小，可以保留大部分数据的精细细节，并且 $\sigma_L$ 足够大，足以使分布足够平滑，有利于更轻松的训练。每个噪声样本都是通过扰动干净的数据点来构建的 $\rvx \sim p_{\text{data}}$ 如 $\rvx_{\sigma} = \rvx + \sigma \bm{\epsilon}$ 与 $ \bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$。这定义了  
 \vspace{-0.4cm}
 \subparagraph{扰动内核：}
 \[
@@ -963,7 +963,7 @@ p_\sigma(\rvx_{\sigma}) = \int p_{\sigma} (\rvx_{\sigma} | \rvx)    p_{\text{dat
 \begin{align}\label{eq:nscn}
 \mathcal{L}_{\text{NCSN}}(\bm{\phi}) := \sum_{i=1}^{L} \lambda(\sigma_i)   \mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma_i),
 \end{align}
-哪里
+其中
 \begin{align*}
 \mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma) 
 = \frac{1}{2} \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx),   \tilde{\rvx} \sim p_{\sigma}(\tilde{\rvx} | \rvx)} 

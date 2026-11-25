@@ -469,7 +469,7 @@ $\rmN_{\bm{\phi}^\times}=\beps_{\bm{\phi}^\times}$，所以
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \diff\tau,
 \end{equation}
-哪里
+其中
 $\mathcal{E}(s\shortrightarrow t)
 =
 \exp\!\left(\int_s^t f(u)\diff u\right)$。现在，数字机会已经很明显了。积分因子和系数 $b(\tau)$ 由扩散时间表确定；积分内唯一的未知量是沿轨迹评估的神经预测。因此，保持这些已知因素的明确性允许一阶近似仅作用于神经预测，而不是吸收系数加权乘积
@@ -1211,7 +1211,7 @@ b(s)\widehat\beps,
 \widehat\beps,
 \end{array}
 \]
-哪里
+其中
 $\widehat\beps
 :=
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s)$。所有三个在步骤开始时都使用相同的单个神经网络评估。普通欧拉近似于完整速度；指数欧拉首先保留已知的线性传播； DDIM 还保留已知系数 $b(\tau)$ 仅近似神经预测。这一层次结构关注的是哪些分析已知的术语被保留，而不是一步错误的通用排序。其主要数值结果是 DDIM 中的剩余近似值可以完全与神经预测的变化隔离，如下所示。
@@ -2748,7 +2748,7 @@ e^{-\lambda}
 (\hat\rvx_\lambda,\lambda)
 \diff\lambda,
 \end{equation}
-哪里
+其中
 $\hat\rvx_{\lambda_s}=\tilde\rvx_s$ 和
 $\hat\rvx_\lambda$ 表示相应的精确经验 PF-ODE
 当前步骤的轨迹。因此，已知后
@@ -2774,7 +2774,7 @@ $\hat\rvx_\lambda$ 表示相应的精确经验 PF-ODE
 +
 \mathcal O\bigl((\lambda-\lambda_s)^n\bigr),
 \end{equation*}
-哪里
+其中
 \[
 \hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}
 (\hat\rvx_\lambda,\lambda)
@@ -2820,7 +2820,7 @@ J_{\rvx}
 +
 \mathcal O(h^{n+1}),
 \end{equation}
-哪里
+其中
 \[
 h:=\lambda_t-\lambda_s,
 \qquad
@@ -3952,7 +3952,7 @@ $\mathcal O(h_{i-1})$。将其代入二阶展开式并
 \right)
 \rmD_i^{\mathrm{poly}},
 \]
-哪里
+其中
 \[
 \rmD_i^{\mathrm{poly}}
 :=

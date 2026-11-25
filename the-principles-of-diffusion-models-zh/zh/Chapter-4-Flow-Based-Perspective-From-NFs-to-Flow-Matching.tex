@@ -1344,7 +1344,7 @@ p_{\text{tgt}} = p_1 =  \mathcal{N}\left(\rvx; \bm{\mu}(1), \sigma^2(1) \rmI\rig
     \[
     p_t(\rvx_t | \rvz = (\rvx_0, \rvx_1)) = \mathcal{N}(\rvx_t; a_t\rvx_0 + b_t\rvx_1,  \sigma^2 \rmI),
     \]
-    哪里 $a_t$ 和 $b_t$ 是满足时间相关的函数  $a_0 = 1,  b_0 = 0$ 和 $a_1 = 0,  b_1 = 1$。建议的选择 \citep{lipman2022flow,liu2022rectified} 是 $a_t = 1-t$, $b_t = t$。在确定性情况下 $\sigma = 0$，我们得到  
+    其中 $a_t$ 和 $b_t$ 是满足时间相关的函数  $a_0 = 1,  b_0 = 0$ 和 $a_1 = 0,  b_1 = 1$。建议的选择 \citep{lipman2022flow,liu2022rectified} 是 $a_t = 1-t$, $b_t = t$。在确定性情况下 $\sigma = 0$，我们得到  
 \[
 p_t(\rvx_t |\rvz) = \delta \big(\rvx_t - [a_t\rvx_0 + b_t\rvx_1]\big),
 \]
@@ -1490,7 +1490,7 @@ $\bPsi_{0\to t}$ 直接来自几何（例如，测地线、指数图或预测几
 \[
 \bPsi_{0\to t}(\rvx_0;\rvz) := \bm\mu_t(\rvz) + \rmA_t(\rvz) \rvx_0,\qquad t\in[0,1],
 \]
-哪里 $\bm\mu_t(\rvz)\in\R^D$ 和 $\rmA_t(\rvz)\in\R^{D\times D}$ 可逆 $t\in(0,1)$。边界 
+其中 $\bm\mu_t(\rvz)\in\R^D$ 和 $\rmA_t(\rvz)\in\R^{D\times D}$ 可逆 $t\in(0,1)$。边界 
 $\rmA_0(\rvz)=\rmI,\ \bm\mu_0(\rvz)=\mathbf 0$ 恢复 $p_{\mathrm{src}}$ 在 $t=0$。解释边界的标准是 $t\to1$ 作为限制（终端映射可能将质量集中在较低维的集合或点上）\footnote{允许 $\rmA_1(\rvz)$ 为单数（例如， $\mathbf 0$) 与可逆性兼容 $(0,1)$ 并导致路径收缩到指定端点 $t=1$.}. 
 
 

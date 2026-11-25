@@ -490,7 +490,7 @@ $\sigma_\btheta$ 但不扩大家庭；即使完全协方差仍然是一个单峰
 -\mathbb{E}_{p_{\text{data}}(\mathbf{x})}\big[\mathcal{D}_\mathrm{KL} \big(q_\btheta(\rvz|\rvx) \| p(\rvz)\big)\big]\\
 &\quad\quad=\E_{p_{\text{data}}(\mathbf{x})q_\btheta(\rvz|\rvx)}[\log p_\bphi(\rvx|\rvz)]-\mathcal I_q(\rvx;\rvz) - \mathcal{D}_\mathrm{KL}(q_{\bm{\theta}}(\rvz) \| p(\rvz)),
 \end{align*}
-哪里 $\mathcal I_q(\rvx;\rvz)$ 是由下式定义的互信息
+其中 $\mathcal I_q(\rvx;\rvz)$ 是由下式定义的互信息
 \[
 \mathcal I_q(\rvx;\rvz)
 =\E_{q(\rvx,\rvz)} \Big[\log \tfrac{q_\btheta(\rvz|\rvx)}{q(\rvz)}\Big]
@@ -674,14 +674,14 @@ $\beta_i \in (0, 1)$ 控制步骤注入的高斯噪声的方差 $i$。为了方�
 \[
 \rvx_i = \alpha_i \rvx_{i-1} + \beta_i \bm{\epsilon}_i,  
 \]
-哪里 $\bm{\epsilon}_i \sim \mathcal{N}(\bm{0}, \rmI)$ 独立同分布。这意味着在每一步 $i$，我们缩小之前的状态 $\rvx_{i-1}$ 通过 $\alpha_i$ 并添加按比例缩放的受控高斯噪声量 $\beta_i$.
+其中 $\bm{\epsilon}_i \sim \mathcal{N}(\bm{0}, \rmI)$ 独立同分布。这意味着在每一步 $i$，我们缩小之前的状态 $\rvx_{i-1}$ 通过 $\alpha_i$ 并添加按比例缩放的受控高斯噪声量 $\beta_i$.
 
 \paragraph{扰动核和先验分布。}
 通过递归应用转换内核，我们获得了噪声样本分布的封闭式表达式 $i$ 给出原始数据 $\rvx_0$:
 \[
 p_i(\rvx_i|\rvx_0) = \mathcal{N}\left(\rvx_i; \bar{\alpha}_i \rvx_0, (1 - \bar{\alpha}_i^2) \rmI \right),
 \]
-哪里 
+其中 
 \[
 \bar{\alpha}_i := \prod_{k=1}^i \sqrt{1-\beta_k^2} = \prod_{k=1}^i \alpha_k.
 \]
@@ -811,7 +811,7 @@ p^*(\mathbf{x}_{i-1}|\mathbf{x}_i) = \mathbb{E}_{p(\mathbf{x}_0|\mathbf{x}_i)} \
 \begin{align*}
     p(\rvx_{i-1} | \rvx_i, \rvx) =\mathcal{N}\left(\rvx_{i-1}; \bm{\mu}\left(\rvx_i, \rvx, i\right), \sigma^2(i)\rmI \right),
 \end{align*}
-哪里
+其中
 \begin{align}\label{eq:ddpm-reverse-mean}
 \begin{aligned}
             \bm{\mu}\left(\rvx_i, \rvx, i\right):= \frac{\bar{\alpha}_{i-1}\beta_i^2}{1-\bar{\alpha}_i^2}\rvx + \frac{(1-\bar{\alpha}_{i-1}^2)\alpha_i }{1-\bar{\alpha}_i^2}\rvx_i,
@@ -826,7 +826,7 @@ p^*(\mathbf{x}_{i-1}|\mathbf{x}_i) = \mathbb{E}_{p(\mathbf{x}_0|\mathbf{x}_i)} \
 \begin{align}\label{eq:def-reverse}
     p_{\bm{\phi}}(\mathbf{x}_{i-1}|\mathbf{x}_i) := \mathcal{N}\big(\mathbf{x}_{i-1}; \bm{\mu}_{\bm{\phi}}(\mathbf{x}_i, i), \sigma^2(i) \mathbf{I}\big),
 \end{align}
-哪里 $\bm{\mu}_{\bm{\phi}}(\cdot, i) \colon \mathbb{R}^D \to \mathbb{R}^D$ 是一个可学习的均值函数，并且 $\sigma^2(i) > 0$ 按照中的定义进行固定 \Cref{eq:ddpm-reverse-mean}。我们表示 KL 散度，在时间步长上取平均值 $i$ 并以数据为条件 $\rvx_0 \sim p_{\text{data}}$，将所有分布层匹配为：
+其中 $\bm{\mu}_{\bm{\phi}}(\cdot, i) \colon \mathbb{R}^D \to \mathbb{R}^D$ 是一个可学习的均值函数，并且 $\sigma^2(i) > 0$ 按照中的定义进行固定 \Cref{eq:ddpm-reverse-mean}。我们表示 KL 散度，在时间步长上取平均值 $i$ 并以数据为条件 $\rvx_0 \sim p_{\text{data}}$，将所有分布层匹配为：
 \begin{align}\label{eq:ddpm-diffusion}
     \mathcal{L}_{\text{diffusion}}(\rvx_0;\bm{\phi}) := \sum_{i=2}^L \mathbb{E}_{p_i(\rvx_i|\rvx_0)}\left[\mathcal{D}_{\text{KL}}\big(p(\rvx_{i-1}|\rvx_i, \rvx_0)  \Vert  p_{\bm{\phi}}(\rvx_{i-1}|\rvx_i)\big)\right].
 \end{align}
@@ -834,14 +834,14 @@ p^*(\mathbf{x}_{i-1}|\mathbf{x}_i) = \mathbb{E}_{p(\mathbf{x}_0|\mathbf{x}_i)} \
 \begin{align}\label{eq:ddpm-diffusion-simp}
     \mathcal{L}_{\text{diffusion}}(\rvx_0;\bm{\phi}) = \sum_{i=2}^L \frac{1}{2\sigma^2(i)}  \mathbb{E}_{p_i(\rvx_i|\rvx_0)}\left\| \bm{\mu}_{\bm{\phi}}(\rvx_i, i) - \bm{\mu}(\rvx_i, \rvx_0, i) \right\|_2^2 + C,
 \end{align}
-哪里 $C$ 是一个独立于 $\bm{\phi}$。对数据分布求平均值并忽略常数 $C$ （不影响优化），最终的DDPM训练目标是
+其中 $C$ 是一个独立于 $\bm{\phi}$。对数据分布求平均值并忽略常数 $C$ （不影响优化），最终的DDPM训练目标是
 \begin{align}
 \begin{aligned}
     \label{eq:ddpm-mean-loss}
     \mathcal{L}_{\text{DDPM}}(\bm{\phi}) := \sum_{i=2}^L \frac{1}{2\sigma^2(i)}  \mathbb{E}_{\rvx_0} \mathbb{E}_{p_i(\rvx_i|\rvx_0)} \left[ \left\| \bm{\mu}_{\bm{\phi}}(\mathbf{x}_i, i) - \bm{\mu}(\mathbf{x}_i, \rvx_0, i) \right\|_2^2 \right],
 \end{aligned}
 \end{align}
-哪里 $\rvx_0\sim p_{\mathrm{data}}$。我们注意到前向扰动核 $p_i(\rvx_i | \rvx_0)
+其中 $\rvx_0\sim p_{\mathrm{data}}$。我们注意到前向扰动核 $p_i(\rvx_i | \rvx_0)
 $
 在训练目标中起着重要的计算作用。它给出了噪声状态的分布 $\rvx_i$ 从干净的样品中获得 $\rvx_0$
 之后 $i$ 向前迈出一步。由于每个前向过渡都是线性且高斯分布的，因此它们的组成也具有闭合形式的高斯分布；请参阅周围的讨论 \Cref{eq:ddpm-forward}。因此，选择时间步后 $i$，我们可以取样 $\rvx_i \sim p_i(\rvx_i | \rvx_0)
@@ -879,7 +879,7 @@ $\rvx_1,\ldots,\rvx_{i-1}$。因此，每个损失项可以仅使用干净的样
 \begin{equation}\label{eq:ddpm-simple-loss}
     \mathcal{L}_{\text{simple}}(\bm{\phi}) := \mathbb{E}_{i} \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \mathbb{E}_{\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})} \left[ \left\| \boldsymbol{\epsilon}_{\bm{\phi}}(\rvx_i, i) - \boldsymbol{\epsilon} \right\|_2^2 \right],
 \end{equation}
-哪里 $\rvx_i = \bar{\alpha}_i \rvx_0 + \sqrt{1 - \bar{\alpha}_i^2} \boldsymbol{\epsilon}$ 与 $\rvx_0 \sim p_{\text{data}}$。由于目标噪声在每个时间步长都有单位方差 $t$， $\ell_2$ 损失 \Cref{eq:ddpm-simple-loss} 在所有方面保持一致的规模 $t$。这可以防止目标消失或爆炸，并消除显式损失加权的需要。重要的是，两者 $\mathcal{L}_{\text{DDPM}}$ 和 $\mathcal{L}_{\text{simple}}$ 共享相同的最优解 $\boldsymbol{\epsilon}^*$，这是因为 \Cref{eq:ddpm-simple-loss} 本质上简化为最小二乘问题（如命题中类似所示）~\ref{dsm-minimizer} 或提议~\ref{equi-para})\footnote{我们注意到，删除了 ELBO 派生的权重 $\mathcal{L}_{\text{DDPM}}$ 更改训练目标，但不更改其群体最优预测： $\beps^*(\rvx_i,i)
+其中 $\rvx_i = \bar{\alpha}_i \rvx_0 + \sqrt{1 - \bar{\alpha}_i^2} \boldsymbol{\epsilon}$ 与 $\rvx_0 \sim p_{\text{data}}$。由于目标噪声在每个时间步长都有单位方差 $t$， $\ell_2$ 损失 \Cref{eq:ddpm-simple-loss} 在所有方面保持一致的规模 $t$。这可以防止目标消失或爆炸，并消除显式损失加权的需要。重要的是，两者 $\mathcal{L}_{\text{DDPM}}$ 和 $\mathcal{L}_{\text{simple}}$ 共享相同的最优解 $\boldsymbol{\epsilon}^*$，这是因为 \Cref{eq:ddpm-simple-loss} 本质上简化为最小二乘问题（如命题中类似所示）~\ref{dsm-minimizer} 或提议~\ref{equi-para})\footnote{我们注意到，删除了 ELBO 派生的权重 $\mathcal{L}_{\text{DDPM}}$ 更改训练目标，但不更改其群体最优预测： $\beps^*(\rvx_i,i)
 =
 \E[\beps| \rvx_i]$。因此，加权和简化的 DDPM 损失具有相同的理想预测器，但它们在训练期间强调不同的噪声水平。实际上，这种权重仍然会影响优化和性能。}:
 \[
@@ -948,7 +948,7 @@ ELBO 物镜 $\mathcal{L}_{\text{ELBO}}$ 也可以通过潜在的数据处理不�
 \begin{align*}
     \mathcal{D}_{\mathrm{KL}}(p_{\mathrm{data}}(\rvx_0) \| p_{\bm{\phi}}(\rvx_0)) \leq \mathcal{D}_{\mathrm{KL}}\left(p(\rvx_0, \rvx_{1:L}) \| p_{\bm{\phi}}(\rvx_0, \rvx_{1:L})\right),
 \end{align*}
-哪里 $p(\rvx_0, \rvx_{1:L}) := p_{\mathrm{data}}(\rvx_0)  p(\rvx_1|\rvx_0)  p(\rvx_2|\rvx_1) \cdots p(\rvx_L|\rvx_{L-1})$ 表示沿前向过程的联合分布。 
+其中 $p(\rvx_0, \rvx_{1:L}) := p_{\mathrm{data}}(\rvx_0)  p(\rvx_1|\rvx_0)  p(\rvx_2|\rvx_1) \cdots p(\rvx_L|\rvx_{L-1})$ 表示沿前向过程的联合分布。 
 
 
 
@@ -1033,7 +1033,7 @@ ELBO 物镜 $\mathcal{L}_{\text{ELBO}}$ 也可以通过潜在的数据处理不�
   \tilde{\beta}_i\,\boldsymbol{\epsilon}_i
 }_{\text{combined std.\ }=\;\sqrt{1-\bar{\alpha}_{i-1}^2}},
 \end{equation}
-哪里 $\tilde{\beta}_i^2
+其中 $\tilde{\beta}_i^2
 = \frac{(1-\bar{\alpha}_{i-1}^2)(1-\alpha_i^2)}{1-\bar{\alpha}_i^2}$
 是DDPM后验方差\footnote{
 系数

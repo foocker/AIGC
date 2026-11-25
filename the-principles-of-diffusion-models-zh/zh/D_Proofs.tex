@@ -282,7 +282,7 @@ p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
              &= \int \rvs_{\bm{\phi}}(\rvx)^\top  \nabla_{\rvx}p_{\text{data}}(\rvx) \diff \rvx \\
              &= \sum_{i=1}^{D} \int  s_{\bm{\phi}}^{(i)}(\rvx) \partial_{x_i}p_{\text{data}}(\rvx) \diff \rvx,
         \end{align*}
-        哪里 $s_{\bm{\phi}}^{(i)}(\rvx)$ 是 $i$分数函数的第-个分量 
+        其中 $s_{\bm{\phi}}^{(i)}(\rvx)$ 是 $i$分数函数的第-个分量 
         \[
         \rvs_{\bm{\phi}} = \left( s_{\bm{\phi}}^{(1)}, s_{\bm{\phi}}^{(2)}, \dots, s_{\bm{\phi}}^{(D)} \right).
         \]
@@ -293,7 +293,7 @@ p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
         \[
         \int_{\mathbb{B}(\bm{0}, R)} u   \partial_{x_i} v   \diff \rvx = -\int_{\mathbb{B}(\bm{0}, R)} v   \partial_{x_i} u   \diff \rvx + \int_{\partial \mathbb{B}(\bm{0}, R)} u v \nu_i   \diff S,
         \]
-        哪里 $\nu = (\nu_1, \ldots, \nu_D)$ 是垂直于边界的向外单位 $\partial \mathbb{B}(\bm{0}, R)$---有半径的球体 $R>0$, 和 $\diff S$ 是表面测量值 $\partial \mathbb{B}(\bm{0}, R)$.
+        其中 $\nu = (\nu_1, \ldots, \nu_D)$ 是垂直于边界的向外单位 $\partial \mathbb{B}(\bm{0}, R)$---有半径的球体 $R>0$, 和 $\diff S$ 是表面测量值 $\partial \mathbb{B}(\bm{0}, R)$.
         \end{lemma*}
         我们应用这个公式 $u(\rvx) := s_{\bm{\phi}}^{(i)}(\rvx)$ 和 $v(\rvx) = p_{\text{data}}(\rvx)$ 对于所有 $i = 1, \dots, D$，假设
         \[
@@ -310,7 +310,7 @@ p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
         \mathcal{L}_{\text{SM}}(\bm{\phi}) &= \underbrace{\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[\Tr\left(\nabla_{\rvx}\rvs_{\bm{\phi}}(\rvx)\right) + \frac{1}{2}  \norm{\rvs_{\bm{\phi}}(\rvx)}_2^2 \right]}_{\widetilde{\mathcal{L}}_{\text{SM}}(\bm{\phi})} \\
         &\quad + \underbrace{\frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs(\rvx)}_2^2 \right]}_{=:C},
         \end{align*}
-        哪里 $C$ 仅取决于分布 $p_{\text{data}}$，证明结束。
+        其中 $C$ 仅取决于分布 $p_{\text{data}}$，证明结束。
 \hfill$\blacksquare$
 
 \subsection{定理~\ref{thm:sm-dsm}: SM 和 DSM 最小化之间的等价}\label{app-sec:sm-dsm}
@@ -618,7 +618,7 @@ g^2(T-s)\nabla_{\rvx}\log p_{T-s}(\rvy(s))
 +
 g(T-s)\diff\rvw^{\mathrm{rev}}(s),
 \]
-哪里 $\rvw^{\mathrm{rev}}$ 是正向运行时钟下的标准维纳过程 $s$。让 $q_s$ 表示密度 $\rvy(s)$。其福克-普朗克方程为
+其中 $\rvw^{\mathrm{rev}}$ 是正向运行时钟下的标准维纳过程 $s$。让 $q_s$ 表示密度 $\rvy(s)$。其福克-普朗克方程为
 \begin{align*}
 \partial_s q_s(\rvx)
 &=
@@ -802,7 +802,7 @@ p(\rvx_0|\rvx_t)
 \[
 p(\tilde{\rvx} | \rvx) := \mathcal{N}(\tilde{\rvx}; \bm{\mu}, \bm{\Sigma}),
 \]
-哪里 $\bm{\mu} \in \mathbb{R}^D$ 是平均值和 $\bm{\Sigma} \in \mathbb{R}^{D \times D}$ 是可逆协方差矩阵。其分数函数为
+其中 $\bm{\mu} \in \mathbb{R}^D$ 是平均值和 $\bm{\Sigma} \in \mathbb{R}^{D \times D}$ 是可逆协方差矩阵。其分数函数为
 \begin{align}\label{eq:score-gaussian-formula}
     \nabla_{\tilde{\rvx}} \log p(\tilde{\rvx} | \rvx) = -\bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
 \end{align}
@@ -990,7 +990,7 @@ p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
 \begin{align*}
     \rvs^*(\rvx_t,t) = -\frac{1}{\sigma_t}\, \bm{\epsilon}^*(\rvx_t,t),
 \end{align*}
-哪里 $\bm{\epsilon}^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\bm{\epsilon}|\rvx_t]$ 是最优的 $\beps$-预测 $\mathcal{L}_{\text{noise}}({\bm{\phi}})$。对于 $\rvx$-预测损失 $\mathcal{L}_{\text{clean}}$，最优估计量为
+其中 $\bm{\epsilon}^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\bm{\epsilon}|\rvx_t]$ 是最优的 $\beps$-预测 $\mathcal{L}_{\text{noise}}({\bm{\phi}})$。对于 $\rvx$-预测损失 $\mathcal{L}_{\text{clean}}$，最优估计量为
 \[
 \rvx^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0|\rvx_t],
 \]
@@ -1029,7 +1029,7 @@ p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
 =\E_{\rvx_T\sim p_T}\,
 \big\|\rmG_\btheta(\rvx_T,T,0)-\bPsi_{T\to 0}(\rvx_T)\big\|_2^2,
 \]
-哪里 $p_T = p_{\mathrm{prior}}$。对于确定性 ODE 流映射 $\bPsi$ （满足半群性质并且沿轨迹是双射的），边缘满足前推恒等式
+其中 $p_T = p_{\mathrm{prior}}$。对于确定性 ODE 流映射 $\bPsi$ （满足半群性质并且沿轨迹是双射的），边缘满足前推恒等式
 \[
 p_t
 = \bPsi_{0\to t}\,\sharp\,p_{\mathrm{data}}

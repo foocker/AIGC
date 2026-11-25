@@ -123,7 +123,7 @@ $\rvx$ 来自源 $\rvy$ 来自目标。如果 $\gamma$ 承认密度 $\gamma(\rvx
 &\int \gamma(\rvx,\rvy) \diff \rvy = p_{\mathrm{src}}(\rvx),\,\,
 \int \gamma(\rvx,\rvy)\diff \rvx = p_{\mathrm{tgt}}(\rvy)\Big\},
 \end{align*}
-哪里 $\mathcal{P}(\R^D\times\R^D)$ 表示所有概率测度的集合
+其中 $\mathcal{P}(\R^D\times\R^D)$ 表示所有概率测度的集合
 $\R^D\times\R^D$.  
 
 
@@ -171,16 +171,16 @@ Benamou-Brenier 公式\footnote{Benamou-Brenier 公式描述了如何通过最�
     \int_0^1 \int_{\mathbb{R}^D} \|\rvv_t(\rvx)\|^2 p_t(\rvx) \diff\rvx \diff t
 \end{equation} 
 \end{mdframed}
-哪里 $p_t$ 是概率分布 $\mathbb{R}^D$ 对于每个 $t \in [0,1]$。特别是，最优传输流 $p_t(\rvx)$ 如下 \textit{麦肯位移插值}:
+其中 $p_t$ 是概率分布 $\mathbb{R}^D$ 对于每个 $t \in [0,1]$。特别是，最优传输流 $p_t(\rvx)$ 如下 \textit{麦肯位移插值}:
 \begin{equation*}
     \rmT_t^*(\rvx) = (1 - t)\rvx + t\rmT^*(\rvx),
 \end{equation*}
-哪里 $\rmT^*(\rvx)$ 是传输的OT图 $p_{\mathrm{src}}$ 至 $p_{\mathrm{tgt}}$。此线性插值以恒定速度沿直线移动质量： $p_t = \rmT_t^*\#p_{\mathrm{src}}$ 对于每个 $t \in [0,1]$。最优交通图 $\rmT^*$ 满足 \emph{蒙日-安培方程}:
+其中 $\rmT^*(\rvx)$ 是传输的OT图 $p_{\mathrm{src}}$ 至 $p_{\mathrm{tgt}}$。此线性插值以恒定速度沿直线移动质量： $p_t = \rmT_t^*\#p_{\mathrm{src}}$ 对于每个 $t \in [0,1]$。最优交通图 $\rmT^*$ 满足 \emph{蒙日-安培方程}:
 
 \begin{equation}\label{eq:monge-ampere}
     p_{\mathrm{tgt}}\left(\nabla \psi(\rvx)\right) \det\left(\nabla^2 \psi(\rvx)\right) = p_{\mathrm{src}}(\rvx),
 \end{equation}
-哪里 $\rmT^*(\rvx) = \nabla \psi(\rvx)$ 对于某些凸函数 $\bpsi$ 根据布雷尼尔定理。然而，这种非线性偏微分方程通常很难求解显式解。请注意，这正是归一化流所使用的变量变化关系（参见， \Cref{eq:nf-change-of-var})：流用易于处理的雅可比行列式参数化可逆传输图，但通常不强加势梯度结构 $\rmT^*=\nabla\psi$;因此，经过训练的流程可能与 Brenier/OT 映射有很大不同。
+其中 $\rmT^*(\rvx) = \nabla \psi(\rvx)$ 对于某些凸函数 $\bpsi$ 根据布雷尼尔定理。然而，这种非线性偏微分方程通常很难求解显式解。请注意，这正是归一化流所使用的变量变化关系（参见， \Cref{eq:nf-change-of-var})：流用易于处理的雅可比行列式参数化可逆传输图，但通常不强加势梯度结构 $\rmT^*=\nabla\psi$;因此，经过训练的流程可能与 Brenier/OT 映射有很大不同。
 
 
 
@@ -217,7 +217,7 @@ $c:\R^D\times\R^D\to\R_{\ge 0}$ (e.g., $c(\rvx,\rvy)=\|\rvx-\rvy\|_2^2$).
 \[
 \mathcal{D}_{\text{KL}}(\gamma \,\Vert\, p_{\mathrm{src}} \otimes p_{\mathrm{tgt}}) = -\mathcal{H}(\gamma) + \text{Constant},
 \]
-哪里 $\mathcal{H}(\gamma) := -\int \gamma(\rvx, \rvy) \log \gamma(\rvx, \rvy) \diff \rvx \diff \rvy$。添加这个正则化项会产生一些理论和实践优势，我们在下面简要概述：
+其中 $\mathcal{H}(\gamma) := -\int \gamma(\rvx, \rvy) \log \gamma(\rvx, \rvy) \diff \rvx \diff \rvy$。添加这个正则化项会产生一些理论和实践优势，我们在下面简要概述：
 \paragraph{为什么熵正则化器有帮助？}
 \begin{enumerate}
   \item \textbfs{大规模传播。}
@@ -257,7 +257,7 @@ p_t(A) = P(\rvx_t \in A).
 \begin{align}\label{eq:general-sb-sde}
     \diff \rvx_t  =  \rvf(\rvx_t,t)\,\diff t  +  g(t)\,\diff \rvw_t,
 \end{align}
-哪里 $\rvf\colon \R^D\times[0,T]\!\to\!\R^D$, $g\colon[0,T]\!\to\!\R$, 和
+其中 $\rvf\colon \R^D\times[0,T]\!\to\!\R^D$, $g\colon[0,T]\!\to\!\R$, 和
 $\{\rvw_t\}_{t\in[0,T]}$ 是标准布朗运动。让 $R$ 表示 \emph{路径法则} 全轨迹的（联合分布）
 $\rvx_{0:T}:=\{\rvx_t\}_{t\in[0,T]}$，让 $R_0$ 表示参考过程的初始边缘；这个 $R$ 将作为 \emph{参考}
 轨迹分布。通过这种表示法，SB 问题寻求轨迹定律 $P$
@@ -286,7 +286,7 @@ $\rvx_{0:T}:=\{\rvx_t\}_{t\in[0,T]}$，让 $R_0$ 表示参考过程的初始边�
     \diff \rvx_t
     = \bigl[\rvf(\rvx_t,t) + \rvv_t(\rvx_t)\bigr]\diff t + g(t) \diff \rvw_t,
 \]
-哪里 $\rvv_t:\R^D\to\R^D$ 是后面要优化的漂移（\Cref{eq:sb-kinetic}）。在标准可积性条件下（例如，诺维科夫条件）和吉尔萨诺夫定理（参见 \Cref{subsec:girsanov}），受控律之间的KL散度 $P$
+其中 $\rvv_t:\R^D\to\R^D$ 是后面要优化的漂移（\Cref{eq:sb-kinetic}）。在标准可积性条件下（例如，诺维科夫条件）和吉尔萨诺夫定理（参见 \Cref{subsec:girsanov}），受控律之间的KL散度 $P$
 和参考 $R$ 承认动态（kinetic）形式
 \begin{align*}
     \mathcal{D}_{\mathrm{KL}}(P\|R)
@@ -306,7 +306,7 @@ $\rvx_{0:T}:=\{\rvx_t\}_{t\in[0,T]}$，让 $R_0$ 表示参考过程的初始边�
     \frac{\|\rvv_t(\rvx)\|^2}{g^2(t)}
     p_t(\rvx)\diff\rvx\diff t .
 \end{align*}
-哪里 $p_t$ 是时候了——$t$ 边缘 $\rvx_t$ 受控过程下。第二个等式是根据总期望定律得出的。自从 $P_0=p_{\mathrm{src}}$ 在 SB 问题中已修复，第一项对于控制而言是常数，因此可以在优化中省略。特别是，当 $R_0=p_{\mathrm{src}}$。因此，SB 问题可以重新表述为最小化所有允许漂移的预期控制能量 $\rvv_t$ 引导进程
+其中 $p_t$ 是时候了——$t$ 边缘 $\rvx_t$ 受控过程下。第二个等式是根据总期望定律得出的。自从 $P_0=p_{\mathrm{src}}$ 在 SB 问题中已修复，第一项对于控制而言是常数，因此可以在优化中省略。特别是，当 $R_0=p_{\mathrm{src}}$。因此，SB 问题可以重新表述为最小化所有允许漂移的预期控制能量 $\rvv_t$ 引导进程
 $p_{\mathrm{src}}$ 在 $t=0$ 至 $p_{\mathrm{tgt}}$ 在 $t=T$
 \citep{dai1991stochastic,pra1990markov,pavon1991free,chen2016relation}。由于初始边缘固定为 $p_{\mathrm{src}}$，我们可以参考流程有 $R_0=p_{\mathrm{src}}$ 不改变优化器；然后
 $\mathcal{D}_{\mathrm{KL}}(p_{\mathrm{src}}\|R_0)=0$。这导致 \emph{随机控制公式}:
@@ -366,7 +366,7 @@ $\partial_t \rho_t + \nabla \cdot (\rho_t \tilde{\rvv}_t)=0$，则布朗参考 S
         \|\rvv_t(\rvx)\|^2 \, p_t(\rvx)\,\diff \rvx\,\diff t,
 \end{aligned}
 \end{align}
-哪里 $p_t$ 表示时间--$t$ 漂移驱动的扩散边缘 $\rvv_t$:
+其中 $p_t$ 表示时间--$t$ 漂移驱动的扩散边缘 $\rvv_t$:
 \[
 \diff \rvx_t = \rvv_t(\rvx_t)\,\diff t + \sqrt{\varepsilon}\,\diff \rvw_t.
 \]
@@ -386,7 +386,7 @@ $p_t^{\mathrm{SB}}$ 表示时间的边缘 $t\in[0,T]$ 最优轨迹法 $P^*$ 在 
 \begin{align}\label{eq:sb-symmetry}
 p_t^{\mathrm{SB}}(x) = \Psi(x,t) \widehat{\Psi}(x,t),
 \end{align}
-哪里 $\Psi$ 和 $\widehat{\Psi}$ 求解（线性） \emph{薛定谔系统}~\citep{caluya2021wasserstein,chen2021stochastic,chenlikelihood}:
+其中 $\Psi$ 和 $\widehat{\Psi}$ 求解（线性） \emph{薛定谔系统}~\citep{caluya2021wasserstein,chen2021stochastic,chenlikelihood}:
 \begin{align}
 \begin{aligned}\label{eq:pde-schrodinger}
 \frac{\partial \Psi}{\partial t}(\mathbf{x},t)
@@ -446,7 +446,7 @@ p_t^{\mathrm{SB}}(x) = \Psi(x,t) \widehat{\Psi}(x,t),
 \[
 \rvb^{-}(\rvx,t)=\rvb^{+}(\rvx,t)-g^2(t)\nabla_\rvx\log p_t^{\mathrm{SB}}(\rvx),
 \]
-哪里 $\rvb^{+}=\rvf+g^2\nabla\log\Psi$ 和 $p_t=\Psi\,\widehat{\Psi}$。这给出了
+其中 $\rvb^{+}=\rvf+g^2\nabla\log\Psi$ 和 $p_t=\Psi\,\widehat{\Psi}$。这给出了
 \[
 \rvb^{-}(\rvx,t)=\rvf(\rvx,t)-g^2(t) \nabla_\rvx\log \widehat{\Psi}(\rvx,t).
 \]
@@ -1189,11 +1189,11 @@ $\rvm_t := p_t \rvv_t$。尽管如此，在网格上离散化这个凸问题 $\m
 \[
 \rvv_t^{(k)} \in \argmin_{\rvu_t} \, \mathcal{L}(\rvu_t\big\vert\pi^{(k)}),
 \]
-哪里 $\mathcal{L}(\rvu_t\big\vert\pi^{(k)})$ 是定义在中的损耗（例如 RF 或 FM 损耗） \Cref{eq:reflow-loss}。在这里，为了符号简单起见，我们采用速度场的非参数公式，而不是参数化形式 $\bm{\phi}$ 在其他情况下使用。更新后的耦合由下式给出：
+其中 $\mathcal{L}(\rvu_t\big\vert\pi^{(k)})$ 是定义在中的损耗（例如 RF 或 FM 损耗） \Cref{eq:reflow-loss}。在这里，为了符号简单起见，我们采用速度场的非参数公式，而不是参数化形式 $\bm{\phi}$ 在其他情况下使用。更新后的耦合由下式给出：
 \[
 \pi^{(k+1)}(\rvx_0, \rvx_1) := p_{\mathrm{src}}(\rvx_0)\, \delta\big(\rvx_1 - \bm{\Psi}_1^{(k)}(\rvx_0)\big),
 \]
-哪里 $\bm{\Psi}_1^{(k)}$ 表示此时的解图 $t=1$ 积分得到 $\rvv_t^{(k)}$ 从初始条件 $\rvx_0$。已观察到 \citep{liu2022flow} 用于联轴器 $\pi$ 之间 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$，速度场的存在 $\rvv_t$ 最小化回流焊损耗，即满足 $\mathcal{L}(\rvv_t |\pi) = 0$，并不一定意味着传输是最佳的。受 Benamou-Brenier 框架的启发，其中已知最优传输速度是势函数的梯度， \citet{liu2022rectified} 提出了一个附加约束：速度场 $\rvv_t$ 应该是势场。因此，目标 \Cref{eq:reflow-loss} 修改为限制 $\rvv_t$ 梯度向量场空间，也称为势流：
+其中 $\bm{\Psi}_1^{(k)}$ 表示此时的解图 $t=1$ 积分得到 $\rvv_t^{(k)}$ 从初始条件 $\rvx_0$。已观察到 \citep{liu2022flow} 用于联轴器 $\pi$ 之间 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$，速度场的存在 $\rvv_t$ 最小化回流焊损耗，即满足 $\mathcal{L}(\rvv_t |\pi) = 0$，并不一定意味着传输是最佳的。受 Benamou-Brenier 框架的启发，其中已知最优传输速度是势函数的梯度， \citet{liu2022rectified} 提出了一个附加约束：速度场 $\rvv_t$ 应该是势场。因此，目标 \Cref{eq:reflow-loss} 修改为限制 $\rvv_t$ 梯度向量场空间，也称为势流：
 \begin{align}\label{eq:reflow-loss-gradient}
     \rvw_t^{(k)} \in \argmin_{\substack{\rvu_t:\, \rvu_t=\nabla\varphi \\ \text{for some }\varphi\colon\mathbb{R}^D\to\mathbb{R}}} \, \mathcal{L}(\rvu_t\big\vert\pi^{(k)}),
 \end{align}

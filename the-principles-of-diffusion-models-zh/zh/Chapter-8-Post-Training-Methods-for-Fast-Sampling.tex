@@ -47,11 +47,11 @@
 \[
 \min_{\bm{\theta}}  \mathcal{D}\!\left(p_{\bm{\theta}}(\hat\rvx),  p_{\mathrm{data}}(\hat\rvx)\right),
 \]
-哪里 $\mathcal{D}$ 表示合适的散度测量，例如 KL。在实践中，基于分布的方法使生成器的分布与经验分布保持一致 $p_{\bm{\phi}^\times}(\rvx)$ 由预训练的扩散模型产生：
+其中 $\mathcal{D}$ 表示合适的散度测量，例如 KL。在实践中，基于分布的方法使生成器的分布与经验分布保持一致 $p_{\bm{\phi}^\times}(\rvx)$ 由预训练的扩散模型产生：
 \[
 \min_{\bm{\theta}}  \mathcal{D}\!\left(p_{\bm{\theta}}(\hat\rvx),  p_{\bm{\phi}^\times}(\hat\rvx)\right),
 \]
-哪里 $p_{\bm{\phi}^\times}$ 作为替代品 $p_{\mathrm{data}}$。这些方法不是明确地评估这种散度，而是使用预先训练的教师以及根据学生当前分布估计的数量来构造其梯度的易处理的估计器。对于基于 KL 的分布匹配，该梯度采用学生分数函数和目标分数函数之间的差异的形式。
+其中 $p_{\bm{\phi}^\times}$ 作为替代品 $p_{\mathrm{data}}$。这些方法不是明确地评估这种散度，而是使用预先训练的教师以及根据学生当前分布估计的数量来构造其梯度的易处理的估计器。对于基于 KL 的分布匹配，该梯度采用学生分数函数和目标分数函数之间的差异的形式。
 
 该公式通过分布对齐将扩散模型的多步生成过程蒸馏为单步模型。我们详细介绍了这种方法 \Cref{sec:VSD}.
 
@@ -141,7 +141,7 @@ $(N \to N/2 \to N/4 \to \cdots)$，逐渐将轨迹提取为越来越少的步骤
   := \E_{s,t} \E_{\rvx_s \sim p_s} 
   \left[  w(s,t)  d \big(\rmG_\btheta(\rvx_s, s,t),  \bPsi_{s\to t}(\rvx_s)\big)\right],
 \end{align}
-哪里 $\bPsi_{s\to t}$ 是oracle流映射， $w(s,t) \geq 0$ 指定不同时间对的方式 $(s,t)$ 已加权，
+其中 $\bPsi_{s\to t}$ 是oracle流映射， $w(s,t) \geq 0$ 指定不同时间对的方式 $(s,t)$ 已加权，
 $d(\cdot,\cdot)$ 是一种差异度量，例如
 $d(\rvx,\rvy)=\|\rvx-\rvy\|_2^2$ 或 $d(\rvx,\rvy)=\|\rvx-\rvy\|_1$, 和 $p_s$ 表示该时刻的前向噪声边缘 $s$。因为 $\bPsi_{s\to t}$ 不以封闭形式提供，必须依靠近似值，通常通过预先训练的扩散模型（教师）或其他易于处理的代理。 KD 表现为一个简单的例子 \Cref{eq:general-cm-loss} 仅考虑端点对 $(s,t)=(T,0)$。等价地，我们可以采用退化权重
 $w(s,t)=\delta(s{-}T)\delta(t)$。假设 $p_T=p_{\mathrm{prior}}$\footnote{当噪声表恰好在 处达到先验时，该等式成立 $T$;否则，人们通常会 $p_T\approx p_{\mathrm{prior}}$ 足够大 $T$.}，预言机目标变为
@@ -186,7 +186,7 @@ $\mathtt{Solver}_{T\to 0}\approx\bPsi_{T\to 0}$。关于这一表述的另一种
 \begin{align}\label{eq:vsd-forward}
     \rvx_t^{\bm{\theta}} := \alpha_t \rmG_{\bm{\theta}}(\rvz) + \sigma_t \bm{\epsilon}, 
 \end{align}
-哪里 $\rvz \sim p_{\mathrm{prior}}$ 和 $ \bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$。因此，两者 $p_t$ 和 $p_t^{\bm{\theta}}$ 共享相同的高斯扩散核 
+其中 $\rvz \sim p_{\mathrm{prior}}$ 和 $ \bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$。因此，两者 $p_t$ 和 $p_t^{\bm{\theta}}$ 共享相同的高斯扩散核 
 $p_t(\rvx_t| \rvx_0)$ 但它们的起始分布不同（$p_{\mathrm{data}}$ 与\ $p_0^{\bm{\theta}}$ 一步合成样品）。
 
 \paragraph{训练目标和梯度。}
@@ -195,7 +195,7 @@ $p_t(\rvx_t| \rvx_0)$ 但它们的起始分布不同（$p_{\mathrm{data}}$ 与\ 
     \mathcal{L}_{\text{VSD}}(\bm{\theta}) :=\mathbb{E}_t \left[ \omega(t)  \mathcal{D}_{\text{KL}}(p_t^{\bm{\theta}} \, \| \, p_t) \right]
 = \mathbb{E}_{t, \rvz, \bm{\epsilon}} \left[ \omega(t) \left( \log p_t^{\bm{\theta}}(\rvx_t^{\bm{\theta}}) - \log p_t(\rvx_t^{\bm{\theta}}) \right) \right],
 \end{align*}
-哪里 $\omega(t)\geq 0$ 是与时间相关的加权函数。我们将在 \Cref{subsec:vsd-discussion} 为什么 KL 散度在分布级蒸馏中起着特殊作用。如图所示 \citep{wang2023prolificdreamer}，在人口水平上，当
+其中 $\omega(t)\geq 0$ 是与时间相关的加权函数。我们将在 \Cref{subsec:vsd-discussion} 为什么 KL 散度在分布级蒸馏中起着特殊作用。如图所示 \citep{wang2023prolificdreamer}，在人口水平上，当
 $p_0^{\bm{\theta}^*}=p_{\mathrm{data}}$，表示生成器的分布与数据分布匹配。因此，VSD 目标为学习提供了原则性的分布匹配损失 $p_{\mathrm{data}}$.
 
 然而，基于密度的目标制定缺乏有效的训练机制。幸运的是，通过求梯度 $\bm{\theta}$，我们得到表达式 \Cref{eq:vsd-grad}，总结为以下命题。为了符号简单起见，我们表示 $\hat\rvx_t := \rvx_t^{\bm{\theta}}$ 定义于 \Cref{eq:vsd-forward}.
@@ -593,7 +593,7 @@ PD 通过训练学生的单步图来匹配教师对两个相邻单步片段的�
 \[
 \E_{s,\rvx_s}\Big\|\rmG_{\btheta}(\rvx_s,s,0)\;-\;(\mathtt{Solver})^{\circ}_{s\to 0}(\rvx_s)\Big\|_2^2,
 \]
-哪里 $(\mathtt{Solver})^{\circ}_{s\to 0}$ 表示老师的完整作文来自 $s$ 至 $0$ 在具有步长的网格上 $\Delta s$，作为代理 $\bPsi_{s\to 0}$.\paragraph{我们可以使用其他求解器吗？}
+其中 $(\mathtt{Solver})^{\circ}_{s\to 0}$ 表示老师的完整作文来自 $s$ 至 $0$ 在具有步长的网格上 $\Delta s$，作为代理 $\bPsi_{s\to 0}$.\paragraph{我们可以使用其他求解器吗？}
 上面，我们在$\rvx$-预测参数化中使用了DDIM作为具体的
 PF——常微分方程采样器。基本蒸馏原理更为通用：几个
 良好的教师步骤会产生目标终点，并且学生会受到这样的训练

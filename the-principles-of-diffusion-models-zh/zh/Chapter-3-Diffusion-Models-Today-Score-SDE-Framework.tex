@@ -226,7 +226,7 @@ DDPM 使用方差计划增量注入噪声 $\{\beta_i\}_{i=1}^L$\footnote{在 \Cr
     & \rvx_{t+\Delta t} = \sqrt{1 - \beta(t)\Delta t} \rvx_t + \sqrt{\beta(t)\Delta t} \bm{\epsilon}_t 
     &&\approx \rvx_t - \frac{1}{2} \beta(t) \rvx_t  \Delta t + \sqrt{\beta(t)\Delta t}  \bm{\epsilon}_t,
 \end{align*}
-哪里 $\bm{\epsilon}_t \sim \mathcal{N}(\bm{0}, \rmI)$。有趣的是，两种噪声注入过程都遵循共同的结构模式：
+其中 $\bm{\epsilon}_t \sim \mathcal{N}(\bm{0}, \rmI)$。有趣的是，两种噪声注入过程都遵循共同的结构模式：
 \begin{align}\label{eq:euler-discrete-sde}
     \rvx_{t+\Delta t} \approx \rvx_t + \rvf(\rvx_t, t) \Delta t + g(t) \sqrt{\Delta t}\, \bm{\epsilon}_t,
 \end{align}
@@ -303,7 +303,7 @@ p_t(\rvx_t |\rvx_0)
 \begin{equation}\label{eq:affine-drift}
     \rvf(\rvx,t) = f(t) \rvx, 
 \end{equation}
-哪里 $f(t)$ 是标量函数 $t$，通常被视为非正数。在这种结构下，条件过程仍然是高斯给定的
+其中 $f(t)$ 是标量函数 $t$，通常被视为非正数。在这种结构下，条件过程仍然是高斯给定的
 $\rvx_0$，并且扰动核承认通过求解相关均值-方差 ODE 获得的闭式解~\citep{sarkka2019applied}
 （另见 \Cref{subsec:scoresde-perturbation-kernel}). {特别是，
 \[
@@ -642,7 +642,7 @@ p_t(\rvx_t) = \int p_t(\rvx_t |\rvx_0)\, p_{\mathrm{data}}(\rvx_0)\,\diff \rvx_0
 \[
 x_{t+\Delta t}  =  a  x_t  +  r  \epsilon,
 \]
-哪里 $a:=1+f(t)\Delta t$, $r:=g(t)\sqrt{\Delta t}$, 和 $ \epsilon\sim\mathcal N(0,1)$。等价地，前向一步转移核是高斯的：
+其中 $a:=1+f(t)\Delta t$, $r:=g(t)\sqrt{\Delta t}$, 和 $ \epsilon\sim\mathcal N(0,1)$。等价地，前向一步转移核是高斯的：
 \[
 x_{t+\Delta t}   |   x_t  \sim  \mathcal N\!\big(\cdot;a  x_t,   r^2\big).
 \]
@@ -880,7 +880,7 @@ $\nabla_{\rvx_t}\log p_t(\rvx_t)$，其评估需要求平均值
 \end{aligned}
 \end{equation}
 \end{mdframed}
-哪里 $\rvx_0 \sim p_{\mathrm{data}}$. \Cref{eq:conti-dsm_loss-real} 可以解释为连续时间对应的 \Cref{eq:nscn}，用积分代替离散情况下的求和。与定理中的结果类似~\ref{thm:sm-dsm}，最小化 \Cref{eq:conti-dsm_loss-real} 唯一确定如下：
+其中 $\rvx_0 \sim p_{\mathrm{data}}$. \Cref{eq:conti-dsm_loss-real} 可以解释为连续时间对应的 \Cref{eq:nscn}，用积分代替离散情况下的求和。与定理中的结果类似~\ref{thm:sm-dsm}，最小化 \Cref{eq:conti-dsm_loss-real} 唯一确定如下：
 
 \proppp{DSM 的最小化}{dsm-minimizer}{
 最小化器 $\mathbf{s}^*$ 满足
@@ -922,7 +922,7 @@ DSM目标可以理解为最小二乘误差问题。具体来说，在每个时�
 \begin{equation}\label{eq:euler-maruyama}
 \rvx_{t - \Delta t} \leftarrow \rvx_t - \left[ \mathbf{f}(\rvx_t, t) - g^2(t)  \mathbf{s}_{\bm{\phi}^\times}(\rvx_t, t) \right] \Delta t + g(t) \sqrt{\Delta t} \cdot \boldsymbol{\epsilon},
 \end{equation}
-哪里 $\boldsymbol{\epsilon} \sim \mathcal{N}(\bm{0}, \mathbf{I})$ 和 $\Delta t > 0$ 是步长。
+其中 $\boldsymbol{\epsilon} \sim \mathcal{N}(\bm{0}, \mathbf{I})$ 和 $\Delta t > 0$ 是步长。
 
 迭代此更新规则产生最终样本 $\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(0)$。如果评分模型准确，则这些生成样本的分布，表示为 $p_{\bm{\phi}^\times}^{\mathrm{SDE}}(\cdot; 0)$，提供了接近真实数据分布的近似值\footnote{理论上，估计精度取决于之间的差异 $p_T$ 和 $p_{\mathrm{prior}}$ （通常可以忽略不计），模型训练误差和数值离散化误差~\citep{de2022convergence,wang2024evaluating}。我们在这里不追求正式的界限。}:
 \[
@@ -1324,7 +1324,7 @@ p_t(\rvx_t|\rvx_0)
 \sigma_t^2\mathbf{I}
 \bigr),
 \end{equation}
-哪里 $\rvx_0\sim p_{\mathrm{data}}$, 和 $\alpha_t$ 和 $\sigma_t$ 是非负标量函数 $t\in[0,T]$。在标准前向扩散设置中，我们采用
+其中 $\rvx_0\sim p_{\mathrm{data}}$, 和 $\alpha_t$ 和 $\sigma_t$ 是非负标量函数 $t\in[0,T]$。在标准前向扩散设置中，我们采用
 \[
 \alpha_0=1,
 \qquad
@@ -1362,7 +1362,7 @@ $\alpha_t>0$ 和 $\sigma_t>0$ 用于 $t\in(0,T]$ 每当使用相应的比率时�
     +
     g(t)\diff\rvw(t),
 \end{align*}
-哪里 $f,g\colon[0,T]\rightarrow\mathbb{R}$ 是时间的实值函数。
+其中 $f,g\colon[0,T]\rightarrow\mathbb{R}$ 是时间的实值函数。
 
 系数 $f(t)$ 和 $g(t)$ 可以从分析中恢复
 $\alpha_t$ 和 $\sigma_t$。重要的是，并非所有选择
@@ -1463,7 +1463,7 @@ $p_t(\rvx_t|\rvx_0)$ 通过 $\alpha_t$ 和 $\sigma_t$，或者通过指定对应
 \begin{equation*}
     p(\rvx_t|\rvx_s, \rvx) = \mathcal{N}\left(\rvx_t; \bm{\mu}(\rvx_s, \rvx; s, t), \sigma^2(s, t) \bfI\right),
 \end{equation*}
-哪里
+其中
 \begin{align}\label{eq:p_backward_mean_var}
 \begin{aligned}
     \bm{\mu}(\rvx_s, \rvx; s, t) := \frac{\alpha_{s|t} \sigma_t^2}{\sigma_s^2} \rvx_s + \frac{\alpha_t \sigma^2_{s|t}}{\sigma_s^2} \rvx, \quad
@@ -1511,7 +1511,7 @@ $p_t(\rvx_t|\rvx_0)$ 通过 $\alpha_t$ 和 $\sigma_t$，或者通过指定对应
     &= \frac{1}{2} \big(\text{SNR}(t) - \text{SNR}(s)\big) \left\| \rvx_0 - \rvx_{\bm{\phi}}(\rvx_s, s) \right\|_2^2,
 \end{aligned}
 \end{align}
-哪里 $\rvx_s = \alpha_s\rvx_0 + \sigma_s\bm{\epsilon}$，与 $\rvx_0 \sim p_{\mathrm{data}}$, $\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$, 和 $\text{SNR}(s) := \alpha_s^2 / \sigma_s^2$ 表示该时刻的信噪比 $s$.
+其中 $\rvx_s = \alpha_s\rvx_0 + \sigma_s\bm{\epsilon}$，与 $\rvx_0 \sim p_{\mathrm{data}}$, $\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$, 和 $\text{SNR}(s) := \alpha_s^2 / \sigma_s^2$ 表示该时刻的信噪比 $s$.
 
 
 \rmkb{

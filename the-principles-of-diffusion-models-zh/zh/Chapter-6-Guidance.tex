@@ -412,7 +412,7 @@ $\rvx_0$和条件$\rvc$，数值越大表示越强
 &= \underbrace{\nabla_{\rvx_t} \log p_t(\rvx_t)}_{\text{unconditional score}} 
 + \underbrace{\nabla_{\rvx_t} \log p_t(\rvc | \rvx_t)}_{\text{classifier gradient}}, \label{eq:cg_bayes}
 \end{align}
-哪里 $p_t(\rvc | \rvx_t)$ 表示概率 $\mathbf{c}$ 条件为 $\mathbf{x}_{t}$ 预测条件 $\rvc$ 来自噪声输入 $\rvx_t$ 当时 $t$。这个分解\footnote{在最后一个恒等式中，
+其中 $p_t(\rvc | \rvx_t)$ 表示概率 $\mathbf{c}$ 条件为 $\mathbf{x}_{t}$ 预测条件 $\rvc$ 来自噪声输入 $\rvx_t$ 当时 $t$。这个分解\footnote{在最后一个恒等式中，
 $\nabla_{\rvx_t}\log p(\rvc)=0$ 因为 $p(\rvc)$ 不依赖于
 $\rvx_t$.} 激励 \emph{分类器引导} （CG）提出的方法
 \citet{dhariwal2021diffusion}。为了将群体恒等式与实践中使用的学习分类器分开，首先考虑预言数量。对于指导规模 $\omega\geq0$，在每个固定时间定义 $t$
@@ -456,7 +456,7 @@ CG仅在采样时应用，而不修改扩散模型本身。为了实现这一点
 \mathbb{E}_{t \sim \mathcal{U}[0,T], (\rvx, \rvc) \sim p_{\text{data}},  \bm{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})}
 \Big[ -\log p_{\bpsi}(\rvc | \rvx_t,t) \Big],
 \end{align}
-哪里 $(\rvx,\rvc)\sim p_{\text{data}}$ 表示配对标记数据，并且 $\rvx_t = \alpha_t \rvx + \sigma_t \bm{\epsilon}$ 是此时的噪声输入 $t$。分类器必须在噪声级别上进行训练，并且通常接收 $t$，或等效的噪声级别表示，作为输入，以便它可以近似
+其中 $(\rvx,\rvc)\sim p_{\text{data}}$ 表示配对标记数据，并且 $\rvx_t = \alpha_t \rvx + \sigma_t \bm{\epsilon}$ 是此时的噪声输入 $t$。分类器必须在噪声级别上进行训练，并且通常接收 $t$，或等效的噪声级别表示，作为输入，以便它可以近似
 $p_t(\rvc|\rvx_t)$ 整个扩散路径。训练后，分类器提供分数作为真实似然梯度的替代：
 \[
 \nabla_{\rvx_t} \log p_{\bpsi^\times}(\rvc |\rvx_t,t) \approx \nabla_{\rvx_t} \log p_t(\rvc |\rvx_t).
@@ -703,7 +703,7 @@ p_t(\cdot|\rvx_0)
 \sigma_{t-1}\sigma_t
 \underbrace{\hat{\rvs}(\rvx_t)}_{\text{in noise space}},
 \end{align}
-哪里
+其中
 $\hat{\rvx}_0(\rvx_t):=\rvx_{\bm{\phi}^\times}(\rvx_t,t)$ 是干净的
 $\rvx$-预测和
 $\hat{\rvs}(\rvx_t):=\rvs_{\bm{\phi}^\times}(\rvx_t,t)$ 是分数
@@ -757,7 +757,7 @@ $\hat{\rvs}(\rvx_t):=\rvs_{\bm{\phi}^\times}(\rvx_t,t)$ 是分数
 \right)}_{\text{B. noise space}},
 \end{aligned}
 \end{align}
-哪里
+其中
 $\eta_t^{\text{data}},\eta_t^{\text{latent}}\geq0$
 控制数据空间和噪声空间校正的强度，
 分别。
@@ -1142,7 +1142,7 @@ $\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)$.
 \nabla_{\rvx_t}
 \log p\bigl(\rvy|X_0=\hat\rvx_0(\rvx_t)\bigr),
 \end{align}
-哪里
+其中
 $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
 是给定的干净样本的后验平均值 $\rvx_t$，通常使用 Tweedie 公式根据预训练的扩散模型进行估计（\Cref{eq:tweedie}）。该插件近似用后验均值处的值替换测量似然的后验均值：
 \begin{align*}
@@ -1163,7 +1163,7 @@ $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
   &= -\frac{1}{2\sigma_{\rvy}^2}  \nabla_{\rvx_t} \bigl\| \rvy - \mathcal{A}(\hat\rvx_0) \bigr\|^2 \quad  \\
   &= \frac{1}{\sigma_{\rvy}^2}  \left[ \mathcal{J}_{\mathcal{A}}\big(\hat\rvx_0(\rvx_t)\big) \cdot \nabla_{\rvx_t} \hat\rvx_0(\rvx_t) \right]^\top \bigl( \rvy - \mathcal{A}\big(\hat\rvx_0(\rvx_t)\big) \bigr),
 \end{align*}
-哪里 $\mathcal{J}_{\mathcal{A}}\big(\hat\rvx_0(\rvx_t)\big) := \nabla_{\rvx_0} \mathcal{A}(\rvx) \big|_{\rvx = \hat\rvx_0(\rvx_t)}$ 表示前向算子相对于其输入的雅可比行列式。该公式通过分数近似管道传播梯度，反映测量似然如何随着噪声样本中的扰动而变化 $\rvx_t$。对于线性反问题，这进一步简化为：
+其中 $\mathcal{J}_{\mathcal{A}}\big(\hat\rvx_0(\rvx_t)\big) := \nabla_{\rvx_0} \mathcal{A}(\rvx) \big|_{\rvx = \hat\rvx_0(\rvx_t)}$ 表示前向算子相对于其输入的雅可比行列式。该公式通过分数近似管道传播梯度，反映测量似然如何随着噪声样本中的扰动而变化 $\rvx_t$。对于线性反问题，这进一步简化为：
 \begin{align*}
     \nabla_{\rvx_t} \log p_t(\rvy | \rvx_t) \approx \eqnmarkbox[OliveGreen]{guidance}{\frac{1}{\sigma_{\rvy}^2}} \,\,    \eqnmarkbox[Plum]{proj}{\left[ \rmA \cdot \nabla_{\rvx_t} \hat\rvx_0(\rvx_t) \right]^\top} \left(\eqnmarkbox[NavyBlue]{merror}{\rvy - \rmA(\hat\rvx_0(\rvx_t))}\right).
 \end{align*}
@@ -1201,7 +1201,7 @@ $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
 \rmF_{\bphi}\bigl((1-t)\rvx_0+t\rvy, t\bigr)-\rvx_0
 \Bigr\|_2^2,
 \]
-哪里 $p(\rvx_0,\rvy)$ 表示由干净目标组成的数据对的联合分布 $\rvx_0$ 及其损坏的观察结果 $\rvy$、 和 $p(t)$ 指定训练期间如何采样插值时间。也就是说， $\rmF_{\bphi}$ 经过训练，可以沿着插值路径从中间退化状态预测干净目标。对于这个平方误差损失，贝叶斯最优预测器是条件期望
+其中 $p(\rvx_0,\rvy)$ 表示由干净目标组成的数据对的联合分布 $\rvx_0$ 及其损坏的观察结果 $\rvy$、 和 $p(t)$ 指定训练期间如何采样插值时间。也就是说， $\rmF_{\bphi}$ 经过训练，可以沿着插值路径从中间退化状态预测干净目标。对于这个平方误差损失，贝叶斯最优预测器是条件期望
 \[
 \rmF^*(\rvx_t,t)=\mathbb E[\rvx_0|\rvx_t].
 \]
@@ -1339,7 +1339,7 @@ p:=\sigma(\Delta r),\quad \sigma(u)=\tfrac{1}{1+e^{-u}}.
 = \mathcal D_{\mathrm{KL}} \big(\mathrm{Bern}(y) \big\| \mathrm{Bern}(p_{r_{\bm\psi}})\big)
 + \mathcal H \big(\mathrm{Bern}(y)\big),
 \]
-哪里 $\mathcal H$ 是目标伯努利分布的熵。对数据集求平均值 $\mathcal D$ 给出
+其中 $\mathcal H$ 是目标伯努利分布的熵。对数据集求平均值 $\mathcal D$ 给出
 \begin{align}\label{eq:reward_loss}
     \mathcal L_{\mathrm{RM}}(\bm\psi)
 = \mathbb E_{\mathcal D} \Big[\mathcal D_{\mathrm{KL}}\left(\mathrm{Bern}(y) \big\| \mathrm{Bern}(p_{r_{\bm\psi}})\right)\Big]
@@ -1493,7 +1493,7 @@ KL 规范化政策目标 \Cref{eq:rlhf-policy-correct} 每个提示都有一个�
 =
 \frac{1}{Z(\mathbf c)} \pi_{\mathrm{ref}}(\mathbf x|\mathbf c)\exp(r(\mathbf c,\mathbf x)/\beta),
 \end{equation}
-哪里 $\pi_{\mathrm{ref}}(\mathbf x|\mathbf c):=p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$, 和 $Z(\mathbf c)$ 是确保分区功能 $\int \pi^*(\mathbf x|\mathbf c) \diff \mathbf x=1$.
+其中 $\pi_{\mathrm{ref}}(\mathbf x|\mathbf c):=p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$, 和 $Z(\mathbf c)$ 是确保分区功能 $\int \pi^*(\mathbf x|\mathbf c) \diff \mathbf x=1$.
 
 适用于较小的 $\beta$, $\exp(r/\beta)$ 变得更锐利，所以 $\pi^*$ 集中在高回报区域：回报占主导地位，政策远离 $\pi_{\mathrm{ref}}$，多样性减少，训练可能变得不稳定或容易出现奖励黑客行为。对于较大的 $\beta$, $\exp(r/\beta)$ 压平、保持 $\pi^*$ 更接近 $\pi_{\mathrm{ref}}$：KL术语占主导，更新保守，多样性遵循参考，但奖励收益有限。由于我们的目标是直接微调策略（无需训练单独的奖励模型）， \Cref{eq:rlhf-closed-form} 让我们 \emph{定义} 一个 \textit{隐性奖励} 来自任何策略。我们介绍如下：
 \paragraph{定义由反转驱动的隐式奖励 \Cref{eq:rlhf-closed-form}.}
@@ -1571,7 +1571,7 @@ $r(\mathbf c,\mathbf x_0)$。自从 $\mathbf x_0$ 是每个扩散轨迹的一部
 \big)
 \Big],
 \]
-哪里 $\pi_{\btheta}(\cdot|\mathbf c)$ 和
+其中 $\pi_{\btheta}(\cdot|\mathbf c)$ 和
 $\pi_{\mathrm{ref}}(\cdot|\mathbf c)$ 表示对应的路径分布。奖励项保持不变，而 KL 惩罚现在还控制潜在去噪轨迹如何偏离参考。在分布级别，假设标准化器是有限的，每个提示的优化器 $\mathbf c$ 具有基于能量的形式
 \begin{equation}\label{eq:path-closed-form}
 \pi^*(\mathbf x_{0:T}|\mathbf c)
@@ -1817,7 +1817,7 @@ $\boldsymbol\epsilon$-预测，
     \Big],
 \end{align*}
 \end{mdframed}
-哪里
+其中
 $\mathbf x_t^w=\alpha_t\mathbf x_0^w+\sigma_t\boldsymbol\epsilon^w$
 和
 $\mathbf x_t^l=\alpha_t\mathbf x_0^l+\sigma_t\boldsymbol\epsilon^l$。
