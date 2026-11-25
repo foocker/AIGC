@@ -25,3 +25,6 @@ t.py
 *.fls
 # These selected paper excerpts belong to the editable Seedance chapter set.
 !assets/seedance/figures/*.png
+
+# README previews of the translated and original book tables of contents.
+!assets/principles-of-diffusion-models/toc-*.png

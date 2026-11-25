@@ -22,3 +22,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_books.ps1
 
 成品写到仓库根目录，编译中间文件保存在忽略的 `build/`。只编译原理篇可加 `-Target theory`，只编译 Seedance 专题可加 `-Target seedance`。
 
+## 《扩散模型原理》目录对照
+
+[中文初译 PDF](the-principles-of-diffusion-models-zh/principles-diffusion-models-zh.pdf) / [英文原版 PDF（arXiv v3）](the-principles-of-diffusion-models-zh/original/principles-diffusion-models-v3-en.pdf)。两版目录均为 PDF 第2–5页；点击截图可查看大图。
+
+| 中文译本 · 目录第1页 | 英文原版 · 目录第1页 |
+| --- | --- |
+| [![中文译本目录第1页](assets/principles-of-diffusion-models/toc-zh-01.png)](assets/principles-of-diffusion-models/toc-zh-01.png) | [![英文原版目录第1页](assets/principles-of-diffusion-models/toc-en-01.png)](assets/principles-of-diffusion-models/toc-en-01.png) |
+
+<details>
+<summary>展开其余目录页（第2–4页）</summary>
+
+| 中文译本 | 英文原版 |
+| --- | --- |
+| [![中文译本目录第2页](assets/principles-of-diffusion-models/toc-zh-02.png)](assets/principles-of-diffusion-models/toc-zh-02.png) | [![英文原版目录第2页](assets/principles-of-diffusion-models/toc-en-02.png)](assets/principles-of-diffusion-models/toc-en-02.png) |
+| [![中文译本目录第3页](assets/principles-of-diffusion-models/toc-zh-03.png)](assets/principles-of-diffusion-models/toc-zh-03.png) | [![英文原版目录第3页](assets/principles-of-diffusion-models/toc-en-03.png)](assets/principles-of-diffusion-models/toc-en-03.png) |
+| [![中文译本目录第4页](assets/principles-of-diffusion-models/toc-zh-04.png)](assets/principles-of-diffusion-models/toc-zh-04.png) | [![英文原版目录第4页](assets/principles-of-diffusion-models/toc-en-04.png)](assets/principles-of-diffusion-models/toc-en-04.png) |
+
+</details>
+
