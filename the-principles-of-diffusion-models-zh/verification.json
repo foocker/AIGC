@@ -1,0 +1,651 @@
+{
+  "source": "arXiv:2510.21890v3",
+  "date": "2026-11-25",
+  "translation_status": "Full-book machine-assisted initial draft; no paragraph-by-paragraph human academic review",
+  "pdf": "principles-diffusion-models-zh.pdf",
+  "pdf_pages": 438,
+  "pdf_sha256": "cad24c081fffa92f7e4ccf865bfaecff617a419ebdc2f923520d492a09bf2096",
+  "original_pdf_pages": 522,
+  "chapter_and_appendix_bookmarks": [
+    [
+      2,
+      "深度生成建模",
+      19
+    ],
+    [
+      2,
+      "变分视角：从VAE到DDPM",
+      37
+    ],
+    [
+      2,
+      "分数视角：从能量模型到NCSN",
+      58
+    ],
+    [
+      2,
+      "当代扩散模型：分数SDE框架",
+      83
+    ],
+    [
+      2,
+      "流视角：从归一化流到流匹配",
+      119
+    ],
+    [
+      2,
+      "扩散模型的统一与系统视角",
+      155
+    ],
+    [
+      2,
+      "扩散模型与最优传输（选读）",
+      180
+    ],
+    [
+      2,
+      "引导与可控生成",
+      211
+    ],
+    [
+      2,
+      "用于快速采样的高阶求解器",
+      236
+    ],
+    [
+      2,
+      "基于蒸馏的快速采样方法",
+      290
+    ],
+    [
+      2,
+      "从头学习快速生成器",
+      304
+    ],
+    [
+      2,
+      "结语与展望",
+      341
+    ],
+    [
+      2,
+      "微分方程速成",
+      361
+    ],
+    [
+      2,
+      "密度演化：从变量替换到Fokker–Planck方程",
+      374
+    ],
+    [
+      2,
+      "扩散模型背后的数学：Itô微积分与Girsanov定理",
+      390
+    ],
+    [
+      2,
+      "补充材料与证明",
+      403
+    ],
+    [
+      2,
+      "参考文献",
+      428
+    ]
+  ],
+  "missing_glyph_warnings": [],
+  "unresolved_reference_or_citation_warnings": [],
+  "placeholder_leaks": [],
+  "overfull_hbox_warnings": 1,
+  "content_files": [
+    {
+      "file": "Preface.tex",
+      "identifiers": {
+        "labels": {
+          "source": 3,
+          "translation": 3,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 31,
+          "translation": 31,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 17,
+          "translation": 17,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 1,
+          "translation": 1,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 0,
+      "display_math_preserved": true,
+      "chinese_characters": 4120,
+      "sha256": "188435b225be53a7a94618b394631edf536e68ca78cb7fdb0ed518d4e447f212"
+    },
+    {
+      "file": "notations.tex",
+      "manually_edited_notation_explanations": true
+    },
+    {
+      "file": "Prologue-Deep-Generative-Modeling.tex",
+      "identifiers": {
+        "labels": {
+          "source": 13,
+          "translation": 13,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 16,
+          "translation": 16,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 8,
+          "translation": 8,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 1,
+          "translation": 1,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 18,
+      "display_math_preserved": true,
+      "chinese_characters": 5396,
+      "sha256": "07170e786c12817ce3c14e4663051935bf07161facd281bbdb25b4480bac279a"
+    },
+    {
+      "file": "Chapter-0-Diffusion-High-Level.tex",
+      "identifiers": {
+        "labels": {
+          "source": 3,
+          "translation": 3,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 9,
+          "translation": 9,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 1,
+          "translation": 1,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 2,
+          "translation": 2,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 1,
+      "display_math_preserved": true,
+      "chinese_characters": 2406,
+      "sha256": "e1fdf1fbdfcfdf2a0662f89aefad88cdbe66ec4d68b0a82514a3b9cc7c8c3560"
+    },
+    {
+      "file": "Chapter-1-Varational-Perspective-From-VAE-to-DDPM.tex",
+      "identifiers": {
+        "labels": {
+          "source": 33,
+          "translation": 33,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 59,
+          "translation": 59,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 4,
+          "translation": 4,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 4,
+          "translation": 4,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 28,
+      "display_math_preserved": true,
+      "chinese_characters": 8864,
+      "sha256": "91a725301f753cd27dae883ac3091162ce9e9a7c004423bdbe4b4440567be3be"
+    },
+    {
+      "file": "Chapter-2-Score-Based-Perspective-From-EBMs-to-NCSN.tex",
+      "identifiers": {
+        "labels": {
+          "source": 39,
+          "translation": 39,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 54,
+          "translation": 54,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 18,
+          "translation": 18,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 7,
+          "translation": 7,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 25,
+      "display_math_preserved": true,
+      "chinese_characters": 9647,
+      "sha256": "39e937ca913e6de50d0d6b59e4c6afb3df069afe1b7a89e382094689a8eb771f"
+    },
+    {
+      "file": "Chapter-3-Diffusion-Models-Today-Score-SDE-Framework.tex",
+      "identifiers": {
+        "labels": {
+          "source": 57,
+          "translation": 57,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 108,
+          "translation": 108,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 26,
+          "translation": 26,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 8,
+          "translation": 8,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 58,
+      "display_math_preserved": true,
+      "chinese_characters": 12298,
+      "sha256": "ae05073bb213432f65c9285563bd9254295472882f3a4ee3493482e256690ec8"
+    },
+    {
+      "file": "Chapter-4-Flow-Based-Perspective-From-NFs-to-Flow-Matching.tex",
+      "identifiers": {
+        "labels": {
+          "source": 62,
+          "translation": 62,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 111,
+          "translation": 111,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 32,
+          "translation": 32,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 9,
+          "translation": 9,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 38,
+      "display_math_preserved": true,
+      "chinese_characters": 14370,
+      "sha256": "596cf6509d1903156e813a6ebe36d895bf852d6d0467488467b61de25151f04b"
+    },
+    {
+      "file": "Chapter-5-They-Are-All-Equivalent.tex",
+      "identifiers": {
+        "labels": {
+          "source": 32,
+          "translation": 32,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 87,
+          "translation": 87,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 20,
+          "translation": 20,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 0,
+          "translation": 0,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 19,
+      "display_math_preserved": true,
+      "chinese_characters": 11477,
+      "sha256": "b5a99b8d848e5833ac9b4cd8ad0c9192f4c13141c0319599067f2a5c2c339d14"
+    },
+    {
+      "file": "Chapter-4-plus-OT-and-Diffusion-Model.tex",
+      "identifiers": {
+        "labels": {
+          "source": 37,
+          "translation": 37,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 66,
+          "translation": 66,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 39,
+          "translation": 39,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 5,
+          "translation": 5,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 29,
+      "display_math_preserved": true,
+      "chinese_characters": 12811,
+      "sha256": "57ed3e77377340de61ba7c8bbf8f742f5e621143469adb2f4f17dec3c4dcd3c6"
+    },
+    {
+      "file": "Chapter-6-Guidance.tex",
+      "identifiers": {
+        "labels": {
+          "source": 39,
+          "translation": 39,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 58,
+          "translation": 58,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 22,
+          "translation": 22,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 2,
+          "translation": 2,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 37,
+      "display_math_preserved": true,
+      "chinese_characters": 11188,
+      "sha256": "4f3eb3510adc2af3579755bf9fe401b24ec7cae69379d303e79775db55ce9143"
+    },
+    {
+      "file": "Chapter-7-Sophisticated-Solvers-for-Fast-Sampling.tex",
+      "identifiers": {
+        "labels": {
+          "source": 75,
+          "translation": 75,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 118,
+          "translation": 118,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 22,
+          "translation": 22,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 5,
+          "translation": 5,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 61,
+      "display_math_preserved": true,
+      "chinese_characters": 21968,
+      "sha256": "31b855de5ec561e168981fa400cb74159586bd697cf6fbeb2b55f14b58f7348d"
+    },
+    {
+      "file": "Chapter-8-Post-Training-Methods-for-Fast-Sampling.tex",
+      "identifiers": {
+        "labels": {
+          "source": 21,
+          "translation": 21,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 37,
+          "translation": 37,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 13,
+          "translation": 13,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 1,
+          "translation": 1,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 15,
+      "display_math_preserved": true,
+      "chinese_characters": 6585,
+      "sha256": "fad12e99ce2fc248f1da577e392615a21de3300b700d82140f5394b50b5cd1ec"
+    },
+    {
+      "file": "Chapter-9-Learning-Fast-Generator-from-Scratch.tex",
+      "identifiers": {
+        "labels": {
+          "source": 62,
+          "translation": 62,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 130,
+          "translation": 130,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 42,
+          "translation": 42,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 8,
+          "translation": 8,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 66,
+      "display_math_preserved": true,
+      "chinese_characters": 13503,
+      "sha256": "f7fc63abd7057d95600ba6d29f63b102654838a666b800e04b49c38be1a51c86"
+    },
+    {
+      "file": "Chapter-10-Epilogue-and-Outlook.tex",
+      "identifiers": {
+        "labels": {
+          "source": 20,
+          "translation": 20,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 26,
+          "translation": 26,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 18,
+          "translation": 18,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 6,
+          "translation": 6,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 8,
+      "display_math_preserved": true,
+      "chinese_characters": 11822,
+      "sha256": "c7aed957a2fede8ed01d0d51979b53f0f22f609710dd8533c99eed39adfc3536"
+    },
+    {
+      "file": "A_Crash-Course-of-DE.tex",
+      "identifiers": {
+        "labels": {
+          "source": 17,
+          "translation": 17,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 23,
+          "translation": 23,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 2,
+          "translation": 2,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 1,
+          "translation": 1,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 13,
+      "display_math_preserved": true,
+      "chinese_characters": 5898,
+      "sha256": "523f59fb02a3613f607fee14f3c422d32cb3f46eaa09bbb38837ba761ac731f6"
+    },
+    {
+      "file": "B_Continuity-Equation.tex",
+      "identifiers": {
+        "labels": {
+          "source": 13,
+          "translation": 13,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 24,
+          "translation": 24,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 4,
+          "translation": 4,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 0,
+          "translation": 0,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 14,
+      "display_math_preserved": true,
+      "chinese_characters": 5971,
+      "sha256": "5baaac61f5cc8bb45b5d42eabc1f4cdad8d03eefae47c586080484993889ab9b"
+    },
+    {
+      "file": "C_SDE-and-Ito.tex",
+      "identifiers": {
+        "labels": {
+          "source": 12,
+          "translation": 12,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 14,
+          "translation": 14,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 2,
+          "translation": 2,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 0,
+          "translation": 0,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 16,
+      "display_math_preserved": true,
+      "chinese_characters": 3889,
+      "sha256": "7a76768cecd1bcbd14ef7ddbe56aa802321ccdc72fa905a60504fa2861d0ef26"
+    },
+    {
+      "file": "D_Proofs.tex",
+      "identifiers": {
+        "labels": {
+          "source": 27,
+          "translation": 27,
+          "same_sequence": true
+        },
+        "references": {
+          "source": 35,
+          "translation": 35,
+          "same_sequence": true
+        },
+        "citations": {
+          "source": 3,
+          "translation": 3,
+          "same_sequence": true
+        },
+        "images": {
+          "source": 0,
+          "translation": 0,
+          "same_sequence": true
+        }
+      },
+      "display_math_blocks": 74,
+      "display_math_preserved": true,
+      "chinese_characters": 4347,
+      "sha256": "59ce31bd9b98c4a7b9d385aa3773c00ab1cb9c04f08f576aef2e32b6f40b95de"
+    }
+  ],
+  "editorial_changes": [
+    "Chapter/section terminology corrections",
+    "Manual abstract, acknowledgements and notation explanations",
+    "Chinese theorem and navigation labels",
+    "Chinese command termination spacing",
+    "Original comments restored inside math/TikZ environments",
+    "Wider text block for long formulas",
+    "One mathrm reference changed to text for Chinese glyphs"
+  ],
+  "original_figures_and_bibliography_kept_in_original_language": true,
+  "rendered_visual_review_pdf_pages": [
+    6,
+    15,
+    16,
+    17,
+    64,
+    78,
+    233,
+    260,
+    269,
+    438
+  ],
+  "layout_note": "One 2.09pt overfull box remains in a footnote; within the physical page margins. Final rendered samples show no clipping or overlapping text."
+}

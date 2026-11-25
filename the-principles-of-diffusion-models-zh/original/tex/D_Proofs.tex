@@ -1,0 +1,1709 @@
+\chapter{Supplementary Materials and Proofs}\label{app:proof}
+\section{Variational Perspective}\label{app-sec:var-proof}
+
+
+\subsection{Theorem~\ref{thm:equiv-marginal-kl}: Equivalence Between Marginal and Conditional KL Minimization}\label{subsec:proof-equiv-marginal-kl}
+\paragraph{\textit{Proof.}} \textbfs{Derivation of \Cref{eq:kl-matching}.}
+
+We start by expanding the right-hand side expectation:
+\begin{align*}
+    &\mathbb{E}_{p(\rvx_0, \rvx_i)}\left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0) \| p_\phi(\rvx_{i-1}|\rvx_i)\big)
+    \right]
+    \\
+    =& \int \int p(\rvx_0, \rvx_i)   
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0) \| p_\phi(\rvx_{i-1}|\rvx_i)\big) 
+    \diff\rvx_0 \diff\rvx_i.
+\end{align*}
+By the definition of KL divergence,
+\begin{align*}
+    &\mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0) \| p_\phi(\rvx_{i-1}|\rvx_i)\big)
+    = \int p(\rvx_{i-1}|\rvx_i, \rvx_0) 
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)} 
+    \diff\rvx_{i-1}.
+\end{align*}
+Substituting this into the expectation, we have
+\begin{align*}
+    &\int \int \int p(\rvx_0, \rvx_i)  p(\rvx_{i-1}|\rvx_i, \rvx_0) 
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)} 
+    \diff\rvx_{i-1} \diff\rvx_0 \diff\rvx_i.
+\end{align*}
+Using the chain rule of probability,
+\begin{align*}
+    p(\rvx_0, \rvx_i) 
+    &= p(\rvx_i)   p(\rvx_0|\rvx_i),
+\end{align*}
+we rewrite the integral as
+\begin{align*}
+    &\int p(\rvx_i) \int p(\rvx_0|\rvx_i) \int p(\rvx_{i-1}|\rvx_i, \rvx_0)
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)} 
+    \diff\rvx_{i-1} \diff\rvx_0 \diff\rvx_i.
+\end{align*}
+This allows us to express the expectation in nested form:
+\begin{align*}
+    &\mathbb{E}_{p(\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_{i-1}|\rvx_i, \rvx_0)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    \right]
+    \right]
+    \right].
+\end{align*}
+
+Next, we apply the decomposition of the logarithm:
+\begin{align*}
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    =\log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p(\rvx_{i-1}|\rvx_i)} 
+    + \log \frac{p(\rvx_{i-1}|\rvx_i)}{p_\phi(\rvx_{i-1}|\rvx_i)}.
+\end{align*}
+Substituting this back into the expectation gives two terms:
+\begin{align*}
+    &\mathbb{E}_{p(\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_{i-1}|\rvx_i, \rvx_0)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p(\rvx_{i-1}|\rvx_i)}
+    \right]
+    \right]
+    \right]
+    \\
+    &+
+    \mathbb{E}_{p(\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_{i-1}|\rvx_i, \rvx_0)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    \right]
+    \right]
+    \right].
+\end{align*}
+Since the second logarithmic term does not depend on $\rvx_0$, by the law of total probability
+\begin{align*}
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_{i-1}|\rvx_i, \rvx_0)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    \right]
+    \right]
+    = \mathbb{E}_{p(\rvx_{i-1}|\rvx_i)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    \right].
+\end{align*}
+Similarly, the first term is the KL divergence
+\begin{align*}
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0)  \|  p(\rvx_{i-1}|\rvx_i)\big)
+    \right].
+\end{align*}
+Putting it all together, we obtain the decomposition:
+\begin{align*}
+    &\mathbb{E}_{p(\rvx_0, \rvx_i)} \left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0)  \|  p_\phi(\rvx_{i-1}|\rvx_i)\big)
+    \right]
+    \\
+    =& \mathbb{E}_{p(\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0)  \|  p(\rvx_{i-1}|\rvx_i)\big)
+    \right]
+    \right]
+    \\
+    &+
+    \mathbb{E}_{p(\rvx_i)} \left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i)  \|  p_\phi(\rvx_{i-1}|\rvx_i)\big)
+    \right].
+\end{align*}
+
+\textbfs{Proof of Optimality.} To prove:
+\[
+p^*(\rvx_{i-1}|\rvx_i)
+=
+p(\rvx_{i-1}|\rvx_i)
+=
+\mathbb{E}_{p(\rvx_0|\rvx_i)}
+\left[
+p(\rvx_{i-1}|\rvx_i,\rvx_0)
+\right],
+\qquad
+\rvx_i \sim p_i.
+\]
+The first identity follows from the fact that the KL divergence $\mathcal{D}_{\mathrm{KL}}(p \| p_{\bm{\phi}})$ is minimized when $p^* = p$, assuming the parameterization is sufficiently expressive. The second identity follows directly from the law of total probability.
+\hfill$\blacksquare$
+
+
+
+\subsection{Theorem~\ref{thm:ddpm-elbo}: ELBO of Diffusion Model}\label{app:vlb-proof}
+
+\paragraph{\textit{Proof.}} For notational simplicity, we denote
+\[
+\rvx_{1:L}:=(\rvx_1,\ldots,\rvx_L).
+\]
+
+\textbfs{Step 1: Apply Jensen's Inequality.}
+The marginal log-likelihood is
+\[
+\log p_{\bm{\phi}}(\rvx_0)
+=
+\log \int p_{\bm{\phi}}(\rvx_0,\rvx_{1:L})\,\diff \rvx_{1:L},
+\]
+where the joint generative distribution is
+\[
+p_{\bm{\phi}}(\rvx_0,\rvx_{1:L})
+=
+p_{\text{prior}}(\rvx_L)\prod_{i=1}^L p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i).
+\]
+
+We introduce the forward noising distribution
+\[
+p(\rvx_{1:L}| \rvx_0)
+=
+\prod_{i=1}^L p(\rvx_i| \rvx_{i-1}),
+\]
+and rewrite
+\[
+\log p_{\bm{\phi}}(\rvx_0)
+=
+\log \int
+p(\rvx_{1:L}| \rvx_0)
+\frac{p_{\bm{\phi}}(\rvx_0,\rvx_{1:L})}{p(\rvx_{1:L}| \rvx_0)}
+\,\diff \rvx_{1:L}.
+\]
+Applying Jensen's inequality yields
+\[
+\log p_{\bm{\phi}}(\rvx_0)
+\ge
+\mathbb{E}_{p(\rvx_{1:L}| \rvx_0)}
+\left[
+\log
+\frac{p_{\bm{\phi}}(\rvx_0,\rvx_{1:L})}{p(\rvx_{1:L}| \rvx_0)}
+\right]
+=: \mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi}),
+\]
+and hence
+\[
+-\log p_{\bm{\phi}}(\rvx_0)
+\le
+-\mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi}).
+\]
+
+\textbfs{Step 2: Expand the ELBO.}
+Substituting the factorizations into the ELBO gives
+\begin{align*}
+\mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi})
+&=
+\mathbb{E}_{p(\rvx_{1:L}| \rvx_0)}
+\Bigg[
+\log p_{\text{prior}}(\rvx_L)
++
+\sum_{i=1}^L \log p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
+-
+\sum_{i=1}^L \log p(\rvx_i| \rvx_{i-1})
+\Bigg].
+\end{align*}
+Therefore,
+\begin{align*}
+-\mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi})
+&=
+\mathbb{E}_{p(\rvx_{1:L}| \rvx_0)}
+\Bigg[
+\log \frac{p(\rvx_L| \rvx_0)}{p_{\text{prior}}(\rvx_L)}
++
+\sum_{i=2}^L
+\log \frac{p(\rvx_{i-1}| \rvx_i,\rvx_0)}{p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)}
+-
+\log p_{\bm{\phi}}(\rvx_0| \rvx_1)
+\Bigg].
+\end{align*}
+Here we used the identity
+\[
+p(\rvx_{1:L}| \rvx_0)
+=
+p(\rvx_L| \rvx_0)\prod_{i=2}^L p(\rvx_{i-1}| \rvx_i,\rvx_0),
+\]
+which follows from the Markov structure of the forward process.
+
+Now group the terms according to their dependence:
+\begin{align*}
+-\mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi})
+&=
+\underbrace{
+\mathbb{E}_{p(\rvx_L| \rvx_0)}
+\left[
+\log \frac{p(\rvx_L| \rvx_0)}{p_{\text{prior}}(\rvx_L)}
+\right]
+}_{\mathcal{L}_{\text{prior}}(\rvx_0)}
++
+\underbrace{
+\mathbb{E}_{p(\rvx_1| \rvx_0)}
+\left[
+-\log p_{\bm{\phi}}(\rvx_0| \rvx_1)
+\right]
+}_{\mathcal{L}_{\text{recon.}}(\rvx_0;\bm{\phi})}
+\\
+&\quad+
+\underbrace{
+\sum_{i=2}^L
+\mathbb{E}_{p(\rvx_i| \rvx_0)}
+\left[
+\mathcal{D}_{\mathrm{KL}}
+\big(
+p(\rvx_{i-1}| \rvx_i,\rvx_0)
+\|
+p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
+\big)
+\right]
+}_{\mathcal{L}_{\text{diffusion}}(\rvx_0;\bm{\phi})}.
+\end{align*}
+This proves the claimed decomposition.
+\hfill$\blacksquare$
+
+
+\clearpage
+\newpage
+
+\section{Score-Based Perspective}\label{app-sec:score-proof}
+
+\subsection{Proposition~\ref{sm-trace}: Tractable Score Matching via Integration by Parts}\label{app-sec:sm-trace}
+\paragraph{\textit{Proof.}}
+
+ \textbfs{Expanding $\mathcal{L}_{\text{SM}}(\bm{\phi})$. }
+        Let us expand the squared difference inside the expectation:
+        \begin{align*}
+        \mathcal{L}_{\text{SM}}(\bm{\phi}) &= \frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs_{\bm{\phi}}(\rvx)}_2^2 - 2 \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle + \norm{\rvs(\rvx)}_2^2 \right] \\
+        &= \frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs_{\bm{\phi}}(\rvx)}_2^2 \right] - \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle \right] \\
+        &\quad + \frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs(\rvx)}_2^2 \right].
+        \end{align*}
+        We now focus on the cross-product term:
+        \[
+        \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle \right].
+        \]
+        Using the fact that
+        \[
+        \nabla_{\rvx} \log p_{\text{data}}(\rvx) = \frac{\nabla_{\rvx}p_{\text{data}}(\rvx)}{p_{\text{data}}(\rvx)},
+        \]
+        and assuming $p_{\text{data}}(\rvx)$ is not zero (e.g., on its support), the cross-product term becomes:
+        \begin{align*}
+            \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle \right] 
+             &= \int \rvs_{\bm{\phi}}(\rvx)^\top  \nabla_{\rvx} \log p_{\text{data}}(\rvx) p_{\text{data}}(\rvx) \diff \rvx \\
+             &= \int \rvs_{\bm{\phi}}(\rvx)^\top  \nabla_{\rvx}p_{\text{data}}(\rvx) \diff \rvx \\
+             &= \sum_{i=1}^{D} \int  s_{\bm{\phi}}^{(i)}(\rvx) \partial_{x_i}p_{\text{data}}(\rvx) \diff \rvx,
+        \end{align*}
+        where $s_{\bm{\phi}}^{(i)}(\rvx)$ is the $i$-th component of the score function 
+        \[
+        \rvs_{\bm{\phi}} = \left( s_{\bm{\phi}}^{(1)}, s_{\bm{\phi}}^{(2)}, \dots, s_{\bm{\phi}}^{(D)} \right).
+        \]
+        \proofparagraph{Integration by Parts.}
+        We use the following integration-by-parts formula~\citep{evans10}, which is derived from standard calculus:
+        \begin{lemma*}
+            Let $u, v$ be differentiable real-valued functions on a ball $\mathbb{B}(\bm{0}, R) \subset \mathbb{R}^D$ of radius $R>0$. Then for $i = 1, \ldots, D$, the formula holds:
+        \[
+        \int_{\mathbb{B}(\bm{0}, R)} u   \partial_{x_i} v   \diff \rvx = -\int_{\mathbb{B}(\bm{0}, R)} v   \partial_{x_i} u   \diff \rvx + \int_{\partial \mathbb{B}(\bm{0}, R)} u v \nu_i   \diff S,
+        \]
+        where $\nu = (\nu_1, \ldots, \nu_D)$ is the outward unit normal to the boundary $\partial \mathbb{B}(\bm{0}, R)$---a sphere with radius $R>0$, and $\diff S$ is the surface measure on $\partial \mathbb{B}(\bm{0}, R)$.
+        \end{lemma*}
+        We apply this formula to $u(\rvx) := s_{\bm{\phi}}^{(i)}(\rvx)$ and $v(\rvx) = p_{\text{data}}(\rvx)$ for all $i = 1, \dots, D$, assuming that
+        \[
+        |u(\rvx) v(\rvx)| \to 0 \quad \text{as } R \to \infty.
+        \]
+        Summing the results over all $i = 1, \dots, D$, we get:
+        \begin{align*}
+            \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle \right] 
+             &= - \sum_{i=1}^{D} \int  \partial_{x_i}s_{\bm{\phi}}^{(i)}(\rvx) p_{\text{data}}(\rvx) \diff \rvx \\
+             &= - \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[\Tr\left(\nabla_{\rvx}\rvs_{\bm{\phi}}(\rvx)\right) \right].
+        \end{align*}
+        Combining all results, we have:
+        \begin{align*}
+        \mathcal{L}_{\text{SM}}(\bm{\phi}) &= \underbrace{\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[\Tr\left(\nabla_{\rvx}\rvs_{\bm{\phi}}(\rvx)\right) + \frac{1}{2}  \norm{\rvs_{\bm{\phi}}(\rvx)}_2^2 \right]}_{\widetilde{\mathcal{L}}_{\text{SM}}(\bm{\phi})} \\
+        &\quad + \underbrace{\frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs(\rvx)}_2^2 \right]}_{=:C},
+        \end{align*}
+        where $C$ depends only on the distribution $p_{\text{data}}$, which concludes the proof.
+\hfill$\blacksquare$
+
+\subsection{Theorem~\ref{thm:sm-dsm}: Equivalence Between SM and DSM Minimization}\label{app-sec:sm-dsm}
+\paragraph{\textit{Proof.}} Expanding both $\mathcal{L}_{\text{SM}}(\bm{\phi}; \sigma)$ and $\mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma)$, we have:
+\begin{align*}
+ &\mathcal{L}_{\text{SM}}(\bm{\phi}; \sigma) = \frac{1}{2} \mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})} 
+ \begin{aligned}[t]
+         \Big[ 
+    \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 
+    &- 2 \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}) \\
+    &+ \norm{\nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx})}_2^2 
+    \Big], 
+ \end{aligned}
+\\
+&\mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma) = \frac{1}{2} \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)}
+ \begin{aligned}[t]
+         \Big[
+    \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 
+    &- 2 \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top \nabla_{\tilde{\rvx}} \log p_{\sigma}(\tilde{\rvx} | \rvx) \\
+    &+ \norm{\nabla_{\tilde{\rvx}} \log p_{\sigma}(\tilde{\rvx} | \rvx)}_2^2 
+    \Big].
+ \end{aligned}
+\end{align*}
+Subtracting the two equations yields:
+\begin{align*}
+ &\mathcal{L}_{\text{SM}}(\bm{\phi}; \sigma) -\mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma) 
+ \\= \frac{1}{2} &\Bigg( \mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})} \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 - \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)} \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2\Bigg)
+ \\ \quad - &  
+ \begin{aligned}[t]
+ \Bigg(
+      \mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}  &\left[ \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}) \right] \\ 
+      &- \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)}\left[ \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}| \rvx)\right]
+      \Bigg)
+ \end{aligned}
+ \\ \quad +  \frac{1}{2}&\Bigg(\mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}  \norm{\nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx})}_2^2  -  \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)} \norm{\nabla_{\tilde{\rvx}} \log p_{\sigma}(\tilde{\rvx} | \rvx)}_2^2   \Bigg).
+\end{align*}
+Next, we address the three terms one at a time. For the first term, since $p_\sigma(\tilde{\rvx}) = \int p_{\sigma}(\tilde{\rvx} | \rvx) p_{\text{data}}(\rvx) \diff\rvx$, we can rewrite it as:
+\begin{align*}
+    \mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})} \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 
+    &= \int \Big( \int p_{\sigma}(\tilde{\rvx} | \rvx) p_{\text{data}}(\rvx)  \diff\rvx \Big) \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 \diff \tilde{\rvx} 
+    \\ &= \int p_{\text{data}}(\rvx) \int p_{\sigma}(\tilde{\rvx} | \rvx) \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 \diff \tilde{\rvx} \diff\rvx
+    \\ &= \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)} \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2.
+\end{align*}
+Thus, the first term is zero. For the second term:
+\begin{align}\label{eq:dsm-sec-term}
+\begin{aligned}
+          &\mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}\left[ \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}) \right] 
+      \\=&\int  p_\sigma(\tilde{\rvx}) \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \frac{\nabla_{\tilde{\rvx}} p_\sigma(\tilde{\rvx})}{p_\sigma(\tilde{\rvx})}  \diff\tilde\rvx
+        \\=&\int   \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \int p_{\sigma}(\tilde{\rvx} | \rvx) p_{\text{data}}(\rvx) \diff\rvx \diff\tilde\rvx
+    \\=&\int \int  \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top    \nabla_{\tilde{\rvx}}p_{\sigma}(\tilde{\rvx} | \rvx) p_{\text{data}}(\rvx) \diff\tilde\rvx \diff\rvx 
+      \\=  &\mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)}\left[ \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}| \rvx)\right].
+\end{aligned}
+\end{align}
+Thus, it is also zero. For the third term, note that:
+\[
+C:=\frac{1}{2}\Bigg(\mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}  \norm{\nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx})}_2^2  -  \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)} \norm{\nabla_{\tilde{\rvx}} \log p_{\sigma}(\tilde{\rvx} | \rvx)}_2^2   \Bigg)
+\]
+depends only on $p_{\text{data}}(\rvx)$ and $p_{\sigma}(\tilde{\rvx}|\rvx)$, and hence it is constant with respect to $\bm{\phi}$.
+\hfill$\blacksquare$
+
+\subsection{Lemma~\ref{tweedie}: Tweedie's Formula}\label{app-sec:tweedie}
+We first state a more general form of Tweedie’s formula, which considers time-dependent Gaussian perturbations, and we provide its proof below.
+
+
+\paragraph{Tweedie’s Identity with Time-Dependent Parameters.}
+Let
+$\rvx_t|\rvx_0 \sim
+\mathcal{N}\big(\cdot; \alpha_t\rvx_0, \sigma_t^2\rmI\big)$. Then Tweedie's formula says
+\begin{align*}
+\alpha_t \mathbb{E}_{\mathbf{x}_0 \sim p(\mathbf{x}_0|\rvx_t)}[\mathbf{x}_0|\rvx_t] = \rvx_t + \sigma_t^2 \nabla_{\rvx_t} \log p_t(\rvx_t),
+\end{align*}
+where the expectation is taken over the posterior distribution $p(\mathbf{x}_0|\rvx_t)$ of $\mathbf{x}_0$ given the observed $\rvx_t$, and $p_t(\rvx_t)$ is the marginal density of $\rvx_t$.
+
+
+\paragraph{\textit{Proof.}}
+
+
+\paragraph{Marginal Density and Its Score.}
+We recall that the marginal density of $\rvx_t$ is given by
+\begin{align*}
+p_t(\rvx_t) = \int p_t(\rvx_t|\rvx_0)  p_0(\rvx_0)  \diff\rvx_0.
+\end{align*}
+We now compute the score function:
+\begin{align*}
+\nabla_{\rvx_t} \log p_t(\rvx_t) 
+= \frac{\nabla_{\rvx_t} p_t(\rvx_t)}{p_t(\rvx_t)} = \frac{1}{p_t(\rvx_t)} \int \nabla_{\rvx_t} p_t(\rvx_t|\rvx_0)  p_0(\rvx_0)  \diff\rvx_0.
+\end{align*}
+We therefore need to compute the gradient of the conditional density.
+
+\paragraph{Gradient of the Conditional and Rearrangement.}
+The gradient of the conditional Gaussian density is:
+\begin{align*}
+\nabla_{\rvx_t} p_t(\rvx_t|\rvx_0) 
+= -p_t(\rvx_t|\rvx_0) \cdot \sigma_t^{-2} (\rvx_t - \alpha_t \rvx_0).
+\end{align*}
+Substituting this into the previous expression, we have:
+\begin{align*}
+\nabla_{\rvx_t} p_t(\rvx_t) 
+&= \int \nabla_{\rvx_t} p_t(\rvx_t|\rvx_0)  p_0(\rvx_0)  \diff\rvx_0 \\
+&= -\sigma_t^{-2} \int (\rvx_t - \alpha_t \rvx_0)  p_t(\rvx_t|\rvx_0)  p_0(\rvx_0)  \diff\rvx_0 \\
+&= -\sigma_t^{-2} \int (\rvx_t - \alpha_t \rvx_0)  p(\rvx_0|\rvx_t)  p_t(\rvx_t)  \diff\rvx_0 \\
+&= -p_t(\rvx_t)  \sigma_t^{-2} \left(\rvx_t - \alpha_t  \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0\vert \rvx_t] \right).
+\end{align*}
+Dividing both sides by $p_t(\rvx_t)$, we obtain:
+\begin{align*}
+\nabla_{\rvx_t} \log p_t(\rvx_t) 
+= -\sigma_t^{-2} \left(\rvx_t - \alpha_t  \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0\vert \rvx_t] \right).
+\end{align*}
+Rearranging yields:
+\begin{align*}
+\rvx_t + \sigma_t^{2} \nabla_{\rvx_t} \log p_t(\rvx_t) 
+= \alpha_t  \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0\vert \rvx_t].
+\end{align*}
+This completes the derivation.
+
+\subsection{Stein’s Identity and Surrogate SURE Objective}\label{app-sec:stein-identity}
+
+\paragraph{Stein's Identity.} Stein’s identity is the integration-by-parts technique that turns expectations under an unknown density  into expectations of observable functions and their derivatives, which cancels the partition function and enables unbiased, tractable objectives and tests without ever evaluating the unknown density or the partition function. We begin with the simplest one-dimensional case and then extend it to the form needed to prove the surrogate loss for SURE.
+\subparagraph{1D, Standard Normal Case.}
+If $z \sim \mathcal{N}(0,1)$ and $f$ has suitable decay, then Stein's identity states:
+\[
+\E[f'(z)]  =  \E[z f(z)] .
+\]
+Denote $\phi(z) := \tfrac{1}{\sqrt{2\pi}}  e^{-z^2/2}$, the one-dimensional standard normal density.
+The proof follows by integration by parts, using $\phi'(z) = -z\phi(z)$, together with the vanishing boundary term. 
+To see this precisely, we compute
+\[
+\E[f'(z)] 
+= \int_{-\infty}^{\infty} f'(z)  \phi(z)  \diff z.
+\]
+By integration by parts, with $u=\phi(z)$ and $\diff v=f'(z)  \diff z$, we obtain
+\[
+\int f'(z)  \phi(z)  \diff z
+= \Big[ f(z)  \phi(z) \Big]_{-\infty}^{\infty}
+- \int f(z)  \phi'(z)  \diff z.
+\]
+Since $\phi'(z) = -z\phi(z)$ and $f(z)\phi(z)\to 0$ as $|z|\to\infty$ (decay condition), the boundary term vanishes and we have
+\[
+\E[f'(z)]  =  \int f(z)  z  \phi(z)  \diff z  =  \E[z f(z)].
+\]
+This completes the derivation and proves the one-dimensional case of Stein's identity.
+
+
+\subparagraph{Multivariate, Standard Normal Case.}
+If $\rvz \sim \mathcal{N}(\mathbf{0},\rmI_D)$ and $g:\R^D \to \R$, then Stein's identity is
+\[
+\E[\nabla g(\rvz)]  =  \E[\rvz g(\rvz)].
+\]
+Equivalently, for $\mathbf{u}:\R^D \to \R^D$,
+\begin{align}\label{eq:stein-multi}
+    \E[ \nabla_{\rvz} \cdot\mathbf{u}(\rvz)]  =  \E[\rvz^\top \mathbf{u}(\rvz)] .
+\end{align}
+
+
+\subparagraph{Identity Needed for SURE.}
+With $\tilde{\rvx}=\rvx+\sigma\rvz$, where $\rvz \sim \mathcal{N}(\mathbf{0},\rmI_D)$, and any vector function $\mathbf{a}$ of suitable regularity,
+\begin{align}\label{eq:stein-for-sure}
+    \E\big[(\tilde{\rvx}-\rvx)^\top \mathbf{a}(\tilde{\rvx})  \big|  \rvx\big]
+ =  \sigma^2 \E\big[ \nabla_{\tilde{\rvx}} \cdot\mathbf{a}(\tilde{\rvx})  \big|  \rvx\big]. 
+\end{align}
+This is obtained by applying \Cref{eq:stein-multi} and using the chain rule.
+
+\paragraph{Deriving SURE from the Conditional MSE.}
+Let $\rmD:\R^D \to \R^D$ be a denoiser and define
+\[
+R(\rmD;\rvx):=\E \left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2| \rvx\right].
+\]
+Expand around $\tilde{\rvx}$:
+\[
+\begin{aligned}
+&~R(\rmD;\rvx) \\
+=&~\E \left[\|\rmD(\tilde{\rvx})-\tilde{\rvx}\|^2  \big|  \rvx\right]
++2 \E \left[(\rmD(\tilde{\rvx})-\tilde{\rvx})^\top(\tilde{\rvx}-\rvx)  \big|  \rvx\right]
++\E \left[\|\tilde{\rvx}-\rvx\|^2  \big|  \rvx\right] \\
+=&~\E \left[\|\rmD(\tilde{\rvx})-\tilde{\rvx}\|^2  \big|  \rvx\right]
++2\Big(\underbrace{\E[(\tilde{\rvx}-\rvx)^\top \rmD(\tilde{\rvx})|\rvx]}_{\substack{\sigma^2 \E[ \nabla_{\tilde{\rvx}} \cdot\rmD(\tilde{\rvx})|\rvx] \\  \text{ by \Cref{eq:stein-for-sure}}
+}}
+-\underbrace{\E[(\tilde{\rvx}-\rvx)^\top \tilde{\rvx}|\rvx]}_{ \sigma^2 D}\Big)
+\\&\qquad\qquad\qquad+\underbrace{\E[\|\tilde{\rvx}-\rvx\|^2|\rvx]}_{ \sigma^2 D} \\
+=&~\E \left[\|\rmD(\tilde{\rvx})-\tilde{\rvx}\|^2
++2\sigma^2  \nabla_{\tilde{\rvx}} \cdot\rmD(\tilde{\rvx})
+-D\sigma^2 | \rvx\right].
+\end{aligned}
+\]
+Therefore the \emph{observable} surrogate
+\[ 
+\mathrm{SURE}(\rmD;\tilde{\rvx})
+:= \|\rmD(\tilde{\rvx})-\tilde{\rvx}\|_2^2
++2\sigma^2  \nabla_{\tilde{\rvx}} \cdot\rmD(\tilde{\rvx})
+-D\sigma^2 
+\]
+satisfies $\E \left[\mathrm{SURE}(\rmD;\tilde{\rvx}) \big| \rvx\right]=R(\rmD;\rvx)$.
+Minimizing SURE (in expectation or empirically) is thus equivalent to minimizing the true conditional MSE while using only noisy observations.
+
+
+
+\subsection{Theorem~\ref{thm:fpe}: Marginal Alignment via Fokker–Planck}\label{app-sec:scoresde-fpe-proof}
+
+\paragraph{\textit{Proof.}}
+\paragraph{Part 1: Fokker-Planck Equation for the Forward SDE.}
+
+Consider the forward SDE:
+\[
+\diff \rvx(t) = \rvf(\rvx(t), t)  \diff t + g(t)  \diff \rvw(t).
+\]
+The diffusion matrix is $\sigma(t) = g(t) I_D$, so $\sigma(t) \sigma(t)^T = g^2(t) I_D$. The Fokker-Planck equation for the marginal density $p_t(\rvx)$ of $\rvx(t)$ is:
+\[
+\partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvf(\rvx, t) p_t(\rvx) \bigr] + \frac{1}{2} \sum_{i,j=1}^D \frac{\partial^2}{\partial x_i \partial x_j} \bigl[ (g^2(t) \delta_{ij}) p_t(\rvx) \bigr].
+\]
+Compute the diffusion term:
+\[
+\sum_{i,j=1}^D \frac{\partial^2}{\partial x_i \partial x_j} \bigl[ g^2(t) \delta_{ij} p_t(\rvx) \bigr] = \sum_{i=1}^D \frac{\partial^2}{\partial x_i^2} \bigl[ g^2(t) p_t(\rvx) \bigr] = g^2(t) \Delta_{\rvx} p_t(\rvx).
+\]
+Thus:
+\[
+\partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvf(\rvx, t) p_t(\rvx) \bigr] + \frac{1}{2} g^2(t) \Delta_{\rvx} p_t(\rvx).
+\]
+Now, rewrite using:
+\[
+\rvv(\rvx, t) = \rvf(\rvx, t) - \frac{1}{2} g^2(t) \nabla_{\rvx} \log p_t(\rvx).
+\]
+Since $\nabla_{\rvx} \log p_t(\rvx) = \frac{\nabla_{\rvx} p_t(\rvx)}{p_t(\rvx)}$, compute:
+\[
+\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr] = \nabla_{\rvx} \cdot \biggl[ \rvf(\rvx, t) p_t(\rvx) - \frac{1}{2} g^2(t) \frac{\nabla_{\rvx} p_t(\rvx)}{p_t(\rvx)} p_t(\rvx) \biggr].
+\]
+The second term is:
+\[
+\nabla_{\rvx} \cdot \biggl[ -\frac{1}{2} g^2(t) \nabla_{\rvx} p_t(\rvx) \biggr] = -\frac{1}{2} g^2(t) \Delta_{\rvx} p_t(\rvx).
+\]
+Thus:
+\[
+\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr] = \nabla_{\rvx} \cdot \bigl[ \rvf(\rvx, t) p_t(\rvx) \bigr] - \frac{1}{2} g^2(t) \Delta_{\rvx} p_t(\rvx).
+\]
+Therefore:
+\[
+\partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr],
+\]
+verifying the Fokker-Planck equation in both forms.
+
+\paragraph{Part 2: PF-ODE Marginal Densities.}
+
+Consider the PF-ODE:
+\[
+\frac{\diff \tilde\rvx(t)}{\diff t} = \rvv(\tilde\rvx(t), t), \quad \rvv(\rvx, t) = \rvf(\rvx, t) - \frac{1}{2} g^2(t) \nabla_{\rvx} \log p_t(\rvx).
+\]
+
+\textbfs{Forward Direction: $\tilde\rvx(0) \sim p_0$. } Let $\tilde\rvx(t)$ follow the PF-ODE with $\tilde\rvx(0) \sim p_0$. The flow map $\bm{\Psi}_t: \mathbb{R}^D \to \mathbb{R}^D$ is defined by:
+\[
+\frac{\diff}{\diff t} \bm{\Psi}_t(\mathbf{x}_0) = \rvv(\bm{\Psi}_t(\mathbf{x}_0), t), \quad \bm{\Psi}_0(\mathbf{x}_0) = \mathbf{x}_0.
+\]
+Since $\tilde\rvx(t) = \bm{\Psi}_t(\tilde\rvx(0))$, the density $\tilde p_t(\rvx)$ of $\tilde\rvx(t)$ satisfies the continuity equation:
+\[
+\partial_t \tilde p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) \tilde p_t(\rvx) \bigr].
+\]
+Since $\tilde\rvx(0) \sim p_0$, we have $\tilde p_0(\rvx) = p_0(\rvx)$. From Part 1, $p_t(\rvx)$ satisfies:
+\[
+\partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr].
+\]
+Both $\tilde p_t$ and $p_t$ satisfy the same continuity equation with the same initial condition $p_0$. Assuming sufficient smoothness (e.g., $\rvv \in C^1$), the solution is unique in some appropriate function space, so $\tilde p_t = p_t$. Thus, $\tilde\rvx(t) \sim p_t$ for all $t \in [0, T]$.
+
+\vspace{0.3cm}
+\textbfs{Backward Direction: $\tilde\rvx(T) \sim p_T$. } Now, let $\tilde\rvx(t)$ follow the PF-ODE backward from $t = T$ to $t = 0$, with $\tilde\rvx(T) \sim p_T$. The ODE is:
+\[
+\frac{\diff}{\diff t} \tilde\rvx(t) = \rvv(\tilde\rvx(t), t).
+\]
+Let $s = T - t$, so the backward ODE becomes:
+\[
+\frac{\diff}{\diff s} \tilde\rvx(T - s) = -\rvv(\tilde\rvx(T - s), T - s).
+\]
+The density $\tilde p_{T-s}(\rvx)$ of $\tilde\rvx(T - s)$ satisfies:
+\[
+\partial_s \tilde p_{T-s}(\rvx) = \nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, T - s) \tilde p_{T-s}(\rvx) \bigr].
+\]
+Since $\tilde\rvx(T) \sim p_T$, we have $\tilde p_T = p_T$. The Fokker-Planck equation for $p_t$ at $t = T - s$ is:
+\[
+\partial_t p_{T-s}(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, T - s) p_{T-s}(\rvx) \bigr].
+\]
+Since $\partial_t = -\partial_s$, we get:
+\[
+\partial_s p_{T-s}(\rvx) = \nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, T - s) p_{T-s}(\rvx) \bigr].
+\]
+Both $\tilde p_{T-s}$ and $p_{T-s}$ satisfy the same PDE with the same initial condition at $s = 0$ ($\tilde p_T = p_T$). Uniqueness implies $\tilde p_{T-s} = p_{T-s}$, so $\tilde\rvx(t) = \tilde\rvx(T - s) \sim p_{T-s} = p_t$, for all $t \in [0, T]$.
+
+\paragraph{Part 3: Reverse-Time SDE Marginal Densities.}
+We verify the marginal distributions using the forward-running reverse clock
+\[
+s:=T-t.
+\]
+Define
+\[
+\rvy(s):=\bar\rvx(T-s),
+\qquad s\in[0,T].
+\]
+Since the reverse process starts from $\bar\rvx(T)\sim p_T$, we have
+\[
+\rvy(0)\sim p_T.
+\]
+
+Under this change of clock, the reverse-time SDE becomes
+\[
+\diff\rvy(s)
+=
+\Bigl[
+-\rvf(\rvy(s),T-s)
++
+g^2(T-s)\nabla_{\rvx}\log p_{T-s}(\rvy(s))
+\Bigr]\diff s
++
+g(T-s)\diff\rvw^{\mathrm{rev}}(s),
+\]
+where $\rvw^{\mathrm{rev}}$ is a standard Wiener process under the
+forward-running clock $s$.
+
+Let $q_s$ denote the density of $\rvy(s)$. Its Fokker--Planck equation is
+\begin{align*}
+\partial_s q_s(\rvx)
+&=
+-\nabla_{\rvx}\cdot
+\Bigl(
+\bigl[
+-\rvf(\rvx,T-s)
++
+g^2(T-s)\nabla_{\rvx}\log p_{T-s}(\rvx)
+\bigr]
+q_s(\rvx)
+\Bigr)
+\\
+&\qquad
++
+\tfrac12 g^2(T-s)\Delta_{\rvx}q_s(\rvx).
+\end{align*}
+
+We now check that
+\[
+q_s(\rvx)=p_{T-s}(\rvx)
+\]
+satisfies this equation. Using
+\[
+\nabla_{\rvx}\log p_{T-s}(\rvx)\,p_{T-s}(\rvx)
+=
+\nabla_{\rvx}p_{T-s}(\rvx),
+\]
+the right-hand side becomes
+\begin{align*}
+&\nabla_{\rvx}\cdot
+\bigl[
+\rvf(\rvx,T-s)p_{T-s}(\rvx)
+\bigr]
+-
+g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx)
+\\
+&\qquad
++
+\tfrac12 g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx)
+\\
+&=
+\nabla_{\rvx}\cdot
+\bigl[
+\rvf(\rvx,T-s)p_{T-s}(\rvx)
+\bigr]
+-
+\tfrac12 g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx).
+\end{align*}
+
+On the other hand, the forward Fokker--Planck equation gives
+\[
+\partial_t p_t(\rvx)
+=
+-\nabla_{\rvx}\cdot
+\bigl[\rvf(\rvx,t)p_t(\rvx)\bigr]
++
+\tfrac12g^2(t)\Delta_{\rvx}p_t(\rvx).
+\]
+Since $t=T-s$, the chain rule gives
+\begin{align*}
+\partial_s p_{T-s}(\rvx)
+&=
+-\partial_t p_t(\rvx)\big|_{t=T-s}
+\\
+&=
+\nabla_{\rvx}\cdot
+\bigl[
+\rvf(\rvx,T-s)p_{T-s}(\rvx)
+\bigr]
+-
+\tfrac12g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx).
+\end{align*}
+This is exactly the Fokker--Planck equation of the reversed process.
+
+Finally, $q_0=p_T$, which matches the initial distribution
+$\rvy(0)\sim p_T$. Under the regularity assumptions ensuring uniqueness of the
+Fokker--Planck solution,
+\[
+q_s=p_{T-s},
+\qquad s\in[0,T].
+\]
+Returning to the original diffusion clock $t=T-s$, we obtain
+\[
+\bar\rvx(t)\sim p_t.
+\]
+Thus, when the reverse-time SDE is solved backward from $t=T$ to $t=0$, it
+follows the same marginal distributions as the forward SDE, but in the reverse
+order.
+\hfill$\blacksquare$
+
+\subsection{Proposition~\ref{dsm-minimizer}: Minimizer of SM and DSM}\label{app-sec:min-dsm}
+
+\paragraph{\textit{Proof.}} To find the minimizer $\mathbf{s}^*$, we first consider a fixed time $t$ and analyze the inner expectation in the objective function:
+\begin{align*}
+\mathcal  J(t, \bm{\phi}) 
+&:= \mathbb{E}_{\rvx_0 \sim p_{\text{data}}} 
+\mathbb{E}_{\rvx_t \sim p_t(\cdot|\rvx_0)} 
+\left[\left\| \mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0) \right\|_2^2 \right].
+\end{align*}
+For this expectation to be minimized, we need to find 
+$\mathbf{s}_{\bm{\phi}}(\rvx_t, t)$ 
+that minimizes the expected squared error for each $\rvx_t$.
+We can rewrite this expectation using the joint distribution of $X_0$ and $X_t$:
+\begin{align*}
+\mathcal J(t, \bm{\phi}) 
+= \iint p_{\text{data}}(\rvx_0) p_t(\rvx_t |\rvx_0) 
+\left\| \mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p(\rvx_t |  \rvx_0) \right\|_2^2 
+ \diff\rvx_0  \diff\rvx_t.
+\end{align*}
+For each fixed $\rvx_t$, we need to minimize:
+\begin{align*}
+\int p(\rvx_0 | X_t = \rvx_t) p_t( \rvx_t) 
+\left\| \mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p(\rvx_t |  \rvx_0) \right\|_2^2 
+ \diff\rvx_0.
+\end{align*}
+Since $p_t(\rvx_t)$ is constant with respect to 
+$\mathbf{s}_{\bm{\phi}}(\rvx_t, t)$, this is equivalent to minimizing:
+\begin{align*}
+\int p( \rvx_0 | X_t = \rvx_t) 
+\left\| \mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p(\rvx_t |  \rvx_0) \right\|_2^2 
+  \diff\rvx_0
+\end{align*}
+This is minimized when $\mathbf{s}_{\bm{\phi}}(\rvx_t, t)$ equals the conditional expectation:
+\begin{align*}
+\mathbf{s}^*(\rvx_t, t) 
+= \mathbb{E}_{X_0 \sim p(X_0 | X_t = \rvx_t)} 
+\left[ \nabla_{\rvx_t} \log p(\rvx_t | X_0) \right].
+\end{align*}
+Now we need to prove that this equals 
+$\nabla_{\rvx_t} \log p_t(\rvx_t)$. By Bayes' rule and the definition of marginal probability:
+\begin{align*}
+p_t(\rvx_t) 
+= \int p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0.
+\end{align*}
+Taking the logarithm and then the gradient with respect to $\rvx_t$:
+\begin{align*}
+\nabla_{\rvx_t} \log p_t(\rvx_t) 
+= \frac{\nabla_{\rvx_t} p_t(\rvx_t)}{p_t(\rvx_t)}
+= \frac{\nabla_{\rvx_t} \int p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0}
+{\int p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0}.
+\end{align*}
+Under suitable regularity conditions, we can exchange the gradient and integral:
+\begin{align*}
+\nabla_{\rvx_t} \log p_t(\rvx_t) 
+= \frac{\int \nabla_{\rvx_t} p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0}
+{\int p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0}.
+\end{align*}
+Using
+\[
+\nabla_{\rvx_t}p_t(\rvx_t|\rvx_0)
+=
+p_t(\rvx_t|\rvx_0)
+\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0),
+\]
+and Bayes' rule, we obtain
+\begin{align*}
+\nabla_{\rvx_t}\log p_t(\rvx_t)
+&=
+\int
+p(\rvx_0|\rvx_t)
+\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0)
+\diff\rvx_0 \\
+&=
+\mathbb{E}_{p(\rvx_0|\rvx_t)}
+\left[
+\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0)
+\right]
+=
+\mathbf{s}^*(\rvx_t,t),
+\end{align*}
+which completes the proof.
+\hfill$\blacksquare$
+
+
+
+\subsection{Closed-Form Score Function of a Gaussian}
+
+For future reference, we summarize the formula for the score of a general multivariate normal distribution as the following lemma:
+
+\lemp{Score of Gaussian}{score-general-gaussian}{Let $\rvx \in \mathbb{R}^D$ and consider the multivariate normal distribution
+\[
+p(\tilde{\rvx} | \rvx) := \mathcal{N}(\tilde{\rvx}; \bm{\mu}, \bm{\Sigma}),
+\]
+where $\bm{\mu} \in \mathbb{R}^D$ is the mean and $\bm{\Sigma} \in \mathbb{R}^{D \times D}$ is an invertible covariance matrix. Its score function is
+\begin{align}\label{eq:score-gaussian-formula}
+    \nabla_{\tilde{\rvx}} \log p(\tilde{\rvx} | \rvx) = -\bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
+\end{align}
+}{The density function of $p(\tilde{\rvx} | \rvx)$ is given by:
+\[
+p(\tilde{\rvx} | \rvx) = \frac{1}{(2\pi)^{D/2} |\bm{\Sigma}|^{1/2}} \exp\left( -\frac{1}{2} (\tilde{\rvx} - \bm{\mu})^\top \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}) \right).
+\]
+To compute the score function, we first take the log of $ p(\tilde{\rvx} | \rvx) $:
+\[
+\log p(\tilde{\rvx} | \rvx) = -\frac{D}{2} \log(2\pi) - \frac{1}{2} \log |\bm{\Sigma}| - \frac{1}{2} (\tilde{\rvx} - \bm{\mu})^\top \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
+\]
+Now, we compute the gradient of $ \log p(\tilde{\rvx} | \rvx) $ with respect to $ \tilde{\rvx} $:
+\[
+\nabla_{\tilde{\rvx}} \log p(\tilde{\rvx} | \rvx) = - \frac{1}{2} \nabla_{\tilde{\rvx}} \left( (\tilde{\rvx} - \bm{\mu})^\top \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}) \right).
+\]
+Using the chain rule, we get:
+\[
+\nabla_{\tilde{\rvx}} \left( (\tilde{\rvx} - \bm{\mu})^\top \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}) \right) = 2 \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
+\]
+Thus, the score function is:
+\begin{align}\label{eq:gaussian-score}
+    \nabla_{\tilde{\rvx}} \log p(\tilde{\rvx} | \rvx) = - \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
+\end{align}
+}
+
+
+
+
+
+
+\clearpage
+\newpage
+
+\section{Flow-Based Perspective}\label{app-sec:flow-proof}
+
+\subsection{Lemma~\ref{instant-change-of-var}: Instantaneous Change of Variables}
+\paragraph{\textit{Proof.}}
+
+\textbfs{Approach 1: Change-of-Variables Formula. } We denote $p(\rvx(t), t)$ by $p_t(\rvx_t)$. Starting from the ODE discretization
+\[
+\rvz_{t+\Delta t} = \rvz_t + \Delta t  \rmF(\rvz_t, t),
+\]
+the change-of-variables formula for normalizing flows (\Cref{eq:nf-change-of-var-log}) gives
+\begin{align*}
+    \log p_{t+\Delta t}(\rvz_{t+\Delta t}) 
+    &= \log p_t(\rvz_t) - \log \Big| \det\big(\rmI + \Delta t \nabla_{\rvz} \rmF(\rvz_t, t)\big) \Big| \\
+    &= \log p_t(\rvz_t) - \Tr\Big(\log(\rmI + \Delta t \nabla_{\rvz} \rmF(\rvz_t, t)) \Big) \\
+    &= \log p_t(\rvz_t) - \Delta t  \Tr\big(\nabla_{\rvz} \rmF(\rvz_t, t)\big) + \mathcal{O}(\Delta t^2),
+\end{align*}
+where we used $\log \det = \Tr \log$ and the expansion for small $\Delta t$.
+Taking the limit $\Delta t \to 0$ yields the continuous-time differential equation for the log-density. Indeed, the same trick is applied in \Cref{eq:log-det-tr}.
+
+\vspace{0.3cm}
+\textbfs{Approach 2: Continuity Equation. } We can also leverage the continuity equation, which essentially serves as the change-of-variables formula:
+\[
+\partial_t p(\rvz,t) = - \nabla_{\rvz} \cdot \big(\rmF(\rvz,t) p(\rvz,t)\big).
+\]
+Expanding the divergence,
+\[
+\partial_t p = - \big( (\nabla_{\rvz} \cdot \rmF) p + \rmF \cdot \nabla_{\rvz} p \big).
+\]
+Along trajectories $\rvz(t)$ satisfying $\frac{\diff \rvz}{\diff t} = \rmF(\rvz(t), t)$, the total time derivative is
+\begin{align*}
+\frac{\diff}{\diff t} p(\rvz(t), t) 
+&= \nabla_{\rvz} p \cdot \frac{\diff \rvz}{\diff t} + \partial_t p \\
+&= \nabla_{\rvz} p \cdot \rmF - \big( (\nabla_{\rvz} \cdot \rmF) p + \rmF \cdot \nabla_{\rvz} p \big) \\
+&= - (\nabla_{\rvz} \cdot \rmF) p.
+\end{align*}
+Dividing by $p(\rvz(t), t)$, we conclude
+\[
+\frac{\diff}{\diff t} \log p(\rvz(t), t) = - \nabla_{\rvz} \cdot \rmF(\rvz(t), t).
+\]
+\hfill$\blacksquare$
+
+
+\subsection{Theorem~\ref{thm:continuity-mass}: Mass Conservation Criterion}\label{app-sec:mass-conservation}
+
+\paragraph{Some Prerequisites: Flow Map and Flow-Induced Density.} For any initial position $\mathbf{x}_0\in\mathbb{R}^D$, the flow map 
+$\bm{\Psi}_t:\mathbb{R}^D\to\mathbb{R}^D$ is the unique solution of the ODE
+\[
+\frac{\diff}{\diff t} \bm{\Psi}_t(\mathbf{x}_0)
+= \mathbf{v}_t\bigl(\bm{\Psi}_t(\mathbf{x}_0)\bigr), 
+\quad \bm{\Psi}_0(\mathbf{x}_0)=\mathbf{x}_0.
+\]
+Under our regularity assumptions, $\bm{\Psi}_t$ is continuously differentiable in both $t$ and $\mathbf{x}_0$.
+
+The flow‑induced density $p_t^{\mathrm{fwd}}$ is the pushforward of the initial density $p_0$ by $\bm{\Psi}_t$:
+\[
+p_t^{\mathrm{fwd}}(\mathbf{x})
+= p_0\bigl(\bm{\Psi}_t^{-1}(\mathbf{x})\bigr)
+  \Bigl|\det \bigl(\nabla\bm{\Psi}_t^{-1}(\mathbf{x})\bigr)\Bigr|.
+\]
+This gives the density at $\mathbf{x}$ and time $t$ of particles that started from $p_0=p_{\mathrm{data}}$ and evolved under the velocity field $\mathbf{v}_t$.
+
+
+\paragraph{\textit{Informal Proof:}} \textbfs{Sufficient Condition: $p_t^{\mathrm{fwd}} = p_t$ $\Rightarrow$ Continuity Equation. }
+In \Cref{subsec:cov-continuity-eq} we obtained a \emph{strong solution} of the continuity equation by taking the continuous time limit of the discrete change of variable formula. In that approach, the density $p_t$ is assumed smooth enough that all derivatives exist classically and the PDE holds pointwise. Here, we offer a complementary derivation in the \emph{weak sense}: the continuity equation is imposed only after integrating against arbitrary smooth test functions, which relaxes the regularity requirements on both $p_t$ and the velocity field $\mathbf{v}_t$. This weak formulation is not only more rigorous since it accommodates less regular solutions but is also the standard framework in PDE theory and numerical analysis.
+
+
+For any smooth test function $ \varphi(\mathbf{x}) $ with compact support, the pushforward property gives:
+\begin{align*}
+    \int p_t^{\mathrm{fwd}}(\mathbf{x}) \varphi(\mathbf{x})  \diff\mathbf{x} &= \int p_0(\bm{\Psi}_t^{-1}(\mathbf{x})) \left| \det\left( \nabla \bm{\Psi}_t^{-1}(\mathbf{x}) \right) \right| \varphi(\mathbf{x}) \diff\mathbf{x}\\ &=  \int p_0(\mathbf{y}) \varphi(\bm{\Psi}_t(\mathbf{y})) \diff\mathbf{y},
+\end{align*}
+where the second equality follows from the change of variables $ \mathbf{x} = \bm{\Psi}_t(\mathbf{y}) $, with $ \diff\mathbf{y} = \left| \det\left( \nabla \bm{\Psi}_t^{-1}(\mathbf{x}) \right) \right| \diff\mathbf{x} $.
+
+
+Differentiate both sides with respect to $ t $:
+\[
+\frac{\diff}{\diff t} \int p_t^{\mathrm{fwd}}(\mathbf{x}) \varphi(\mathbf{x}) \diff\mathbf{x} = \frac{\diff}{\diff t} \int p_0(\mathbf{y}) \varphi(\bm{\Psi}_t(\mathbf{y})) \diff\mathbf{y}.
+\]
+
+The left-hand side is:
+\[
+\int \frac{\partial p_t^{\mathrm{fwd}}}{\partial t}(\mathbf{x}) \varphi(\mathbf{x}) \diff\mathbf{x}.
+\]
+
+On the right-hand side:
+\[
+\int p_0(\mathbf{y}) \nabla \varphi(\bm{\Psi}_t(\mathbf{y})) \cdot \mathbf{v}_t(\bm{\Psi}_t(\mathbf{y})) \diff\mathbf{y},
+\]
+since $ \frac{\partial \bm{\Psi}_t}{\partial t}(\mathbf{y}) = \mathbf{v}_t(\bm{\Psi}_t(\mathbf{y})) $.
+Change variables to $ \mathbf{x} = \bm{\Psi}_t(\mathbf{y}) $, so 
+\[
+\diff\mathbf{y} = \left| \det\left( \nabla \bm{\Psi}_t^{-1}(\mathbf{x}) \right) \right| \diff\mathbf{x} ,
+\]
+ and
+\[
+p_0(\mathbf{y}) = p_t^{\mathrm{fwd}}(\mathbf{x}) \left| \det\left( \nabla \bm{\Psi}_t(\mathbf{y}) \right) \right| = \frac{p_t^{\mathrm{fwd}}(\mathbf{x})}{\left| \det\left( \nabla \bm{\Psi}_t^{-1}(\mathbf{x}) \right) \right|}.
+\]
+Thus, the right-hand side becomes:
+\[
+\int p_t^{\mathrm{fwd}}(\mathbf{x}) \nabla \varphi(\mathbf{x}) \cdot \mathbf{v}_t(\mathbf{x}) \diff\mathbf{x}.
+\]
+
+Apply integration by parts, using the compact support of $ \varphi $:
+\[
+\int p_t^{\mathrm{fwd}}(\mathbf{x}) \nabla \varphi(\mathbf{x}) \cdot \mathbf{v}_t(\mathbf{x}) \diff\mathbf{x} = -\int \varphi(\mathbf{x}) \nabla \cdot (p_t^{\mathrm{fwd}}(\mathbf{x}) \mathbf{v}_t(\mathbf{x})) \diff\mathbf{x}.
+\]
+Equating both sides:
+\[
+\int \left[ \frac{\partial p_t^{\mathrm{fwd}}}{\partial t}(\mathbf{x}) + \nabla \cdot (p_t^{\mathrm{fwd}}(\mathbf{x}) \mathbf{v}_t(\mathbf{x})) \right] \varphi(\mathbf{x}) \diff\mathbf{x} = 0.
+\]
+Since $ \varphi $ is arbitrary, we conclude:
+\[
+\frac{\partial p_t^{\mathrm{fwd}}}{\partial t} + \nabla \cdot (p_t^{\mathrm{fwd}} \mathbf{v}_t) = 0.
+\]
+Given $ p_t^{\mathrm{fwd}} = p_t $, this implies:
+\[
+\frac{\partial p_t}{\partial t} + \nabla \cdot (p_t \mathbf{v}_t) = 0.
+\]
+
+
+\textbfs{Necessary Condition: Continuity Equation $ \Rightarrow p_t^{\mathrm{fwd}} = p_t $.} Suppose $ p_t $ satisfies the continuity equation:
+\[
+\frac{\partial p_t}{\partial t} + \nabla \cdot (p_t \mathbf{v}_t) = 0,
+\]
+with the initial condition $ p_0(\mathbf{x}) = p_{\mathrm{data}}(\mathbf{x}) $. We know $ p_t^{\mathrm{fwd}} $ satisfies the same continuity equation, as shown above, and:
+\[
+p_0^{\mathrm{fwd}}(\mathbf{x}) = p_0(\bm{\Psi}_0^{-1}(\mathbf{x})) \left| \det\left( \nabla \bm{\Psi}_0^{-1}(\mathbf{x}) \right) \right| = p_0(\mathbf{x}),
+\]
+since $ \bm{\Psi}_0(\mathbf{x}) = \mathbf{x} $. Thus, both densities share the same initial condition $ p_0 = p_{\mathrm{data}} $.
+
+The continuity equation can be rewritten as:
+\[
+\frac{\partial p}{\partial t} + \mathbf{v}_t \cdot \nabla p + p \nabla \cdot \mathbf{v}_t = 0.
+\]
+This is a first-order linear PDE. Assuming $ \mathbf{v}_t $ is continuously differentiable and globally Lipschitz, and $ p_t $ is sufficiently smooth, the method of characteristics guarantees a unique solution in the space of smooth functions. Since $ p_t $ and $ p_t^{\mathrm{fwd}} $ satisfy the same PDE and initial condition, we conclude:
+\[
+p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
+\]
+for all $t\in[0,1]$ and $\mathbf{x} \in \mathbb{R}^D$. 
+
+This completes the proof of the equivalence.
+\hfill$\blacksquare$
+
+\clearpage
+\newpage
+
+\section{Theoretical Supplement: A Unified and Systematic View on Diffusion Models}\label{app-sec:equiv-para}
+
+\subsection{Proposition~\ref{equi-para}: Equivalence of Parametrizations}
+
+\paragraph{\textit{Proof:}} 
+As in Theorem~\ref{dsm-minimizer} on the DSM loss, the global optimum of the matching loss
+\[
+\mathbb{E}_t\left[\omega(t)\,\mathbb{E}_{\rvx_0,\bm{\epsilon}}\left[\|\cdot\|_2^2\right]\right]
+\]
+is attained when the inner expectation
+\[
+\mathbb{E}_{\rvx_0,\bm{\epsilon}}\left[\|\cdot\|_2^2\right]
+\]
+is minimized for each fixed $t$. Since this is a standard mean squared error problem, the minimizer is unique.
+From denoising score matching~\citep{vincent2011connection}, Theorem~\ref{dsm-minimizer} shows the optimal score function satisfies
+\begin{align*}
+    \rvs^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}\left[\nabla_{\rvx}\log p_t(\rvx_t|\rvx_0)\right] = \nabla_{\rvx_t} \log p_t(\rvx_t).
+\end{align*}
+Using the identity $\nabla_{\rvx}\log p_t(\rvx_t|\rvx_0) = -\frac{1}{\sigma_t} \bm{\epsilon}$ for $\bm{\epsilon} \sim \mathcal{N}(\bm{0},\rmI)$, we obtain
+\begin{align*}
+    \rvs^*(\rvx_t,t) = -\frac{1}{\sigma_t}\, \bm{\epsilon}^*(\rvx_t,t),
+\end{align*}
+where $\bm{\epsilon}^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\bm{\epsilon}|\rvx_t]$ is the optimal $\beps$-prediction for $\mathcal{L}_{\text{noise}}({\bm{\phi}})$.
+For the $\rvx$-prediction loss $\mathcal{L}_{\text{clean}}$, the optimal estimator is
+\[
+\rvx^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0|\rvx_t],
+\]
+which, by Tweedie's formula, relates to the score via
+\[
+\alpha_t\, \rvx^*(\rvx_t,t) = \rvx_t + \sigma_t^2\, \rvs^*(\rvx_t,t).
+\]
+For the $\rvv$-prediction loss $\mathcal{L}_{\text{velocity}}$, the optimal estimator is
+\begin{align*}
+    \rvv^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\alpha_t' \rvx_0 + \sigma_t' \bm{\epsilon}|\rvx_t] 
+    = \alpha_t' \rvx^* + \sigma_t' \bm{\epsilon}^*.
+\end{align*}
+Substituting the expressions for $\rvx^*$ and $\bm{\epsilon}^*$ in terms of $\rvs^*$ yields
+\begin{align*}
+    \rvv^*(\rvx_t,t)
+    = \frac{\alpha_t'}{\alpha_t} \rvx_t + \left( \frac{\alpha_t'}{\alpha_t} \sigma_t^2 - \sigma_t \sigma_t' \right) \rvs^*(\rvx_t,t) = f(t) \rvx_t - \frac{1}{2}g^2(t) \rvs^*(\rvx_t,t),
+\end{align*}
+which completes the derivation.
+
+
+\hfill$\blacksquare$
+
+
+
+\clearpage
+\newpage
+
+
+\section{Theoretical Supplement: Learning Fast Diffusion-Based Generators}\label{app-sec:flow-map}
+
+\subsection{Knowledge Distillation Loss as an Instance of the General Framework \Cref{eq:general-cm-loss}}
+
+We begin with the oracle KD loss
+\[
+\mathcal{L}_{\mathrm{KD}}^{\text{oracle}}(\btheta)
+=\E_{\rvx_T\sim p_T}\,
+\big\|\rmG_\btheta(\rvx_T,T,0)-\bPsi_{T\to 0}(\rvx_T)\big\|_2^2,
+\]
+where $p_T = p_{\mathrm{prior}}$. For the deterministic ODE flow map $\bPsi$ (which satisfies the semigroup property and is bijective along trajectories), the marginals satisfy the pushforward identities
+\[
+p_t
+= \bPsi_{0\to t}\,\sharp\,p_{\mathrm{data}}
+= \bPsi_{T\to t}\,\sharp\,p_{\mathrm{prior}}.
+\]
+Hence,
+\[
+\bPsi_{s\to T}\,\sharp\,p_s=p_T
+\quad\text{and}\quad
+\bPsi_{T\to 0}\circ\bPsi_{s\to T}=\bPsi_{s\to 0}.
+\]
+Changing variables $\rvx_T=\bPsi_{s\to T}(\rvx_s)$ with $\rvx_s\sim p_s$ gives
+\[
+\mathcal{L}_{\mathrm{KD}}^{\text{oracle}}(\btheta)
+= \E_{\rvx_s\sim p_s} 
+\Big\|\rmG_\btheta \big(\bPsi_{s\to T}(\rvx_s),T,0\big)
+- \bPsi_{s\to 0}(\rvx_s)\Big\|_2^2.
+\]
+Define the pulled-back student $\widetilde{\rmG}_\btheta(\rvx_s,s,0):=
+\rmG_\btheta(\bPsi_{s\to T}(\rvx_s),T,0)$ to express the same loss in the unified flow-map form (at $t=0$):
+\begin{align*}
+\mathcal{L}_{\mathrm{KD}}^{\text{oracle}}(\btheta)
+= \E_{\rvx_s\sim p_s} 
+\big\|\widetilde{\rmG}_\btheta(\rvx_s,s,0)-\bPsi_{s\to 0}(\rvx_s)\big\|_2^2.
+\end{align*}
+This derivation relies on change of variables through the oracle flow and the semigroup property.
+
+\hfill$\blacksquare$
+
+\paragraph{Transport Interpretation.}
+Proposition~\ref{vsd-grad} also admits a distributional interpretation.
+For
+\[
+\hat\rvx_t
+=
+\alpha_t\rmG_\btheta(\rvz)+\sigma_t\beps,
+\]
+an infinitesimal parameter perturbation induces the data-space displacement
+$(\partial_\btheta\hat\rvx_t)\,\diff\btheta$. Accordingly, the VSD gradient
+can be written as
+\[
+\nabla_{\btheta}\mathcal{L}_{\mathrm{VSD}}
+=
+\E\!\left[
+\omega(t)
+\big(\partial_\btheta\hat\rvx_t\big)^\top
+\left(
+\nabla_{\rvx}\log p_t^{\btheta}(\hat\rvx_t)
+-
+\nabla_{\rvx}\log p_t(\hat\rvx_t)
+\right)
+\right].
+\]
+Thus, the score mismatch provides the data-space gradient signal, while the
+generator Jacobian maps this signal back to parameter space; gradient descent
+then updates the parameters in the opposite direction. This is the parametric counterpart of the
+distribution-level transport view in
+\Cref{sec:wgf-distribution-level-training}.
+
+
+
+
+
+
+
+% \begin{align*}
+% &\nabla_{\btheta} \int p_t^{\btheta}(\rvx_t)
+% \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t
+% \\&= \int \partial_{\btheta}p_t^{\btheta}(\rvx_t)
+%       \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t
+%    + \int p_t^{\btheta}(\rvx_t) 
+%       \partial_{\btheta}\log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t \\ 
+% &= \int \partial_{\btheta}p_t^{\btheta}(\rvx_t)
+%       \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t
+%    + \int p_t^{\btheta}(\rvx_t) 
+%       \partial_{\btheta}\log p_t^{\btheta}(\rvx_t) \diff\rvx_t \\
+% &= \int \partial_{\btheta}p_t^{\btheta}(\rvx_t)
+%       \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t
+%    + \int \partial_{\btheta}p_t^{\btheta}(\rvx_t) \diff\rvx_t \\
+% &= \int \partial_{\btheta}p_t^{\btheta}(\rvx_t)
+%       \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t
+% \end{align*}
+% Last is because $\int \partial_{\btheta}p_t^{\btheta}= \partial_{\btheta}1=0.$
+% Reparametrizing trick: 
+% \[
+% \hat\rvx_t(\rvz,\beps;\btheta) = \alpha_t\rmG_\btheta(\rvz) + \sigma_t \beps
+% \]
+% with $\beps\sim\mathcal{N}(\bm{0},\rmI)$ and $\rvz\sim\mathcal{N}(\bm{0},\rmI)$.
+% Hence, 
+% \begin{align*}
+%     p_t^{\btheta}(\rvx) =\mathbb E_{\rvz,\beps}\big[\delta\big(\rvx-\hat\rvx_t(\rvz,\beps;\btheta)\big)\big],
+% \end{align*}
+% Chain rule implies:
+% \begin{align*}
+%     &\partial_\btheta p_t^{\btheta}(\rvx) =   \iint  \left[\nabla_{\rvx}\delta \big(\rvx-\hat\rvx_t\big) \partial_{\btheta}\hat\rvx_t\right] \diff\rvz \diff\beps.
+% \end{align*}
+% Plugging this back into the identity:
+% \begin{align*}
+% &\nabla_{\btheta} \int p_t^{\btheta}(\rvx_t)
+% \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t
+% \\
+% &= \int \partial_{\btheta}p_t^{\btheta}(\rvx_t)
+%       \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t
+% \\ &= - \int \iint \left[\nabla_{\rvx}\delta \big(\rvx-\hat\rvx_t\big) \partial_{\btheta}\hat\rvx_t\right] 
+%       \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t \diff\rvz \diff\beps
+% \\ &= \int \iint \delta \big(\rvx-\hat\rvx_t\big) \partial_{\btheta}\hat\rvx_t 
+%       \nabla_{\rvx} \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)} \diff\rvx_t \diff\rvz \diff\beps
+% \\ &= \iint \partial_{\btheta}\hat\rvx_t 
+%       \nabla_{\rvx} \log\frac{p_t^{\btheta}(\rvx_t)}{p_t(\rvx_t)}  \diff\rvz \diff\beps
+% \end{align*}
+% where we used IBP in the second last identity.
+
+% \hfill$\blacksquare$
+
+
+
+% \subsection{Theorem~\ref{thm:ct-cm}: CM Equals CT up to $\smallO(\Delta s)$}
+
+% \paragraph{\textit{Proof:}} 
+
+% \textbfs{Step 1: DDIM Update (with Oracle Score) Is the Conditional Mean.}
+% \begin{align*}
+% \hat\rvx_{s'}
+% &:= \frac{\alpha_{s'}}{\alpha_s} \rvx_s 
+% + \sigma_s^2 \left(\frac{\alpha_{s'}}{\alpha_s}-\frac{\sigma_{s'}}{\sigma_s}\right)\nabla_{\rvx_s}\log p_s(\rvx_s)
+% \\
+% &= \frac{\alpha_{s'}}{\alpha_s}\bigl(\rvx_s+\sigma_s^2\nabla_{\rvx_s}\log p_s(\rvx_s)\bigr)
+% - \sigma_{s'}\sigma_s \nabla_{\rvx_s}\log p_s(\rvx_s)
+% \\
+% &= \alpha_{s'} \E[\rvx_0|\rvx_s]
+% + \sigma_{s'}\Bigl(\frac{\rvx_s-\alpha_s \E[\rvx_0|\rvx_s]}{\sigma_s}\Bigr)
+% \\
+% &= \alpha_{s'} \E[\rvx_0|\rvx_s] + \sigma_{s'} \E[\beps|\rvx_s]
+% \\
+% &= \E[\alpha_{s'}\rvx_0+\sigma_{s'}\beps|\rvx_s]
+% \\
+% &= \E[\rvx_{s'}|\rvx_s].
+% \end{align*}
+% Here, we use the Tweedie's formula
+% $\E[\rvx_0 |\rvx_s]=\frac{\rvx_s+\sigma_s^2\nabla_{\rvx_s}\log p_s(\rvx_s)}{\alpha_s}$ 
+% and 
+% $\rvx_s=\alpha_s\rvx_0+\sigma_s\beps$
+% in the third and fourth equalities.
+
+% \textbfs{Step 2: Expand CT Around the Conditional Mean $\hat\rvx_{s'}$.}
+
+% \begin{align*}
+% \mathcal{L}_{\mathrm{CT}}
+% &= \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\rvx_{s'},s')\big)\Big]
+% \\
+% &\overset{\text{(1)}}{=} \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[
+% w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)
+% \\[-2pt]
+% &\qquad\qquad\qquad\qquad
+% + w(s) \partial_2 d\big(\rvf_{\btheta}(\rvx_s,s),\rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\big[\partial_1\rvf_{\btheta^-}(\hat\rvx_{s'},s')(\rvx_{s'}-\hat\rvx_{s'})\big]
+% \\[-2pt]
+% &\qquad\qquad\qquad\qquad
+% + w(s) \mathcal O \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+% \\
+% &\overset{\text{(2)}}{=} \E_{s,\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\Big]
+% \\
+% &\quad+ \E_{s,\rvx_s} \Big[w(s) \partial_2 d\big(\rvf_{\btheta}(\rvx_s,s),\rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\big[\partial_1\rvf_{\btheta^-}(\hat\rvx_{s'},s') \E_{\rvx_{s'}|\rvx_s}(\rvx_{s'}-\hat\rvx_{s'})\big]\Big]
+% \\
+% &\quad+ \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) \mathcal{O} \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+% \\
+% &\overset{\text{(3)}}{=} \E_{s,\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\Big]
+% + \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) \mathcal{O} \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+% \\
+% &= \E_{s,\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\Big]
+% + \mathcal{O} \Big(\E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s}\|\rvx_{s'}-\hat\rvx_{s'}\|^2\Big)
+% \\
+% &= \mathcal{L}_{\mathrm{CM}} 
+% + \mathcal{O} \big(\E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s}\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)
+% \\
+% &\overset{\text{(4)}}{=} \mathcal{L}_{\mathrm{CM}} + \smallO (\Delta s)
+% \end{align*}
+
+% Here, (1) applies a second-order Taylor expansion of 
+% \[
+% h(\rvx') := d(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\rvx',s'))
+% \]
+% around $\hat\rvx_{s'}$ in its second argument. 
+% (2) applies the tower property 
+% \[
+% \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s}[\cdot]=\E_{s,\rvx_s}[\cdot]
+% \]
+% and notes that, inside $\E_{\rvx_{s'}|\rvx_s}$, the only $\rvx_{s'}$-dependence is through $(\rvx_{s'}-\hat\rvx_{s'})$, so all other factors are treated as constants and the inner expectations reduce to $\E_{\rvx_{s'}|\rvx_s}(\rvx_{s'}-\hat\rvx_{s'})$ and $\E_{\rvx_{s'}|\rvx_s}\|\rvx_{s'}-\hat\rvx_{s'}\|^2$. (3) uses $\E[\rvx_{s'}-\hat\rvx_{s'}|\rvx_s]=\bm{0}$ 
+% because $\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s]$.
+% (4) uses the linear–Gaussian scheduler, which gives 
+% \[
+% \E[\|\rvx_{s'}-\hat\rvx_{s'}\|^2|\rvx_s]=\mathcal{O}(\Delta s^2),
+% \]
+% thus leading to a total remainder of $\smallO(\Delta s)$.
+
+
+% \hfill$\blacksquare$
+
+
+\subsection{Theorem~\ref{thm:ct-cm}: CM Equals CT up to $\mathcal{O}(\Delta s^2)$}
+
+\paragraph{\textit{Proof:}} 
+
+\textbfs{Step 1: DDIM Update (with Oracle Score) Is the Conditional Mean.}
+\begin{align*}
+\hat\rvx_{s'}
+&:= \frac{\alpha_{s'}}{\alpha_s} \rvx_s 
++ \sigma_s^2 \left(\frac{\alpha_{s'}}{\alpha_s}-\frac{\sigma_{s'}}{\sigma_s}\right)\nabla_{\rvx_s}\log p_s(\rvx_s)
+\\
+&= \frac{\alpha_{s'}}{\alpha_s}\bigl(\rvx_s+\sigma_s^2\nabla_{\rvx_s}\log p_s(\rvx_s)\bigr)
+- \sigma_{s'}\sigma_s \nabla_{\rvx_s}\log p_s(\rvx_s)
+\\
+&= \alpha_{s'} \E[\rvx_0|\rvx_s]
++ \sigma_{s'}\Bigl(\frac{\rvx_s-\alpha_s \E[\rvx_0|\rvx_s]}{\sigma_s}\Bigr)
+\\
+&= \alpha_{s'} \E[\rvx_0|\rvx_s] + \sigma_{s'} \E[\beps|\rvx_s]
+\\
+&= \E[\alpha_{s'}\rvx_0+\sigma_{s'}\beps|\rvx_s]
+\\
+&= \E[\rvx_{s'}|\rvx_s].
+\end{align*}
+Here we use Tweedie's formula
+\[
+\E[\rvx_0 |\rvx_s]=\frac{\rvx_s+\sigma_s^2\nabla_{\rvx_s}\log p_s(\rvx_s)}{\alpha_s},
+\]
+together with the shared-noise coupling
+\[
+\rvx_s=\alpha_s\rvx_0+\sigma_s\beps,
+\qquad
+\rvx_{s'}=\alpha_{s'}\rvx_0+\sigma_{s'}\beps
+\quad (s'=s-\Delta s),
+\]
+in the third and fourth equalities. We also note that, more precisely, $\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s]$ should be read as
+$\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s, s]$, since $s'=s-\Delta s$ is deterministically fixed once $s$ is sampled.
+
+
+
+
+\textbfs{Step 2: Expand CT Around the Conditional Mean $\hat\rvx_{s'}$.}
+
+Recall that $s$ is sampled first and we set $s':=s-\Delta s$ deterministically.
+\begin{align*}
+\mathcal{L}_{\mathrm{CT}}
+&= \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\rvx_{s'},s')\big)\Big]
+\\
+&\overset{\text{(1)}}{=} \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[
+w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)
+\\[-2pt]
+&\qquad\qquad\qquad\qquad
++ w(s) \partial_2 d\big(\rvf_{\btheta}(\rvx_s,s),\rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\big[\partial_1\rvf_{\btheta^-}(\hat\rvx_{s'},s')(\rvx_{s'}-\hat\rvx_{s'})\big]
+\\[-2pt]
+&\qquad\qquad\qquad\qquad
++ w(s) \mathcal O \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+\\
+&\overset{\text{(2)}}{=} \E_{s,\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\Big]
+\\
+&\quad+ \E_{s,\rvx_s} \Big[w(s) \partial_2 d\big(\rvf_{\btheta}(\rvx_s,s),\rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\big[\partial_1\rvf_{\btheta^-}(\hat\rvx_{s'},s') \E_{\rvx_{s'}|\rvx_s}(\rvx_{s'}-\hat\rvx_{s'})\big]\Big]
+\\
+&\quad+ \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) \mathcal{O} \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+\\
+&\overset{\text{(3)}}{=} \E_{s,\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\Big]
++ \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) \mathcal{O} \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+\\
+&= \mathcal{L}_{\mathrm{CM}} 
++ \mathcal{O} \big(\E\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)
+\\
+&\overset{\text{(4)}}{=} \mathcal{L}_{\mathrm{CM}} + \mathcal{O}(\Delta s^2).
+\end{align*}
+Here, (1) applies a second-order Taylor expansion of 
+\[
+h(\rvx') := d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\rvx',s')\big)
+\]
+around $\hat\rvx_{s'}$ in its second argument. (2) uses the \textit{tower property} (a.k.a.\ the law of total expectation):
+\[
+\E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s,s}[\cdot]
+=\E_{s,\rvx_s}[\cdot],
+\]
+and notes that inside $\E_{\rvx_{s'}|\rvx_s,s}$, the terms
+\[
+w(s),\ \rvf_{\btheta}(\rvx_s,s),\ \hat\rvx_{s'},\ s'
+\]
+do not depend on the random variable $\rvx_{s'}$ (since $s' = s-\Delta s$ and $\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s,s]$ are fixed once $(s,\rvx_s)$ is fixed). Hence the only $\rvx_{s'}$-dependence is through $(\rvx_{s'}-\hat\rvx_{s'})$, and the inner expectations reduce to
+$\E_{\rvx_{s'}|\rvx_s,s}(\rvx_{s'}-\hat\rvx_{s'})$ and
+$\E_{\rvx_{s'}|\rvx_s,s}\|\rvx_{s'}-\hat\rvx_{s'}\|^2$. (3) uses
+\[
+\E[\rvx_{s'}-\hat\rvx_{s'}|\rvx_s,s]=\bm 0
+\quad\text{because}\quad
+\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s,s].
+\]
+For (4), note that
+\[
+\E\|\rvx_{s'}-\hat\rvx_{s'}\|^2
+=\E\,\Var(\rvx_{s'}|\rvx_s,s)
+\le \E\|\rvx_{s'}-\rvx_s\|^2.
+\]
+Moreover,
+\[
+\rvx_{s'}-\rvx_s=(\alpha_{s'}-\alpha_s)\rvx_0+(\sigma_{s'}-\sigma_s)\beps,
+\]
+and for a smooth scheduler, $\alpha_{s'}-\alpha_s=\mathcal{O}(\Delta s)$ and
+$\sigma_{s'}-\sigma_s=\mathcal{O}(\Delta s)$, hence
+\[
+\E\|\rvx_{s'}-\rvx_s\|^2=\mathcal{O}(\Delta s^2),
+\]
+which yields
+\[
+\E\|\rvx_{s'}-\hat\rvx_{s'}\|^2=\mathcal{O}(\Delta s^2).
+\]
+
+
+\hfill$\blacksquare$
+
+
+\subsection{Proposition~\ref{continuous-time-ct}: Continuous-Time Limit of the CT Gradient}
+
+\paragraph{\textit{Proof:}}
+
+We simplify the notation by working with \Cref{eq:cm-discrete} in the form
+\begin{align*}
+\mathcal{L}_{\mathrm{CM}}^{\Delta s}(\btheta,\btheta^-)
+:=
+\E \left[\omega(s)\big\|
+\rvf_{\btheta}(\rvx_s,s) -
+\rvf_{\btheta^-}\big(\bPsi_{s\to s-\Delta s}(\rvx_s),\, s-\Delta s\big)
+\big\|_2^2\right].
+\end{align*}
+For notational simplicity, write
+\[
+\tilde\rvx_{s-\Delta s}:=\bPsi_{s\to s-\Delta s}(\rvx_s).
+\]
+
+Define
+\[
+\delta \rvf
+:= \rvf_{\btheta}(\rvx_s,s)-\rvf_{\btheta^-}(\rvx_s,s).
+\]
+Then
+\begin{align*}
+\big\|\rvf_{\btheta}(\rvx_s, s)- \rvf_{\btheta^-}(\tilde\rvx_{s-\Delta s}, s-\Delta s)\big\|_2^2
+=
+\Big\|\delta \rvf
++
+\Big(\rvf_{\btheta^-}(\rvx_s, s)-\rvf_{\btheta^-}(\tilde\rvx_{s-\Delta s}, s-\Delta s)\Big)\Big\|_2^2.
+\end{align*}
+
+Applying a Taylor expansion at $(\rvx_s,s)$ gives
+\begin{align*}
+\rvf_{\btheta^-}(\rvx_s,s) -
+\rvf_{\btheta^-}(\tilde\rvx_{s-\Delta s}, s-\Delta s)
+=
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)\,\Delta s
++ \mathcal{O}(|\Delta s|^2),
+\end{align*}
+where we use the first-order expansion of the oracle flow map,
+\[
+\rvx_s - \bPsi_{s\to s-\Delta s}(\rvx_s)
+= \rvv^*(\rvx_s,s)\,\Delta s + \mathcal{O}(|\Delta s|^2),
+\]
+together with the total differentiation identity
+\[
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+=
+\partial_s \rvf_{\btheta^-}(\rvx_s,s)
++
+\big(\partial_{\rvx}\rvf_{\btheta^-}(\rvx_s,s)\big)\,\rvv^*(\rvx_s,s).
+\]
+
+Therefore,
+\begin{align*}
+\big\|\rvf_{\btheta}(\rvx_s, s)- \rvf_{\btheta^-}(\tilde\rvx_{s-\Delta s}, s-\Delta s)\big\|_2^2
+=
+\|\delta \rvf\|_2^2
++
+2\,\delta \rvf^\top \frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)\,\Delta s
++
+\mathcal{O}(|\Delta s|^2).
+\end{align*}
+
+Now differentiate with respect to $\btheta$. Since $\btheta^-$ is treated as fixed with respect to $\nabla_{\btheta}$ (i.e., no gradient is taken through the stop-gradient target), there is no gradient through $\rvf_{\btheta^-}$. Hence
+\begin{align*}
+\nabla_{\btheta}\mathcal{L}_{\mathrm{CM}}^{\Delta s}(\btheta,\btheta^-)
+&=
+\nabla_{\btheta}\E\!\left[\omega(s)\|\delta \rvf\|_2^2\right]\\
+&\qquad\qquad
++
+2\,\E\!\left[
+\omega(s)\,
+\nabla_{\btheta}\rvf_{\btheta}(\rvx_s,s)^\top
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+\right]\Delta s
++
+\mathcal{O}(|\Delta s|^2).
+\end{align*}
+
+At the comparison point where the target network is the stop-gradient copy of the online network, i.e., $\btheta=\btheta^-$, we have
+\[
+\delta \rvf
+=
+\rvf_{\btheta}(\rvx_s,s)-\rvf_{\btheta^-}(\rvx_s,s)
+=
+0,
+\]
+and therefore
+\[
+\nabla_{\btheta}\E\!\left[\omega(s)\|\delta \rvf\|_2^2\right]=0.
+\]
+Thus,
+\begin{align*}
+\left.
+\nabla_{\btheta}\mathcal{L}_{\mathrm{CM}}^{\Delta s}(\btheta,\btheta^-)
+\right|_{\btheta=\btheta^-}
+&=
+\left.
+2\,\E\!\left[
+\omega(s)\,
+\nabla_{\btheta}\rvf_{\btheta}(\rvx_s,s)^\top
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+\right]
+\right|_{\btheta=\btheta^-}\Delta s
++
+\mathcal{O}(|\Delta s|^2).
+\end{align*}
+
+Dividing by $\Delta s$ and taking the limit yields
+\begin{align*}
+\left.
+\lim_{\Delta s\to 0}\frac{1}{\Delta s}\nabla_{\btheta}\mathcal{L}_{\mathrm{CM}}^{\Delta s}(\btheta,\btheta^-)
+\right|_{\btheta=\btheta^-}
+&=
+\left.
+\nabla_{\btheta}\E\!\left[
+2\,\omega(s)\,
+\rvf_{\btheta}^\top(\rvx_s,s)\,
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+\right]
+\right|_{\btheta=\btheta^-}.
+\end{align*}
+This proves the identity at $\btheta=\btheta^-$.
+
+\hfill$\blacksquare$
+
+
+\newpage
+\section{(Optional) Elucidating Diffusion Model (EDM)}\label{sec:edm}
+
+We introduce specific criteria for neural network parameterization design in
+the $\rvx$-prediction model, as proposed in Elucidating Diffusion Models
+(EDM)~\citep{karras2022elucidating}. EDM provides a simple 
+recipe that makes the training process easier to optimize and more reliable.
+The $\rvx$-prediction model is expressed as a time-dependent skip connection combined with a
+scaled residual (\Cref{eq:D-parametrization}). The central idea is to normalize both the inputs and the regression targets to
+unit variance at all times, and to adjust the skip path so that residual errors
+are not amplified as time evolves.
+ This recipe
+has become a widely adopted default in diffusion model implementations and
+extends naturally to flow map learning, especially the family of Consistency
+Models. 
+
+
+
+
+\subsection{Criteria for Neural Network $\rvx_{\bm{\phi}}$ Design}\label{subsec:D-design-edm}
+
+EDM considers a parametrization of the $\rvx$-prediction model, denoted with a slight abuse of notation as $\rvx_{\bm{\phi}}(\rvx, t)$\footnote{As discussed, all four prediction types are equivalent and can be reduced to the $\rvx$-prediction case. EDM adopts this formulation, which is both well-studied and naturally aligned with the goal of generating clean samples of flow map models.}, in the following form: 
+\begin{align}\label{eq:D-parametrization}
+    \rvx_{\bm{\phi}}(\rvx, t) := c_{\mathrm{skip}}(t) \rvx + c_{\mathrm{out}}(t) \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t) \rvx, c_{\mathrm{noise}}(t)\right).
+\end{align}
+Here, $c_{\mathrm{skip}}(t)$, $c_{\mathrm{out}}(t)$, $c_{\mathrm{in}}(t)$, and $c_{\mathrm{noise}}(t)$ are time-dependent functions.  
+They are chosen to enhance stability and performance during training, based on practical considerations that will be introduced shortly.
+
+
+
+Plugging this in \Cref{eq:general-dm-loss-D}, then the objective function becomes after straightforward algebraic manipulation\footnote{We start from the $\rvx$-prediction diffusion loss by substituting the parameterization given in \Cref{eq:D-parametrization}:
+\begin{align*}
+    \begin{aligned}
+      &~\mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)\norm{ \rvx_{\bm{\phi}}(\rvx_t, t) - \rvx_0}_2^2\right] 
+      \\= &~\mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)\Big\Vert c_{\mathrm{skip}}(t) \underbrace{(\alpha_t \rvx_0+\sigma_t\beps)}_{\rvx_t} + c_{\mathrm{out}}(t) \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t) \rvx_t, c_{\mathrm{noise}}(t)\right) - \rvx_0\Big\Vert_2^2\right]
+        \\= &~\mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)c_{\mathrm{out}}^2(t)\Big\Vert  \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t) \rvx, c_{\mathrm{noise}}(t)\right) - \underbrace{\left(\frac{\left(1-c_{\mathrm{skip}}(t)\alpha_t\right)\rvx_0-c_{\mathrm{skip}}(t)\sigma_t \bm{\epsilon}}{c_{\mathrm{out}}(t)}\right)}_{\rvx_{\mathrm{tgt}}(t)}\Big\Vert_2^2\right]
+        \\ = &~\mathrm{\Cref{eq:loss-F}}.
+    \end{aligned}
+\end{align*}
+
+}:
+\begin{align}\label{eq:loss-F}
+   \mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)c_{\mathrm{out}}^2(t)\norm{ \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t)\rvx_t, c_{\mathrm{noise}}(t)\right) - \rvx_{\mathrm{tgt}}(t)}_2^2\right].
+\end{align}
+Here, the regression target $\rvx_{\mathrm{tgt}}(t)$ is obtained as:
+\[
+\rvx_{\mathrm{tgt}}(t) = \frac{\left(1-c_{\mathrm{skip}}(t)\alpha_t\right)\rvx_0-c_{\mathrm{skip}}(t)\sigma_t \bm{\epsilon}}{c_{\mathrm{out}}(t)}.
+\]
+
+By incorporating the standard deviation of $p_{\text{data}}$, denoted as $\sigma_{\mathrm{d}}$, EDM proposes the following design criterion for network parameterization, which may be described as the \emph{unit variance criterion}.
+
+\paragraph{Unit Variance of Input.} 
+\begin{align*}
+    &\text{Var}_{\rvx_0,\bm{\epsilon}}\left[ c_{\mathrm{in}}(t)\rvx_t\right] = 1 \nonumber
+    \\ \Longleftrightarrow &~c_{\mathrm{in}}^2(t) \text{Var}_{\rvx_0,\bm{\epsilon}}\left[ \alpha_t \rvx_0 +\sigma_t \bm{\epsilon} \right] = 1 \nonumber
+    \\ \Longleftrightarrow &~c_{\mathrm{in}}(t)  = \frac{1}{\sqrt{\sigma_{\mathrm{d}}^2 \alpha_t^2 + \sigma_t^2}},
+\end{align*}
+taking the positive root. 
+\paragraph{Unit Variance of Training Target.}
+\begin{align}\label{eq:c-out}
+    &\text{Var}_{\rvx_0,\bm{\epsilon}}\left[ \rvx_{\mathrm{tgt}}(t) \right] = 1 \nonumber
+    \\ \Longleftrightarrow &~c_{\mathrm{out}}^2(t)  = \left(1-c_{\mathrm{skip}}(t)\alpha_t\right)^2 \sigma_{\mathrm{d}}^2 + c_{\mathrm{skip}}^2(t)\sigma_t^2, 
+\end{align}
+with centered data ($\E[\rvx_0]=\bm{0}$).
+\paragraph{Minimize the Error Amplification from $\rmF_{\bm{\phi}}$ to $\rvx_{\bm{\phi}}$.} EDM aims to mitigate the amplification of the network's learning error from $\rmF_{\bm{\phi}}$ to $\rvx_{\bm{\phi}}$. This is achieved by selecting $c_{\mathrm{skip}}$ to minimize $c_{\mathrm{out}}$:
+\[
+c_{\mathrm{skip}}^* \in \argmin_{c_{\mathrm{skip}}}  c_{\mathrm{out}}^2.
+\]
+Using the standard approach of solving $\frac{\partial c_{\mathrm{out}}}{\partial c_{\mathrm{skip}}} = 0$ for the critical point $c_{\mathrm{skip}}^*$, we obtain
+\begin{align*}
+    c_{\mathrm{skip}}^*(t) = \frac{\alpha_t \sigma_{\mathrm{d}}^2 }{\alpha_t^2 \sigma_{\mathrm{d}}^2  + \sigma_t^2}. 
+\end{align*}
+Substituting this into \Cref{eq:c-out}, the optimal value is given by
+\begin{align*}
+    c_{\mathrm{out}}^*(t) = \pm \frac{\sigma_t \sigma_{\mathrm{d}} }{\sqrt{\alpha_t^2 \sigma_{\mathrm{d}}^2  + \sigma_t^2}}. 
+\end{align*}
+By convention, we use the nonnegative branch for the output scale:
+\[
+c_{\mathrm{out}}^*(t) = \frac{\sigma_t \sigma_{\text d}}
+{\sqrt{\alpha_t^2 \sigma_{\text d}^2 + \sigma_t^2}}
+\;\;\;(\ge 0),
+\]
+which ensures $c_{\mathrm{out}}(0)=0$ and $c_{\mathrm{out}}(t)\to\sigma_{\text d}$ as $\sigma_t$ is sufficiently large,
+yielding the intuitive limits $\rvx_{\bm{\phi}}(\rvx_t,0)\approx \rvx_t$ and
+$\rvx_{\bm{\phi}}(\rvx_t,t)\approx \sigma_{\text d}\,\rmF_{\bm{\phi}}(\cdot)$.
+% \dk{If not used in subsequent subsections, do we need to have this section? Don't need to specify the rationale of these selections or even describe what are they. Just $c_{skip}$ is enough. Too much information needed to get to the essense of this chapter.}
+
+
+
+We summarize these coefficients as follows:
+\begin{mdframed}
+Denoting $R_t := \alpha_t^2 \sigma_{\mathrm{d}}^2+ \sigma_t^2$, we have the following selections:
+    \begin{align}\label{eq:edm-coeff}
+        \begin{aligned}
+            c_{\mathrm{in}}(t)  = \frac{1}{\sqrt{R_t}}, \quad
+            c_{\mathrm{skip}}(t) = \frac{\alpha_t \sigma_{\mathrm{d}}^2 }{R_t}, \quad
+            c_{\mathrm{out}}(t) =  \frac{\sigma_t \sigma_{\mathrm{d}} }{\sqrt{R_t}}.
+        \end{aligned}
+    \end{align}
+\end{mdframed}
+
+With \Cref{eq:edm-coeff}, the regression target $\rvx_{\mathrm{tgt}}(t)$ simplifies to
+\[
+\rvx_{\mathrm{tgt}}(t) = \frac{1}{\sigma_{\mathrm{d}}}\frac{\sigma_t \rvx_0 - \alpha_t \sigma_{\mathrm{d}}^2\bm{\epsilon} }{\sqrt{R_t}}.
+\] 
+Additionally, substituting these expressions into \Cref{eq:D-parametrization} and \Cref{eq:loss-F} allows us to simplify both the parametrization and the loss function, yielding:
+\begin{align*}
+    \rvx_{\bm{\phi}}(\rvx, t)=\frac{\alpha_t \sigma_{\mathrm{d}}^2 }{R_t} \rvx + \frac{\sigma_t \sigma_{\mathrm{d}} }{\sqrt{R_t}}\rmF_{\bm{\phi}}\left(\frac{1}{\sqrt{R_t}}\rvx, c_{\mathrm{noise}}(t)\right),
+\end{align*}
+and
+\begin{align*}
+   \mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)\frac{\sigma_t^2  }{R_t}\norm{ \sigma_{\mathrm{d}} \rmF_{\bm{\phi}}\left(\frac{1}{\sqrt{R_t}}\rvx_t, c_{\mathrm{noise}}(t)\right) - \left(\frac{\sigma_t \rvx_0 - \alpha_t \sigma_{\mathrm{d}}^2\bm{\epsilon} }{\sqrt{R_t}}\right)}_2^2\right].
+\end{align*}
+
+With this parameterization and the conditions $\alpha_0 \approx 1$ and $\sigma_0 \approx 0$, we observe that  
+\[
+c_{\mathrm{skip}}(0) \approx 1 \quad \text{and} \quad c_{\mathrm{out}}(0) \approx 0.
+\]  
+
+
+\paragraph{Selection of $c_{\mathrm{noise}}(t)$.}
+It provides a noise-level embedding to $\rmF_{\bm{\phi}}$; any
+one-to-one mapping of the noise level $\sigma_t$ (e.g., $c_{\mathrm{noise}}(t)=\log \sigma_t$) is suitable.
+
+\subsection{A Common EDM Special Case: $\alpha_t = 1$, $\sigma_t = t$}
+
+We consider the simplified noise schedule used in EDM, where
+$\alpha_t = 1$ and $\sigma_t = t$, which also appears in the discussion of
+CTM in \Cref{sec:CTM}. Under this setting, the forward process becomes
+\[
+\rvx_t = \rvx_0 + t\bm{\epsilon},
+\quad
+\text{with }
+\rvx_0 \sim p_{\text{data}},
+\,\,
+\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI),
+\]
+corresponding to the perturbation kernel
+\[
+p_t(\rvx_t|\rvx_0)
+=
+\mathcal{N}(\rvx_t; \rvx_0, t^2\rmI).
+\]
+
+The resulting marginal density is
+\[
+p_t(\rvx)
+=
+\int
+\mathcal{N}(\rvx;\rvx_0,t^2\rmI)
+p_{\mathrm{data}}(\rvx_0)
+\diff\rvx_0
+=
+\bigl[
+p_{\mathrm{data}}
+*
+\mathcal{N}(\bm{0},t^2\rmI)
+\bigr](\rvx).
+\]
+Thus, the exact terminal marginal is
+$p_T=p_{\mathrm{data}}*\mathcal{N}(\bm{0},T^2\rmI)$.
+When $T$ is sufficiently large relative to the scale of the data, this
+marginal is commonly approximated by
+$\mathcal{N}(\bm{0},T^2\rmI)$, which is used as the sampling prior:
+\[
+p_{\mathrm{prior}}(\rvx_T)
+:=
+\mathcal{N}(\rvx_T;\bm{0},T^2\rmI).
+\]
+% The marginal density induced by the perturbation kernel is given by the convolution:
+% \begin{align*}
+%     p_t(\rvx) = \int p_t(\rvx|\rvx_0)p_{\text{data}}(\rvx_0)\diff \rvx_0 = \left[p_{\text{data}}(\cdot) * \mathcal{N}(\cdot; \bm{0}, t^2 \rmI)\right](\rvx),
+% \end{align*}
+% where $*$ denotes convolution over densities\dk{Either provide formal definition of it (in appendix) or cite some reference}.
+
+Under this setup, the PF-ODE based on $\rvx$-prediction $\rvx_{\bm{\phi}^\times}$ (see \Cref{eq:clean_pf_ode}) simplifies to
+\begin{align*}
+    \frac{\diff \rvx(t)}{\diff t} = \frac{\rvx(t) - \rvx_{\bm{\phi}^\times}(\rvx(t), t)}{t}.
+\end{align*}
+
+Substituting this formulation into \Cref{eq:edm-coeff}, the neural network parameterization coefficients become
+\begin{align}\label{eq:edm-simple-coefficients}
+    c_{\mathrm{in}}(t) = \frac{1}{\sqrt{\sigma_{\mathrm{d}}^2 + t^2}}, \quad
+    c_{\mathrm{skip}}(t) = \frac{\sigma_{\mathrm{d}}^2}{\sigma_{\mathrm{d}}^2 + t^2}, \quad
+    c_{\mathrm{out}}(t) = \pm \frac{t \sigma_{\mathrm{d}}}{\sqrt{\sigma_{\mathrm{d}}^2 + t^2}}.
+\end{align}
+From these expressions, we observe:
+\begin{itemize}
+    \item When $t \approx 0$, the noise level is negligible, so
+    $c_{\mathrm{skip}} \approx 1$ and $c_{\mathrm{out}} \approx 0$. In this limit,
+    the skip path dominates and the network essentially passes through its
+    input,
+    \[
+    \rvx_{\bm{\phi}}(\rvx, t) \approx \rvx.
+    \]
+    \item When $t \gg 0$, the input is heavily corrupted by noise, so
+    $c_{\mathrm{skip}} \approx 0$ and $c_{\mathrm{out}} \approx \sigma_{\mathrm{d}}$.
+    In this regime, the skip path vanishes and the model output is determined
+    entirely by the learned residual,
+    \[
+    \rvx_{\bm{\phi}}(\rvx, t) \approx \sigma_{\mathrm{d}} \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t)\rvx, c_{\mathrm{noise}}(t)\right),
+    \]
+    meaning that the network $\rmF_{\bm{\phi}}$ predicts a scaled proxy of the clean
+signal from a normalized noisy input; at high noise levels the model output is
+therefore determined entirely by the learned denoising function.
+\end{itemize}
+In short, the parameterization smoothly interpolates from an identity map at small $t$
+to a scaled residual predictor on standardized inputs at large $t$.

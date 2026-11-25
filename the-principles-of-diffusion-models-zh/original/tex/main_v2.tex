@@ -1,0 +1,512 @@
+% !Mode:: "TeX:DE:UTF-8:Main"
+%
+% \DocumentMetadata{
+%   lang        = en,
+%   pdfversion  = 2.0,
+%   pdfstandard = A-2b,
+%   testphase   = 
+%     {phase-III,
+%      title,
+%      table
+% 	}  
+% }
+
+% \PassOptionsToPackage{monochrome}{xcolor}
+%JOURNAL CODE  SEE DOCUMENTATION
+\documentclass[examplefnt,biber]{nowfnt-arxiv} % creates the journal version, needs biber version
+
+
+% \usepackage{etoolbox}
+% \newcounter{absfn}
+% \makeatletter
+% \let\orig@footnotetext\@footnotetext
+% \long\def\@footnotetext#1{%
+%   \orig@footnotetext{\hypertarget{absfn.\theabsfn}{}#1}%
+% }
+% \let\orig@makefnmark\@makefnmark
+% \def\@makefnmark{%
+%   \stepcounter{absfn}%
+%   \hyperlink{absfn.\theabsfn}{\orig@makefnmark}%
+% }
+% \makeatother
+
+\usepackage{etoolbox}
+\newcounter{fnhyp}
+\AfterEndPreamble{\input{fnfix}}
+
+
+
+% \documentclass[examplefnt,biber]{nowfnt} 
+%wrapper for book and ebook are created automatically.
+% \PassOptionsToPackage{colorlinks=true}{hyperref}
+\PassOptionsToPackage{dvipsnames}{xcolor} % harmless on pdf engines
+
+
+
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,positioning,shapes.geometric}
+% \usepackage{subfigure}
+\usepackage{subcaption}
+\usepackage{mathrsfs}
+\usepackage{tcolorbox}
+\usepackage{booktabs} % for professional tables
+\usetikzlibrary{positioning,calc,arrows.meta,shapes.geometric}
+
+
+\usepackage[labelfont={bf,sf}]{caption}
+\usetikzlibrary{shapes, arrows, positioning, backgrounds, shadows} % Added shadows
+\usepackage{stmaryrd}
+\usepackage{placeins} % in preamble
+\newcommand{\graymidrule}{\arrayrulecolor{black!25}\midrule\arrayrulecolor{black}}
+\usepackage{cancel}
+\usepackage{tabularx}
+\usepackage{array}
+\newcommand{\ys}[1]{{\color{orange}{[YS: #1]}}}
+
+
+
+
+\captionsetup[table]{labelfont={bf,sf}}
+%%%%% For Math Box %%%%%%%
+\usepackage{mathtools}
+\usepackage{fancybox}
+\usepackage[dvipsnames,table]{xcolor}
+% \selectcolormodel{cmyk}
+\usepackage{amsmath, amssymb, amsfonts}
+% \usepackage{thmtools}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{geometry}
+\geometry{%
+  paperwidth=7in,
+  paperheight=10in,
+  total={136mm,206mm},
+  hcentering,
+  vcentering,
+  headheight=14.4pt,
+  heightrounded
+}
+\usepackage{float}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{environ}
+\usepackage{xr}
+\usepackage{mwe}
+\usepackage{adjustbox} % <-- for max width scaling
+\usepackage{multirow}       % Also in the preamble
+\usepackage{makecell}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+
+% \usepackage{ulem} %for \uwave
+\usepackage{annotate_eqs}
+\usetikzlibrary{positioning, arrows.meta, fit, shapes.multipart}
+
+\definecolor{StoryBrown}{HTML}{9A5B32}
+\definecolor{StoryBrownDark}{HTML}{704023}
+\definecolor{StoryBrownLight}{HTML}{FBF6F0}
+
+\newtcolorbox{storychapterguidebox}{
+  enhanced,
+  breakable,
+  colback=StoryBrownLight,
+  colframe=StoryBrownLight,
+  boxrule=0pt,
+  borderline west={2.2pt}{0pt}{StoryBrown},
+  arc=1.5mm,
+  left=3.5mm,
+  right=3mm,
+  top=2.5mm,
+  bottom=2.5mm,
+}
+
+\NewDocumentCommand{\chapterlearning}{+m +m}{%
+  \begin{storychapterguidebox}
+  \noindent\textcolor{StoryBrownDark}{%
+    \textbfs{After this chapter, you will be able to...}%
+  }
+  \begin{itemize}[leftmargin=1.5em,itemsep=2pt,topsep=4pt,parsep=0pt]
+  #1
+  \end{itemize}
+  \vspace{-1mm}
+  \noindent\textcolor{StoryBrownDark}{\textbfs{Reader route.}} #2
+  \end{storychapterguidebox}
+}
+
+
+% \usepackage[T1]{fontenc}
+% \usepackage{mathabx}
+\def\Circlearrowleft{\ensuremath{%
+  \rotatebox[origin=c]{180}{$\circlearrowleft$}}}
+\def\Circlearrowright{\ensuremath{%
+  \rotatebox[origin=c]{150}{$\circlearrowright$}}}
+\def\CircleArrowleft{\ensuremath{%
+  \reflectbox{\rotatebox[origin=c]{180}{$\circlearrowleft$}}}}
+\def\CircleArrowright{\ensuremath{%
+  \reflectbox{\rotatebox[origin=c]{180}{$\circlearrowright$}}}}
+
+\newtheorem*{lemma*}{Lemma}
+
+\renewcommand{\labelitemi}{\raisebox{.25\height}{\tiny$\blacksquare$}}
+\renewcommand{\labelitemii}{{$\bullet$}}
+
+
+% \usepackage{enumitem}
+% \setlist[itemize]{label=\rule[0.5ex]{0.6ex}{0.6ex}}
+% \usepackage{csquotes} % put this in your preamble
+\usepackage{epigraph} 
+\setlength{\epigraphwidth}{0.79\textwidth}
+\usepackage{thmbox}  % Load thmbox package
+\newtheorem[M]{question}{\sffamily\bfseries Question}[section]
+\tcbuselibrary{theorems,skins,breakable}
+
+\newcommand{\cc}[1]{\cellcolor{gray!#1}}
+\newcommand{\textbfs}[1]{{\sffamily\textbf{#1}}}
+\usepackage{multicol}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\floatname{algorithm}{\textbfs{Algorithm}}
+\DeclareCaptionFormat{bfsformat}{\textbfs{#1#2}#3}
+\captionsetup[algorithm]{format=bfsformat, labelfont=bf}
+\renewcommand{\algorithmicrequire}{\textbfs{Input:}}
+\renewcommand{\algorithmicensure}{\textbfs{Output:}}
+\renewcommand{\algorithmicfor}{\textbfs{for}}      
+\renewcommand{\algorithmicend}{\textbfs{end}} 
+\renewcommand{\algorithmicdo}{\textbfs{do}} 
+\renewcommand{\algorithmicrepeat}{\textbfs{Repeat}} 
+\renewcommand{\algorithmicuntil}{\textbfs{until}} 
+\renewcommand{\algorithmicreturn}{\textbfs{return}} 
+\renewcommand{\algorithmicif}{\textbfs{if}} 
+\renewcommand{\algorithmicelse}{\textbfs{else}}
+\renewcommand{\algorithmicthen}{\textbfs{then}}
+\renewcommand{\algorithmicwhile}{\textbfs{while}} 
+%%%%%%%%%%%%%%%%%%%%
+
+
+\usepackage{cleveref}
+\crefname{algorithm}{Algorithm}{Algorithms}
+
+\usepackage{subcaption}
+\usepackage{graphicx}
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\usepackage[framemethod=TikZ]{mdframed}
+\mdfsetup{%
+   middlelinecolor=black,
+   middlelinewidth=1.1pt,
+   backgroundcolor=gray!10,
+   roundcorner=6pt}
+\input{math_commands}
+\input{theorems}
+\input{scaffolding}
+\renewcommand\thepart{\Alph{part}}
+
+%%%%%%%%%%%%%%%%% Checklist %%%%%%%%%%%%%%%%%
+\newlist{todolist}{itemize}{2}
+\setlist[todolist]{label=$\square$}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+\newcommand{\done}{\rlap{$\square$}{\raisebox{2pt}{\large\hspace{1pt}\cmark}}%
+\hspace{-2.5pt}}
+\newcommand{\wontfix}{\rlap{$\square$}{\large\hspace{1pt}\xmark}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{pstricks}
+\usepackage{pstricks-add}
+
+\usepackage{kotex}
+
+\DeclareRobustCommand{\figcredit}[2][Source]{%
+  \par\smallskip
+  \makebox[\linewidth][r]{\footnotesize\itshape #1: #2}%
+}
+% \usepackage[colorlinks=true,allcolors=blue,plainpages=false,pdfpagelabels=true]{hyperref}
+
+% \makeatletter
+% \def\cref@addtoreset#1#2{\@addtoreset{#1}{#2}}
+% \makeatother
+
+%ARTICLE TITLE
+\title{The Principles of Diffusion Models}
+
+
+%ARTICLE SUB-TITLE
+% \subtitle{From Origins to Advances}
+
+
+%AUTHORS FOR COVER PAGE 
+% separate authors by \and, item by \\
+% Don't use verbatim or problematic symbols.
+% _ in mail address should be entered as \_
+% Pay attention to large mail-addresses ...
+
+%if there are many author twocolumn mode can be activated.
+%\booltrue{authortwocolumn} %SEE DOCUMENTATION
+\maintitleauthorlist{
+Chieh-Hsin Lai \\
+Sony AI \\
+\and
+Yang Song\\
+OpenAI \\
+\and
+Dongjun Kim \\
+Stanford University \\
+\and
+Yuki Mitsufuji \\
+Sony Group Corporation, Sony AI \\
+\and
+Stefano Ermon \\
+Stanford University
+}
+
+%ISSUE DATA AS PROVIDED BY NOW
+\issuesetup
+{%
+ copyrightowner={Chieh-Hsin Lai, Yang Song, Dongjun Kim, Yuki Mitsufuji, and Stefano Ermon},
+ volume        = xx,
+ issue         = xx,
+ pubyear       = 2024,
+ isbn          = xxx-x-xxxxx-xxx-x,
+ eisbn         = xxx-x-xxxxx-xxx-x,
+ doi           = 10.1561/XXXXXXXXX,
+ firstpage     = 1, %Explain
+ lastpage      = 18
+ }
+
+%BIBLIOGRAPHY FILE
+%\addbibresource{sample.bib}
+%\addbibresource{testfnt.bib}
+\addbibresource{main_v2.bib}
+
+
+%AUTHORS FOR ABSTRACT PAGE
+\author[1]{Chieh-Hsin Lai}
+\author[2]{Yang Song}
+\author[3]{Dongjun Kim}
+\author[4]{Yuki Mitsufuji}
+\author[5]{Stefano Ermon}
+
+\affil[1]{Sony AI; \url{chieh-hsin.lai@sony.com} / \url{chiehhsinlai@gmail.com}}
+\affil[2]{OpenAI\footnote{Affiliation reflects the institution at the time of the work.}; \url{thusongyang@gmail.com}}
+\affil[3]{Stanford University; \url{dongjun@stanford.edu}}
+\affil[4]{Sony Group Corporation, Sony AI; \url{yuhki.mitsufuji@sony.com}}
+\affil[5]{Stanford University; \url{ermon@cs.stanford.edu}}
+
+\articledatabox{\nowfntstandardcitation}
+
+
+
+% \declaretheorem[style=remark, thmbox=M, name=Theorem]{theorem}
+
+\newcommand{\veryshortarrow}[1][3pt]{\mathrel{%
+   \hbox{\rule[\dimexpr\fontdimen22\textfont2-.2pt\relax]{#1}{.4pt}}%
+   \mkern-4mu\hbox{\usefont{U}{lasy}{m}{n}\symbol{41}}}}
+
+% ==========================================================
+% MIT Press forthcoming badge on the VERY FIRST cover page
+% Paste this block in the preamble, immediately before:
+%     \begin{document}
+% ==========================================================
+
+% ==========================================================
+% MIT Press forthcoming badge on the VERY FIRST cover page
+% Paste this block in the preamble, immediately before:
+%     \begin{document}
+% ==========================================================
+
+\usepackage{eso-pic}
+
+\definecolor{MITTagGold}{HTML}{B8872E}
+\definecolor{MITTagBrown}{HTML}{5A3518}
+\definecolor{MITTagCream}{HTML}{FFF4D8}
+\definecolor{MITTagOrange}{HTML}{D9982F}
+
+% ---- Easy layout knobs ----
+% More negative x = move tag left. More negative y = move tag down.
+\newcommand{\MITPressTagXShift}{-13mm}
+\newcommand{\MITPressTagYShift}{-13mm}
+
+% Positive value moves the existing cover title/authors DOWN.
+\newcommand{\CoverTitleDrop}{-5mm}
+
+\makeatletter
+\newif\ifMITPressTagFirstCover
+\MITPressTagFirstCovertrue
+
+\newcommand{\MITPressBadgeContent}{%
+  \begin{minipage}{6.2cm}
+    \centering
+    {\sffamily\bfseries\fontsize{7.2}{8.2}\selectfont
+     \color{MITTagGold!75!black} FORTHCOMING FROM}%
+    \hspace{0.32em}%
+    {\sffamily\bfseries\fontsize{11.4}{12.4}\selectfont
+     \color{MITTagBrown} MIT Press}%
+    {\sffamily\bfseries\fontsize{7.2}{8.2}\selectfont
+     \color{MITTagGold!75!black}, 2027}%
+  \end{minipage}%
+}
+
+\newcommand{\MITPressForthcomingTag}{%
+  \AddToShipoutPictureFG*{%
+    \begin{tikzpicture}[remember picture,overlay]
+
+      % Gray soft shadow only: no text, no boundary, slightly shifted.
+      \node[
+        anchor=north east,
+        xshift=\MITPressTagXShift,
+        yshift=\MITPressTagYShift,
+        rounded corners=7pt,
+        inner xsep=11pt,
+        inner ysep=7pt,
+        fill=black,
+        fill opacity=0.16,
+        draw=none,
+        text opacity=0
+      ] at ([xshift=1.15pt,yshift=-1.15pt]current page.north east) {%
+        \MITPressBadgeContent
+      };
+
+      % Main badge: gradient fill, NO boundary line.
+      \node[
+        anchor=north east,
+        xshift=\MITPressTagXShift,
+        yshift=\MITPressTagYShift,
+        rounded corners=7pt,
+        inner xsep=11pt,
+        inner ysep=7pt,
+        draw=none,
+        top color=MITTagCream,
+        bottom color=MITTagOrange!18
+      ] at (current page.north east) {%
+        \MITPressBadgeContent
+      };
+
+    \end{tikzpicture}%
+  }%
+}
+
+% Attach the badge to the real first cover page.
+\patchcmd{\nowfnt@bookauthortitlepage}
+  {\thispagestyle{\nowfnt@titlepagestyle}}
+  {\thispagestyle{\nowfnt@titlepagestyle}%
+   \ifMITPressTagFirstCover
+     \MITPressForthcomingTag
+   \fi}
+  {}
+  {\PackageWarning{MITPressTag}{Could not attach the MIT Press tag to the cover page}}
+
+% Move the existing cover text down slightly, only on the first cover page.
+\patchcmd{\nowfnt@bookauthortitlepage}
+  {\raggedleft}
+  {\raggedleft
+   \ifMITPressTagFirstCover
+     \vspace*{\CoverTitleDrop}%
+     \global\MITPressTagFirstCoverfalse
+   \fi}
+  {}
+  {\PackageWarning{MITPressTag}{Could not move the first-cover text down}}
+
+
+
+\makeatother
+
+% \makeatother
+
+\begin{document}
+
+\makeabstracttitle
+
+\begin{abstract}
+This book focuses on the principles that have shaped the development of diffusion models, tracing their origins and showing how different formulations arise from common mathematical ideas.
+
+
+Diffusion modeling begins by specifying a \emph{forward corruption process} that gradually turns data into noise. This forward process links the data distribution to a simple noise distribution by defining a continuous family of intermediate distributions. The core objective of a diffusion model is to construct another process that runs in the opposite direction, transforming noise into data while recovering the same intermediate distributions defined by the forward corruption process.
+
+We describe three complementary ways to formalize this idea. The \emph{variational view}, inspired by variational autoencoders, sees diffusion as learning to remove noise step by step, solving small denoising objectives that together teach the model to turn noise back into data. The \emph{score-based view}, rooted in energy-based modeling, learns the gradient of the evolving data distribution, which indicates how to nudge samples toward more likely regions. The \emph{flow-based view}, related to normalizing flows, treats generation as following a smooth path that moves samples from noise to data under a learned velocity field.
+
+
+
+These perspectives share a common backbone: a learned time-dependent velocity field whose flow transports a simple prior to the data. With this in hand, sampling amounts to solving a differential equation that evolves noise into data along a continuous generative trajectory. On this foundation, the book discusses \emph{guidance} for controllable generation, \emph{advanced numerical solvers} for efficient sampling, and diffusion-motivated \emph{flow-map models} that learn direct mappings between arbitrary times along this trajectory.
+
+This book is intended for readers with a basic background in deep learning who seek a clear, conceptual, and mathematically grounded understanding of diffusion models. It develops the core principles underlying the subject, explains the ideas that unify its many formulations, and provides a solid foundation for further study in this rapidly evolving area. As such, it serves both as a principled reference for researchers and as an accessible entry point for students and newcomers. Supplementary materials for the book are available at the book website: 
+
+{\centering
+\url{https://the-principles-of-diffusion-models.github.io/}\par
+}
+\end{abstract}
+
+
+\begin{acknowledgements}
+
+We would like to express our sincere gratitude to the many members of the community who have offered valuable feedback and helped us identify errata. In particular, we thank the following individuals, listed in alphabetical order: \emph{Francis Bach}, \emph{Ilia Badanin}, \emph{Rwiddhi Chakraborty}, \emph{Mauricio Delbracio}, \emph{Jacob Lessing}, \emph{Kaiming He}, \emph{Yutong (Kelly) He}, \emph{Durk Kingma}, \emph{Shucheng Li}, \emph{Ramtin Moslemi}, \emph{Rukmangadh Sai Myana}, \emph{Stefano Peluchetti}, \emph{Yuri Plotkin}, \emph{François Rozet}, \emph{Yair Shenfeld}, \emph{Molei Tao}, \emph{Mohamad Ternanni}, and \emph{Baojian Zhou}, as well as anonymous reviewers and other readers who kindly shared feedback.
+
+The authors would also like to express their deep gratitude to Professor \emph{Dohyun Kwon} from the University of Seoul and KIAS for his generous time and effort in engaging with this work. He carefully reviewed parts of \Cref{ch:ot-eot}, helping to ensure the correctness of statements and proofs, and contributed to several valuable discussions that clarified the presentation. Beyond his technical suggestions, his thoughtful feedback and willingness to share his perspectives have been a source of encouragement throughout the writing of this book. We sincerely appreciate his support and collegial spirit, which have enriched the final version.
+
+
+
+
+
+
+\end{acknowledgements}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{Preface}
+\input{notations}
+\part{Introduction to Deep Generative Modeling}
+\input{Prologue-Deep-Generative-Modeling}
+\part{Foundations and Perspectives of Diffusion Models}
+\input{Part-B-diagram}
+\input{Chapter-0-Diffusion-High-Level}
+\input{Chapter-1-Varational-Perspective-From-VAE-to-DDPM}
+\input{Chapter-2-Score-Based-Perspective-From-EBMs-to-NCSN}
+\input{Chapter-3-Diffusion-Models-Today-Score-SDE-Framework}
+\input{Chapter-4-Flow-Based-Perspective-From-NFs-to-Flow-Matching}
+\input{Chapter-5-They-Are-All-Equivalent}
+\input{Chapter-4-plus-OT-and-Diffusion-Model}
+\part{Sampling of Diffusion Models}
+\input{Part-C-D-diagram}
+\input{Chapter-6-Guidance}
+\input{Chapter-7-Sophisticated-Solvers-for-Fast-Sampling}
+
+\part{Toward Learning Fast Diffusion-Based Generators}
+\input{Chapter-8-Post-Training-Methods-for-Fast-Sampling}
+\input{Chapter-9-Learning-Fast-Generator-from-Scratch}
+
+\part*{Epilogue and Outlook}
+\addcontentsline{toc}{part}{Epilogue and Outlook}
+\input{Chapter-10-Epilogue-and-Outlook}
+% \part{Postface}
+% \input{9_Postface and Conclusion}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\appendix
+
+\input{A_Crash-Course-of-DE}
+\input{B_Continuity-Equation}
+\input{C_SDE-and-Ito}
+\input{D_Proofs}
+
+
+
+
+\backmatter  % references, restarts sample
+
+
+
+
+\printbibliography
+
+\end{document}

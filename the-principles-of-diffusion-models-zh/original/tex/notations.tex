@@ -1,0 +1,159 @@
+\chapter*{Notations}
+\markboth{\sffamily\slshape Notations}{\sffamily\slshape Notations}
+
+%% Consistent section title command for this page
+\newcommand{\notationsection}[1]{%
+  \vspace{1.2em}%
+  \noindent{\textbfs{#1}}%
+  \vspace{0.4em}%
+  \par\nobreak
+}
+
+%% Shared table setup
+\newcommand{\notationtable}[1]{%
+  \bgroup
+  \def\arraystretch{1.25}%
+  \noindent\begin{tabular}{@{}p{0.3\linewidth}@{\hspace{1.5em}}p{0.64\linewidth}@{}}
+  #1
+  \end{tabular}
+  \egroup
+}
+
+%%% ---------------------------------------------------------------
+\notationsection{Numbers and Arrays}
+\notationtable{
+$a$                                       & A scalar.\\
+$\rva$                                    & A column vector (e.g., $\rva\in\mathbb{R}^D$).\\
+$\rmA$                                    & A matrix (e.g., $\rmA\in\mathbb{R}^{m\times n}$).\\
+$\rmA^\top$                               & Transpose of $\rmA$.\\
+$\Tr(\rmA)$                               & Trace of $\rmA$.\\
+$\rmI_D$                                  & Identity matrix of size $D\times D$.\\
+$\rmI$                                    & Identity matrix; dimension implied by context.\\
+$\mathrm{diag}(\rva)$                     & Diagonal matrix with diagonal entries given by $\rva$.\\
+$\bm{\phi},\,\bm{\theta}$                & Learnable neural network parameters.\\
+$\bm{\phi}^{\times},\,\bm{\theta}^{\times}$ & Parameters after training (fixed during inference).\\
+$\bm{\phi}^{*},\,\bm{\theta}^{*}$        & Optimal parameters of an optimization problem.\\
+}
+
+%%% ---------------------------------------------------------------
+\notationsection{Calculus}
+\notationtable{
+$\dfrac{\partial \rvy}{\partial \rvx}$
+    & Partial derivatives of $\rvy$ w.r.t.\ $\rvx$ (componentwise).\\[6pt]
+$\dfrac{\diff \rvy}{\diff \rvx}$ \text{or} $\mathrm{D}\rvy(\rvx)$
+    & Total (Fréchet) derivative of $\rvy$ w.r.t.\ $\rvx$.\\[6pt]
+$\nabla_\rvx y$
+    & Gradient of scalar $y:\mathbb{R}^D \to\mathbb{R}$; a column in $\mathbb{R}^D$.\\
+$\dfrac{\partial \rmF}{\partial \rvx}$ \text{or} $\nabla_\rvx \rmF$
+    & Jacobian of $\rmF:\mathbb{R}^n \to\mathbb{R}^m$; shape $m\times n$.\\[6pt]
+$\nabla\cdot\rvy$
+    & Divergence of a vector field $\rvy:\mathbb{R}^D \to\mathbb{R}^D$; a scalar.\\
+$\nabla^2_\rvx f(\rvx)$ \text{or} $\rmH(f)(\rvx)$
+    & Hessian of $f:\mathbb{R}^D \to\mathbb{R}$; shape $D\times D$.\\
+$\displaystyle\int f(\rvx)\diff\rvx$
+    & Integral of $f$ over the domain of $\rvx$.\\
+}
+
+%%% ---------------------------------------------------------------
+\notationsection{Probability and Information Theory}
+\notationtable{
+$p(\rvx)$                   & Density/distribution over a continuous vector $\rvx$.\\
+$\Pr(\rvx = \rva)$, or informally $\Pr(\rvx)$
+    & Point probability in the discrete setting.\\
+$\Pr(\rvx = \rva |\rvy = \rvb)$, or informally $\Pr(\rvx |\rvy)$
+    & Conditional point probability in the discrete setting.\\
+$p_{\mathrm{data}}$        & Data distribution.\\
+$p_{\mathrm{prior}}$       & Prior distribution (e.g., standard normal).\\
+$p_{\mathrm{src}}$         & Source distribution.\\
+$p_{\mathrm{tgt}}$         & Target distribution.\\
+$\rva \sim p$              & Random vector $\rva$ is distributed as $p$.\\
+$\E_{\rvx\sim p}\big[\rvf(\rvx)\big]$
+    & Expectation of $\rvf(\rvx)$ under $p(\rvx)$.\\[3pt]
+\parbox[t]{0.22\linewidth}{\raggedright
+  $\E\big[\rvf(\rvx)\,|\,\rvz\big]$,\\[2pt]
+  or $\E_{\rvx\sim p(\cdot|\rvz)}\big[\rvf(\rvx)\big]$}
+    & Conditional expectation of $\rvf(\rvx)$ given $\rvz$, with $\rvx$ distributed as $p(\cdot|\rvz)$.\\[3pt]
+$\Var\big(\rvf(\rvx)\big)$
+    & Variance under $p(\rvx)$.\\
+$\Cov\big(\rvf(\rvx),\rvg(\rvx)\big)$
+    & Covariance under $p(\rvx)$.\\
+$\mathcal{D}_{\mathrm{KL}}\left(p\,\Vert\, q\right)$
+    & Kullback--Leibler divergence from $q$ to $p$.\\
+$\bm{\epsilon}\sim\mathcal{N}(\bm{0},\rmI)$
+    & Standard normal sample.\\
+$\mathcal{N}(\rvx;\vmu,\mSigma)$
+    & Gaussian over $\rvx$ with mean $\vmu$ and covariance $\mSigma$.\\
+}
+
+%%% ---------------------------------------------------------------
+\vspace{1.2em}
+
+\paragraph{Notational Conventions.}
+We collect several conventions used throughout this book.
+
+\subparagraph{I. Random Variables and Their Realizations.}
+We use the same symbol for a random vector and its realized value.
+This convention, common in deep learning and generative modeling,
+keeps notation compact. The intended meaning is determined by context.
+
+For densities, $p(\rvx)$ denotes the functional form of the
+distribution rather than evaluation at a particular sample. When
+evaluation at a specific point is intended, we state so explicitly.
+Conditional densities are read by context: in $p(\rvx|\rvy)$, fixing
+$\rvy$ gives a density in $\rvx$, while fixing $\rvx$ gives a
+function of $\rvy$.
+
+\subparagraph{II. Conditional Expectations.}
+The expression $\E[\rvf(\rvx)|\rvz]$ denotes a function of $\rvz$,
+giving the expected value of $\rvf(\rvx)$ conditional on $\rvz$.
+When conditioning on a specific realized value, we write
+$\E[\rvf(\rvx)|\rmZ = \rvz]$. Equivalently, this can be expressed as
+an integral with respect to the conditional distribution:
+\[
+\E_{\rvx \sim p(\cdot|\rvz)}[\rvf(\rvx)]
+= \int \rvf(\rvx)\, p(\rvx|\rvz)\, \diff\rvx.
+\]
+This distinction clarifies whether $\rvz$ is treated as a variable
+defining a function $\rvz \mapsto \E[\rvf(\rvx)|\rvz]$, or as a
+fixed value at which that function is evaluated.
+
+\subparagraph{III. Implicit Time Indices.}
+Since many objects in this book are indexed by time, writing every
+time variable explicitly can make formulas heavy. When the relevant
+time indices are clear from context, we leave them implicit. For
+example,
+\[
+\E[\rvx_s | \rvx_t]
+\quad\text{is shorthand for}\quad
+\E[\rvx_s | \rvx_t,\, s,\, t],
+\]
+meaning the average of $\rvx_s$ at time $s$ given $\rvx_t$ at time
+$t$, with $s$ and $t$ understood from the surrounding discussion.
+Similarly, $p(\rvx_s | \rvx_t)$ denotes the conditional distribution
+of $\rvx_s$ given $\rvx_t$, with both time indices left implicit.
+
+\subparagraph{IV. Gaussian Perturbation and Equality in Distribution.}
+For a fixed index $t$, we frequently use the Gaussian perturbation
+kernel
+\[
+p_t(\rvx_t|\rvx_0)
+= \mathcal{N}\big(\rvx_t;\, \alpha_t \rvx_0,\, \sigma_t^2 \rmI\big),
+\]
+where $\rvx_0 \sim p_{\mathrm{data}}$, $\alpha_t$ and $\sigma_t$ are
+deterministic scalars. We equivalently write this as the identity
+\emph{in distribution}
+\[
+\rvx_t \stackrel{d}{=} \alpha_t \rvx_0 + \sigma_t \beps,
+\qquad
+\beps \sim \mathcal{N}(\bm{0}, \rmI),
+\]
+where $\beps$ is independent of $\rvx_0$. The symbol
+``$\stackrel{d}{=}$'' means the two sides have the same probability
+law, so that 
+\[
+    \E[\phi(\rvx_t)] = \E[\phi(\alpha_t \rvx_0 + \sigma_t \beps)]
+\]
+for any test function $\phi$. For brevity, we will simply
+write $\rvx_t = \alpha_t \rvx_0 + \sigma_t \beps$, understood either
+as an equality in distribution or as a sample realization depending
+on context; this shorthand is used throughout.

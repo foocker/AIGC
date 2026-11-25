@@ -1,0 +1,59 @@
+
+\vspace*{\fill}  % push content down
+\begin{figure*}[th!]
+\begin{center}
+\resizebox{\textwidth}{!}{% 
+\centering
+\begin{tikzpicture}[
+    box/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, align=center},
+    topbox/.style={rectangle, draw, thick, minimum width=12cm, minimum height=1.5cm, align=center},
+    arrow/.style={->, thick},
+    roundbox/.style={rectangle, draw, thick, rounded corners=10pt, minimum width=4cm, minimum height=3cm, align=center}
+]
+
+% Top box
+\node[topbox, label=above:{\parbox{5cm}{\centering  {Chapter}~\ref{ch:score-sde}}}] (top) at (0,4) {\\
+\textbfs{Generation with Diffusion Model $\mathbf{v}^*(\rvx, t)$} \\[0.3cm]
+$\Longleftrightarrow$ Solve the ODE backward from $T$ to $0$ with $\mathbf{x}(T)\sim p_{\mathrm{prior}}$ (more generally, from $s$ to $t$ with $s>t$): \\[0.2cm]
+$\displaystyle\frac{\diff\mathbf{x}(t)}{\diff t} = \mathbf{v}^*(\mathbf{x}(t), t)$ \\[0.3cm]
+$\displaystyle\Longleftrightarrow \mathbf{x}(0) = \mathbf{x}(T) + \int_0^T \mathbf{v}^*(\mathbf{x}(t), t)\diff t$
+};
+
+% Three bottom boxes
+\node[roundbox, label=below:{\parbox{5cm}{\centering  {Chapter}~\ref{ch:guidance} 
+ }}] (left) at (-6,-2) {
+\\ \large\textbfs{Steering Generation} \\[0.4cm]
+\parbox{5cm}{
+\begin{align*}
+    \displaystyle\mathbf{x}(0) &= \mathbf{x}(T) + \int_0^T [\mathbf{v}^*(\mathbf{x}(t), t) \\ 
+    &\qquad \textcolor{darkgray}{+ \textbf{Guidance}}] \diff t
+\end{align*}}
+};
+
+\node[roundbox, label=below:{\parbox{5cm}{\centering {Chapter}~\ref{ch:solvers} 
+ }}] (center) at (0,-2) {
+\\ \large\textbfs{Fast Generation} \\
+\large\textbfs{with Numerical Solvers} \\[-0.6cm]
+$\displaystyle\mathbf{x}(0) = \mathbf{x}(T) + \eqnmarkbox[Plum]{velocity}{\int_0^T \mathbf{v}^*(\mathbf{x}(t), t)\diff t}$ \\[-0.8cm]
+Estimating the Integration
+};
+
+\node[roundbox, label=below:{\parbox{5cm}{\centering  {Chapter}~\ref{ch:distillation} and {Chapter}~\ref{ch:fast-scratch} 
+ }}] (right) at (6,-2) {
+\\ \large\textbfs{Learning a Fast} \\
+\large\textbfs{Diffusion-Based Generator} \\[-0.6cm]
+$\displaystyle\mathbf{x}(0) = \eqnmarkbox[Pink]{target}{\mathbf{x}(T) + \int_0^T \mathbf{v}^*(\mathbf{x}(t), t)\diff t}$ \\[-0.8cm]
+Learning the Integration
+};
+
+% Arrows
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (top.south) -- ++(-6,-1) -- (left.north);
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (top.south) -- (center.north);
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (top.south) -- ++(6,-1) -- (right.north);
+
+\end{tikzpicture}
+}
+\end{center}
+% \label{fig:part-c-d-roadmap}
+\end{figure*}
+\vspace*{\fill}  % push content up

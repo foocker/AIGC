@@ -1,0 +1,702 @@
+
+% Theorem System
+% The following boxes are provided:
+%   Definition:     \defn 
+%   Theorem:        \thm 
+%   Lemma:          \lem
+%   Corollary:      \cor
+%   Proposition:    \prop   
+%   Claim:          \clm
+%   Fact:           \fact
+%   Proof:          \pf
+%   Example:        \ex
+%   Remark:         \rmk (sentence), \rmkb (block)
+% Suffix
+%   r:              Allow Theorem/Definition to be referenced, e.g. thmr
+%   p:              Add a short proof block for Lemma, Corollary, Proposition or Claim, e.g. lemp
+%                   For theorems, use \pf for proof blocks
+
+% ======= Real examples : 
+
+% \defn{Definition Name}{
+%     A defintion.
+% }
+
+% \thmr{Theorem Name}{mybigthm}{
+%     A theorem.
+% }
+
+% \lem{Lemma Name}{
+%     A lemma.
+% }
+
+% \fact{
+%     A fact.
+% }
+
+% \cor{
+%     A corollary.
+% }
+
+% \prop{
+%     A proposition.
+% }
+
+% \clmp{}{
+%     A claim.
+% }{
+%     A reference to Theorem~\ref{thm:mybigthm}
+% }
+
+% \pf{
+%    proof.
+
+% \ex{
+%     some examples. 
+% }
+
+% \rmk{
+%     Some remark.
+% }
+
+% \rmkb{
+%     Some more remark.
+% }
+\usepackage{xcolor}
+
+% Define custom colors
+\definecolor{defscol}{HTML}{ecd8d7} %For definitions
+\definecolor{asumscol}{HTML}{ecd8d7} %For Assumptions
+
+\definecolor{rmkscol}{HTML}{313160} %For remarks
+\definecolor{exmscol}{HTML}{e04b52} %For examples
+
+\definecolor{lemscol}{HTML}{2c3943} %For Lemmes
+\definecolor{thmscol}{RGB}{230,120,20}
+\definecolor{prpscol}{HTML}{8A9A5B}
+\definecolor{corscol}{HTML}{dfd9fd} %For corrolaries
+
+\definecolor{clmscol}{HTML}{165c58} %For claims
+\definecolor{facscol}{HTML}{28a8a1} %For facts
+
+
+
+% ============================
+% Definition
+% ============================
+\newtcbtheorem[number within=section]{mydefinition}{Definition}
+{
+    enhanced,
+    frame hidden,
+    titlerule=0mm,
+    toptitle=1mm,
+    bottomtitle=1mm,
+    fonttitle=\sffamily\bfseries,
+    coltitle=black,
+    colbacktitle=defscol!50!white,
+    colback=defscol!20!white,
+}{defn}
+
+\NewDocumentCommand{\defn}{m+m}{
+    \begin{mydefinition}{#1}{}
+        #2
+    \end{mydefinition}
+}
+
+\NewDocumentCommand{\defnr}{mm+m}{
+    \begin{mydefinition}{#1}{#2}
+        #3
+    \end{mydefinition}
+}
+
+% ============================
+% Problem Setup
+% ============================
+\newtcbtheorem[number within=section]{myproblem}{Problem Setup}
+{
+    enhanced,
+    frame hidden,
+    titlerule=0mm,
+    toptitle=1mm,
+    bottomtitle=1mm,
+    fonttitle=\sffamily\bfseries,
+    coltitle=black,
+    colbacktitle=defscol!50!white,
+    colback=defscol!20!white,
+}{defn}
+
+\NewDocumentCommand{\probs}{m+m}{
+    \begin{myproblem}{#1}{}
+        #2
+    \end{myproblem}
+}
+
+\NewDocumentCommand{\problems}{mm+m}{
+    \begin{myproblem}{#1}{#2}
+        #3
+    \end{myproblem}
+}
+
+% ============================
+% Message
+% ============================
+
+% Define a counter that resets at each \section
+\newcounter{msgcounter}[section]
+\renewcommand{\themsgcounter}{\thesection.\arabic{msgcounter}}
+
+% Define your custom message box (no need to change this part)
+\newtcolorbox{custommessagebox}[2][]{
+    enhanced,
+    coltitle=black,
+    colbacktitle=defscol!50!white,
+    colback=defscol!20!white,
+    fonttitle=\sffamily\bfseries,
+    title=#1,        % title passed in
+    toptitle=1mm,
+    bottomtitle=1mm,
+    titlerule=0mm,
+    frame hidden,
+    #2
+}
+
+% Define the \msg command with auto-numbered title based on section
+\NewDocumentCommand{\msg}{mm+m}{
+    \refstepcounter{msgcounter} % increments the counter and allows referencing
+    \begin{custommessagebox}[#1~\themsgcounter:~\textbfs{#2}]{}
+        #3
+    \end{custommessagebox}
+}
+
+
+
+
+
+% ============================
+% Research Problem
+% ============================
+\newtcbtheorem{myresearchproblem}{Research Problem}
+{
+    enhanced,
+    frame hidden,
+    titlerule=0mm,
+    toptitle=1mm,
+    bottomtitle=1mm,
+    fonttitle=\sffamily\bfseries,
+    coltitle=black,
+    colbacktitle=defscol!40!white,
+    colback=defscol!20!white,
+}{defn}
+
+\NewDocumentCommand{\probr}{m+m}{
+    \begin{myresearchproblem}{#1}{}
+        #2
+    \end{myresearchproblem}
+}
+
+\NewDocumentCommand{\problemr}{mm+m}{
+    \begin{myresearchproblem}{#1}{#2}
+        #3
+    \end{myresearchproblem}
+}
+
+
+% ============================
+% Assumption
+% ============================
+\newtcbtheorem[use counter from=mydefinition]{myassumption}{Assumption}
+{
+    enhanced,
+    frame hidden,
+    titlerule=0mm,
+    toptitle=1mm,
+    bottomtitle=1mm,
+    fonttitle=\sffamily\bfseries,
+    coltitle=black,
+    colbacktitle=asumscol!40!white,
+    colback=asumscol!20!white,
+}{asum}
+
+\NewDocumentCommand{\asum}{m+m}{
+    \begin{myassumption}{#1}{}
+        #2
+    \end{myassumption}
+}
+
+\NewDocumentCommand{\asumr}{mm+m}{
+    \begin{myassumption}{#1}{#2}
+        #3
+    \end{myassumption}
+}
+
+% ============================
+% Theorem
+% ============================
+
+% Custom theorem counter that resets every chapter (not section!)
+% Number theorems within sections
+\numberwithin{equation}{section}
+
+% Set up a custom counter for theorems
+\newcounter{mytheorem}[section]
+\renewcommand{\themytheorem}{\Roman{chapter}.\thesection.\arabic{mytheorem}}
+
+% Define the theorem environment with custom label
+\newtcbtheorem[use counter=mytheorem, number within=section]{mytheorem}{Theorem}{
+    enhanced,
+    frame hidden,
+    titlerule=0.0mm,
+    fonttitle=\sffamily\bfseries,
+    coltitle=black,
+    colbacktitle=thmscol!20!white,
+    colback=thmscol!8!white,
+}{thm}
+
+% Proof environment (page-break friendly)
+\makeatletter
+\newenvironment{thmpf}{%
+  \par\noindent{\it \textbfs{Proof for Theorem.}}\par
+  % Key bits: breakable + enhanced jigsaw + allowdisplaybreaks
+  \tcolorbox[
+    blanker,
+    breakable,
+    enhanced jigsaw,
+    parbox=false,
+    colback=white,
+    left=5mm,
+    before upper={\parindent15pt\relax\allowdisplaybreaks},
+    after skip=10pt,
+    borderline west={1mm}{0pt}{thmscol!20!white}
+  ]%
+}{%
+  \textcolor{thmscol!18!white}{\hbox{}\nobreak\hfill$\blacksquare$}%
+  \endtcolorbox
+}
+\makeatother
+
+
+
+% Combined theorem macro
+\newcommand{\thm}[3]{%
+    \begin{mytheorem}{#1}{#2}%
+        #3%
+    \end{mytheorem}%
+     \par
+}
+
+
+% Combined theorem+proof macro
+\newcommand{\thmp}[4]{%
+    \begin{mytheorem}{#1}{#2}%
+        #3%
+    \end{mytheorem}%
+     \par
+    \begin{thmpf}%
+        #4%
+    \end{thmpf}%
+    
+}
+
+
+% ============================
+% Lemma (breakable-ready)
+% ============================
+\newtcbtheorem[
+  use counter=mytheorem,
+  number within=section
+]{mylemma}{Lemma}{
+  enhanced,
+  % Add 'breakable' here ONLY if you want the *lemma box* to split across pages:
+  % breakable,
+  frame hidden,
+  titlerule=0mm,
+  toptitle=1mm,
+  bottomtitle=1mm,
+  fonttitle=\sffamily\bfseries,
+  coltitle=black,
+  colbacktitle=corscol!50!white,
+  colback=corscol!20!white,
+}{lem}
+
+% \lem{title}{label}{content}
+%             ^^^^^  ^^^^^^^
+% Make 'content' long: +m
+\NewDocumentCommand{\lem}{m m +m}{%
+  \begin{mylemma}[label=#2]{#1}{}%
+    #3%
+  \end{mylemma}%
+}
+
+% Proof environment for lemma (kept breakable)
+\newenvironment{lempf}{%
+  \par\noindent{\it \textbfs{Proof for Lemma.}}\par
+  \tcolorbox[
+    blanker,breakable,left=5mm,parbox=false,
+    before upper={\parindent15pt},
+    after skip=10pt,
+    colback=white,
+    borderline west={1mm}{0pt}{corscol!50!white}
+  ]%
+}{%
+  \textcolor{corscol!50!white}{\hbox{}\nobreak\hfill$\blacksquare$}%
+  \endtcolorbox
+}
+
+% \lemp{title}{label}{content}{proof}
+%                             ^^^^^  make both body args long: +m +m
+\NewDocumentCommand{\lemp}{m m +m +m}{%
+  \begin{mylemma}[label=#2]{#1}{}%
+    #3%
+  \end{mylemma}%
+  \par
+  \begin{lempf}%
+    #4%
+  \end{lempf}%
+}
+
+% ============================
+% Corollary
+% ============================
+
+\newtcbtheorem[use counter from=mydefinition]{mycorollary}{Corollary}
+{
+    enhanced,
+    frame hidden,
+    titlerule=0mm,
+    toptitle=1mm,
+    bottomtitle=1mm,
+    fonttitle=\sffamily\bfseries,
+    coltitle=black,
+    colbacktitle=corscol!40!white,
+    colback=corscol!20!white,
+}{cor}
+
+\NewDocumentCommand{\cor}{+m}{
+    \begin{mycorollary}{}{}
+        #1
+    \end{mycorollary}
+}
+
+% Proof environment — page-break friendly
+\makeatletter
+\newenvironment{corpf}{%
+  \par\noindent{\it \textbfs{Proof for Corollary.}}\par
+  \tcolorbox[
+    blanker,
+    breakable,          % allow the box to split across pages
+    enhanced jigsaw,    % robust page breaking (esp. with math)
+    colback=white,
+    parbox=false,
+    left=5mm,
+    before upper={\parindent15pt\allowdisplaybreaks}, % let long displays break
+    after skip=10pt,
+    borderline west={1mm}{0pt}{corscol!40!white}
+  ]%
+}{%
+  \textcolor{corscol!40!white}{\hbox{}\nobreak\hfill$\blacksquare$}%
+  \endtcolorbox
+}
+\makeatother
+
+\NewDocumentCommand{\corp}{m+m+m}{
+    \begin{mycorollary}{{{#1}}}{}
+        #2
+    \end{mycorollary}
+
+    \begin{corpf}
+     {   #3}
+    \end{corpf}
+}
+
+
+% Named proposition without proof
+\NewDocumentCommand{\cornp}{m+m}{ 
+    \begin{mycorollary}{{{#1}}}{}
+        #2
+    \end{mycorollary}
+}
+
+
+
+% ============================ % 
+% Proposition % 
+% ============================
+% Define proposition environment with custom label and style
+\newtcbtheorem[use counter=mytheorem, number within=section]{myproposition}{Proposition}
+{ 
+  enhanced,
+  frame hidden,
+  titlerule=0mm,
+  toptitle=1mm,
+  bottomtitle=1mm,
+  fonttitle=\sffamily\bfseries,
+  coltitle=black,
+  colbacktitle=prpscol!18!white,
+  colback=prpscol!8!white,
+}
+{prop}
+
+% Proposition with label and no proof
+\NewDocumentCommand{\proppnp}{m m m}{%
+  \begin{myproposition}[label=#2]{#1}{}%
+    #3%
+  \end{myproposition}%
+}
+
+% Proof environment for propositions
+\newenvironment{proppf}
+{ 
+  {\noindent{\it \textbfs{Proof for Proposition.}}} 
+  \tcolorbox[blanker,breakable,left=5mm,parbox=false, colback=white,
+    before upper={\parindent15pt}, after skip=10pt, 
+    borderline west={1mm}{0pt}{prpscol!18!white}] 
+}
+{ 
+  \textcolor{prpscol!18!white}{\hbox{}\nobreak\hfill$\blacksquare$} 
+  \endtcolorbox 
+}
+
+% Proposition with label and proof
+\NewDocumentCommand{\proppp}{m m m m}{%
+  \begin{myproposition}[label=#2]{#1}{}%
+    #3%
+  \end{myproposition}%
+  \begin{proppf}%
+    #4%
+  \end{proppf}%
+}
+
+% Add this after loading the cleveref package
+
+
+
+% ============================
+% Claim
+% ============================
+
+\newtcbtheorem[use counter from=mydefinition]{myclaim}{Claim}
+{
+    enhanced,
+    frame hidden,
+    titlerule=0mm,
+    toptitle=1mm,
+    bottomtitle=1mm,
+    fonttitle=\sffamily\bfseries,
+    coltitle=black,
+    colbacktitle=clmscol!40!white,
+    colback=clmscol!20!white,
+}{clm}
+
+\NewDocumentCommand{\clm}{m+m}{
+    \begin{myclaim*}{#1}{}
+        #2
+    \end{myclaim*}
+}
+
+\newenvironment{clmpf}{
+	{\noindent{\it \textbfs{Proof for Claim.}}}
+	\tcolorbox[blanker,breakable,left=5mm,parbox=false,
+    before upper={\parindent15pt},
+    after skip=10pt,
+	borderline west={1mm}{0pt}{clmscol!40!white}]
+}{
+    \textcolor{clmscol!40!white}{\hbox{}\nobreak\hfill$\blacksquare$} 
+    \endtcolorbox
+}
+
+\NewDocumentCommand{\clmp}{m+m+m}{
+    \begin{myclaim*}{#1}{}
+        #2
+    \end{myclaim*}
+
+    \begin{clmpf}
+        #3
+    \end{clmpf}
+}
+
+% ============================
+% Fact
+% ============================
+
+\newtcbtheorem[use counter from=mydefinition]{myfact}{Fact}
+{
+    enhanced,
+    frame hidden,
+    titlerule=0mm,
+    toptitle=1mm,
+    bottomtitle=1mm,
+    fonttitle=\sffamily\bfseries,
+    coltitle=black,
+    colbacktitle=facscol!40!white,
+    colback=facscol!20!white,
+}{fact}
+
+\NewDocumentCommand{\fact}{+m}{
+    \begin{myfact}{}{}
+        #1
+    \end{myfact}
+}
+
+% ============================
+% Proof
+% ============================
+
+\NewDocumentCommand{\pf}{+m}{
+    \begin{proof}
+        [\noindent\textbfs{Proof.}]
+        #1
+    \end{proof}
+}
+
+% ============================
+% Example
+% ============================
+
+
+\newenvironment{myexample}{
+    \tcolorbox[blanker,breakable,left=5mm,parbox=false,
+    colback=white,
+    before upper={\parindent15pt},
+    after skip=10pt,
+	borderline west={1mm}{0pt}{clmscol!25!white}]
+}{
+    \textcolor{clmscol!25!white}{\hbox{}\nobreak\hfill$\blacksquare$} 
+    \endtcolorbox
+}
+
+\NewDocumentCommand{\exm}{m+m}{\vspace{0.5cm}
+{\noindent{\textbfs{Example: #1 }}}
+    \begin{myexample}
+	
+        #2
+    \end{myexample}
+}
+
+
+% ============================
+% Remark
+% ============================
+
+
+\newenvironment{myremark}{
+    \tcolorbox[blanker,breakable,left=5mm,parbox=false,
+    colback=white,
+    before upper={\parindent15pt},
+    after skip=10pt,
+	borderline west={1mm}{0pt}{rmkscol!20!white}]
+}{
+    \textcolor{rmkscol!20!white}{\hbox{}} 
+    \endtcolorbox
+}
+
+\NewDocumentCommand{\rmkb}{+m}{\vspace{0.5cm}{\par\noindent{\textbfs{Remark.}}}
+    \begin{myremark}
+        #1
+    \end{myremark}
+}
+
+
+
+\tcbuselibrary{theorems,skins,hooks}
+\newtcbtheorem[number within=section]{Theorem}{Theorem}
+{%
+	enhanced,
+	breakable,
+	colback = mytheorembg,
+	frame hidden,
+	boxrule = 0sp,
+	borderline west = {2pt}{0pt}{mytheoremfr},
+	sharp corners,
+	detach title,
+	before upper = \tcbtitle\par\smallskip,
+	coltitle = mytheoremfr,
+	fonttitle = \sffamily\bfseries\sffamily,
+	description font = \mdseries,
+	separator sign none,
+	segmentation style={solid, mytheoremfr},
+}
+{th}
+
+
+
+
+
+
+
+
+
+
+% % Old styles hh 
+
+% %--------------------------------------------------------------------------
+% % 		THEOREMES STYLE
+% %--------------------------------------------------------------------------
+
+% %-------		DEFINITION 		-------	
+% \newcounter{defo}[chapter]
+% \newenvironment{defi}[1]{\refstepcounter{defo} 
+% \begin{tcolorbox}[colback=yellow!20!white,colframe=yellow!15!black,title= \textbfs{Définition \thechapter \ $\blacklozenge$ \thedefo \ | #1}]}{\end{tcolorbox}}
+
+% %-------		THEOREME 		-------	
+% \newcounter{th}[chapter]
+% \newenvironment{thm}[1]{\refstepcounter{th}
+% \begin{tcolorbox}[colback=mycolor!10,colframe=mycolor!10!black!80,title=\textbfs{ Théorème \thechapter \ $\blacklozenge$ \theth \ | #1}]}{\end{tcolorbox}}
+
+% %-------		PROPOSITION 		-------	
+% \newcounter{prop}[chapter]
+% \newenvironment{propt}[1]{\refstepcounter{prop}
+% \begin{tcolorbox}[colback=mycolor!5,colframe=mycolor!10!linkscolor!80 ,title=\textbfs{ Proposition \thechapter \ $\blacklozenge$ \theprop \ | #1}]}{\end{tcolorbox}}
+
+% %-------		COROLLAIRE		-------
+% \newcounter{cor}[chapter]
+% \newenvironment{corr}[1]{\refstepcounter{cor}
+% \begin{tcolorbox}[colback=mycolor!2,colframe=mycolor!10!linkscolor!40 ,title= Corolaire \thechapter \ $\blacklozenge$ \thecor \ | #1]}{\end{tcolorbox}}
+
+% %-------		LEMME			-------
+% \newcounter{lem}[chapter]
+% \newenvironment{lemme}[1]{\refstepcounter{lem}
+% \begin{tcolorbox}[colback=mycolor!10!blue!2,colframe=mycolor!50!blue!30,title=\textbfs{Lemme \thechapter \ $\blacklozenge$ \thelem \ | #1}]}{\end{tcolorbox}}
+
+% %-------		METHODE 			-------
+% \newcounter{met}[chapter]
+% \newenvironment{meth}[1]{\refstepcounter{met}
+% \begin{tcolorbox}
+% [enhanced jigsaw,breakable,pad at break*=1mm,
+%  colback=red!20!white,boxrule=0pt,frame hidden,
+%  borderline west={1.5mm}{-2mm}{red}] \color{red}
+% {\textbfs{Méthode \thechapter \ $\blacklozenge$ \themet \ | #1} } \color{black} \\ } {\end{tcolorbox}}
+
+% %-------		REMARQUE 			-------
+% \newcommand{\NB}[1]{
+% \ \\
+% \begin{tabular}{p{0.05\textwidth}p{0.80\textwidth}}
+% \hline
+% \vspace{-0.1cm} \includegraphics[scale=0.03]{./system/IDEA.png} & 	#1\\
+% \hline
+% \end{tabular}
+% \ 
+% \newline \ \newline
+%  }
+
+% %-------		EXEMPLE  		-------
+% \newenvironment{exm}{ \begin{tcolorbox}
+% [enhanced jigsaw,breakable,pad at break*=1mm,
+%  colback=cyan!20!white,boxrule=0pt,frame hidden,
+%  borderline west={1.5mm}{-2mm}{cyan}] \color{cyan}
+% {\textbfs{Exemple} } \color{black} \\ } {\end{tcolorbox}}
+
+
+
+ % ============================
+% Unnumbered Message
+% ============================
+
+\NewDocumentCommand{\msgu}{m m +m}{
+    \begin{custommessagebox}[
+        \IfBlankTF{#2}
+            {#1}
+            {#1:~\textbfs{#2}}
+    ]{}
+        #3
+    \end{custommessagebox}
+}

@@ -1,0 +1,141 @@
+{
+  "source": "arXiv:2510.21890v3",
+  "translator": "Google Translate (gtx), initial draft",
+  "chunks": 336,
+  "active_source_characters": 1237369,
+  "files": [
+    {
+      "file": "Preface.tex",
+      "protected_pieces": 201,
+      "chunks": 8,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 4134
+    },
+    {
+      "file": "notations.tex",
+      "protected_pieces": 216,
+      "chunks": 3,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 741
+    },
+    {
+      "file": "Prologue-Deep-Generative-Modeling.tex",
+      "protected_pieces": 414,
+      "chunks": 11,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 5405
+    },
+    {
+      "file": "Chapter-0-Diffusion-High-Level.tex",
+      "protected_pieces": 127,
+      "chunks": 4,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 2407
+    },
+    {
+      "file": "Chapter-1-Varational-Perspective-From-VAE-to-DDPM.tex",
+      "protected_pieces": 626,
+      "chunks": 16,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 8864
+    },
+    {
+      "file": "Chapter-2-Score-Based-Perspective-From-EBMs-to-NCSN.tex",
+      "protected_pieces": 885,
+      "chunks": 19,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 9651
+    },
+    {
+      "file": "Chapter-3-Diffusion-Models-Today-Score-SDE-Framework.tex",
+      "protected_pieces": 1269,
+      "chunks": 26,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 12296
+    },
+    {
+      "file": "Chapter-4-Flow-Based-Perspective-From-NFs-to-Flow-Matching.tex",
+      "protected_pieces": 1655,
+      "chunks": 31,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 14378
+    },
+    {
+      "file": "Chapter-5-They-Are-All-Equivalent.tex",
+      "protected_pieces": 844,
+      "chunks": 22,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 11475
+    },
+    {
+      "file": "Chapter-4-plus-OT-and-Diffusion-Model.tex",
+      "protected_pieces": 1144,
+      "chunks": 26,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 12811
+    },
+    {
+      "file": "Chapter-6-Guidance.tex",
+      "protected_pieces": 806,
+      "chunks": 22,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 11189
+    },
+    {
+      "file": "Chapter-7-Sophisticated-Solvers-for-Fast-Sampling.tex",
+      "protected_pieces": 1851,
+      "chunks": 44,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 22079
+    },
+    {
+      "file": "Chapter-8-Post-Training-Methods-for-Fast-Sampling.tex",
+      "protected_pieces": 510,
+      "chunks": 13,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 6577
+    },
+    {
+      "file": "Chapter-9-Learning-Fast-Generator-from-Scratch.tex",
+      "protected_pieces": 1415,
+      "chunks": 28,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 13483
+    },
+    {
+      "file": "Chapter-10-Epilogue-and-Outlook.tex",
+      "protected_pieces": 698,
+      "chunks": 22,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 11826
+    },
+    {
+      "file": "A_Crash-Course-of-DE.tex",
+      "protected_pieces": 433,
+      "chunks": 12,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 5892
+    },
+    {
+      "file": "B_Continuity-Equation.tex",
+      "protected_pieces": 456,
+      "chunks": 11,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 5977
+    },
+    {
+      "file": "C_SDE-and-Ito.tex",
+      "protected_pieces": 377,
+      "chunks": 8,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 3909
+    },
+    {
+      "file": "D_Proofs.tex",
+      "protected_pieces": 677,
+      "chunks": 10,
+      "protected_sequence_preserved": true,
+      "chinese_characters": 4360
+    }
+  ]
+}

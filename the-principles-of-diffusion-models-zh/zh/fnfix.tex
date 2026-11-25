@@ -1,0 +1,24 @@
+\makeatletter
+% Forward: body superscript → footnote
+\let\saved@footnotemark\@footnotemark
+\def\@footnotemark{%
+  \stepcounter{fnhyp}%
+  \hypertarget{fnback.\thefnhyp}{}%
+  \hyperlink{fnhyp.\thefnhyp}{\saved@footnotemark}%
+}
+
+% Target in footnote (zero-width, no layout impact)
+\let\saved@footnotetext\@footnotetext
+\long\def\@footnotetext#1{%
+  \saved@footnotetext{\smash{\rlap{\hypertarget{fnhyp.\thefnhyp}{}}}#1}%
+}
+
+% Back: footnote mark → body
+\let\saved@makefntext\@makefntext
+\let\orig@makefnmark\@makefnmark
+\long\def\@makefntext#1{%
+  \def\@makefnmark{\hyperlink{fnback.\thefnhyp}{\textcolor{urlbrown}{\orig@makefnmark}}}%
+  \saved@makefntext{#1}%
+  \let\@makefnmark\orig@makefnmark
+}
+\makeatother

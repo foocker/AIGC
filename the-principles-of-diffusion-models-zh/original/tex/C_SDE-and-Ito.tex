@@ -1,0 +1,742 @@
+\chapter{Behind the Scenes of Diffusion Models:\\ It\^o’s Calculus and Girsanov's Theorem}\label{app:Ito}
+
+
+(Score-based) Diffusion models are built on SDEs: a drift that pushes states and a Brownian term that jitters them. Unlike ODE paths, Brownian paths are nowhere differentiable, so the ordinary chain rule fails. In this section, we introduce two fundamental tools that make the math precise:
+\begin{itemize}
+\item \textbfs{It\^o’s Formula} is the correct chain rule for stochastic trajectories. It tells us how a function $\rvh(\rvx_t,t)$ evolves when $\rvx_t$ follows an SDE. It enables derivations of the Fokker–Planck equation, moment dynamics, the It\^o product rule, and the identities used in score-based training.
+\item \textbfs{Girsanov’s Theorem} is a change-of-measure result on \emph{path probabilities}. It quantifies how likelihoods change when the noise is fixed but the drift is altered. This links likelihood-weighted score matching to path-space KL divergence
+and, through a variational bound, to data likelihood.
+\end{itemize}
+
+With these tools, the standard diffusion model derivations (Fokker–Planck, reverse time SDE, training objectives, and likelihood relations) follow cleanly and without hand waving.
+
+\chapterlearning{
+  \item understand why ordinary calculus is not enough for SDEs, and how It\^o's formula gives the correct chain rule for stochastic trajectories;
+
+  \item see how It\^o's formula works behind the scenes in important diffusion-model derivations, including the Fokker--Planck equation and linear SDEs;
+
+  \item understand Girsanov's theorem as a way to compare the probabilities of stochastic paths when their drifts are different but their diffusion is the same;
+
+  \item distinguish matching distributions at each time from matching the full stochastic path, and see why likelihood-weighted score matching is related to path-space KL divergence and data likelihood.
+}{
+This appendix develops some of the mathematical tools that operate behind
+the scenes of diffusion models. It\^o calculus makes stochastic
+differentiation precise, while Girsanov's theorem explains how changing
+the drift changes the probability of entire stochastic paths. These tools
+underlie several standard diffusion-model derivations that are often used
+without being shown explicitly.
+}
+
+\newpage
+
+
+\section{It\^o's Formula: The Chain Rule for Random Processes}
+Standard calculus does not directly apply to stochastic processes because Wiener processes are not differentiable in the classical sense. Instead, we use It\^o’s calculus, which provides rules for working with stochastic integrals. 
+
+\subsection{Motivation: Why Do We Need a Special Chain Rule?}
+Consider a deterministic time-varying function $\rvy_t$ that evolves smoothly with time $t$ (e.g., an ODE). If we have a function $\rvh(\rvy_t, t)$, the usual chain rule tells us:
+\[
+\frac{\diff \rvh}{\diff t} = \frac{\partial \rvh}{\partial t}  + \nabla_{\rvy}\rvh  \frac{\diff \rvy_t}{\diff t} .
+\]
+Here, $\nabla_{\rvy}\rvh$ is the Jacobian of $\rvh$. This works perfectly for deterministic paths $\rvy_t$.
+
+\begin{question}
+    But what happens if $\rvx_t$ is a stochastic process, say, driven by an SDE 
+\[
+\diff \rvx_t = \rvf(\rvx_t, t)\diff t + g(t) \diff \rvw_t
+\]
+as in \Cref{eq:sde}? What SDE does the process $\rvh(\rvx_t, t)$ satisfy?
+\end{question}
+
+\paragraph{Why the Ordinary Chain Rule Fails?}
+Naïvely applying the classical chain rule yields
+\[
+\diff \rvh = \frac{\partial \rvh}{\partial t} \diff t + \nabla_{\rvy}\rvh  \cdot \diff \rvx_t.
+\]
+However, Brownian increments scale as
+$\mathcal{O}(\sqrt{\diff t})$, while their quadratic variation is encoded
+in It\^o calculus by
+\[
+(\diff \rvw_t)^2 = \diff t.
+\]
+Thus, second-order terms in $\diff \rvw_t$ \textit{do not} vanish in stochastic calculus, unlike classical calculus where $(\diff t)^2$ terms are negligible.
+
+\exm{Simple Example--$h(x_t) = x_t^2$}{
+To see the intuition, let us consider the simple real-valued function $h(x_t) = x_t^2 \in \mathbb{R}$ where the random variable $x_t \in \mathbb{R}$ satisfies
+\[
+\diff x_t = \sigma \diff w_t, \quad
+x_0=0,
+\]
+with a constant $\sigma>0$. 
+If we try the classical chain rule,
+\[
+\diff h = 2 x_t \diff x_t = 2 x_t \sigma \diff w_t.
+\]
+If this were true, the expectation of $h(x_t)$ would be constant in time because 
+\[
+\mathbb{E}[\diff h ] =  2 \sigma \mathbb{E}[x_t  \diff w_t]= 2 \sigma \mathbb{E}[x_t]  \underbrace{\mathbb{E}[\diff w_t]}_{=0}=0.
+\]
+But we know from classical Brownian motion properties (see \Cref{eq:wiener-gaussian}) that
+\[
+\mathbb{E}[x_t^2] = \sigma^2 t,
+\]
+which grows linearly in time. So the ordinary chain rule misses an important term.
+}
+
+
+\subsection{Deriving 1D It\^o's Formula from Taylor Expansion}\label{subsec:1D-Ito}
+
+\paragraph{Deterministic Chain Rule via Taylor Expansion.}
+To understand why the classical chain rule fails for stochastic processes defined by SDEs, we first revisit it in the deterministic setting using Taylor expansion. We consider the scalar case: $y_t \in \mathbb{R}$ and $h(\cdot,\cdot)\in \mathbb{R}$. Formally treating $\diff y_t = y_{t+\diff t} - y_t$, with $\diff t \approx 0$, we expand:
+\begin{align*}
+&h(y_{t+\diff t}, t+\diff t) 
+- h(y_t, t) \\
+= ~&\frac{\partial h}{\partial t} \diff t
++ \frac{\partial h}{\partial y} \diff y_t  + \frac{1}{2} \left(\textcolor{gray}{\frac{\partial^2 h}{\partial y^2}  (\diff y_t)^2}
++ 2 \textcolor{gray}{\frac{\partial^2 h}{\partial t \partial y} \diff t \diff y_t}
++  \textcolor{gray}{\frac{\partial^2 h}{\partial t^2} (\diff t)^2}
+\right)
++ \mathcal{O}(\diff t^3),
+\end{align*}
+Here, $\diff t \diff y_t = \left(\frac{\diff y_t}{\diff t}\right)(\diff t)^2 = \mathcal{O}(\diff t^2)$, and similarly $(\diff t)^2 = \mathcal{O}(\diff t^2)$. Therefore, all the gray parts are ignorable, and the full differential is:
+\[
+\diff h
+= \frac{\partial h}{\partial t} \diff t
++ \frac{\partial h}{\partial y} \diff y_t
++ \mathcal{O}(\diff t^2).
+\]
+% In the limit $\diff t \to 0$, we recover the classical chain rule.
+
+\paragraph{It\^o's Formula via Stochastic Taylor Expansion.}
+Now consider a stochastic process $x_t \in \mathbb{R}$ governed by the SDE:
+\[
+\diff x_t = f(x_t, t) \diff t + g(t) \diff w_t,
+\]
+where $w_t$ is standard Brownian motion. We aim to compute the differential of a scalar-valued function $h(x_t, t)$.
+
+Using the stochastic Taylor expansion~\citep{kloeden1992stochastic}, which retains second-order terms in $\diff x_t$, we have:
+\begin{align*}
+&h(x_{t+\diff t}, t+\diff t) 
+- h(x_t, t) \\
+=~&\frac{\partial h}{\partial t} \diff t 
++ \frac{\partial h}{\partial x} \diff x_t 
++ \frac{1}{2} \left( \frac{\partial^2 h}{\partial x^2} (\diff x_t)^2 
++ 2\textcolor{gray}{{\frac{\partial^2 h}{\partial t \partial x} \diff t \diff x_t}} 
++ \textcolor{gray}{{ \frac{\partial^2 h}{\partial t^2} (\diff t)^2}} \right)
++ \cdots
+\end{align*}
+\subparagraph{Negligible Cross Terms.}
+By the scaling property of Brownian motion (\Cref{eq:wiener-gaussian}), 
+\[
+\diff w_t = \mathcal{O}(\sqrt{\diff t}) \quad \Rightarrow \quad \diff t \cdot \diff w_t = \mathcal{O}((\diff t)^{3/2}).
+\]
+Therefore,
+\begin{align*}
+\diff t \cdot \diff x_t 
+&= \diff t \left(f \diff t + g \diff w_t\right) 
+= f (\diff t)^2 + g \cdot \diff t \cdot \diff w_t 
+= \mathcal{O}((\diff t)^{3/2}).
+\end{align*}
+So, the gray terms are negligible: $ \mathcal{O}((\diff t)^{3/2}) $ or smaller.
+\subparagraph{Second-Order Term $(\diff x_t)^2$.}
+Expanding using the SDE:
+\begin{align*}
+(\diff x_t)^2 
+&= \left( f \diff t + g \diff w_t \right)^2 \\
+&= f^2 (\diff t)^2 + 2fg \diff t \diff w_t + g^2 (\diff w_t)^2 \\
+&= g^2(t) \diff t,
+\end{align*}
+where the last equality uses the It\^o differential rules
+$(\diff t)^2=0$, $\diff t\,\diff w_t=0$, and
+$(\diff w_t)^2=\diff t$, with the last identity understood in the
+quadratic-variation sense.
+
+Combining terms, we obtain the differential:
+\[
+\diff h(x_t, t)
+= \frac{\partial h}{\partial t} \diff t
++ \frac{\partial h}{\partial x} \diff x_t
++ \frac{1}{2} \frac{\partial^2 h}{\partial x^2} g^2(t) \diff t.
+\]
+Substituting $ \diff x_t = f(x_t, t) \diff t + g(t) \diff w_t $ yields:
+\[
+\diff h(x_t, t)
+= \left( \frac{\partial h}{\partial t} + f \frac{\partial h}{\partial x}
++ \frac{1}{2} g^2 \frac{\partial^2 h}{\partial x^2} \right) \diff t
++ g \frac{\partial h}{\partial x} \diff w_t.
+\]
+This is the 1D version of \emph{It\^o's formula}.
+
+
+\exm{Simple Example--$h(x_t) = x_t^2$}{
+We revisit the simple example: $ h(x_t) = x_t^2 $, where the stochastic process $ x_t \in \mathbb{R} $ satisfies
+\[
+\diff x_t = \sigma \diff w_t,
+\]
+with a constant $ \sigma > 0 $.  
+ Applying It\^o’s formula correctly to $ h(x_t) = x_t^2 $, we obtain:
+\[
+\diff h(x_t) = \diff (x_t^2) = 2 x_t \diff x_t + \sigma^2 \diff t.
+\]
+Substituting $ \diff x_t = \sigma \diff w_t $, this becomes:
+\[
+\diff(x_t^2) = 2 x_t \sigma \diff w_t + \sigma^2 \diff t.
+\]
+}
+
+\subsection{It\^o's Formula: The Chain Rule for SDEs}
+\label{subsec:ito-summary}
+We summarize the one-dimensional It\^o's formula derived above. Using similar arguments, the result extends naturally to the multi-dimensional setting. While we omit the detailed derivation, we state the general formula for completeness.
+
+Finally, we illustrate an application of It\^o's formula by deriving the \emph{It\^o product rule}, which enables computation of $\diff(\rvx_t^\top \rvy_t)$ for stochastic processes $\rvx_t$ and $\rvy_t$.
+
+\paragraph{$1$D It\^o's Formula.}
+Let $x_t \in \mathbb{R}$ be a stochastic process satisfying the SDE:
+\[
+\diff x_t = f(x_t, t) \diff t + g(t) \diff w_t.
+\]
+For a scalar function $h \colon \mathbb{R} \times [0, T] \to \mathbb{R}$, the process $h(x_t, t)$ satisfies:
+\begin{mdframed}
+\[
+\diff h(x_t, t)
+= \left( \frac{\partial h}{\partial t} + f \frac{\partial h}{\partial x}
++ \frac{1}{2} g^2 \frac{\partial^2 h}{\partial x^2} \right) \diff t
++ g \frac{\partial h}{\partial x} \diff w_t.
+\]
+\end{mdframed}
+
+
+\paragraph{Multidimensional It\^o's Formula with Scalar Output.}
+Let $\rvx_t \in \mathbb{R}^D$ satisfy the SDE:
+\[
+\diff \rvx_t = \rvf(\rvx_t, t) \diff t + g(t) \diff \rvw_t,
+\]
+where $\rvf \colon \mathbb{R}^D \times [0, T] \to \mathbb{R}^D$, $g \colon [0, T] \to \mathbb{R}$, and $\rvw_t \in \mathbb{R}^D$ is a $D$-dimensional Brownian motion. Let $h \colon \mathbb{R}^D \times [0, T] \to \mathbb{R}$ be a scalar-valued function. Then $h(\rvx_t, t)$ satisfies:
+\begin{mdframed}
+\begin{align}\label{eq:Ito-scalar}
+    \diff h(\rvx_t, t)
+= \left( \frac{\partial h}{\partial t}
++ \nabla_{\rvx} h^\top \rvf
++ \frac{1}{2} g^2(t) \operatorname{Tr} \left( \nabla^2_{\rvx} h \right) \right) \diff t
++ g(t) \nabla_{\rvx} h^\top \diff \rvw_t,
+\end{align}
+\end{mdframed}
+where $\nabla_{\rvx} h \in \mathbb{R}^D$ is the gradient and $\nabla^2_{\rvx} h \in \mathbb{R}^{D \times D}$ is the Hessian matrix of $h$ with respect to $\rvx$.
+
+
+\exm{It\^o's Product Rule}{
+Let $\rvx_t, \rvy_t \in \mathbb{R}^D$ be vector-valued stochastic processes governed by the SDEs:
+\[
+\begin{aligned}
+\diff \rvx_t &= \rva(\rvx_t, t) \diff t + b(t) \diff \rvw_t, \\
+\diff \rvy_t &= \rvc(\rvy_t, t) \diff t + d(t) \diff \rvw_t,
+\end{aligned}
+\]
+where $\rva, \rvc: \mathbb{R}^D \times [0, T] \to \mathbb{R}^D$ are vector fields, and $b(t), d(t) \in \mathbb{R}$ are scalar-valued functions. Here, $\rvw_t \in \mathbb{R}^D$ denotes a standard $D$-dimensional Brownian motion.
+
+We aim to derive the SDE for the scalar-valued process
+\[
+z(t) := \rvx_t^\top \rvy_t.
+\]
+
+Applying the multivariate It\^o formula to the bilinear function $h(\rvx, \rvy) := \rvx^\top \rvy$, we obtain:
+\[
+\diff(\rvx^\top \rvy) = (\diff \rvx)^\top \rvy + \rvx^\top \diff \rvy + \Tr\left[ \diff \rvx \cdot (\diff \rvy)^\top \right].
+\]
+
+The It\^o correction term is computed as:
+\begin{align*}
+    \diff \rvx \cdot (\diff \rvy)^\top &= b(t) \diff \rvw_t \cdot \left[ d(t) \diff \rvw_t \right]^\top \\&= b(t) d(t) \diff \rvw_t \cdot \diff \rvw_t^\top \\&= b(t)d(t) \diff t \cdot \rmI_D.
+\end{align*}
+Thus,
+\[
+\Tr\left[ \diff \rvx \cdot (\diff \rvy)^\top \right] = b(t)d(t) \Tr(\rmI_D) \diff t = D  b(t)d(t) \diff t.
+\]
+
+Putting everything together, the resulting SDE is:
+\begin{align}\label{eq:ito-product}
+\begin{aligned}
+        \diff(\rvx^\top \rvy) &= (\diff \rvx)^\top \rvy + \rvx^\top \diff \rvy + D  b(t)d(t) \diff t
+    % \\ &=\rva^\top \rvy \diff t + b(t) \rvy^\top \diff \rvw_t + \rvx^\top \rvc \diff t + d(t) \rvx^\top \diff \rvw_t + D  b(t)d(t) \diff t.
+\end{aligned}
+\end{align}
+}
+
+
+
+% \paragraph{Multidimensional It\^o's Formula with Vector Output.} Now, if  $\rvh \colon \mathbb{R}^D \times [0, T] \to \mathbb{R}^D$ is vector-valued. Then $\rvh(\rvx_t, t)$ satisfies:
+% \begin{mdframed}
+% \begin{align}\label{eq:Ito-vector}
+%     \diff \rvh(\rvx_t, t)
+% = \left(
+% \frac{\partial \rvh}{\partial t}
+% + \nabla_{\rvx}\rvh \cdot \rvf
+% + \frac{1}{2} g^2(t) \sum_{i=1}^D \frac{\partial^2 \rvh}{\partial x_i^2}
+% \right) \diff t
+% + g(t) \nabla_{\rvx}\rvh \cdot\diff \rvw_t,
+% \end{align}
+% \end{mdframed}
+% where $\nabla_{\rvx}\rvh \in \mathbb{R}^{D \times D}$ is the Jacobian matrix of $\rvh$ with respect to $\rvx$, and $\frac{\partial^2 \rvh}{\partial x_i^2} \in \mathbb{R}^D$ is the vector of second derivatives of each component of $\rvh$ with respect to $x_i$.
+
+% Equivalently, in component-wise form: if $\rvh = (h^{(1)}, \dots, h^{(D)})^\top$, then for each $k = 1, \dots, D$,
+% \begin{align*}
+%     &\diff h^{(k)}(\rvx_t, t)
+% \\= &\left(
+% \frac{\partial h^{(k)}}{\partial t}
+% + \nabla_{\rvx} h^{(k)} \cdot \rvf
+% + \frac{1}{2} g^2(t) \operatorname{Tr} \left( \nabla_{\rvx}^2 h^{(k)} \right)
+% \right) \diff t
+% + g(t) \nabla_{\rvx} h^{(k)}  \diff \rvw_t.
+% \end{align*}
+
+
+
+
+\subsection{It\^o's Formula's Application: Derivation of Fokker-Planck Equation}\label{subsec:rigorous-proof-fpe}
+In this section, we apply It\^o's formula from \Cref{eq:Ito-scalar} to derive the Fokker–Planck equation, a PDE that characterizes the time evolution of the probability density $ p_t(\rvx) $ associated with the $ D $-dimensional diffusion process defined by the SDE in \Cref{eq:sde}.
+
+\paragraph{Step 1: Apply It\^o's Formula.}
+Let $\phi(\rvx, t)$ be a smooth test function $\phi \colon \mathbb{R}^D \times [0, T] \to \mathbb{R}$. By It\^o’s Formula:
+\[
+\diff \phi(\rvx_t, t) = \left( \frac{\partial \phi}{\partial t} + \nabla_{\rvx} \phi^\top \rvf(\rvx_t, t) + \frac{1}{2} g^2(t) \Tr[\nabla_{\rvx}^2 \phi] \right) \diff t + g(t) \nabla_{\rvx} \phi^\top \diff \rvw_t.
+\]
+\paragraph{Step 2: Take Expectation.}
+Taking expectation and using that the It\^o integral has zero expectation
+under the standard integrability conditions:
+\[
+\mathbb{E}[\diff \phi(\rvx_t, t)] = \mathbb{E} \left[ \left( \frac{\partial \phi}{\partial t} + \nabla_{\rvx} \phi^\top \rvf(\rvx_t, t) + \frac{1}{2} g^2(t) \Tr[\nabla_{\rvx}^2 \phi] \right) \diff t \right].
+\]
+\paragraph{Step 3: Express Expectation via Density.}
+This expectation can be written as:
+\[
+\mathbb{E}[\diff \phi(\rvx_t, t)] = \int \left( \frac{\partial \phi}{\partial t} + \nabla_{\rvx} \phi^\top \rvf(\rvx, t) + \frac{1}{2} g^2(t) \Tr[\nabla_{\rvx}^2 \phi] \right) p_t(\rvx) \diff \rvx \diff t.
+\]
+\paragraph{Step 4: Integrate by Parts.}
+Use integration by parts (divergence theorem) in $\mathbb{R}^D$:
+\begin{align*}
+    \int \nabla_{\rvx} \phi^\top \rvf p_t \diff \rvx &= -\int \phi \nabla_{\rvx} \cdot (\rvf p_t) \diff \rvx, \\
+    \int \Tr[\nabla_{\rvx}^2 \phi] p_t  \diff \rvx &= \int \phi \Delta p_t \diff \rvx.
+\end{align*}
+\paragraph{Step 5: Substitute and Rearrange.}
+Note that
+\[
+\mathbb{E}[\phi(\rvx_t,t)] = \int \phi(\rvx,t) p_t(\rvx) \diff\rvx.
+\]
+Differentiating in time, we have
+\[
+\frac{\diff}{\diff t}\mathbb{E}[\phi(\rvx_t,t)]
+= \frac{\diff}{\diff t}\int \phi(\rvx,t) p_t(\rvx) \diff\rvx
+= \int\Bigl(\partial_t\phi(\rvx,t) p_t(\rvx) + \phi(\rvx,t) \partial_t p_t(\rvx)\Bigr)\diff\rvx.
+\]
+Therefore,
+\[
+\mathbb{E}[\diff \phi(\rvx_t,t)]
+= \frac{\diff}{\diff t}\mathbb{E}[\phi(\rvx_t,t)] \diff t
+= \int\Bigl(\partial_t\phi(\rvx,t) p_t(\rvx) + \phi(\rvx,t) \partial_t p_t(\rvx)\Bigr)\diff\rvx \diff t.
+\]
+Equating this expression with Step~3, the terms
+$\int \partial_t\phi\,p_t\,\diff\rvx\,\diff t$ cancel. Applying Step~4 to
+the remaining spatial terms gives
+\[
+\int
+\phi(\rvx,t)
+\left[
+\frac{\partial p_t}{\partial t}
++
+\nabla_{\rvx}\cdot\bigl(\rvf(\rvx,t)p_t(\rvx)\bigr)
+-
+\frac{1}{2}g^2(t)\Delta p_t(\rvx)
+\right]
+\diff\rvx
+=
+0.
+\]
+Since this holds for every smooth test function $\phi$, we obtain the
+Fokker--Planck equation
+\[
+\frac{\partial p_t(\rvx)}{\partial t}
+=
+-\nabla_{\rvx}\cdot\bigl(\rvf(\rvx,t)p_t(\rvx)\bigr)
++
+\frac{1}{2}g^2(t)\Delta p_t(\rvx).
+\]
+
+\subsection{It\^o's Formula Application: Closed-Form Solution of a Linear SDE}\label{subsec:rigorous-proof-linear-sde}
+This subsection demonstrates how to obtain a closed-form solution for a linear SDE by using an integration factor (similar to the ODE case) and It\^o's formula. The approach mirrors classical techniques for solving linear ODEs, but adapted to the stochastic setting.
+
+We consider a linear SDE of the form
+\begin{align}\label{eq:app-linear-sde}
+    \mathrm{d}\rvx_t = f(t)\rvx_t \mathrm{d}t + g(t) \mathrm{d}\rvw_t,
+\end{align}
+where $f(t)$ and $g(t)$ are deterministic functions and $\rvw_t$ is a standard Wiener process. 
+\paragraph{Closed-Form Solution of a Linear SDE.} We derive the explicit solution to the linear SDE in \Cref{eq:app-linear-sde} using the method of integrating factors. This type of forward SDE commonly arises in diffusion models (see \Cref{sec:dm-today}).
+
+
+\subparagraph{Step 1: Define an Integration Factor.} Let
+\[
+\Psi(t) := \exp\left( -\int_0^t f(s) \mathrm{d}s \right),
+\quad \text{and define} \quad
+\rvy_t := \Psi(t)\rvx_t.
+\]
+\subparagraph{Step 2: Apply It\^o's Formula.}  
+We apply It\^o's formula to the function $\rvh(\rvx, t) := \Psi(t)\rvx$. This is actually a special case of the It\^o product rule in \Cref{eq:ito-product}. Since $\Psi(t)$ is deterministic, there is no cross-variation term, and the formula simplifies to:
+\begin{align*}
+    \mathrm{d}\rvy_t 
+    &= \mathrm{d}[\Psi(t)\rvx_t] \\
+    &= \Psi'(t)\rvx_t \mathrm{d}t + \Psi(t) \mathrm{d}\rvx_t \\
+    &= -f(t)\Psi(t)\rvx_t \mathrm{d}t + \Psi(t)\left[f(t)\rvx_t \mathrm{d}t + g(t) \mathrm{d}\rvw_t\right] \\
+    &= \Psi(t)g(t) \mathrm{d}\rvw_t.
+\end{align*}
+Hence,
+\[
+\rvy_t = \rvy_0 + \int_0^t \Psi(s)g(s) \mathrm{d}\rvw(s) = \rvx_0 + \int_0^t \Psi(s)g(s) \mathrm{d}\rvw(s),
+\]
+since $\Psi(0) = 1$.
+\subparagraph{Step 3: Solve for $\rvx_t$.}  
+Using $\rvx_t = \Psi(t)^{-1}\rvy_t$, we obtain
+\begin{align}\label{eq:lienar-sde-solution}
+    \rvx_t &=  e^{ \int_0^t f(s)\mathrm{d}s}
+    \left[ \rvx_0 + \int_0^t e^{ -\int_0^s f(r) \mathrm{d}r } g(s) \mathrm{d}\rvw(s) \right].
+\end{align}
+This provides an explicit solution to the vector-valued SDE.
+
+Below, we demonstrate two alternative approaches to compute the analytical form of $p_t(\rvx_t|\rvx_0)$.
+
+\paragraph{Analysis of the Closed-Form Solution.} \Cref{eq:lienar-sde-solution} reconfirms that $p_t(\rvx_t|\rvx_0)$ is Gaussian. To see this, define
+\[
+\phi(s) := e^{-\int_0^s f(u) \diff u} g(s),
+\]
+which is a deterministic matrix-valued function of time (assuming $f(u)$ and $g(s)$ are deterministic). The It\^o integral $\int_0^t \phi(s) \diff \rvw_s$ is then a zero-mean Gaussian random variable, as it is the stochastic integral of a deterministic function with respect to Brownian motion. Therefore, $\rvx_t|\rvx_0$ is an affine transformation of a Gaussian random variable and hence itself Gaussian. Its distribution is fully characterized by its conditional mean and covariance.
+
+We define the conditional mean and covariance (given initial condition $\rvx_0$) as
+\[
+\rvm(t) := \mathbb{E}[\rvx_t | \rvx_0], \quad \rmP(t) := \mathbb{E}[(\rvx_t - \rvm(t))(\rvx_t - \rvm(t))^\top|\rvx_0].
+\]
+
+\subparagraph{Mean.}
+Using linearity of expectation and the fact that the It\^o integral of a deterministic function has zero mean:
+\begin{align*}
+    \rvm(t) = \mathbb{E}\left[ e^{\int_0^t f(s) \diff s} \left( \rvx_0 + \int_0^t \phi(s) \diff \rvw_s \right) \bigg| \rvx_0 \right] = e^{\int_0^t f(s) \diff s} \rvx_0.
+\end{align*}
+
+\subparagraph{Covariance.}
+Let  $\rvz_t := \int_0^t \phi(s) \diff \rvw_s$. Then $\rvx_t - \rvm(t) = A(t) \rvz_t$, so
+\[
+\rmP(t) = e^{2\int_0^t f(s) \diff s} \mathbb{E}[\rvz_t \rvz_t^\top].
+\]
+By It\^o isometry\footnote{It\^o's isometry links stochastic integrals to standard integrals in expectation; we omit the proof as it requires the full machinery of It\^o calculus. For a process $\bm{\psi} : [0,T] \to \mathbb{R}^{D \times D}$, It\^o isometry states
+\[
+\mathbb{E}\left[\left\| \int_0^T \bm{\psi}(t)   \mathrm{d}\rvw_t \right\|^2 \right]
+= \mathbb{E}\left[\int_0^T \|\bm{\psi}(t)\|_F^2   \mathrm{d}t \right],
+\]
+where $\|\bm{\psi}(t)\|_F^2 = \sum_{i,j=1}^D |\psi_{ij}(t)|^2$ is the Frobenius norm. For $\bm{\psi}(t) \in \mathbb{R}^D$ (a vector), the integral is scalar and the isometry simplifies to
+\[
+\mathbb{E}\left[\left(\int_0^T \bm{\psi}(t)   \mathrm{d}\rvw_t\right)^2\right] = \mathbb{E}\left[\int_0^T \|\bm{\psi}(t)\|^2   \mathrm{d}t \right].
+\]
+},
+\[
+\mathbb{E}[\rvz_t \rvz_t^\top] = \left( \int_0^t \phi^2(s) \diff s \right) \rmI_D,
+\]
+hence,
+\[
+\rmP(t) = e^{2\int_0^t f(s) \diff s} \left( \int_0^t \left( e^{-\int_0^s f(u) \diff u} g(s) \right)^2 \diff s \right) \rmI_D.
+\]
+This shows the conditional covariance is isotropic.
+
+\paragraph{Derivation of Mean and Variance ODEs in \Cref{eq:mean-var-evolution}.}
+Alternatively, we can derive the moment evolution equations directly from the linear SDE \Cref{eq:app-linear-sde}. 
+
+
+\subparagraph{Mean Evolution.}
+Taking the conditional expectation of both sides of the SDE and using linearity:
+\[
+\frac{\diff \rvm(t)}{\diff t} = \mathbb{E}[f(t) \rvx_t|\rvx_0] = f(t) \mathbb{E}[\rvx_t|\rvx_0] = f(t) \rvm(t).
+\]
+
+\vspace{0.3cm}
+
+\subparagraph{Covariance Evolution.}
+Define the centered process $ \tilde{\rvx}_t := \rvx_t - \rvm(t) $. Applying It\^o's product rule (see \Cref{eq:ito-product}):
+\[
+\diff \left( \tilde{\rvx}_t \tilde{\rvx}_t^\top \right)
+= \diff \tilde{\rvx}_t \cdot \tilde{\rvx}_t^\top 
++ \tilde{\rvx}_t \cdot \diff \tilde{\rvx}_t^\top 
++ \diff \tilde{\rvx}_t \cdot \diff \tilde{\rvx}_t^\top.
+\]
+
+From the SDE, we compute:
+\[
+\diff \tilde{\rvx}_t = \diff \rvx_t - \diff \rvm(t) = f(t) \tilde{\rvx}_t  \diff t + g(t)  \diff \rvw_t.
+\]
+
+Substituting into the product rule and taking expectation:
+\begin{align*}
+    \frac{\diff \rmP(t)}{\diff t}
+    &= \mathbb{E}[f(t) \tilde{\rvx}_t \tilde{\rvx}_t^\top + \tilde{\rvx}_t \tilde{\rvx}_t^\top f(t) + g^2(t) \rmI_D] \\
+    &= 2 f(t) \rmP(t) + g^2(t) \rmI_D.
+\end{align*}
+Thus, we recover the moment evolution equations in \Cref{eq:mean-var-evolution}.
+
+
+
+
+% \subsection{Reverse-Time SDE Obeys the Same Fokker–Planck Equation as the Forward SDE}\label{subsec:reverse-sde-fokker-planck} 
+
+% As discussed in \Cref{subsec:fpe-sde-ode}, the reverse-time SDE is constructed to match the marginal distributions of the forward SDE, thereby enabling the transformation of the noise distribution back into the data distribution. In this section, we formally derive the reverse-time SDE (see \Cref{subsec:reverse-sde-reason}) and verify that it satisfies the same Fokker-Planck equation as the forward process, ensuring consistency in marginal dynamics.
+
+% Let $p_t(\rvx)$ denote the marginal distribution of the stochastic process $\rvx(t)$ defined by the forward SDE in \Cref{eq:sde}:
+% \[
+%     \diff \rvx(t) = \rvf(\rvx(t), t)\diff t + g(t) \diff \rvw(t),
+% \]
+% from $t=0$ to $t=T$. The corresponding Fokker–Planck equation that governs its marginal density $p_t(\rvx)$  is
+% \begin{equation} \label{eq:forward_fp}
+% \frac{\partial p_t}{\partial t} = -\nabla_{\rvx} \cdot \left( \rvf(\rvx, t) p_t(\rvx) \right) + \frac{1}{2} g^2(t) \Delta p_t(\rvx).
+% \end{equation}
+
+ 
+
+
+
+
+% \paragraph{Goal.} We aim to derive the reverse-time SDE that describes the dynamics of the time-reversed process. Specifically, we seek an equation of the form
+% \begin{equation} \label{eq:reverse_sde_form}
+% \diff \bar{\rvx}(t) = \bar{\rvf}(\bar{\rvx}(t), t) \diff t + \bar{g}(t) \diff \bar{\rvw}(t),
+% \end{equation}
+% where $\bar{\rvw}(t)$ denotes a Brownian motion adapted to reverse time, and $\bar{g}(t)$ is the diffusion coefficient. We require that the marginals of the reverse process $\bar{\rvx}(t)$ match those of the original forward process at reversed time, that is,
+% \[
+% \bar{p}_t(\rvx) := p_{T - t}(\rvx).
+% \]
+% In other words, the time-reversed process should reproduce the same family of distributions as the forward process, just traced backward in time. This guarantees that both forward and reverse processes follow consistent Fokker–Planck dynamics for their respective directions of evolution.
+
+
+
+% \paragraph{Derivation of Reverse-Time SDE That Shares the Same Fokker–Planck Equation.}
+%  Since $\bar p_t(\mathbf{x})=p_{T-t}(\mathbf{x})$, differentiating with respect to $t$ (and letting $s = T-t$, so $\diff s = -\diff  t$) gives
+% \[
+% \frac{\partial\bar p_t}{\partial t} = \frac{\partial p_{T-t}}{\partial (T-t)} \frac{\partial (T-t)}{\partial t} = - \frac{\partial p_s}{\partial s}\Big|_{s=T-t}.
+% \]
+% Substituting the Fokker–Planck \Cref{eq:forward_fp} for $p_s$ (with $s=T-t$), we get
+% \begin{align*}
+%     \frac{\partial\bar p_t}{\partial t} &= -\left[ -\nabla_{\mathbf{x}}\!\cdot\bigl(\rvf(\mathbf{x}, T-t) \bar p_t(\mathbf{x})\bigr) + \frac{1}{2} g^2(T-t) \Delta \bar p_t(\mathbf{x}) \right]
+%  \\ &= \nabla_{\mathbf{x}}\!\cdot\bigl(\rvf(\mathbf{x}, T-t) \bar p_t(\mathbf{x})\bigr) - \frac{1}{2} g^2(T-t) \Delta \bar p_t(\mathbf{x})
+%  \\ &= \left[\nabla_{\mathbf{x}}\!\cdot\bigl(\rvf(\mathbf{x}, T-t) \bar p_t(\mathbf{x}) \bigr) - g^2(T-t) \Delta \bar p_t(\mathbf{x}) \right] + \frac{1}{2} g^2(T-t) \Delta \bar p_t(\mathbf{x}).
+% \end{align*}
+% On the other hand, plugging \Cref{eq:reverse_sde_form} into its forward Fokker–Planck yields
+% \[
+% \frac{\partial\bar p_t}{\partial t} = - \nabla_{\mathbf{x}}\!\cdot\bigl(\bar \rvf(\mathbf{x}, t) \bar p_t(\mathbf{x})\bigr) + \tfrac12 \bar g^2(t) \Delta \bar p_t(\mathbf{x}).
+% \]
+% Matching diffusion terms gives $\bar g(t)=g(T-t)$. By matching drift terms (which is rigorously justified by Girsanov’s theorem but here derived through a formal calculation), we obtain
+% \[
+% -\nabla_{\mathbf{x}}\!\cdot(\bar \rvf  \bar p) = \nabla_{\mathbf{x}}\!\cdot\bigl(\rvf  \bar p\bigr) - g^2 \Delta \bar p = \nabla_{\mathbf{x}}\!\cdot\bigl(\rvf  \bar p - g^2 \nabla_{\mathbf{x}}\bar p\bigr).
+% \]
+% Hence,
+% \[
+% -\bar \rvf(\mathbf{x}, t)  \bar p_t = \rvf(\mathbf{x}, T-t)  \bar p_t - g^2(T-t) \nabla_{\mathbf{x}}\bar p_t,
+% \]
+% so
+% \begin{align*}
+%     \bar \rvf(\mathbf{x}, t) &= -\rvf(\mathbf{x}, T-t) + g^2(T-t) \frac{\nabla_{\mathbf{x}}\bar p_t(\mathbf{x})}{\bar p_t(\mathbf{x})} \\&= -\rvf(\mathbf{x}, T-t) + g^2(T-t) \nabla_{\mathbf{x}}\log\bar p_t(\mathbf{x}).
+% \end{align*}
+% Since $\bar p_t(\mathbf{x})=p_{T-t}(\mathbf{x})$, we conclude
+% \[
+% \mathrm{d} \bar{\mathbf{x}}(t) = \Bigl[-\rvf(\bar{\mathbf{x}}(t), T-t) + g^2(T-t) \nabla_{\mathbf{x}}\log p_{T-t}(\bar{\mathbf{x}}(t))\Bigr] \mathrm{d}t + g(T-t) \mathrm{d} \overline \rvw(t).
+% \]
+
+% \paragraph{Equivalent Reverse‐Flow Form.} Setting $t' = T-t$ (so $\diff t = -\diff t'$), and noting $\bar{\mathbf{x}}(t) = \mathbf{x}(T-t) = \mathbf{x}(t')$, we can rewrite the SDE in terms of the original time‐axis $t'$ running from $T$ down to $0$:
+% \[
+% \mathrm{d} \mathbf{x}(t') = \Bigl[-\rvf(\mathbf{x}(t'), t') + g^2(t') \nabla_{\mathbf{x}}\log p_{t'}(\mathbf{x}(t'))\Bigr] (-\mathrm{d}t') + g(t') \mathrm{d} \overline \rvw(T-t').
+% \]
+% Renaming $t'$ to $t$ for notational convenience (so that $t$ now runs backward from $T$ to $0$), and viewing $\mathrm{d}\overline{\rvw}(T-t)$ as a new reverse-time Brownian motion (still denoted by $\mathrm{d}\overline{\rvw}(t)$), we obtain:
+% \[
+% \mathrm{d} \mathbf{x}(t) = \bigl[\rvf(\mathbf{x}(t), t) - g^2(t) \nabla_{\mathbf{x}} \log p_t(\mathbf{x}(t))\bigr] \mathrm{d}t + g(t) \mathrm{d} \overline{\rvw}(t),
+% \]
+% with $t$ decreasing from $T$ to $0$.
+
+
+
+\newpage
+
+\section{Change-of-Variable For Measures: Girsanov's Theorem in Diffusion Models}
+Diffusion models harness SDEs to transform simple noise into rich data distributions. At the heart of this transformation lies a profound idea: we can reinterpret randomness by modifying only the deterministic part of an SDE (the drift) while preserving its underlying stochasticity. This is precisely where Girsanov’s theorem enters the picture.
+
+
+\paragraph{The Core Idea.}
+Consider an observed continuous trajectory that describes the data's evolution from time $t=0$ to $t=T$, denoted as $\rvx_{0:T}:=\{ \rvx_t|t \in [0,T] \}$. Girsanov's theorem addresses a fundamental question:
+\begin{question}
+    Given this single observed path, what is its likelihood if we assume it was generated by one SDE, versus if we assume it was generated by a different SDE?
+\end{question}
+We compare two hypothetical models for generating the same trajectory. They
+have the same initial distribution and diffusion coefficient, but differ in
+their deterministic ``push'' or drift function. We assume $\rvx_0$ has the same initial distribution for both assumed generating processes.
+
+To build intuition, imagine $\rvx_{0:T}$ as a wiggly line drawn on paper.
+One hypothesis assigns trajectory probabilities according to drift $\rvf$,
+while another uses a different drift $\tilde{\rvf}$ with the same diffusion
+coefficient. Girsanov's theorem compares the corresponding path measures and
+quantifies how changing the drift changes the relative weighting assigned to
+the same trajectories.
+
+\paragraph{The Setup.}
+Let $P_{\rvf}$ and $P_{\tilde{\rvf}}$ denote the path measures induced by
+two SDEs with the same initial distribution and the same diffusion
+coefficient, but different drifts:
+\begin{align*}
+    \diff\rvx_t
+    &= \rvf(\rvx_t,t)\diff t + g(t)\diff\rvw_t,
+    \\
+    \diff\rvx_t
+    &= \tilde{\rvf}(\rvx_t,t)\diff t + g(t)\diff\rvw_t.
+\end{align*}
+For simplicity, assume $g(t)>0$ on the interval of interest and the
+standard integrability conditions required by Girsanov's theorem. Take
+$P_{\tilde{\rvf}}$ as the reference path measure, and let $\rvw_t$ denote
+the Brownian motion under this reference measure. Define
+\[
+\bm{\delta}_t
+:=
+\rvf(\rvx_t,t)-\tilde{\rvf}(\rvx_t,t).
+\]
+
+\paragraph{Girsanov's Likelihood Ratio.}
+Girsanov's theorem gives the Radon--Nikodym derivative between the two path
+measures:
+\begin{mdframed}
+\[
+\frac{\diff P_{\rvf}}{\diff P_{\tilde{\rvf}}}(\rvx_{0:T})
+=
+\exp\left(
+\int_0^T
+\bm{\delta}_t^\top g(t)^{-1}\diff\rvw_t
+-
+\frac{1}{2}
+\int_0^T
+\big\|g(t)^{-1}\bm{\delta}_t\big\|^2
+\diff t
+\right).
+\]
+\end{mdframed}
+This compact formula is an exponential of two integrals. The first is an It\^o integral, while the second is a standard Riemann integral. This ratio is crucial in diffusion models, allowing us to compare
+different stochastic dynamics and to connect path-space discrepancies
+with likelihood-based training objectives.
+
+Girsanov's theorem is best understood as a change-of-variable formula for \emph{measures}. Just as a change of variables in calculus transforms an integral between coordinate systems via the Jacobian determinant, Girsanov's theorem provides the corresponding factor (the Radon–Nikodym derivative) to transform probabilities or expectations between two stochastic processes, when the drift changes but the diffusion remains the same.
+
+
+
+
+\subsection{Girsanov’s Theorem as a Bridge Between Likelihood Training and Score Matching}\label{subsec:girsanov}
+
+After understanding how Girsanov's theorem relates the likelihoods of a single
+path under different drift assumptions, we now delve into its implications for
+diffusion models.
+
+Recall the forward SDE in diffusion models:
+\[
+\diff \rvx_t = \rvf(\rvx_t, t) \diff t + g(t) \diff \rvw_t,
+\]
+which induces a \emph{path distribution} $P$ over full trajectories
+$\rvx_{0:T} := \{\rvx_t\}_{t=0}^T$ (that is, the joint law of the process over
+the entire time interval).
+The reverse-time SDE, parameterized by a learnable score function
+$\rvs_{\bm{\phi}}(\rvx_t, t)$, is given by
+\[
+\diff \rvx_t = \big[\rvf(\rvx_t, t) - g^2(t) \rvs_{\bm{\phi}}(\rvx_t, t)\big] \diff t
++ g(t) \diff \bar{\rvw}_t,
+\]
+which in turn defines another path distribution
+$P_{\bm{\phi}}$ over trajectories.
+
+
+\paragraph{Two Notions in Diffusion Models.}
+It is useful to distinguish two levels at which two stochastic processes can
+agree:
+\begin{itemize}
+    \item \textbfs{Concept 1. Marginal Distribution Matching:}
+    The processes have the same distribution $p_t(\rvx_t)$ at every fixed
+    time $t$. Thus, their time-indexed ``snapshots'' agree.
+
+    \item \textbfs{Concept 2. Joint Path Distribution Matching:}
+    The processes have the same probability law over entire trajectories.
+    This stronger notion also matches how states at different times are
+    coupled, including their transition laws and temporal dependencies.
+\end{itemize}
+
+Matching the full path law automatically implies marginal matching, since
+each $p_t$ is obtained by projecting the path law onto the state at time
+$t$. The converse is generally false: two processes can have identical
+marginals at every time while inducing different couplings between those
+marginals. The SDE and its associated PF-ODE provide an important example:
+they share the same marginal density path, but generally have different
+sample trajectories and path laws.
+
+
+\paragraph{Girsanov Connects Score Error to Path-Law Mismatch.}
+The exact reverse-time SDE satisfies the stronger notion above. Under
+standard regularity conditions, when initialized from the exact terminal
+marginal $p_T$ and equipped with the true score
+$\nabla_{\rvx}\log p_t(\rvx)$, it is the time reversal of the forward
+diffusion and therefore reproduces its full time-reversed path law.
+
+Let $P^{\mathrm{rev}}$ denote this exact reverse-time path law, and let
+$P_{\bm{\phi}}$ denote the learned reverse-time path law obtained by
+replacing the true score with $\rvs_{\bm{\phi}}$ and initializing from
+$p_{\mathrm{prior}}$. Decomposing the path-space KL into the mismatch between the initial
+distributions and the conditional path laws, and applying Girsanov's
+theorem to the latter after expressing both processes using the same
+increasing reverse-time clock, gives, in the original diffusion-time
+label $t$,
+\begin{align}\label{eq:girsanov-KL}
+\begin{aligned}
+\mathcal{D}_{\mathrm{KL}}
+\bigl(P^{\mathrm{rev}}\|P_{\bm{\phi}}\bigr)
+=
+&\;
+\mathcal{D}_{\mathrm{KL}}
+\bigl(p_T\|p_{\mathrm{prior}}\bigr)
+\\
+&+
+\frac{1}{2}
+\int_0^T
+g^2(t)
+\E_{\rvx_t\sim p_t}
+\left[
+\left\|
+\rvs_{\bm{\phi}}(\rvx_t,t)
+-
+\nabla_{\rvx}\log p_t(\rvx_t)
+\right\|^2
+\right]
+\diff t .
+\end{aligned}
+\end{align}
+The first term measures the mismatch between the true terminal distribution
+and the prior used to initialize generation; it vanishes when
+$p_T=p_{\mathrm{prior}}$. The second term measures the accumulated mismatch
+between the learned and exact reverse drifts.
+
+Thus, score matching with the particular likelihood weighting $g^2(t)$
+has a direct path-space interpretation: minimizing the weighted score error
+minimizes the KL divergence between the exact and learned reverse path laws,
+up to the fixed terminal-distribution term. When denoising score matching is
+used instead of marginal score matching, the corresponding objectives differ
+by a parameter-independent constant. A different time weighting generally
+does not correspond to this same path-space KL.
+
+\paragraph{Connection to Data Likelihood.}
+The path-space KL also controls the discrepancy between the generated and
+data marginals. Since taking the endpoint of a trajectory is a measurable
+projection and KL divergence cannot increase under marginalization,
+\begin{align}\label{eq:girsanov-likelihood}
+\mathcal{D}_{\mathrm{KL}}
+\bigl(p_{\mathrm{data}}\|p_{\bm{\phi}}\bigr)
+\leq
+\mathcal{D}_{\mathrm{KL}}
+\bigl(P^{\mathrm{rev}}\|P_{\bm{\phi}}\bigr),
+\end{align}
+where $p_{\bm{\phi}}$ denotes the generated marginal at data time.
+
+Combining this with \Cref{eq:girsanov-KL} shows that likelihood-weighted
+score matching, together with the terminal-distribution mismatch, provides
+an upper bound on the data-side KL divergence and therefore on the expected
+negative log-likelihood up to a constant independent of $\bm{\phi}$
+\citep{song2021maximum}.

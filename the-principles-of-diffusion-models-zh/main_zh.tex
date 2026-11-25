@@ -1,0 +1,448 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\makeatletter\def\input@path{{zh/}}\makeatother
+\documentclass[examplefnt,biber]{nowfnt-arxiv}
+\usepackage[UTF8,scheme=plain,fontset=windows]{ctex}
+\setmainfont{TeX Gyre Termes}
+\setsansfont{TeX Gyre Heros}
+\setmonofont{Latin Modern Mono}
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\usepackage{etoolbox}
+\newcounter{fnhyp}
+\AfterEndPreamble{\input{fnfix}}
+
+
+
+
+
+
+\PassOptionsToPackage{dvipsnames}{xcolor} 
+
+
+
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,positioning,shapes.geometric}
+
+\usepackage{subcaption}
+\usepackage{mathrsfs}
+\usepackage{tcolorbox}
+\usepackage{booktabs} 
+\usetikzlibrary{positioning,calc,arrows.meta,shapes.geometric}
+
+
+\usepackage[labelfont={bf,sf}]{caption}
+\usetikzlibrary{shapes, arrows, positioning, backgrounds, shadows} 
+\usepackage{stmaryrd}
+\usepackage{placeins} 
+\newcommand{\graymidrule}{\arrayrulecolor{black!25}\midrule\arrayrulecolor{black}}
+\usepackage{cancel}
+\usepackage{tabularx}
+\usepackage{array}
+\newcommand{\ys}[1]{{\color{orange}{[YS: #1]}}}
+
+
+
+
+\captionsetup[table]{labelfont={bf,sf}}
+
+\usepackage{mathtools}
+\usepackage{fancybox}
+\usepackage[dvipsnames,table]{xcolor}
+
+\usepackage{amsmath, amssymb, amsfonts}
+
+\usepackage{graphicx}
+\graphicspath{{zh/}}
+\usepackage{setspace}
+\usepackage{geometry}
+\geometry{
+  paperwidth=7in,
+  paperheight=10in,
+  total={144mm,206mm},
+  hcentering,
+  vcentering,
+  headheight=29pt,
+  heightrounded
+}
+\usepackage{float}
+\usepackage[english]{babel}
+\usepackage{environ}
+\usepackage{xr}
+\usepackage{mwe}
+\usepackage{adjustbox} 
+\usepackage{multirow}       
+\usepackage{makecell}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+
+
+\usepackage{annotate_eqs}
+\usetikzlibrary{positioning, arrows.meta, fit, shapes.multipart}
+
+\definecolor{StoryBrown}{HTML}{9A5B32}
+\definecolor{StoryBrownDark}{HTML}{704023}
+\definecolor{StoryBrownLight}{HTML}{FBF6F0}
+
+\newtcolorbox{storychapterguidebox}{
+  enhanced,
+  breakable,
+  colback=StoryBrownLight,
+  colframe=StoryBrownLight,
+  boxrule=0pt,
+  borderline west={2.2pt}{0pt}{StoryBrown},
+  arc=1.5mm,
+  left=3.5mm,
+  right=3mm,
+  top=2.5mm,
+  bottom=2.5mm,
+}
+
+\NewDocumentCommand{\chapterlearning}{+m +m}{
+  \begin{storychapterguidebox}
+  \noindent\textcolor{StoryBrownDark}{
+    \textbfs{学完本章，你将能够：}
+  }
+  \begin{itemize}[leftmargin=1.5em,itemsep=2pt,topsep=4pt,parsep=0pt]
+  #1
+  \end{itemize}
+  \vspace{-1mm}
+  \noindent\textcolor{StoryBrownDark}{\textbfs{阅读路径。}} #2
+  \end{storychapterguidebox}
+}
+
+
+
+
+\def\Circlearrowleft{\ensuremath{
+  \rotatebox[origin=c]{180}{$\circlearrowleft$}}}
+\def\Circlearrowright{\ensuremath{
+  \rotatebox[origin=c]{150}{$\circlearrowright$}}}
+\def\CircleArrowleft{\ensuremath{
+  \reflectbox{\rotatebox[origin=c]{180}{$\circlearrowleft$}}}}
+\def\CircleArrowright{\ensuremath{
+  \reflectbox{\rotatebox[origin=c]{180}{$\circlearrowright$}}}}
+
+\newtheorem*{lemma*}{Lemma}
+
+\renewcommand{\labelitemi}{\raisebox{.25\height}{\tiny$\blacksquare$}}
+\renewcommand{\labelitemii}{{$\bullet$}}
+
+
+
+
+
+\usepackage{epigraph} 
+\setlength{\epigraphwidth}{0.79\textwidth}
+\usepackage{thmbox}  
+\newtheorem[M]{question}{\sffamily\bfseries Question}[section]
+\tcbuselibrary{theorems,skins,breakable}
+
+\newcommand{\cc}[1]{\cellcolor{gray!#1}}
+\newcommand{\textbfs}[1]{{\sffamily\textbf{#1}}}
+\usepackage{multicol}
+
+
+
+
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\floatname{algorithm}{\textbfs{算法}}
+\DeclareCaptionFormat{bfsformat}{\textbfs{#1#2}#3}
+\captionsetup[algorithm]{format=bfsformat, labelfont=bf}
+\renewcommand{\algorithmicrequire}{\textbfs{输入：}}
+\renewcommand{\algorithmicensure}{\textbfs{输出：}}
+\renewcommand{\algorithmicfor}{\textbfs{for}}      
+\renewcommand{\algorithmicend}{\textbfs{end}} 
+\renewcommand{\algorithmicdo}{\textbfs{do}} 
+\renewcommand{\algorithmicrepeat}{\textbfs{Repeat}} 
+\renewcommand{\algorithmicuntil}{\textbfs{until}} 
+\renewcommand{\algorithmicreturn}{\textbfs{return}} 
+\renewcommand{\algorithmicif}{\textbfs{if}} 
+\renewcommand{\algorithmicelse}{\textbfs{else}}
+\renewcommand{\algorithmicthen}{\textbfs{then}}
+\renewcommand{\algorithmicwhile}{\textbfs{while}} 
+
+
+
+\usepackage{cleveref}
+\crefname{algorithm}{算法}{算法s}
+
+\usepackage{subcaption}
+\usepackage{graphicx}
+\graphicspath{{zh/}}
+
+
+
+\usepackage[framemethod=TikZ]{mdframed}
+\mdfsetup{
+   middlelinecolor=black,
+   middlelinewidth=1.1pt,
+   backgroundcolor=gray!10,
+   roundcorner=6pt}
+\input{math_commands}
+\input{theorems}
+\input{scaffolding}
+\renewcommand\thepart{\Alph{part}}
+
+
+\newlist{todolist}{itemize}{2}
+\setlist[todolist]{label=$\square$}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\newcommand{\done}{\rlap{$\square$}{\raisebox{2pt}{\large\hspace{1pt}\cmark}}
+\hspace{-2.5pt}}
+\newcommand{\wontfix}{\rlap{$\square$}{\large\hspace{1pt}\xmark}}
+
+
+
+
+
+
+
+\DeclareRobustCommand{\figcredit}[2][Source]{
+  \par\smallskip
+  \makebox[\linewidth][r]{\footnotesize\itshape #1: #2}
+}
+
+
+
+
+
+
+
+\title{扩散模型原理}
+\subtitle{非官方中文初译 · arXiv v3}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\maintitleauthorlist{
+Chieh-Hsin Lai \\
+Sony AI \\
+\and
+Yang Song\\
+OpenAI \\
+\and
+Dongjun Kim \\
+Stanford University \\
+\and
+Yuki Mitsufuji \\
+Sony Group Corporation, Sony AI \\
+\and
+Stefano Ermon \\
+Stanford University
+}
+
+
+\issuesetup
+{
+ copyrightowner={Chieh-Hsin Lai, Yang Song, Dongjun Kim, Yuki Mitsufuji, and Stefano Ermon},
+ volume        = xx,
+ issue         = xx,
+ pubyear       = 2024,
+ isbn          = xxx-x-xxxxx-xxx-x,
+ eisbn         = xxx-x-xxxxx-xxx-x,
+ doi           = 10.1561/XXXXXXXXX,
+ firstpage     = 1, 
+ lastpage      = 18
+ }
+
+
+
+
+\addbibresource{zh/main_v2.bib}
+
+
+
+\author[1]{Chieh-Hsin Lai}
+\author[2]{Yang Song}
+\author[3]{Dongjun Kim}
+\author[4]{Yuki Mitsufuji}
+\author[5]{Stefano Ermon}
+
+\affil[1]{Sony AI; \url{chieh-hsin.lai@sony.com} / \url{chiehhsinlai@gmail.com}}
+\affil[2]{OpenAI\footnote{单位信息为开展本工作时的所属机构。}; \url{thusongyang@gmail.com}}
+\affil[3]{Stanford University; \url{dongjun@stanford.edu}}
+\affil[4]{Sony Group Corporation, Sony AI; \url{yuhki.mitsufuji@sony.com}}
+\affil[5]{Stanford University; \url{ermon@cs.stanford.edu}}
+
+\articledatabox{原著：arXiv:2510.21890v3；非官方中文初译；2026年11月25日。}
+
+
+
+
+
+\newcommand{\veryshortarrow}[1][3pt]{\mathrel{
+   \hbox{\rule[\dimexpr\fontdimen22\textfont2-.2pt\relax]{#1}{.4pt}}
+   \mkern-4mu\hbox{\usefont{U}{lasy}{m}{n}\symbol{41}}}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\renewcommand{\abstractname}{摘要}
+\renewcommand{\acknowledgementsname}{致谢}
+\renewcommand{\contentsname}{目录}
+\renewcommand{\bibname}{参考文献}
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+\renewcommand{\proofname}{证明}
+\addto\captionsenglish{\renewcommand{\contentsname}{目录}\renewcommand{\abstractname}{摘要}}
+\DefineBibliographyStrings{english}{bibliography={参考文献}}
+\hypersetup{pdftitle={扩散模型原理（中文初译）},pdfsubject={arXiv:2510.21890v3 的非官方中文初译}}
+\setlength{\emergencystretch}{2em}
+\crefname{algorithm}{算法}{算法}
+\Crefname{algorithm}{算法}{算法}
+\crefname{figure}{图}{图}
+\Crefname{figure}{图}{图}
+\crefname{table}{表}{表}
+\Crefname{table}{表}{表}
+\crefname{equation}{式}{式}
+\Crefname{equation}{式}{式}
+\crefname{chapter}{章}{章}
+\Crefname{chapter}{章}{章}
+\crefname{section}{节}{节}
+\Crefname{section}{节}{节}
+\crefname{appendix}{附录}{附录}
+\Crefname{appendix}{附录}{附录}
+\crefname{theorem}{定理}{定理}
+\Crefname{theorem}{定理}{定理}
+\crefname{lemma}{引理}{引理}
+\Crefname{lemma}{引理}{引理}
+\crefname{proposition}{命题}{命题}
+\Crefname{proposition}{命题}{命题}
+\crefname{definition}{定义}{定义}
+\Crefname{definition}{定义}{定义}
+
+\begin{document}
+
+\makeabstracttitle
+
+
+\begin{abstract}
+本书聚焦于推动扩散模型发展的基本原理，追溯这些思想的起源，并阐明不同表述如何源于共同的数学思想。
+
+扩散建模首先指定一个\emph{前向扰动过程}，将数据逐渐转化为噪声。这个过程定义了一族连续的中间分布，从而把数据分布与简单的噪声分布联系起来。扩散模型的核心目标，是构造一个沿相反方向运行的过程：将噪声转化为数据，同时重现前向扰动过程所定义的同一族中间分布。
+
+我们从三个互补的视角形式化这一思想。受变分自编码器启发的\emph{变分视角}，将扩散看作逐步学习去噪：通过一系列局部去噪目标，教会模型将噪声还原为数据。源于能量模型的\emph{分数视角}，学习演化中分布的对数密度梯度，以确定应当如何将样本推向概率更高的区域。与归一化流相关的\emph{流视角}，则将生成看作在学习得到的速度场作用下，沿平滑路径把噪声样本传输到数据分布。
+
+这些视角共享同一核心结构：一个学习得到、随时间变化的速度场，其诱导的流将简单先验分布传输为数据分布。在这个框架下，采样就是求解微分方程，使噪声沿连续的生成轨迹演化为数据。在此基础上，本书讨论用于可控生成的\emph{引导方法}、用于高效采样的\emph{高阶数值求解器}，以及受扩散模型启发、直接学习轨迹上任意两个时刻之间映射的\emph{流映射模型}。
+
+本书面向具备基本深度学习背景，希望从概念和数学层面清晰理解扩散模型的读者。书中阐述这一领域的核心原理，解释统一不同表述的思想，并为在这一迅速发展的领域继续学习奠定基础。它既可作为研究人员的原理参考，也可作为学生与初学者的入门读物。配套材料见原著网站：
+{\centering\url{https://the-principles-of-diffusion-models.github.io/}\par}
+
+\medskip
+\noindent\textbf{译本说明。}本文件是基于 arXiv:2510.21890v3（2026年8月27日）的非官方中文初译，整理日期为2026年11月25日。正文采用机器初译，并统一部分术语；摘要、出版标识与通用界面文字另行整理。尚未逐段完成人工学术审校。公式、数学符号、交叉引用和文献标识保留原文；原始配图与参考文献条目保留原语。阅读涉及定理条件、证明细节和算法实现的内容时，可对照同目录的官方英文源码。
+\end{abstract}
+
+\begin{acknowledgements}
+我们衷心感谢社区中提出宝贵反馈、帮助发现勘误的各位同仁。特别感谢以下人士，姓名按字母顺序排列：\emph{Francis Bach}、\emph{Ilia Badanin}、\emph{Rwiddhi Chakraborty}、\emph{Mauricio Delbracio}、\emph{Jacob Lessing}、\emph{Kaiming He}、\emph{Yutong (Kelly) He}、\emph{Durk Kingma}、\emph{Shucheng Li}、\emph{Ramtin Moslemi}、\emph{Rukmangadh Sai Myana}、\emph{Stefano Peluchetti}、\emph{Yuri Plotkin}、\emph{François Rozet}、\emph{Yair Shenfeld}、\emph{Molei Tao}、\emph{Mohamad Ternanni}和\emph{Baojian Zhou}，以及匿名审稿人与其他热心提供反馈的读者。
+
+作者也特别感谢首尔市立大学与韩国高等科学院（KIAS）的\emph{Dohyun Kwon}教授，感谢他慷慨投入时间和精力参与本书的讨论。他仔细审阅了\Cref{ch:ot-eot}的部分内容，帮助确保陈述与证明的正确性，并通过多次富有价值的讨论澄清了表述。他不仅提出技术建议，还提供了深思熟虑的反馈，乐于分享自己的观点，在全书写作过程中给予我们持续的鼓励。我们衷心感谢他的支持与同事情谊，这些帮助使本书的最终版本更加完善。
+\end{acknowledgements}
+
+
+
+
+\input{Preface}
+\input{notations}
+\part{深度生成建模导论}
+\input{Prologue-Deep-Generative-Modeling}
+\part{扩散模型的基础与视角}
+\input{Part-B-diagram}
+\input{Chapter-0-Diffusion-High-Level}
+\input{Chapter-1-Varational-Perspective-From-VAE-to-DDPM}
+\input{Chapter-2-Score-Based-Perspective-From-EBMs-to-NCSN}
+\input{Chapter-3-Diffusion-Models-Today-Score-SDE-Framework}
+\input{Chapter-4-Flow-Based-Perspective-From-NFs-to-Flow-Matching}
+\input{Chapter-5-They-Are-All-Equivalent}
+\input{Chapter-4-plus-OT-and-Diffusion-Model}
+\part{扩散模型的采样}
+\input{Part-C-D-diagram}
+\input{Chapter-6-Guidance}
+\input{Chapter-7-Sophisticated-Solvers-for-Fast-Sampling}
+
+\part{学习快速的扩散生成器}
+\input{Chapter-8-Post-Training-Methods-for-Fast-Sampling}
+\input{Chapter-9-Learning-Fast-Generator-from-Scratch}
+
+\part*{结语与展望}
+\addcontentsline{toc}{part}{结语与展望}
+\input{Chapter-10-Epilogue-and-Outlook}
+
+
+
+
+
+
+
+
+\appendix
+
+\input{A_Crash-Course-of-DE}
+\input{B_Continuity-Equation}
+\input{C_SDE-and-Ito}
+\input{D_Proofs}
+
+
+
+
+\backmatter  
+
+
+
+
+\printbibliography
+
+\end{document}

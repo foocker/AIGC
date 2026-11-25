@@ -1,0 +1,191 @@
+% -----------------------------------------------------------------------------
+% Textbook storytelling scaffolding for The Principles of Diffusion Models
+% Suggested placement: immediately after \input{theorems} in main_v2.tex.
+% The definitions use packages already loaded by the manuscript: xcolor,
+% tcolorbox, and xparse/NewDocumentCommand.
+% -----------------------------------------------------------------------------
+
+% A deliberately small semantic palette. These colors should retain the same
+% meaning throughout the book and should also guide new figures.
+\definecolor{StoryNavy}{HTML}{23415C}       % chapter/section navigation
+\definecolor{StoryBlue}{HTML}{3E789B}       % learned/local model object
+\definecolor{StoryBluePale}{HTML}{EEF5F8}
+\definecolor{StoryGreen}{HTML}{4F7C63}      % tractable target / takeaway
+\definecolor{StoryGreenPale}{HTML}{EEF6F0}
+\definecolor{StoryPurple}{HTML}{6D5B8C}     % finite-time map / approximation
+\definecolor{StoryPurplePale}{HTML}{F3F0F7}
+\definecolor{StoryWarm}{HTML}{9A6A3A}       % caveat / design tension
+\definecolor{StoryWarmPale}{HTML}{FAF4EC}
+\definecolor{StoryGray}{HTML}{5C6670}       % data/reference/background object
+\definecolor{StoryGrayPale}{HTML}{F5F6F7}
+
+% ----------------------------------------------------------------------------
+% Chapter guide: one box at the beginning of every chapter.
+% Arguments:
+%   #1 central question
+%   #2 mental model
+%   #3 learned object
+%   #4 chapter path (ordinary prose or an enumerate/itemize environment)
+% ----------------------------------------------------------------------------
+
+
+\NewDocumentCommand{\chapterguide}{m+m+m+m}{%
+  \begin{storychapterguidebox}
+  \noindent\textcolor{StoryNavy}{\textbfs{Central question.}} #1\par\smallskip
+  \noindent\textcolor{StoryNavy}{\textbfs{Mental model.}} #2\par\smallskip
+  \noindent\textcolor{StoryNavy}{\textbfs{What is learned?}} #3\par\smallskip
+  \noindent\textcolor{StoryNavy}{\textbfs{Chapter path.}} #4
+  \end{storychapterguidebox}
+}
+
+% ----------------------------------------------------------------------------
+% Lightweight section navigation. Use this at the beginning of every major
+% section; it is intentionally not a box, to avoid visual clutter.
+% ----------------------------------------------------------------------------
+\NewDocumentCommand{\whythissection}{m}{%
+  \par\smallskip
+  \noindent\textcolor{StoryNavy}{\textbfs{Why this section?}} #1
+  \par\smallskip
+}
+
+% ----------------------------------------------------------------------------
+% Equation interpretation. Place immediately after a load-bearing equation or
+% derivation. It should explain the statement in words, not repeat the symbols.
+% ----------------------------------------------------------------------------
+\NewDocumentCommand{\equationmeaning}{m}{%
+  \par\smallskip
+  \noindent\textcolor{StoryBlue}{\textbfs{What this equation says.}} #1
+  \par\smallskip
+}
+
+% ----------------------------------------------------------------------------
+% Takeaway. Use at the end of a major section. Keep to one paragraph.
+% ----------------------------------------------------------------------------
+\newtcolorbox{storytakeawaybox}{
+  enhanced,
+  breakable,
+  frame hidden,
+  colback=StoryGreenPale,
+  borderline west={1.2mm}{0pt}{StoryGreen},
+  left=3.5mm,right=3.5mm,top=2mm,bottom=2mm,
+  before skip=8pt,after skip=10pt
+}
+
+\NewDocumentCommand{\takeaway}{m}{%
+  \begin{storytakeawaybox}
+  \noindent\textcolor{StoryGreen}{\textbfs{Takeaway.}} #1
+  \end{storytakeawaybox}
+}
+
+% ----------------------------------------------------------------------------
+% Proof idea. The optional argument is the appendix location. The main text
+% should contain the conceptual mechanism; the complete algebra belongs in the
+% proof appendix unless it is shorter than roughly five lines.
+% Usage: \proofidea[\Cref{app:proof-foo}]{...}
+% ----------------------------------------------------------------------------
+\NewDocumentCommand{\proofidea}{o +m}{%
+  \par\smallskip
+  \noindent\textcolor{StoryPurple}{\textbfs{Proof idea.}} #2%
+  \IfNoValueF{#1}{\space\textit{Full details: #1.}}%
+  \par\smallskip
+}
+
+% ----------------------------------------------------------------------------
+% Running example. Reuse the same example and visual grammar across chapters.
+% Suggested default: a two-dimensional, three-mode data distribution and a
+% Gaussian reference distribution.
+% ----------------------------------------------------------------------------
+\newtcolorbox{runningexample}[1]{
+  enhanced,
+  breakable,
+  frame hidden,
+  colback=StoryGrayPale,
+  borderline west={1.2mm}{0pt}{StoryGray},
+  title={\textbfs{Running Example: #1}},
+  fonttitle=\sffamily\bfseries,
+  coltitle=StoryNavy,
+  colbacktitle=StoryGrayPale,
+  titlerule=0mm,
+  left=3.5mm,right=3.5mm,top=2mm,bottom=2mm,
+  before skip=8pt,after skip=10pt
+}
+
+% ----------------------------------------------------------------------------
+% Method profile. Use the same five questions for every solver, guidance method,
+% distillation method, and flow-map method. This symmetry prevents paper-by-
+% paper exposition from reading like a catalog.
+% Arguments:
+%   #1 method name
+%   #2 represented/learned object
+%   #3 training or approximation signal
+%   #4 generation/sampling mechanism
+%   #5 main strength and main limitation
+% ----------------------------------------------------------------------------
+\newtcolorbox{storymethodbox}[1]{
+  enhanced,
+  breakable,
+  frame hidden,
+  colback=StoryWarmPale,
+  borderline west={1.2mm}{0pt}{StoryWarm},
+  title={\textbfs{Method Lens: #1}},
+  fonttitle=\sffamily\bfseries,
+  coltitle=StoryWarm,
+  colbacktitle=StoryWarmPale,
+  titlerule=0mm,
+  left=3.5mm,right=3.5mm,top=2mm,bottom=2mm,
+  before skip=8pt,after skip=10pt
+}
+
+\NewDocumentCommand{\methodlens}{m+m+m+m+m}{%
+  \begin{storymethodbox}{#1}
+  \noindent\textbfs{Object.} #2\par\smallskip
+  \noindent\textbfs{Signal.} #3\par\smallskip
+  \noindent\textbfs{Generation.} #4\par\smallskip
+  \noindent\textbfs{Trade-off.} #5
+  \end{storymethodbox}
+}
+
+% ----------------------------------------------------------------------------
+% Chapter close. Use the same five-field syntax in Chapters 1--11. Chapter 12
+% may use a book-level variant. Each argument should usually be one sentence.
+% ----------------------------------------------------------------------------
+\newtcolorbox{storychapterclosebox}{
+  enhanced,
+  breakable,
+  frame hidden,
+  colback=StoryPurplePale,
+  borderline west={1.4mm}{0pt}{StoryPurple},
+  left=4mm,right=4mm,top=2.5mm,bottom=2.5mm,
+  before skip=10pt,after skip=8pt
+}
+
+\NewDocumentCommand{\chapterclose}{m+m+m+m+m}{%
+  \begin{storychapterclosebox}
+  \noindent\textcolor{StoryPurple}{\textbfs{Question answered.}} #1\par\smallskip
+  \noindent\textcolor{StoryPurple}{\textbfs{Learned object.}} #2\par\smallskip
+  \noindent\textcolor{StoryPurple}{\textbfs{Tractable signal.}} #3\par\smallskip
+  \noindent\textcolor{StoryPurple}{\textbfs{How generation works.}} #4\par\smallskip
+  \noindent\textcolor{StoryPurple}{\textbfs{Bridge.}} #5
+  \end{storychapterclosebox}
+}
+
+% ----------------------------------------------------------------------------
+% Optional reading marker. Use at the beginning of an optional section to state
+% exactly what a first-time reader may skip and what conceptual fact remains.
+% ----------------------------------------------------------------------------
+\NewDocumentCommand{\optionalroute}{m+m}{%
+  \par\smallskip
+  \noindent\textcolor{StoryWarm}{\textbfs{Optional route.}} #1
+  \space\textbfs{Keep in mind:} #2
+  \par\smallskip
+}
+
+% ----------------------------------------------------------------------------
+% Recommended semantic color contract for newly revised figures:
+%   gray   : fixed data/reference distribution or background geometry
+%   blue   : learned local object (score, denoiser, velocity, classifier signal)
+%   green  : tractable conditional target or observed supervision
+%   red    : inaccessible marginal/oracle target
+%   purple : numerical approximation or learned finite-time flow map
+% Do not reuse a color for a different mathematical role in another chapter.
+% -----------------------------------------------------------------------------

@@ -1,0 +1,63 @@
+\vspace*{\fill}  % push content down
+
+\begin{figure}[ht!]
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  box/.style = {draw, rounded corners, minimum width=3.6cm, minimum height=1.5cm, align=center},
+  model/.style = {draw, fill=gray!10, minimum width=3.5cm, minimum height=1cm, align=center},
+  arrow/.style = {ultra thick, -{Stealth[length=4mm, width=4mm]}}
+  ]
+
+
+  
+% 2nd layer: Origin
+\node[box] (vae) {Variational \\Autoencoder};
+\node[box, right=1.2cm of vae] (ebm) {Energy-Based Model};
+\node[box, right=1.2cm of ebm] (flow) {Normalizing Flows};
+
+% Box around diffusion models
+\node[draw, rounded corners, minimum width=13.6cm, minimum height=1.0cm, thick, above=3.5cm of ebm, label=above:{\parbox{5cm}{ \centering {Chapter}~\ref{ch:overview-dgm} 
+ }}] (dgm) {Overview of Deep Generative Modeling};
+ 
+% Top layer: Origin
+\node[model, above=1.5cm of vae] (variational-based) {\large\textbfs{Variational View}};
+\node[model, above=1.5cm of ebm] (score-based) {\large\textbfs{Score-Based View}};
+\node[model, above=1.5cm of flow] (flow-based) {\large\textbfs{Flow-Based View}};
+
+% Bottom layer: Diffusion Models
+\node[box, below=2.2cm of vae] (ddpm) {Denoising Diffusion\\Probabilistic Model\\ (DDPM)};
+\node[box, below=2.2cm of ebm] (score) {Noise Conditional\\Score Network \\(NCSN)};
+\node[box, below=2.2cm of flow] (gfm) {Gaussian\\Flow Matching};
+
+% Draw arrows
+\draw[arrow] (vae.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {Chapter~\ref{ch:variational}}}} (ddpm.north);
+
+\draw[arrow] (ebm.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {Chapter}~\ref{ch:score-based}}} (score.north);
+
+\draw[arrow] (flow.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {Chapter}~\ref{ch:flow-based}}} (gfm.north);
+
+\node[box, below=2cm of score] (scoresde) { Continuous-Time Formulation \\ (e.g., Score SDE) \\ \small {Chapter}~\ref{ch:score-sde}};
+
+% Box around diffusion models
+\node[draw, rounded corners, thick, fit={(ddpm) (score) (gfm) (scoresde)}, inner sep=0.3cm, label=below:{\parbox{5cm}{\centering\textbfs{\\ \large Unifying Principles}  \\ \vspace{0.2cm}\small {Chapter}~\ref{ch:all-equivalent} 
+\begin{itemize}
+    \item Conditional Strategy
+    \item Fokker-Planck Equation
+\end{itemize} }}] (box) {};
+
+
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (ddpm.south) -- ++(0,-0.4) -- ([xshift=-1.0cm]scoresde.north);
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (score.south) -- ++(0,-0.4) -- (scoresde.north);
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (gfm.south) -- ++(0,-0.4) -- ([xshift=1.0cm]scoresde.north);
+
+% Add labels
+\node[align=center, left=0.5cm of box, yshift=8.3cm] {\rotatebox{90}{\textbfs{\large{Perspective}}}};
+\node[align=center, left=0.5cm of box, yshift=5.5cm] {\rotatebox{90}{\textbfs{\large{Origin}}}};
+\node[align=center, left=0.5cm of box] {\rotatebox{90}{\textbfs{\large{Diffusion Model}}}};
+\end{tikzpicture}
+ % end resizebox
+    }
+\end{center}
+\end{figure}
+

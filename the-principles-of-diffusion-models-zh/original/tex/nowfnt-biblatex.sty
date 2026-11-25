@@ -1,0 +1,173 @@
+%% $UFDate: $
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{nowfnt-biblatex}
+          [2020/09/04 v1.1e biblatex styling]
+%A copy of now-biblatex.sty. Try to keep in sync
+% 30.01.2018 changed extrayear to extraday.
+% 18.08.2020 switch numeric to ieee style.
+% disable adaption for numeric style.
+% 20221013-MC ,maxcitenames=1,mincitenames=1  added to execute options for numeric style
+%
+
+\ifdefstring\nowfnt@journalbibstyle{numeric}
+ {\RequirePackage[backend=biber,
+                citestyle=ieee,bibstyle=now-ieee,isbn=false,
+               dashed=false,natbib=true,giveninits,uniquename=false,uniquelist=false,maxcitenames=1,mincitenames=1 ]{biblatex}}
+ {\RequirePackage[backend=biber,
+                style=authoryear,
+               dashed=false,natbib=true,giveninits,uniquename=false,uniquelist=false,maxcitenames=2]{biblatex}
+ }
+\RequirePackage[autostyle]{csquotes}
+\patchcmd{\bibsetup}{\interlinepenalty=5000}{\interlinepenalty=10000}{}{} %no pagebreak in reference
+\defbibheading{bibliography}[References]{%
+    \chapter*{#1}%
+    \addcontentsline{toc}{chapter}{#1}%
+    \markboth{\MakeUppercase{#1}}{\MakeUppercase{#1}}}
+
+\DeclareSourcemap{
+    \maps{
+        \map[overwrite]{%
+           \step[fieldset=note,null]%
+         }%
+        }
+    }
+
+
+%\ifdefstring\nowfnt@journalbibstyle{numeric}
+% {%
+%  \AtEveryBibitem{\clearfield{extradate}}%
+%  \DeclareFieldFormat{labelnumberwidth}{\mkbibbrackets{#1}}
+%  \defbibenvironment{bibliography}  % from numeric.bbx
+%  {\list
+%    {\printtext[labelnumberwidth]{%
+%      \printfield{prefixnumber}%
+%      \printfield{labelnumber}}}
+%    {\setlength{\labelwidth}{\labelnumberwidth}%
+%        \setlength{\leftmargin}{\labelwidth}%
+%        \setlength{\labelsep}{\biblabelsep}%
+%        \addtolength{\leftmargin}{\labelsep}%
+%        \setlength{\itemsep}{\bibitemsep}%
+%        \setlength{\parsep}{\bibparsep}}%
+%        \renewcommand*{\makelabel}[1]{\hss##1}}
+%  {\endlist}
+%  {\item}
+%  }{}
+
+\DefineBibliographyStrings{english}{%
+  urlseen = {accessed on},
+}
+
+\urlstyle{same}
+
+\bibitemsep\parskip
+
+%For fiddling with twocolumn breaks:
+
+\newcommand\breakbibliographyafter[1]{%%
+  \ifcsname raggedend\endcsname \raggedend\fi
+  \renewbibmacro{finentry}{%
+   \iffieldequalstr{entrykey}{#1}%<- key after which you want the break
+    {\finentry\pagebreak}
+    {\finentry}}}
+
+\ExecuteBibliographyOptions{maxbibnames=99}
+\ExecuteBibliographyOptions[proceedings]{useeditor=false}
+
+\ifdefstring\nowfnt@journalbibstyle{numeric}{\endinput}{}
+
+\DeclareFieldFormat{series}{\mkbibemph{#1}}% publication series
+\DeclareFieldFormat[misc,report]{title}{\mkbibquote{#1\isdot}}
+\DeclareFieldFormat{type}{\ifbibstring{#1}{\mkbibemph{\bibstring{#1}}}{\mkbibemph{#1}}}
+
+\DeclareFieldFormat{number}{No\adddot~#1}% number in a series
+
+%dot after series:
+\renewbibmacro*{series+number}{%
+  \printfield{series}%
+  \setunit*{\adddot\addspace}%
+  \printfield{number}%
+  \newunit}
+
+\renewbibmacro*{date+extradate}{%
+    \iffieldundef{\thefield{datelabelsource}year}
+      {}
+      {\setunit{\addperiod\space}
+       \printtext[parens]{%
+         \iffieldsequal{year}{\thefield{datelabelsource}year}
+           {\ifcsname printdateextralabel\endcsname
+             \printdateextralabel
+            \else
+             \printlabeldateextra
+            \fi  }%
+           {\printfield{labelyear}%
+            \printfield{extradate}}}}}%
+  \renewbibmacro*{date}{}%
+  \renewbibmacro*{issue+date}{%
+    \iffieldundef{issue}
+      {}
+      {\printtext[parens]{\printfield{issue}}}%
+    \newunit}
+
+\renewbibmacro*{name:andothers}{%
+  \ifboolexpr{
+    test {\ifnumequal{\value{listcount}}{\value{liststop}}}
+    and
+    test \ifmorenames
+  }
+    {\ifnumgreater{\value{liststop}}{1}
+       {\finalandcomma}
+       {}%
+     \andothersdelim\bibstring[\emph]{andothers}}
+    {}}
+
+
+\renewcommand*{\bibpagespunct}{\adddot\space}
+% article:
+%: before pages
+% no in:
+\renewbibmacro*{in:}{%
+  \ifentrytype{article}{}{%
+  \printtext{%
+    \bibstring{in}\intitlepunct}}}
+
+\renewbibmacro*{journal+issuetitle}{%
+  \usebibmacro{journal}%
+  \newunit
+  \iffieldundef{series}
+    {}
+    {\newunit
+     \printfield{series}%
+     \setunit{\addspace}}%
+  \usebibmacro{volume+number+eid}%
+  \setunit{\addcolon\space}
+  \printfield{pages}
+  \newunit}
+
+\DeclareFieldFormat{monthparens}{\mkbibparens{\mkbibmonth{#1}}}
+
+% volume + number or issue or month. No dot before number:
+\renewbibmacro*{volume+number+eid}{%
+  \printfield{volume}%
+  \iffieldundef{number}
+   {\iffieldundef{issue}
+     {\iffieldundef{month}
+      {}
+      {\iffieldundef{volume}
+       {\printfield[month]{month}}
+       {\bibsentence\printfield[monthparens]{month}}}}%
+     {\printfield[parens]{issue}}%
+   }
+   {\printfield[parens]{number}}%
+   \setunit{\addcomma\space}%
+   \printfield{eid}}
+
+
+\renewbibmacro*{note+pages}{%
+  \printfield{note}%
+  \newunit
+  }
+
+\DeclareFieldFormat{pages}{#1}
+
+
+\endinput

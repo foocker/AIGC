@@ -1,0 +1,710 @@
+\chapter{扩散模型背后的数学：Itô微积分与Girsanov定理}\label{app:Ito}
+
+
+（基于分数）扩散模型基于 SDE 构建：推动状态的漂移和使状态抖动的布朗项。与 ODE 路径不同，布朗路径不可微分，因此普通链式法则失败。在本节中，我们介绍两个使数学精确的基本工具：
+\begin{itemize}
+\item \textbfs{It\^o的公式} 是随机轨迹的正确链式法则。它告诉我们一个函数如何 $\rvh(\rvx_t,t)$ 进化时 $\rvx_t$ 遵循 SDE。它可以推导福克-普朗克方程、矩的演化、It\^o 产品规则，以及基于分数的训练中使用的恒等式。
+\item \textbfs{吉尔萨诺夫定理} 是测量结果的变化 \emph{路径概率}。它量化了当噪声固定但漂移改变时可能性如何变化。这将似然加权分数匹配与路径空间 KL 散度联系起来，并通过变分界限与数据似然联系起来。
+\end{itemize}
+
+使用这些工具，标准扩散模型推导（福克-普朗克、逆时 SDE、训练目标和似然关系）可以清晰地进行，无需依赖非严格的论证。
+
+\chapterlearning{
+  \item 理解为什么普通微积分对于 SDE 是不够的，以及它是如何实现的\^o 的公式给出了随机轨迹的正确链式法则；
+
+  \item 看看怎么样\^o 的公式在重要的扩散模型推导的幕后工作，包括 Fokker-Planck 方程和线性 SDE；
+
+  \item 将吉尔萨诺夫定理理解为一种比较随机路径在漂移不同但扩散相同时的概率的方法；
+
+  \item 区分每次匹配分布与匹配完整随机路径，并了解为什么似然加权分数匹配与路径空间 KL 散度和数据似然相关。
+}{
+本附录开发了一些在扩散模型幕后运行的数学工具。它\^微积分使随机微分变得精确，而吉尔萨诺夫定理则解释了改变漂移如何改变整个随机路径的概率。这些工具是几个标准扩散模型推导的基础，这些推导经常被使用而没有明确显示。
+}
+
+\newpage
+
+
+\section{It\^o 的公式：随机过程的链式法则}
+标准微积分并不直接应用于随机过程，因为维纳过程在经典意义上是不可微的。相反，我们使用It\^o 的微积分，它提供了处理随机积分的规则。 
+
+\subsection{动机：为什么我们需要特殊的链式法则？}
+考虑确定性时变函数 $\rvy_t$ 随着时间的推移平稳发展 $t$ （例如，ODE）。如果我们有一个函数 $\rvh(\rvy_t, t)$，通常的链式法则告诉我们：
+\[
+\frac{\diff \rvh}{\diff t} = \frac{\partial \rvh}{\partial t}  + \nabla_{\rvy}\rvh  \frac{\diff \rvy_t}{\diff t} .
+\]
+在这里， $\nabla_{\rvy}\rvh$ 是雅可比行列式 $\rvh$。这非常适合确定性路径 $\rvy_t$.
+
+\begin{question}
+    但是如果 $\rvx_t$ 是一个随机过程，例如由 SDE 驱动 
+\[
+\diff \rvx_t = \rvf(\rvx_t, t)\diff t + g(t) \diff \rvw_t
+\]
+如 \Cref{eq:sde}？ SDE的流程是什么 $\rvh(\rvx_t, t)$ 满意吗？
+\end{question}
+
+\paragraph{为什么普通链式法则失败？}
+天真地应用经典链式法则会产生
+\[
+\diff \rvh = \frac{\partial \rvh}{\partial t} \diff t + \nabla_{\rvy}\rvh  \cdot \diff \rvx_t.
+\]
+但是，布朗增量按比例缩放
+$\mathcal{O}(\sqrt{\diff t})$，而它们的二次变分被编码在 It 中\^o 微积分
+\[
+(\diff \rvw_t)^2 = \diff t.
+\]
+因此，二阶项 $\diff \rvw_t$ \textit{不} 在随机微积分中消失，与经典微积分不同 $(\diff t)^2$ 项可以忽略不计。
+
+\exm{简单示例--$h(x_t) = x_t^2$}{
+为了直观，让我们考虑简单的实值函数 $h(x_t) = x_t^2 \in \mathbb{R}$ 其中随机变量 $x_t \in \mathbb{R}$ 满足
+\[
+\diff x_t = \sigma \diff w_t, \quad
+x_0=0,
+\]
+具有常数 $\sigma>0$。如果我们尝试经典的链式法则，
+\[
+\diff h = 2 x_t \diff x_t = 2 x_t \sigma \diff w_t.
+\]
+如果这是真的，则期望 $h(x_t)$ 在时间上是恒定的，因为 
+\[
+\mathbb{E}[\diff h ] =  2 \sigma \mathbb{E}[x_t  \diff w_t]= 2 \sigma \mathbb{E}[x_t]  \underbrace{\mathbb{E}[\diff w_t]}_{=0}=0.
+\]
+但是我们从经典布朗运动属性中知道（参见 \Cref{eq:wiener-gaussian}）
+\[
+\mathbb{E}[x_t^2] = \sigma^2 t,
+\]
+随时间线性增长。所以普通的链式法则遗漏了一个重要的术语。
+}
+
+
+\subsection{由泰勒展开推导一维It\^o公式}\label{subsec:1D-Ito}
+
+\paragraph{通过泰勒展开式确定性链式法则。}
+为了理解为什么经典链式法则对于 SDE 定义的随机过程失败，我们首先使用泰勒展开在确定性设置中重新审视它。我们考虑标量情况： $y_t \in \mathbb{R}$ 和 $h(\cdot,\cdot)\in \mathbb{R}$。正式治疗 $\diff y_t = y_{t+\diff t} - y_t$，与 $\diff t \approx 0$，我们扩展：
+\begin{align*}
+&h(y_{t+\diff t}, t+\diff t) 
+- h(y_t, t) \\
+= ~&\frac{\partial h}{\partial t} \diff t
++ \frac{\partial h}{\partial y} \diff y_t  + \frac{1}{2} \left(\textcolor{gray}{\frac{\partial^2 h}{\partial y^2}  (\diff y_t)^2}
++ 2 \textcolor{gray}{\frac{\partial^2 h}{\partial t \partial y} \diff t \diff y_t}
++  \textcolor{gray}{\frac{\partial^2 h}{\partial t^2} (\diff t)^2}
+\right)
++ \mathcal{O}(\diff t^3),
+\end{align*}
+在这里， $\diff t \diff y_t = \left(\frac{\diff y_t}{\diff t}\right)(\diff t)^2 = \mathcal{O}(\diff t^2)$，类似地 $(\diff t)^2 = \mathcal{O}(\diff t^2)$。因此，所有灰色部分都可以忽略，完整的微分为：
+\[
+\diff h
+= \frac{\partial h}{\partial t} \diff t
++ \frac{\partial h}{\partial y} \diff y_t
++ \mathcal{O}(\diff t^2).
+\]
+
+
+\paragraph{It\^o 的随机泰勒展开式公式。}
+现在考虑随机过程 $x_t \in \mathbb{R}$ 受上海证券交易所管辖：
+\[
+\diff x_t = f(x_t, t) \diff t + g(t) \diff w_t,
+\]
+哪里 $w_t$ 是标准布朗运动。我们的目标是计算标量值函数的微分 $h(x_t, t)$。使用随机泰勒展开式~\citep{kloeden1992stochastic}，保留二阶项 $\diff x_t$，我们有：
+\begin{align*}
+&h(x_{t+\diff t}, t+\diff t) 
+- h(x_t, t) \\
+=~&\frac{\partial h}{\partial t} \diff t 
++ \frac{\partial h}{\partial x} \diff x_t 
++ \frac{1}{2} \left( \frac{\partial^2 h}{\partial x^2} (\diff x_t)^2 
++ 2\textcolor{gray}{{\frac{\partial^2 h}{\partial t \partial x} \diff t \diff x_t}} 
++ \textcolor{gray}{{ \frac{\partial^2 h}{\partial t^2} (\diff t)^2}} \right)
++ \cdots
+\end{align*}
+\subparagraph{可忽略的交叉项。}
+通过布朗运动的标度性质（\Cref{eq:wiener-gaussian}), 
+\[
+\diff w_t = \mathcal{O}(\sqrt{\diff t}) \quad \Rightarrow \quad \diff t \cdot \diff w_t = \mathcal{O}((\diff t)^{3/2}).
+\]
+因此，
+\begin{align*}
+\diff t \cdot \diff x_t 
+&= \diff t \left(f \diff t + g \diff w_t\right) 
+= f (\diff t)^2 + g \cdot \diff t \cdot \diff w_t 
+= \mathcal{O}((\diff t)^{3/2}).
+\end{align*}
+所以，灰色项可以忽略不计： $ \mathcal{O}((\diff t)^{3/2}) $ 或更小。
+\subparagraph{二阶项 $(\diff x_t)^2$.}
+使用 SDE 扩展：
+\begin{align*}
+(\diff x_t)^2 
+&= \left( f \diff t + g \diff w_t \right)^2 \\
+&= f^2 (\diff t)^2 + 2fg \diff t \diff w_t + g^2 (\diff w_t)^2 \\
+&= g^2(t) \diff t,
+\end{align*}
+最后一个等式使用 It\^o 微分规则
+$(\diff t)^2=0$, $\diff t\,\diff w_t=0$, 和
+$(\diff w_t)^2=\diff t$，最后一个恒等式在二次变分意义上被理解。
+
+结合各项，我们得到微分：
+\[
+\diff h(x_t, t)
+= \frac{\partial h}{\partial t} \diff t
++ \frac{\partial h}{\partial x} \diff x_t
++ \frac{1}{2} \frac{\partial^2 h}{\partial x^2} g^2(t) \diff t.
+\]
+替换 $ \diff x_t = f(x_t, t) \diff t + g(t) \diff w_t $ 产量：
+\[
+\diff h(x_t, t)
+= \left( \frac{\partial h}{\partial t} + f \frac{\partial h}{\partial x}
++ \frac{1}{2} g^2 \frac{\partial^2 h}{\partial x^2} \right) \diff t
++ g \frac{\partial h}{\partial x} \diff w_t.
+\]
+这是 1D 版本 \emph{It\^o的公式}.
+
+
+\exm{简单示例--$h(x_t) = x_t^2$}{
+我们回顾一下这个简单的例子： $ h(x_t) = x_t^2 $，其中随机过程 $ x_t \in \mathbb{R} $ 满足
+\[
+\diff x_t = \sigma \diff w_t,
+\]
+具有常数 $ \sigma > 0 $。应用It\^o的公式正确为 $ h(x_t) = x_t^2 $，我们得到：
+\[
+\diff h(x_t) = \diff (x_t^2) = 2 x_t \diff x_t + \sigma^2 \diff t.
+\]
+替换 $ \diff x_t = \sigma \diff w_t $，这变成：
+\[
+\diff(x_t^2) = 2 x_t \sigma \diff w_t + \sigma^2 \diff t.
+\]
+}
+
+\subsection{It\^o 的公式：SDE 的链式法则}
+\label{subsec:ito-summary}
+我们总结一维It\^上面导出的 o 公式。使用类似的参数，结果自然地扩展到多维设置。虽然我们省略了详细的推导过程，但我们给出了完整性的通用公式。最后我们来说明一下它的一个应用\^通过推导o的公式 \emph{It\^o产品规则}，可以计算 $\diff(\rvx_t^\top \rvy_t)$ 用于随机过程 $\rvx_t$ 和 $\rvy_t$.
+
+\paragraph{$1$D It\^o 的公式。}
+让 $x_t \in \mathbb{R}$ 是满足 SDE 的随机过程：
+\[
+\diff x_t = f(x_t, t) \diff t + g(t) \diff w_t.
+\]
+对于标量函数 $h \colon \mathbb{R} \times [0, T] \to \mathbb{R}$，过程 $h(x_t, t)$ 满足：
+\begin{mdframed}
+\[
+\diff h(x_t, t)
+= \left( \frac{\partial h}{\partial t} + f \frac{\partial h}{\partial x}
++ \frac{1}{2} g^2 \frac{\partial^2 h}{\partial x^2} \right) \diff t
++ g \frac{\partial h}{\partial x} \diff w_t.
+\]
+\end{mdframed}
+
+
+\paragraph{多维它\^带有标量输出的 o 公式。}
+让 $\rvx_t \in \mathbb{R}^D$ 满足SDE：
+\[
+\diff \rvx_t = \rvf(\rvx_t, t) \diff t + g(t) \diff \rvw_t,
+\]
+哪里 $\rvf \colon \mathbb{R}^D \times [0, T] \to \mathbb{R}^D$, $g \colon [0, T] \to \mathbb{R}$, 和 $\rvw_t \in \mathbb{R}^D$ 是一个 $D$维布朗运动。让 $h \colon \mathbb{R}^D \times [0, T] \to \mathbb{R}$ 是标量值函数。然后 $h(\rvx_t, t)$ 满足：
+\begin{mdframed}
+\begin{align}\label{eq:Ito-scalar}
+    \diff h(\rvx_t, t)
+= \left( \frac{\partial h}{\partial t}
++ \nabla_{\rvx} h^\top \rvf
++ \frac{1}{2} g^2(t) \operatorname{Tr} \left( \nabla^2_{\rvx} h \right) \right) \diff t
++ g(t) \nabla_{\rvx} h^\top \diff \rvw_t,
+\end{align}
+\end{mdframed}
+哪里 $\nabla_{\rvx} h \in \mathbb{R}^D$ 是梯度和 $\nabla^2_{\rvx} h \in \mathbb{R}^{D \times D}$ 是 Hessian 矩阵 $h$ 相对于 $\rvx$.
+
+
+\exm{It\^o 的乘积规则}{
+让 $\rvx_t, \rvy_t \in \mathbb{R}^D$ 是由 SDE 控制的向量值随机过程：
+\[
+\begin{aligned}
+\diff \rvx_t &= \rva(\rvx_t, t) \diff t + b(t) \diff \rvw_t, \\
+\diff \rvy_t &= \rvc(\rvy_t, t) \diff t + d(t) \diff \rvw_t,
+\end{aligned}
+\]
+哪里 $\rva, \rvc: \mathbb{R}^D \times [0, T] \to \mathbb{R}^D$ 是向量场，并且 $b(t), d(t) \in \mathbb{R}$ 是标量值函数。在这里， $\rvw_t \in \mathbb{R}^D$ 表示标准 $D$维布朗运动。我们的目标是导出标量过程的 SDE
+\[
+z(t) := \rvx_t^\top \rvy_t.
+\]
+
+应用多元 It\^o 双线性函数的公式 $h(\rvx, \rvy) := \rvx^\top \rvy$，我们得到：
+\[
+\diff(\rvx^\top \rvy) = (\diff \rvx)^\top \rvy + \rvx^\top \diff \rvy + \Tr\left[ \diff \rvx \cdot (\diff \rvy)^\top \right].
+\]
+
+It\^o 修正项计算如下：
+\begin{align*}
+    \diff \rvx \cdot (\diff \rvy)^\top &= b(t) \diff \rvw_t \cdot \left[ d(t) \diff \rvw_t \right]^\top \\&= b(t) d(t) \diff \rvw_t \cdot \diff \rvw_t^\top \\&= b(t)d(t) \diff t \cdot \rmI_D.
+\end{align*}
+因此，
+\[
+\Tr\left[ \diff \rvx \cdot (\diff \rvy)^\top \right] = b(t)d(t) \Tr(\rmI_D) \diff t = D  b(t)d(t) \diff t.
+\]
+
+将所有内容放在一起，生成的 SDE 为：
+\begin{align}\label{eq:ito-product}
+\begin{aligned}
+        \diff(\rvx^\top \rvy) &= (\diff \rvx)^\top \rvy + \rvx^\top \diff \rvy + D  b(t)d(t) \diff t
+    % \\ &=\rva^\top \rvy \diff t + b(t) \rvy^\top \diff \rvw_t + \rvx^\top \rvc \diff t + d(t) \rvx^\top \diff \rvw_t + D  b(t)d(t) \diff t.
+\end{aligned}
+\end{align}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{It\^o公式的应用：福克-普朗克方程的推导}\label{subsec:rigorous-proof-fpe}
+在本节中，我们应用It\^o 的公式来自 \Cref{eq:Ito-scalar} 导出 Fokker-Planck 方程，这是一个表征概率密度随时间演化的偏微分方程 $ p_t(\rvx) $ 与 $ D $由 SDE 定义的维扩散过程 \Cref{eq:sde}.
+
+\paragraph{第 1 步：应用\^o 的公式。}
+让 $\phi(\rvx, t)$ 是一个流畅的测试功能 $\phi \colon \mathbb{R}^D \times [0, T] \to \mathbb{R}$。靠It\^o 的公式：
+\[
+\diff \phi(\rvx_t, t) = \left( \frac{\partial \phi}{\partial t} + \nabla_{\rvx} \phi^\top \rvf(\rvx_t, t) + \frac{1}{2} g^2(t) \Tr[\nabla_{\rvx}^2 \phi] \right) \diff t + g(t) \nabla_{\rvx} \phi^\top \diff \rvw_t.
+\]
+\paragraph{第 2 步：获取期望。}
+获取期望并使用It\^o 在标准可积条件下积分的期望为零：
+\[
+\mathbb{E}[\diff \phi(\rvx_t, t)] = \mathbb{E} \left[ \left( \frac{\partial \phi}{\partial t} + \nabla_{\rvx} \phi^\top \rvf(\rvx_t, t) + \frac{1}{2} g^2(t) \Tr[\nabla_{\rvx}^2 \phi] \right) \diff t \right].
+\]
+\paragraph{第 3 步：通过密度表达期望。}
+这个期望可以写成：
+\[
+\mathbb{E}[\diff \phi(\rvx_t, t)] = \int \left( \frac{\partial \phi}{\partial t} + \nabla_{\rvx} \phi^\top \rvf(\rvx, t) + \frac{1}{2} g^2(t) \Tr[\nabla_{\rvx}^2 \phi] \right) p_t(\rvx) \diff \rvx \diff t.
+\]
+\paragraph{第 4 步：分部分集成。}
+使用分部积分（发散定理） $\mathbb{R}^D$:
+\begin{align*}
+    \int \nabla_{\rvx} \phi^\top \rvf p_t \diff \rvx &= -\int \phi \nabla_{\rvx} \cdot (\rvf p_t) \diff \rvx, \\
+    \int \Tr[\nabla_{\rvx}^2 \phi] p_t  \diff \rvx &= \int \phi \Delta p_t \diff \rvx.
+\end{align*}
+\paragraph{第 5 步：替换并重新排列。}
+请注意
+\[
+\mathbb{E}[\phi(\rvx_t,t)] = \int \phi(\rvx,t) p_t(\rvx) \diff\rvx.
+\]
+对时间微分，我们有
+\[
+\frac{\diff}{\diff t}\mathbb{E}[\phi(\rvx_t,t)]
+= \frac{\diff}{\diff t}\int \phi(\rvx,t) p_t(\rvx) \diff\rvx
+= \int\Bigl(\partial_t\phi(\rvx,t) p_t(\rvx) + \phi(\rvx,t) \partial_t p_t(\rvx)\Bigr)\diff\rvx.
+\]
+因此，
+\[
+\mathbb{E}[\diff \phi(\rvx_t,t)]
+= \frac{\diff}{\diff t}\mathbb{E}[\phi(\rvx_t,t)] \diff t
+= \int\Bigl(\partial_t\phi(\rvx,t) p_t(\rvx) + \phi(\rvx,t) \partial_t p_t(\rvx)\Bigr)\diff\rvx \diff t.
+\]
+将此表达式与 Step 等同~3、条款
+$\int \partial_t\phi\,p_t\,\diff\rvx\,\diff t$ 取消。申请步骤~4 剩下的空间项给出
+\[
+\int
+\phi(\rvx,t)
+\left[
+\frac{\partial p_t}{\partial t}
++
+\nabla_{\rvx}\cdot\bigl(\rvf(\rvx,t)p_t(\rvx)\bigr)
+-
+\frac{1}{2}g^2(t)\Delta p_t(\rvx)
+\right]
+\diff\rvx
+=
+0.
+\]
+因为这适用于每个平滑测试函数 $\phi$，我们得到福克-普朗克方程
+\[
+\frac{\partial p_t(\rvx)}{\partial t}
+=
+-\nabla_{\rvx}\cdot\bigl(\rvf(\rvx,t)p_t(\rvx)\bigr)
++
+\frac{1}{2}g^2(t)\Delta p_t(\rvx).
+\]
+
+\subsection{It\^o 的公式应用：线性 SDE 的闭式解}\label{subsec:rigorous-proof-linear-sde}
+本小节演示如何通过使用积分因子（类似于 ODE 情况）和 It 来获得线性 SDE 的封闭式解\^o的公式。该方法反映了求解线性常微分方程的经典技术，但适应了随机设置。我们考虑以下形式的线性 SDE
+\begin{align}\label{eq:app-linear-sde}
+    \mathrm{d}\rvx_t = f(t)\rvx_t \mathrm{d}t + g(t) \mathrm{d}\rvw_t,
+\end{align}
+哪里 $f(t)$ 和 $g(t)$ 是确定性函数并且 $\rvw_t$ 是标准维纳过程。 
+\paragraph{线性 SDE 的闭式解。} 我们推导出线性 SDE 的显式解 \Cref{eq:app-linear-sde} 采用因子积分法。这种类型的正向 SDE 通常出现在扩散模型中（参见 \Cref{sec:dm-today}).
+
+
+\subparagraph{步骤 1：定义积分因子。} 让
+\[
+\Psi(t) := \exp\left( -\int_0^t f(s) \mathrm{d}s \right),
+\quad \text{and define} \quad
+\rvy_t := \Psi(t)\rvx_t.
+\]
+\subparagraph{第 2 步：应用\^o 的公式。}  
+我们应用It\^o 的函数公式 $\rvh(\rvx, t) := \Psi(t)\rvx$。这实际上是It的一个特例\^o 产品规则 \Cref{eq:ito-product}。自从 $\Psi(t)$ 是确定性的，没有交叉变分项，公式简化为：
+\begin{align*}
+    \mathrm{d}\rvy_t 
+    &= \mathrm{d}[\Psi(t)\rvx_t] \\
+    &= \Psi'(t)\rvx_t \mathrm{d}t + \Psi(t) \mathrm{d}\rvx_t \\
+    &= -f(t)\Psi(t)\rvx_t \mathrm{d}t + \Psi(t)\left[f(t)\rvx_t \mathrm{d}t + g(t) \mathrm{d}\rvw_t\right] \\
+    &= \Psi(t)g(t) \mathrm{d}\rvw_t.
+\end{align*}
+因此，
+\[
+\rvy_t = \rvy_0 + \int_0^t \Psi(s)g(s) \mathrm{d}\rvw(s) = \rvx_0 + \int_0^t \Psi(s)g(s) \mathrm{d}\rvw(s),
+\]
+自 $\Psi(0) = 1$.
+\subparagraph{第 3 步：求解 $\rvx_t$.}  
+使用 $\rvx_t = \Psi(t)^{-1}\rvy_t$，我们得到
+\begin{align}\label{eq:lienar-sde-solution}
+    \rvx_t &=  e^{ \int_0^t f(s)\mathrm{d}s}
+    \left[ \rvx_0 + \int_0^t e^{ -\int_0^s f(r) \mathrm{d}r } g(s) \mathrm{d}\rvw(s) \right].
+\end{align}
+这为向量值 SDE 提供了显式解。下面，我们演示了两种计算解析形式的替代方法 $p_t(\rvx_t|\rvx_0)$.\paragraph{ 闭式解的分析。} \Cref{eq:lienar-sde-solution} 再次确认 $p_t(\rvx_t|\rvx_0)$ 是高斯的。要看到这一点，定义
+\[
+\phi(s) := e^{-\int_0^s f(u) \diff u} g(s),
+\]
+这是时间的确定性矩阵值函数（假设 $f(u)$ 和 $g(s)$ 是确定性的）。 It\^o 积分 $\int_0^t \phi(s) \diff \rvw_s$ 是一个零均值高斯随机变量，因为它是确定性函数关于布朗运动的随机积分。因此，$\rvx_t|\rvx_0$ 是高斯随机变量的仿射变换，因此本身也是高斯的。其分布完全由其条件均值和协方差来表征。
+
+我们将条件均值和协方差（给定初始条件 $\rvx_0$）定义为
+\[
+\rvm(t) := \mathbb{E}[\rvx_t | \rvx_0], \quad \rmP(t) := \mathbb{E}[(\rvx_t - \rvm(t))(\rvx_t - \rvm(t))^\top|\rvx_0].
+\]
+
+\subparagraph{意思是.}
+利用期望的线性度以及确定性函数的 It\^o 积分具有零均值这一事实：
+\begin{align*}
+    \rvm(t) = \mathbb{E}\left[ e^{\int_0^t f(s) \diff s} \left( \rvx_0 + \int_0^t \phi(s) \diff \rvw_s \right) \bigg| \rvx_0 \right] = e^{\int_0^t f(s) \diff s} \rvx_0.
+\end{align*}
+
+\subparagraph{协方差.}
+让$\rvz_t := \int_0^t \phi(s) \diff \rvw_s$。那么$\rvx_t - \rvm(t) = A(t) \rvz_t$，所以
+\[
+\rmP(t) = e^{2\int_0^t f(s) \diff s} \mathbb{E}[\rvz_t \rvz_t^\top].
+\]
+通过 It\^o 等距\footnote{It\^o 的等距将随机积分与期望中的标准积分联系起来；我们省略证明，因为它需要 It\^o 微积分的完整机制。对于过程 $\bm{\psi} : [0,T] \to \mathbb{R}^{D \times D}$，It\^o 等距状态
+\[
+\mathbb{E}\left[\left\| \int_0^T \bm{\psi}(t)   \mathrm{d}\rvw_t \right\|^2 \right]
+= \mathbb{E}\left[\int_0^T \|\bm{\psi}(t)\|_F^2   \mathrm{d}t \right],
+\]
+其中 $\|\bm{\psi}(t)\|_F^2 = \sum_{i,j=1}^D |\psi_{ij}(t)|^2$ 是弗罗贝尼乌斯范数。对于 $\bm{\psi}(t) \in \mathbb{R}^D$（向量），积分是标量，等距简化为
+\[
+\mathbb{E}\left[\left(\int_0^T \bm{\psi}(t)   \mathrm{d}\rvw_t\right)^2\right] = \mathbb{E}\left[\int_0^T \|\bm{\psi}(t)\|^2   \mathrm{d}t \right].
+\]
+}，
+\[
+\mathbb{E}[\rvz_t \rvz_t^\top] = \left( \int_0^t \phi^2(s) \diff s \right) \rmI_D,
+\]
+因此，
+\[
+\rmP(t) = e^{2\int_0^t f(s) \diff s} \left( \int_0^t \left( e^{-\int_0^s f(u) \diff u} g(s) \right)^2 \diff s \right) \rmI_D.
+\]
+这表明条件协方差是各向同性的。
+
+\paragraph{\Cref{eq:mean-var-evolution}.} 中均值和方差 ODE 的推导
+或者，我们可以直接从线性 SDE \Cref{eq:app-linear-sde} 导出矩演化方程。 
+
+
+\subparagraph{均值进化.}
+取 SDE 两边的条件期望并使用线性：
+\[
+\frac{\diff \rvm(t)}{\diff t} = \mathbb{E}[f(t) \rvx_t|\rvx_0] = f(t) \mathbb{E}[\rvx_t|\rvx_0] = f(t) \rvm(t).
+\]
+
+\vspace{0.3cm}
+
+\subparagraph{协方差演化.}
+定义居中进程 $ \tilde{\rvx}_t := \rvx_t - \rvm(t) $。应用\^o的乘积规则（参见\Cref{eq:ito-product}）：
+\[
+\diff \left( \tilde{\rvx}_t \tilde{\rvx}_t^\top \right)
+= \diff \tilde{\rvx}_t \cdot \tilde{\rvx}_t^\top 
++ \tilde{\rvx}_t \cdot \diff \tilde{\rvx}_t^\top 
++ \diff \tilde{\rvx}_t \cdot \diff \tilde{\rvx}_t^\top.
+\]
+
+根据 SDE，我们计算：
+\[
+\diff \tilde{\rvx}_t = \diff \rvx_t - \diff \rvm(t) = f(t) \tilde{\rvx}_t  \diff t + g(t)  \diff \rvw_t.
+\]
+
+代入乘积法则并取期望：
+\begin{align*}
+    \frac{\diff \rmP(t)}{\diff t}
+    &= \mathbb{E}[f(t) \tilde{\rvx}_t \tilde{\rvx}_t^\top + \tilde{\rvx}_t \tilde{\rvx}_t^\top f(t) + g^2(t) \rmI_D] \\
+    &= 2 f(t) \rmP(t) + g^2(t) \rmI_D.
+\end{align*}
+因此，我们恢复了\Cref{eq:mean-var-evolution}中的矩演化方程。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+
+\section{测度变换：扩散模型中的吉尔萨诺夫定理}
+扩散模型利用 SDE 将简单的噪声转换为丰富的数据分布。这种转变的核心在于一个深刻的想法：我们可以通过仅修改 SDE 的确定性部分（漂移）来重新解释随机性，同时保留其潜在的随机性。这正是吉尔萨诺夫定理发挥作用的地方。\paragraph{核心理念.}
+考虑一个观察到的连续轨迹，该轨迹描述了数据从时间 $t=0$ 到 $t=T$ 的演变，表示为 $\rvx_{0:T}:=\{ \rvx_t|t \in [0,T] \}$。吉尔萨诺夫定理解决了一个基本问题：
+\begin{question}
+    给定这一单一观察路径，如果我们假设它是由一个 SDE 生成的，与假设它是由另一个 SDE 生成的，那么它的可能性是多少？
+\end{question}
+我们比较生成相同轨迹的两个假设模型。他们
+具有相同的初始分布和扩散系数，但不同
+它们的确定性“推动”或漂移函数。我们假设 $\rvx_0$ 对于两个假设的生成过程具有相同的初始分布。
+
+为了建立直觉，请将 $\rvx_{0:T}$ 想象为在纸上绘制的一条摆动线。
+一种假设根据漂移 $\rvf$ 分配轨迹概率，
+而另一个使用具有相同扩散的不同漂移$\tilde{\rvf}$
+系数。吉尔萨诺夫定理比较了相应的路径测量和
+量化改变漂移如何改变分配给的相对权重
+相同的轨迹。
+
+\paragraph{设置.}
+让 $P_{\rvf}$ 和 $P_{\tilde{\rvf}}$ 表示由
+两个具有相同初始分布和相同扩散的 SDE
+系数，但漂移不同：
+\begin{align*}
+    \diff\rvx_t
+    &= \rvf(\rvx_t,t)\diff t + g(t)\diff\rvw_t,
+    \\
+    \diff\rvx_t
+    &= \tilde{\rvf}(\rvx_t,t)\diff t + g(t)\diff\rvw_t.
+\end{align*}
+为简单起见，假设感兴趣的区间为 $g(t)>0$，
+吉尔萨诺夫定理所需的标准可积条件。采取
+$P_{\tilde{\rvf}}$ 作为参考路径测量，令 $\rvw_t$ 表示
+在此参考措施下的布朗运动。定义
+\[
+\bm{\delta}_t
+:=
+\rvf(\rvx_t,t)-\tilde{\rvf}(\rvx_t,t).
+\]
+
+\paragraph{Girsanov 似然比.}
+吉尔萨诺夫定理给出了两条路径之间的 Radon-Nikodym 导数
+措施：
+\begin{mdframed}
+\[
+\frac{\diff P_{\rvf}}{\diff P_{\tilde{\rvf}}}(\rvx_{0:T})
+=
+\exp\left(
+\int_0^T
+\bm{\delta}_t^\top g(t)^{-1}\diff\rvw_t
+-
+\frac{1}{2}
+\int_0^T
+\big\|g(t)^{-1}\bm{\delta}_t\big\|^2
+\diff t
+\right).
+\]
+\end{mdframed}
+这个紧凑的公式是两个积分的指数。第一个是 It\^o 积分，第二个是标准黎曼积分。这个比率在扩散模型中至关重要，使我们能够比较
+不同的随机动力学并连接路径空间差异
+具有基于似然的训练目标。
+
+最好将吉尔萨诺夫定理理解为 \emph{measures} 的变量替换公式。正如微积分中变量的变化通过雅可比行列式转换坐标系之间的积分一样，当漂移发生变化但扩散保持不变时，吉尔萨诺夫定理提供了相应的因子（Radon-Nikodym 导数）来转换两个随机过程之间的概率或期望。
+
+
+
+
+\subsection{吉尔萨诺夫定理作为似然训练和分数匹配之间的桥梁}\label{subsec:girsanov}
+
+在了解吉尔萨诺夫定理如何关联单个概率之后
+不同漂移假设下的路径，我们现在深入研究其对
+扩散模型。回想一下扩散模型中的前向 SDE：
+\[
+\diff \rvx_t = \rvf(\rvx_t, t) \diff t + g(t) \diff \rvw_t,
+\]
+这会在整个轨迹上产生 \emph{ 路径分布 } $P$
+$\rvx_{0:T} := \{\rvx_t\}_{t=0}^T$（即过程的联合律
+整个时间间隔）。
+逆时 SDE，由可学习的分数函数参数化
+$\rvs_{\bm{\phi}}(\rvx_t, t)$，由下式给出
+\[
+\diff \rvx_t = \big[\rvf(\rvx_t, t) - g^2(t) \rvs_{\bm{\phi}}(\rvx_t, t)\big] \diff t
++ g(t) \diff \bar{\rvw}_t,
+\]
+这又定义了另一个路径分布
+$P_{\bm{\phi}}$ 超过轨迹。
+
+
+\paragraph{扩散模型中的两个概念。}
+区分两个随机过程可以在两个级别上进行区分是有用的
+同意：
+\begin{itemize}
+    \item \textbfs{概念1.边缘分布匹配：}
+    进程在每个固定位置具有相同的分布 $p_t(\rvx_t)$
+    时间 $t$。因此，他们的时间索引“快照”是一致的。
+
+    \item \textbfs{概念2.关节路径分布匹配：}
+    这些过程在整个轨迹上具有相同的概率定律。
+    这个更强烈的概念也符合不同时期的状态
+    耦合，包括它们的过渡定律和时间依赖性。
+\end{itemize}
+
+匹配全路径法则自动意味着边缘匹配，因为
+每个$p_t$都是通过将路径定律投影到时间状态上得到的
+$t$。反之通常是错误的：两个进程可以具有相同的
+每次都有边缘，同时在这些边缘之间引入不同的耦合
+边缘。 SDE 及其相关的 PF-ODE 提供了一个重要的示例：
+它们共享相同的边缘密度路径，但通常具有不同的
+样本轨迹和路径定律。
+
+
+\paragraph{Girsanov 将分数错误与路径律不匹配联系起来。}
+精确的逆时 SDE 满足上述更强的概念。下
+标准正则条件，当从确切的终端初始化时
+边缘$p_T$并配备真实分数
+$\nabla_{\rvx}\log p_t(\rvx)$，是正向的时间反转
+扩散，因此再现其完整的时间反转路径定律。
+
+让 $P^{\mathrm{rev}}$ 表示这个精确的反时路径定律，并让
+$P_{\bm{\phi}}$ 表示学习到的逆时路径定律
+用 $\rvs_{\bm{\phi}}$ 替换真实分数并从
+$p_{\mathrm{prior}}$。将路径空间 KL 分解为初始路径空间之间的不匹配
+分布和条件路径定律，并应用吉尔萨诺夫
+使用相同的方法表达两个过程后，得出后者的定理
+增加逆时时钟，给出原始扩散时间
+标签$t$，
+\begin{align}\label{eq:girsanov-KL}
+\begin{aligned}
+\mathcal{D}_{\mathrm{KL}}
+\bigl(P^{\mathrm{rev}}\|P_{\bm{\phi}}\bigr)
+=
+&\;
+\mathcal{D}_{\mathrm{KL}}
+\bigl(p_T\|p_{\mathrm{prior}}\bigr)
+\\
+&+
+\frac{1}{2}
+\int_0^T
+g^2(t)
+\E_{\rvx_t\sim p_t}
+\left[
+\left\|
+\rvs_{\bm{\phi}}(\rvx_t,t)
+-
+\nabla_{\rvx}\log p_t(\rvx_t)
+\right\|^2
+\right]
+\diff t .
+\end{aligned}
+\end{align}
+第一项衡量真实终端分布之间的不匹配
+以及用于初始化生成的先验；当它消失时
+$p_T=p_{\mathrm{prior}}$。第二项衡量累积的不匹配
+在习得的漂移和精确的反向漂移之间。因此，与特定似然权重 $g^2(t)$ 的分数匹配
+有直接的路径空间解释：最小化加权分数误差
+最小化精确的反向路径定律和学习到的反向路径定律之间的 KL 散度，
+直至固定终端分布项。当去噪分数匹配为
+使用而不是边缘分数匹配，相应的目标不同
+由与参数无关的常数。通常不同的时间加权
+不对应于相同的路径空间KL。
+
+\paragraph{与数据似然的连接.}
+路径空间 KL 还控制生成的和
+数据边缘。由于轨迹的端点是可测量的
+预测和 KL 散度在边缘化下不会增加，
+\begin{align}\label{eq:girsanov-likelihood}
+\mathcal{D}_{\mathrm{KL}}
+\bigl(p_{\mathrm{data}}\|p_{\bm{\phi}}\bigr)
+\leq
+\mathcal{D}_{\mathrm{KL}}
+\bigl(P^{\mathrm{rev}}\|P_{\bm{\phi}}\bigr),
+\end{align}
+其中 $p_{\bm{\phi}}$ 表示数据时间生成的边缘。
+
+将此与 \Cref{eq:girsanov-KL} 相结合表明，似然加权
+分数匹配与终端分布不匹配一起提供
+数据侧 KL 散度的上限，因此也是预期的上限
+负对数似然达到独立于 $\bm{\phi}$ 的常数
+\citep{song2021maximum}。

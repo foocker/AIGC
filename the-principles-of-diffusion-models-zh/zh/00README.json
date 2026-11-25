@@ -1,0 +1,41 @@
+{
+   "sources" : [
+      {
+         "usage" : "toplevel",
+         "filename" : "main_v2.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "NOWFnT-data.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "main_v2.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "main_v2.bib"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "now-ieee.bbx"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "nowfnt-biblatex.sty"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "nowfnt.cls"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "nowfntsort.bst"
+      }
+   ],
+   "spec_version" : 1,
+   "texlive_version" : "2025",
+   "process" : {
+      "compiler" : "pdflatex"
+   }
+}

@@ -1,0 +1,89 @@
+\chapter*{符号说明}
+\markboth{\sffamily\slshape 符号说明}{\sffamily\slshape 符号说明}
+\newcommand{\notationsection}[1]{\vspace{1.2em}\noindent\textbfs{#1}\vspace{0.4em}\par\nobreak}
+\newcommand{\notationtable}[1]{\bgroup\def\arraystretch{1.25}\noindent
+\begin{tabular}{@{}p{0.37\linewidth}@{\hspace{1.5em}}p{0.57\linewidth}@{}}#1\end{tabular}\egroup}
+
+\notationsection{数与数组}
+\notationtable{
+$a$ & 标量。\\
+$\rva$ & 列向量，例如$\rva\in\mathbb{R}^D$。\\
+$\rmA$ & 矩阵，例如$\rmA\in\mathbb{R}^{m\times n}$。\\
+$\rmA^\top$ & $\rmA$的转置。\\
+$\Tr(\rmA)$ & $\rmA$的迹。\\
+$\rmI_D$ & 大小为$D\times D$的单位矩阵。\\
+$\rmI$ & 单位矩阵，维数由上下文确定。\\
+$\mathrm{diag}(\rva)$ & 以$\rva$的各分量为对角元的对角矩阵。\\
+$\bm{\phi},\,\bm{\theta}$ & 神经网络的可学习参数。\\
+$\bm{\phi}^{\times},\,\bm{\theta}^{\times}$ & 训练结束后的参数，在推理时固定。\\
+$\bm{\phi}^{*},\,\bm{\theta}^{*}$ & 优化问题的最优参数。\\
+}
+
+\notationsection{微积分}
+\notationtable{
+$\dfrac{\partial \rvy}{\partial \rvx}$ & $\rvy$关于$\rvx$的偏导数，按分量理解。\\[6pt]
+$\dfrac{\diff \rvy}{\diff \rvx}$或$\mathrm{D}\rvy(\rvx)$ & $\rvy$关于$\rvx$的全导数（Fréchet导数）。\\[6pt]
+$\nabla_\rvx y$ & 标量函数$y:\mathbb{R}^D\to\mathbb{R}$的梯度，是$\mathbb{R}^D$中的列向量。\\
+$\dfrac{\partial \rmF}{\partial \rvx}$或$\nabla_\rvx\rmF$ & $\rmF:\mathbb{R}^n\to\mathbb{R}^m$的Jacobian矩阵，大小为$m\times n$。\\[6pt]
+$\nabla\cdot\rvy$ & 向量场$\rvy:\mathbb{R}^D\to\mathbb{R}^D$的散度，是标量。\\
+$\nabla^2_\rvx f(\rvx)$或$\rmH(f)(\rvx)$ & $f:\mathbb{R}^D\to\mathbb{R}$的Hessian矩阵，大小为$D\times D$。\\
+$\displaystyle\int f(\rvx)\diff\rvx$ & 在$\rvx$的定义域上对$f$积分。\\
+}
+
+\notationsection{概率与信息论}
+\notationtable{
+$p(\rvx)$ & 连续向量$\rvx$的概率密度或分布。\\
+$\Pr(\rvx=\rva)$，或简写$\Pr(\rvx)$ & 离散情形下的点概率。\\
+$\Pr(\rvx=\rva\mid\rvy=\rvb)$，或简写$\Pr(\rvx\mid\rvy)$ & 离散情形下的条件点概率。\\
+$p_{\mathrm{data}}$ & 数据分布。\\
+$p_{\mathrm{prior}}$ & 先验分布，例如标准正态分布。\\
+$p_{\mathrm{src}}$ & 源分布。\\
+$p_{\mathrm{tgt}}$ & 目标分布。\\
+$\rva\sim p$ & 随机向量$\rva$服从分布$p$。\\
+$\E_{\rvx\sim p}[\rvf(\rvx)]$ & $\rvf(\rvx)$在$p(\rvx)$下的期望。\\[3pt]
+\parbox[t]{0.35\linewidth}{\raggedright $\E[\rvf(\rvx)\mid\rvz]$，\\[2pt]或\\[2pt]\scalebox{0.8}{$\E_{\rvx\sim p(\cdot\mid\rvz)}[\rvf(\rvx)]$}} & 给定$\rvz$时$\rvf(\rvx)$的条件期望，此时$\rvx$服从$p(\cdot\mid\rvz)$。\\[3pt]
+$\Var(\rvf(\rvx))$ & 在$p(\rvx)$下的方差。\\
+$\Cov(\rvf(\rvx),\rvg(\rvx))$ & 在$p(\rvx)$下的协方差。\\
+$\mathcal{D}_{\mathrm{KL}}(p\,\Vert\,q)$ & Kullback--Leibler散度，参数顺序为$p\Vert q$。\\
+$\bm{\epsilon}\sim\mathcal{N}(\bm{0},\rmI)$ & 标准正态样本。\\
+$\mathcal{N}(\rvx;\vmu,\mSigma)$ & 关于$\rvx$的高斯密度，均值为$\vmu$，协方差为$\mSigma$。\\
+}
+
+\paragraph{符号约定。}下面汇总本书使用的几项约定。
+
+\subparagraph{I. 随机变量及其实现值。}
+我们用相同的符号表示随机向量及其实现值。这是深度学习与生成建模中的常见做法，可以简化符号；具体含义由上下文确定。
+
+对密度而言，$p(\rvx)$表示分布的函数形式，而不一定表示在某个特定样本处取值。需要在特定点求值时，我们会明确说明。条件密度也按上下文理解：在$p(\rvx\mid\rvy)$中，固定$\rvy$得到关于$\rvx$的密度；固定$\rvx$则得到关于$\rvy$的函数。
+
+\subparagraph{II. 条件期望。}
+表达式$\E[\rvf(\rvx)\mid\rvz]$表示一个关于$\rvz$的函数，其值为给定$\rvz$时$\rvf(\rvx)$的期望。对特定实现值作条件化时，写作$\E[\rvf(\rvx)\mid\rmZ=\rvz]$。等价地，可以对条件分布积分：
+\[
+\E_{\rvx\sim p(\cdot\mid\rvz)}[\rvf(\rvx)]
+=\int\rvf(\rvx)\,p(\rvx\mid\rvz)\,\diff\rvx.
+\]
+这一区别明确了$\rvz$是定义函数$\rvz\mapsto\E[\rvf(\rvx)\mid\rvz]$的变量，还是用于求值的固定点。
+
+\subparagraph{III. 省略的时间指标。}
+本书中许多对象带有时间指标，逐一写出会使公式冗长。当上下文已明确相关时间时，我们将其省略。例如，
+\[
+\E[\rvx_s\mid\rvx_t]\quad\text{简写了}\quad
+\E[\rvx_s\mid\rvx_t,\,s,\,t],
+\]
+表示给定时刻$t$的$\rvx_t$后，时刻$s$的$\rvx_s$的平均值；$s$与$t$由上下文确定。同样，$p(\rvx_s\mid\rvx_t)$表示给定$\rvx_t$时$\rvx_s$的条件分布，两个时间指标在条件中省略。
+
+\subparagraph{IV. 高斯扰动与依分布相等。}
+对固定的$t$，我们经常使用高斯扰动核
+\[
+p_t(\rvx_t\mid\rvx_0)=\mathcal{N}(\rvx_t;\,\alpha_t\rvx_0,\,\sigma_t^2\rmI),
+\]
+其中$\rvx_0\sim p_{\mathrm{data}}$，$\alpha_t$和$\sigma_t$为确定性标量。等价地，可以写成\emph{依分布成立}的恒等式
+\[
+\rvx_t\stackrel{d}{=}\alpha_t\rvx_0+\sigma_t\beps,\qquad
+\beps\sim\mathcal{N}(\bm{0},\rmI),
+\]
+其中$\beps$与$\rvx_0$独立。符号“$\stackrel{d}{=}$”表示两侧具有相同的概率律，即对任意检验函数$\phi$，
+\[
+\E[\phi(\rvx_t)]=\E[\phi(\alpha_t\rvx_0+\sigma_t\beps)].
+\]
+为简洁起见，本书直接写作$\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$；根据上下文，将其理解为依分布相等，或理解为样本实现值之间的关系。

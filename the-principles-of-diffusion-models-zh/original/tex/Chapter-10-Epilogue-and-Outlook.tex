@@ -1,0 +1,1097 @@
+\chapter{A Unifying Principle and the Road Ahead}\label{ch:epilogue}
+
+\epigraph{\textit{The purpose of abstraction is not to be vague, but to create a new semantic level in which one can be absolutely precise.}}{Edsger W.\ Dijkstra}
+
+Every chapter of this book has been about the same thing: how probability mass moves under a prescribed transformation, and how to reverse, approximate, or exploit that motion to generate data. In this final chapter, we step back to make this structural unity explicit. We first revisit the change-of-variable principle that underpins everything we have covered (\Cref{sec:epilogue-backbone}), then explain how the same probability-transport viewpoint extends to discrete state spaces through Markov kernels and continuous-time Markov chains (\Cref{sec:epilogue-discrete}), and close with reflections on the broader landscape (\Cref{sec:epilogue-closing}).
+
+
+\chapterlearning{
+
+  \item explain probability transport as the common principle underlying the
+  generative modeling frameworks developed throughout this book;
+
+  \item connect probability evolution in continuous spaces, through the
+  continuity and Fokker--Planck equations, with its finite-state counterpart,
+  the master equation;
+
+  \item explain how reverse modeling changes in discrete state spaces, where
+  transition kernels, probability ratios, and jump rates replace ordinary
+  Euclidean score and velocity fields;
+
+  \item compare the variational, score/ratio, and flow perspectives across
+  continuous and discrete state spaces, identifying what remains common and
+  what changes.
+
+}{This chapter is an epilogue rather than a new method chapter. Read it as a
+synthesis: focus on which principles remain unchanged, and which mathematical
+objects must change, when moving from continuous to discrete state spaces.}
+
+\clearpage
+\newpage
+
+\section{The Density-Transport Backbone}\label{sec:epilogue-backbone}
+
+Throughout this book, we have followed two closely related lines of development.
+The first is \emph{diffusion models themselves}, including variational, score-based, and flow-based formulations, which offer different mathematical descriptions of how probability laws evolve and how such evolution may be reversed for generation.
+The second is \emph{diffusion-motivated fast generators}, most notably flow map models, which are built on the same transport viewpoint but aim to learn more direct and efficient generators.
+Despite their differences in form, all of these methods are rooted in a single organizing idea: generative modeling is fundamentally a problem of \emph{transporting probability mass}. Starting from a simple reference distribution, such as Gaussian noise, we seek to construct a process that gradually connects it to a complex data distribution.
+
+This viewpoint is useful because it shifts attention away from individual model families and toward a more fundamental question:
+\emph{how does a probability law evolve when the underlying samples are moved by a prescribed dynamics?}
+The mathematical language for answering this question is the change-of-variable formula and its continuous-time extensions. In this sense, the change-of-variable principle is not merely a technical tool; it is the conceptual backbone underlying both diffusion models and the fast generators they inspire.
+
+\paragraph{A Common Three-Step Structure.}
+At a high level, the methods studied in this book all follow the same simple pattern:
+\begin{enumerate}[leftmargin=2em]
+    \item Define a forward process that gradually moves data toward a simple reference distribution.
+    \item Understand how the probability law evolves under that process through the appropriate law-evolution equation.
+    \item Learn a generative mechanism that reverses, approximates, or otherwise exploits this evolution in order to produce samples.
+\end{enumerate}
+What varies across formulations is the choice of forward process, the mathematical form of the law-evolution equation, and the way the generative mechanism is parameterized and trained.
+
+\paragraph{The Change-of-Variable Hierarchy.}
+In \Cref{app:continuity}, we developed a systematic progression of change-of-variable formulas, from deterministic bijections to stochastic differential equations. That progression is worth recalling here, because it reveals a single transport principle appearing in several forms.
+
+\FloatBarrier % ensures figures above don’t float past here
+
+\begin{figure}[H]
+  \centering
+
+  % --- First row ---
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{Images/appendix/vector_field_only.pdf}
+        \caption{Vector field illustrations. The arrows represent velocities that move particles through space, deforming the underlying grid accordingly.}
+  \end{subfigure}
+
+  \vspace{0.5em} % space between rows
+
+  % --- Second row ---
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{Images/appendix/particle_cloud.pdf}
+    \caption{Particle-cloud dynamics. A predefined vector field generates a flow that transports particles from their initial state.}
+  \end{subfigure}
+
+  \vspace{0.5em}
+
+  % --- Third row ---
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{Images/appendix/vector_field_with_density.pdf}
+    \caption{Density evolution. As particles are advected by the vector field, the density contours deform accordingly, reflecting how the flow reshapes the underlying distribution.}
+  \end{subfigure}
+
+  \caption{\textbfs{Illustrations of particle and density dynamics under a vector field.}
+Each column shows successive time snapshots from left to right. \figcredit{Adapted from \citet{lipman2024flow}.}
+}
+  \label{fig:flow-3x3rows}
+\end{figure}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbfs{Single Bijection.}
+    A smooth invertible map $\bPsi:\R^D\to\R^D$ transforms a density $p_0$ into $p_1$ via
+    \[
+    p_1(\rvx_1)
+    =
+    p_0\bigl(\bPsi^{-1}(\rvx_1)\bigr)
+    \left|\det \partial_{\rvx_1}\bPsi^{-1}(\rvx_1)\right|.
+    \]
+    The Jacobian determinant records the local change of volume: when the map stretches space, the density decreases; when it compresses space, the density increases.
+
+    \item \textbfs{Composed Bijections.}
+    Chaining many bijections, with $\rvx_k=\bPsi_k(\rvx_{k-1})$, yields
+    \[
+    \log p_L(\rvx_L)
+    =
+    \log p_0(\rvx_0)
+    -
+    \sum_{k=1}^L
+    \log\left|\det \partial_{\rvx_{k-1}}\bPsi_k(\rvx_{k-1})\right|.
+    \]
+    This is the basic principle behind normalizing flows. More importantly, it already illustrates the central message: once particle motion is specified, the evolution of the density follows accordingly.
+
+    \item \textbfs{Continuous-Time Deterministic Flow (ODE).}
+    Taking the infinitesimal-step limit leads to the continuity equation,
+    \[
+    \frac{\partial p_t(\rvx)}{\partial t}
+    +
+    \nabla\cdot\bigl(p_t(\rvx)\,\rvv(\rvx,t)\bigr)
+    =
+    0,
+    \]
+    where particles evolve according to
+    \[
+    \frac{\diff \rvx(t)}{\diff t} = \rvv(\rvx(t),t).
+    \]
+    This is the continuous-time expression of mass conservation. Probability mass is not created or destroyed; it simply flows through space under the velocity field $\rvv$.
+
+    \item \textbfs{Continuous-Time Stochastic Flow (SDE).}
+    Adding Brownian noise yields the Fokker--Planck equation,
+    \[
+    \frac{\partial p_t(\rvx)}{\partial t}
+    =
+    -\nabla\cdot\bigl(\rvv(\rvx,t)\,p_t(\rvx)\bigr)
+    +
+    \frac{1}{2}g^2(t)\,\Delta p_t(\rvx),
+    \]
+    which corresponds to the stochastic dynamics
+    \[
+    \diff\rvx(t) = \rvv(\rvx(t),t)\diff t + g(t)\diff\rvw(t).
+    \]
+    The first term describes directed transport by the drift, while the second captures the random spreading induced by noise.
+\end{enumerate}
+
+These are not unrelated formulas.
+The multi-layer change-of-variable rule is the discrete-time version of transport under repeated deterministic transformations.
+Its infinitesimal deterministic limit gives the continuity equation.
+Adding stochastic perturbation leads to the Fokker--Planck equation.
+Each level extends the previous one, while preserving the same underlying principle: probability mass is conserved, and the probability law adjusts to reflect how the underlying dynamics moves samples through space.
+
+From this perspective, the main formulations in this book are easier to place in context.
+Variational methods describe generation through denoising transitions on a time grid. Score-based methods work with stochastic dynamics and learn the score field governing the reverse-time SDE.
+Flow-based methods work with deterministic transport and learn a velocity field whose induced marginal distributions follow a prescribed family of intermediate laws.
+Fast generators, in turn, build on this same backbone, but seek more direct ways to exploit the learned transport for efficient sampling.
+
+The central takeaway is therefore simple.
+Diffusion modeling is not best understood as a single algorithm tied to one architecture or one noise schedule. It is a \emph{design principle}: specify a forward transport process, understand the induced evolution of probability laws, and then construct a generator on top of that structure. Once this viewpoint is in place, many seemingly different methods become natural variations of the same idea.
+
+A natural question then arises: does this principle extend beyond continuous state spaces? In the next section, we show that it does.
+
+\clearpage
+\newpage
+
+
+\section{Beyond Continuous States: Probability Evolution on Discrete Spaces}
+\label{sec:epilogue-discrete}
+
+So far, every model in this book has operated under a common structural
+assumption: the state on which the generative dynamics acts lives in a
+continuous Euclidean space $\R^D$. Whether the entries of $\rvx$ represent
+pixel intensities, audio samples, or continuous latent variables, the
+mathematics is the same: particles move along continuous trajectories governed
+by an ODE or SDE, and the probability density evolves through the continuity or
+Fokker--Planck equation. The framework rests on the differential structure of $\R^D$: gradients and
+divergences are defined through derivatives, and deterministic dynamics can be
+described by differentiable trajectories generated by vector fields.
+
+This distinction is about the modeling state, not about the raw modality.
+Discrete observations can also be handled by first choosing a continuous code
+and a readout. For a raw symbol $a$, let $\rmE(a)\in\R^d$ be its code,
+and let $\rmD$ map codes back to symbols, or more generally to a
+categorical distribution:
+\[
+\text{raw discrete symbol } a
+\;\xrightarrow{\;\rmE\;}\;
+\text{continuous code } \rmE(a)\in\R^d
+\;\xrightarrow{\;\rmD\;}\;
+\text{discrete readout}.
+\]
+The representation may be fixed, such as a one-hot, categorical-vector, or
+simplex-valued code~\citep{richemond2022categorical};
+on an injective codebook, the readout can be deterministic and may satisfy
+$\rmD(\rmE(a))=a$. Alternatively, the representation may be learned,
+such as a token embedding or an autoencoder latent
+\citep{li2022diffusionlm,dieleman2022continuous}; then $\rmD$ is a learned
+readout and $\rmD\circ\rmE$ need not be exactly invertible. Once the
+representation is fixed, the diffusion is continuous-state: Gaussian noising in
+an ambient code space, or a geometry-adapted continuous process for a constrained
+code space, is handled by the continuous machinery developed earlier in the
+book. The finite-state route studied below is different: the evolving state
+itself remains discrete.
+
+The present section studies the complementary case, where the state itself
+remains finite and discrete state throughout the forward and reverse processes. Many data types naturally fit this view: text is a sequence of
+vocabulary tokens, molecular graphs use finitely many atom and bond types, and
+protein sequences are strings over a finite alphabet. In such a finite state
+space there is no canonical infinitesimal displacement from one state to another,
+no smooth trajectory through token values, and no ordinary gradient with respect
+to the state itself. This raises a natural question:
+\begin{question}
+    If diffusion is really about transporting probability mass, what does that idea become when the state space is finite?
+\end{question}
+
+The structural backbone remains the same, but the mathematical objects change.
+In continuous space, probability laws evolve under ODE/SDE dynamics through the
+continuity or Fokker--Planck equation. In a finite state space, probability mass
+moves between states according to Markov transition kernels or jump rates, and
+the law evolves by a finite-dimensional conservation law: the \emph{master
+equation}, also called the Kolmogorov forward equation. At an abstract level,
+both settings follow the same recipe:
+
+\msg{Observation}{}{Choose a forward corruption process, understand its induced probability path, and learn a reverse transport mechanism.}
+
+In continuous Gaussian diffusion, this reverse mechanism appears as Gaussian
+reverse conditionals, scores, or velocity fields. In finite state spaces, it
+appears instead as reverse transition probabilities, probability ratios, or jump
+rates. These are different mathematical objects, but they play the same
+conceptual role.
+
+The goal of this chapter is not to present one discrete diffusion algorithm as
+definitive. Instead, we develop a roadmap that should remain stable as the
+literature changes. The roadmap is organized by the object used to describe
+reverse transport: transition kernels, probability ratios, or jump rates. We
+proceed in four steps: discrete-time transitions (\Cref{subsec:epilogue-dtmc}),
+their continuous-time limit (\Cref{subsec:epilogue-ctmc}), three perspectives on
+reverse modeling that mirror the variational, score/ratio, and flow viewpoints
+of the continuous case (\Cref{subsec:epilogue-three-views}), and a comparison
+highlighting what is genuinely different from the continuous setting
+(\Cref{subsec:epilogue-genuine-diff}).
+
+\subsection{Discrete-Time Transitions}
+\label{subsec:epilogue-dtmc}
+
+Consider a forward process over $K$ discrete categories, where $K$
+includes any special corruption tokens, such as a mask token, required
+by the chosen forward process.  Each state is represented as a
+\emph{one-hot} column vector $\rvx\in\{0,1\}^{K}$ with exactly one
+entry equal to~$1$; the set of all such vectors
+is\footnote{An equivalent formulation, standard in the CTMC and
+stochastic-processes
+literature~\citep{norris1998markov,kelly1979reversibility}, represents
+each state as a scalar index $x\in\{1,\dots,K\}$, writes transition
+rates as $[\rmQ_t]_{ij}$, and the marginal as $p_t(x)$.  The one-hot
+encoding adopted here is notationally equivalent but aligns more closely
+with the discrete diffusion
+literature~\citep{austin2021structured,sahoo2024simple,lou2024discrete},
+where inner products such as $\langle\rvx_{\bphi},\rvx\rangle$ and
+matrix--vector products such as $\rmP^{\top}\rvx$ appear naturally in
+training objectives.}
+\[
+\mathcal{V}
+= \bigl\{\rvx\in\{0,1\}^{K}:\textstyle\sum_{i=1}^{K}x_i=1\bigr\}
+= \{\rve_1,\ldots,\rve_K\}.
+\]
+We write $\rve_i$ for the $i$-th standard basis vector, namely the one-hot
+encoding of category~$i$.  For example, each $\rve_i$ can represent
+a token, a discrete latent code, an atom type, a bond type, or an amino acid.
+
+For sequence data such as text or proteins, a sample consists of $N$
+tokens, each taking values in a vocabulary of size~$K$. The full state space
+is then $\mathcal{V}^N$, whose size grows exponentially with sequence length.
+In many discrete diffusion models, the \emph{forward} corruption acts
+independently across positions, so the single-token Markov process is the
+basic local building block. We therefore focus first on one token, because it
+exposes the core probability-transport mechanism without notational overload.
+For full sequences, the same formulas apply to full configurations. If the
+forward corruption acts independently across positions, the conditional
+forward kernel factorizes positionwise.\footnote{The resulting marginal
+distribution over corrupted sequences generally need not factorize, because
+the clean-data distribution can contain dependencies across positions.}
+The learned reverse model, however, need not be independent across positions:
+a Transformer or graph neural network can observe the entire corrupted object
+and use global context to predict local or global reverse transitions.
+
+\begin{figure}[th!]
+    \centering
+    \includegraphics[width=\linewidth]{Images/PartE/fig_notation_overview.pdf}
+    \caption{\textbfs{From sequences to one-hot states.}
+    A data sample such as a text or protein sequence consists of $N$
+    tokens, each taking values in a finite alphabet or vocabulary of size~$K$.  This chapter focuses on
+    the evolution of a single token among $K$ states.  Zooming in on one
+    position, here ``cat'', the token is represented by the basis vector
+    $\rve_2$ and encoded as a one-hot vector in $\{0,1\}^K$, namely a
+    $K$-dimensional vector whose second entry is~$1$ and all other
+    entries are~$0$.  The state space
+    $\mathcal{V}=\{\rvx\in\{0,1\}^K:\sum_{i=1}^K x_i=1\}
+    =\{\rve_1,\ldots,\rve_K\}$ is the set of all such one-hot vectors.
+    The ordering of the vocabulary entries is arbitrary and unrelated to
+    the position of a token in the sequence. \figcredit{Created by the authors with AI-assisted coding.}}
+    \label{fig:notation-overview}
+\end{figure}
+
+At step~$k$, the system occupies one of these $K$ states.  We denote the
+scalar probability of being in state~$\rve_i$ by
+\[
+p_k(i) := \Pr(\rvx_k=\rve_i),
+\qquad i=1,\ldots,K.
+\]
+Collecting these scalar probabilities gives the marginal probability vector
+\[
+\rvp_k
+:=
+\bigl(p_k(1),\;\dots,\;p_k(K)\bigr)^\top
+=
+\E[\rvx_k]
+\in \Delta^{K-1}\subset\R^K,
+\qquad
+\sum_{i=1}^K p_k(i)=1,
+\]
+where $\Delta^{K-1}:=\bigl\{\rvp\in\R^K:p_i\geq0,\;
+\sum_{i=1}^K p_i=1\bigr\}$ denotes the probability simplex.
+Equivalently, $\Pr(\rvx_k=\rve_i)=p_k(i)$, or briefly
+$\rvx_k\sim\mathrm{Cat}(\rvp_k)$.
+
+Thus $\rvp_k$ is the full law of the discrete random state $\rvx_k$, while
+$p_k(i)$ is its $i$-th scalar entry.  At continuous time we use the same
+convention:
+\[
+p_t(i):=\Pr(\rvx_t=\rve_i),
+\qquad
+\rvp_t:=\bigl(p_t(1),\ldots,p_t(K)\bigr)^\top.
+\]
+The vector $\rvp_t$ is the discrete analogue of a density: it tells us how
+the total probability mass is distributed across the $K$ states.
+
+Following the convention used throughout this book, bold lowercase letters
+($\rvp$, $\rvx$) denote vectors, bold uppercase letters ($\rmP$, $\rmQ$)
+denote matrices, and unbolded indexed quantities such as $p_k(i)$,
+$[\rmP_k]_{ij}$, and $[\rmQ_t]_{ij}$ denote scalar entries.  Unbolded
+$p$ with random variables as arguments, such as
+$p(\rvx_{k-1}|\rvx_k)$, denotes a probability mass function or transition
+kernel under the fixed forward process; $p_{\bphi}$ denotes the learned
+reverse model.
+
+
+
+How does the system move between states? A single transition step is
+specified by a \emph{transition matrix} $\rmP_k \in \R^{K \times K}$.
+Its entry $[\rmP_k]_{ij}$ gives the probability that the system,
+currently in state~$\rve_i$, moves to state~$\rve_j$ in one step:
+\[
+[\rmP_k]_{ij} \;=\; \Pr(\rvx_{k+1} = \rve_j | \rvx_k = \rve_i).
+\]
+Thus the full matrix has the following structure:
+\[
+\rmP_k \;=\;
+\underbrace{
+\begin{pmatrix}
+[\rmP_k]_{11} & [\rmP_k]_{12} & \cdots & [\rmP_k]_{1K} \\
+[\rmP_k]_{21} & [\rmP_k]_{22} & \cdots & [\rmP_k]_{2K} \\
+\vdots & \vdots & \ddots & \vdots \\
+[\rmP_k]_{K1} & [\rmP_k]_{K2} & \cdots & [\rmP_k]_{KK}
+\end{pmatrix}
+}_{\substack{\text{columns: next state } j}}
+\quad
+\left.
+\vphantom{
+\begin{pmatrix}
+a \\ a \\ \vdots \\ a
+\end{pmatrix}
+}
+\right\}
+\text{\footnotesize rows: current state } i.
+\]
+Reading across row $i$ answers: ``given that the system is currently
+in state $\rve_i$, what is the probability of landing in each possible
+next state?'' Each row is therefore a probability distribution over destinations:
+\[
+[\rmP_k]_{ij} \geq 0
+\quad \text{for all } i,j,
+\qquad\qquad
+\sum_{j=1}^{K} [\rmP_k]_{ij} = 1
+\quad \text{for each } i.
+\]
+The non-negativity condition says every transition probability is valid,
+and the row-sum constraint says all mass leaving state~$\rve_i$ is accounted
+for: the system always ends up somewhere.
+
+\paragraph{How the Distribution Evolves.}
+With the transition matrix in hand, we now ask a basic question: if the
+system starts with distribution $\rvp_k$, what is the distribution after
+one step? The answer follows from simple probability accounting. The
+probability of being in state~$\rve_j$ after the transition is the total
+mass arriving at~$\rve_j$ from all possible source states:
+\begin{equation}
+p_{k+1}(j) = \sum_{i=1}^K p_k(i)\,[\rmP_k]_{ij}.
+\label{eq:discrete-transport-one-step}
+\end{equation}
+Each term in the sum represents the mass initially at state~$\rve_i$,
+weighted by the probability of jumping from~$\rve_i$ to~$\rve_j$.
+In vector form, this becomes
+\[
+\rvp_{k+1} = \rmP_k^\top \rvp_k.
+\]
+Equivalently, the conditional distribution of the next state given the
+current one-hot state~$\rvx_k$ is
+\[
+\Pr(\rvx_{k+1} | \rvx_k)
+= \mathrm{Cat}(\rvx_{k+1};\,\rmP_k^\top\,\rvx_k),
+\]
+since $\rmP_k^\top\,\rve_i$ extracts the $i$-th row of~$\rmP_k$, which
+contains the transition probabilities from state~$\rve_i$.
+
+A system evolving by this rule is called a \emph{discrete-time Markov
+chain}: conditional on the current state $\rvx_k$, the distribution of
+$\rvx_{k+1}$ does not depend on the earlier states. This plays the finite-state
+role of the law-evolution formulas in continuous space. There, a bijection $\bPsi$ reshapes a density, and the
+Jacobian determinant compensates for local volume change. In a finite
+state space, there is no volume element to track. Instead, the transition
+matrix $\rmP_k$ directly specifies how much probability mass leaves each
+source state and arrives at each destination. The row-sum constraint
+guarantees that total probability is conserved, just as the divergence
+structure does in the continuity equation.
+
+Repeating this over multiple steps, with transition matrices
+$\rmP_0, \dots, \rmP_{L-1}$, yields
+\begin{equation*}
+\rvp_L = \rmP_{L-1}^\top \cdots \rmP_1^\top \rmP_0^\top\, \rvp_0.
+\end{equation*}
+This mirrors the multi-layer change-of-variable formula in
+\Cref{eq:cov-multi-layer-nolog}. In the continuous deterministic setting, density
+evolution is accumulated through Jacobian determinants; here, the
+probability vector is propagated through successive Markov operators.
+The underlying idea is the same: probability mass is tracked through a
+sequence of prescribed transformations.
+
+\paragraph{Inverting a Single Step.}
+Given the forward machinery, it is natural to ask how a single
+transition can be reversed for generation.  Suppose the system is observed in
+state~$\rve_j$ at step~$k{+}1$.  What is the probability that it was in
+state~$\rve_i$ at the previous step~$k$?  This is a direct application
+of Bayes' rule:
+\begin{align}
+\Pr(\rvx_k = \rve_i | \rvx_{k+1} = \rve_j)
+= \frac{\Pr(\rvx_{k+1} = \rve_j | \rvx_k = \rve_i)\;\Pr(\rvx_k = \rve_i)}
+        {\Pr(\rvx_{k+1} = \rve_j)}  
+= [\rmP_k]_{ij}\frac{p_k(i)}{p_{k+1}(j)},
+\label{eq:discrete-reverse-kernel}
+\end{align}
+whenever $p_{k+1}(j)>0$. This is the discrete-time reverse kernel associated with the forward
+transition~$\rmP_k$ together with the current marginal law. Its form is
+intuitive: among all the ways that mass could have arrived at
+state~$\rve_j$, each source~$\rve_i$ contributes in proportion to how
+much mass was there, through $p_k(i)$, and how likely the jump was,
+through $[\rmP_k]_{ij}$. The numerator and denominator in \Cref{eq:discrete-reverse-kernel} each have a clear interpretation:
+\begin{itemize}[leftmargin=2em]
+    \item \textbfs{Numerator:}
+    The term $[\rmP_k]_{ij}\,p_k(i)$ is the joint probability of being in
+    state~$\rve_i$ at step~$k$ and then jumping to~$\rve_j$ at
+    step~$k{+}1$.
+
+    \item \textbfs{Denominator:}
+    The term
+    \[
+    p_{k+1}(j) = \sum_{i'} p_k(i')\,[\rmP_k]_{i'j}
+    \]
+    is the total probability of arriving at state~$\rve_j$ from any
+    source. It serves as the normalizing constant, ensuring that the
+    reverse probabilities sum to one over~$i$.
+\end{itemize}
+
+A crucial point is that the reverse kernel is \emph{not} the matrix inverse of $\rmP_k$. A Markov transition may merge probability mass from many states into one state, and it need not be invertible as a linear map. The probabilistic reverse is instead a Bayesian inverse, and it depends not only on the forward transition matrix but also on the marginal distribution $\rvp_k$. This is exactly the difficulty faced in generative modeling: $\rvp_k$ is obtained by pushing the unknown data distribution through the forward process, so it is usually not available in closed form.  The reverse-modeling perspectives below can be understood as different ways of representing or learning the missing information needed to implement this Bayesian inverse.
+
+\subsection{Continuous-Time Limit: The Master Equation}
+\label{subsec:epilogue-ctmc}
+
+In the continuous-space story, shrinking the step size of composed
+bijections to zero yielded the continuity equation
+(\Cref{subsec:cov-continuity-eq}). The same limiting idea works here. When the
+time steps become infinitesimally small, a discrete-time Markov chain
+becomes a continuous-time Markov chain (CTMC), and the distribution
+evolves according to the master equation.
+
+\begin{figure}[th!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Images/PartE/ctmc_trajectory.pdf}
+    \caption{\textbfs{Illustration of a CTMC sample path.}
+Let the state space be $\mathcal{V}=\{\rve_1,\rve_2,\rve_3\}$, labeled as $S_1,S_2,S_3$ on the vertical axis.
+The trajectory is piecewise constant: the process remains at $\rvx_t=\rve_i$ for a random holding time, then jumps instantaneously to another state $\rve_j$ at times $t_1,t_2,\ldots$.
+Filled circles mark the state occupied immediately after each jump, and open circles the state just before the jump, reflecting the right-continuous convention.
+The dotted segment indicates continuation beyond the displayed window.
+These jump times and destinations are governed by the rate matrix $\rmQ_t$: from state $\rve_i$, the process jumps to $\rve_j$ ($j\neq i$) at instantaneous rate $[\rmQ_t]_{ij}$.
+\figcredit{Adapted from \citet{campbell2022continuous}.}}
+    \label{fig:ctmc-trajectory}
+\end{figure}
+
+\paragraph{Infinitesimal Transitions.}
+In the previous subsection, each transition matrix $\rmP_k$ described a
+full step from time $k$ to time $k{+}1$. Now imagine making these steps
+finer and finer. Let $\rmP_{t,\Delta t}$ denote the transition matrix
+that moves the system forward by a small duration $\Delta t$ starting at
+time $t$: its entry $[\rmP_{t,\Delta t}]_{ij}$ is the probability of
+moving from state~$\rve_i$ to state~$\rve_j$ during the interval
+$[t,\,t{+}\Delta t]$.
+
+When $\Delta t$ is small, most mass stays put and only a small fraction
+jumps. This means $\rmP_{t,\Delta t}$ is close to the identity, and we
+can expand it as
+\begin{equation}
+\rmP_{t,\Delta t}
+\;=\; \rmI + \rmQ_t\,\Delta t + \mathcal{O}(\Delta t^2),
+\label{eq:generator-expansion}
+\end{equation}
+where $\rmQ_t \in \R^{K \times K}$ is the \emph{rate matrix}, also
+called the generator, at time $t$. If $\rmQ_t$ is sufficiently regular in time, the remainder can be written as $\mathcal{O}(\Delta t^2)$ locally. The entries of $\rmQ_t$ are instantaneous
+\emph{rates} rather than probabilities. Specifically:
+\begin{itemize}[leftmargin=2em]
+    \item $[\rmQ_t]_{ij} \geq 0$ for $i \neq j$: this is the rate at which
+      the process jumps from state~$\rve_i$ to state~$\rve_j$.
+      Multiplying by $\Delta t$ gives the leading-order jump probability
+      over a short interval.
+    \item $[\rmQ_t]_{ii} = -\sum_{j \neq i} [\rmQ_t]_{ij}$: the
+      diagonal entry is negative and records the total rate at which
+      probability \emph{leaves} state~$\rve_i$. This ensures that each row
+      of $\rmQ_t$ sums to zero, which is the rate-level expression of
+      probability conservation.\footnote{This follows directly from the
+      row-sum constraint on $\rmP_{t,\Delta t}$. Since each row of a
+      transition matrix sums to $1$, substituting the expansion
+      $\rmP_{t,\Delta t} = \rmI + \rmQ_t\,\Delta t
+      + o(\Delta t)$ gives
+      $1 + \Delta t \sum_{j} [\rmQ_t]_{ij}
+      + o(\Delta t) = 1$,
+      which forces $\sum_{j} [\rmQ_t]_{ij} = 0$. Separating the
+      diagonal term yields
+      $[\rmQ_t]_{ii} = -\sum_{j \neq i} [\rmQ_t]_{ij}$.}
+\end{itemize}
+Reading off the expansion, the probability of jumping from~$\rve_i$ to
+$\rve_j$ with $j\neq i$ during a short interval is approximately
+$[\rmQ_t]_{ij}\,\Delta t$, while the probability of staying
+at~$\rve_i$ is approximately
+$1 - \sum_{j \neq i} [\rmQ_t]_{ij}\,\Delta t$.
+
+\paragraph{Master Equation.}
+With infinitesimal transitions in hand, the continuous-time limit follows
+immediately. Substituting the expansion in \Cref{eq:generator-expansion}
+into $\rvp_{t+\Delta t} = \rmP_{t,\Delta t}^\top\,\rvp_t$ and taking
+$\Delta t \to 0$ gives
+\begin{mdframed}
+\begin{equation}
+\frac{\diff}{\diff t}\,\rvp_t = \rmQ_t^\top\,\rvp_t.
+\label{eq:master-equation-vector}
+\end{equation}
+\end{mdframed}
+This is the \emph{master equation}, also known as the \emph{Kolmogorov
+forward equation} for CTMCs~\citep{norris1998markov}. Recall that $\rvp_t$ is the probability
+vector whose $j$-th entry $p_t(j)$ gives the probability of being in
+state~$\rve_j$ at time~$t$. Writing out the $j$-th component of
+\Cref{eq:master-equation-vector} makes the meaning concrete:
+\begin{equation}
+\frac{\diff}{\diff t}\,p_t(j)
+= \underbrace{\sum_{i \neq j} p_t(i)\,[\rmQ_t]_{ij}}_{\text{inflow: mass arriving from other states}}
+\;-\;
+\underbrace{p_t(j)\sum_{\ell \neq j} [\rmQ_t]_{j\ell}}_{\text{outflow: mass departing to other states}}.
+\label{eq:master-equation-component}
+\end{equation}
+The rate of change of $p_t(j)$ is simply inflow minus outflow. This is
+probability conservation expressed as a differential equation.
+
+\paragraph{Comparison with the Continuity Equation.}
+In continuous space, the continuity equation
+\[
+\partial_t\,p_t(\rvx) + \nabla \cdot
+\big(p_t(\rvx)\,\rvv(\rvx,t)\big) = 0
+\]
+says that density changes are driven by the net flux of probability mass
+under the velocity field $\rvv$. The master equation says the same
+thing in finite-state language: $p_t(j)$ changes because of net probability flux governed by the
+rate matrix $\rmQ_t$. The velocity field and the rate matrix play
+analogous structural roles: both prescribe how probability mass is
+redistributed, and both enforce conservation. The main difference is geometric: in $\R^D$, mass flows through neighboring spatial locations; in a finite state space, mass jumps along allowed edges of a transition graph.
+
+\begin{figure}[th!]
+    \centering
+    \includegraphics[width=\linewidth]{Images/PartE/masked_vs_uniform_diffusion.pdf}
+\caption{\textbfs{Illustration of masked and uniform diffusion forward corruption and reverse generation.}
+The two examples shown here admit an interpolating marginal of the form
+$\Pr(\rvx_t|\rvx_0)=\mathrm{Cat}(\rvx_t;\alpha_t\rvx_0+(1-\alpha_t)\bm{\pi})$,
+where the limiting prior $\bm{\pi}$ and decay factor $\alpha_t$ are determined
+by the chosen forward rate matrix.  In masked diffusion, tokens are
+absorbed into the mask state, with limiting prior $\bm{\pi}=\rvm=\rve_K$.  In
+uniform diffusion, tokens are repeatedly randomized, with limiting prior
+$\bm{\pi}_{\mathrm{unif}}=\frac{1}{K}\mathbf{1}$.  Generation reverses the
+chosen corruption process, starting from the corresponding simple reference distribution, or from a close finite-time approximation to it.
+\figcredit{Created by the authors with AI-assisted coding.}}
+    \label{fig:mask-uniform}
+\end{figure}
+
+\paragraph{Forward Corruption.}
+Just as in the continuous case, we need a forward process that gradually
+destroys the structure of the data distribution and drives it toward a simple
+reference distribution that is easy to sample from.  This is the discrete analogue of choosing a
+Gaussian noising process in continuous diffusion.  The design goal is the same:
+the corruption should be progressive, analytically or computationally tractable, and strong enough
+that, by terminal time $T$, the data distribution has been largely washed out.
+
+The rate matrix can be chosen in many ways. It may be uniform, absorbing, nearest-neighbor, graph-based, chemically structured, grammar-aware, or otherwise adapted to the data domain. The following two examples are therefore not meant to exhaust the taxonomy; they are canonical cases that make the mechanics transparent.
+\subparagraph{Masked Diffusion (Absorbing).} Reserve the last
+      category as a mask token, written $\rvm := \rve_K$.  Clean data
+      $\rvx_0$ occupies one of the first $K{-}1$ categories, so
+      $\langle\rvx_0,\rvm\rangle = 0$.  The rate matrix is defined so
+      that every ordinary state transitions to the mask state at
+      rate~$\beta(t)$, while the mask state never transitions out:
+\[
+[\rmQ_t]_{iK}=\beta(t),\qquad
+[\rmQ_t]_{ii}=-\beta(t),\qquad
+[\rmQ_t]_{ij}=0
+\quad
+\text{for } i<K,\; j\notin\{i,K\},
+\]
+and
+\[
+[\rmQ_t]_{Kj}=0
+\quad
+\text{for all } j.
+\]
+      The idea is simple: each token is independently replaced by the
+      mask at rate~$\beta(t)$, and once masked it stays masked.
+
+      The forward marginal conditioned on a clean state~$\rvx_0$ is
+      \[
+      \Pr(\rvx_t | \rvx_0)
+      = \mathrm{Cat}\bigl(\rvx_t;\;
+          \alpha_t\,\rvx_0 + (1-\alpha_t)\,\rvm\bigr),
+      \]
+      where
+      \[
+      \alpha_t
+      =
+      \exp\left(-\int_0^t\beta(s)\,\diff s\right).
+      \]
+      At time~$t$, the token equals its clean value~$\rvx_0$ with
+      probability~$\alpha_t$ and is masked with probability~$1-\alpha_t$.
+      As time increases, more and more probability mass accumulates on the
+      mask state.  If $\int_0^T\beta(s)\diff s$ is large, then $\alpha_T$ is small and the terminal distribution is close to the all-mask reference distribution.
+
+\subparagraph{Uniform Diffusion.} Instead of erasing a token, this
+      process gradually randomizes it.  One convenient continuous-time normalization is to let a token jump to each of the other $K-1$ states at the same rate:
+      \[
+      [\rmQ_t]_{ij} = \frac{\beta(t)}{K - 1}
+      \quad\text{for } i \neq j,
+      \qquad
+      [\rmQ_t]_{ii} = -\beta(t).
+      \]
+      The first formula says that from state~$\rve_i$, the token jumps
+      to each alternative state at the same instantaneous rate.  The second says that
+      the total rate of leaving state~$\rve_i$ is~$\beta(t)$.
+
+      The forward marginal again takes the interpolating form
+      \[
+      \Pr(\rvx_t|\rvx_0)
+      = \mathrm{Cat} \bigl(\rvx_t;\;
+          \alpha_t\,\rvx_0 + (1-\alpha_t)\,\bm{\pi}_{\mathrm{unif}}
+        \bigr),
+      \]
+      where
+      $\bm{\pi}_{\mathrm{unif}}=\tfrac{1}{K}\mathbf{1}\in\R^K$ is the
+      uniform probability vector.  Under the rate normalization above,
+      the decay factor is
+      \[
+      \alpha_t
+      =
+      \exp\left(
+      -\frac{K}{K-1}\int_0^t \beta(s)\,\diff s
+      \right).
+      \]
+      As time passes, repeated randomization washes out the structure of
+      the data distribution and pushes it toward the uniform distribution
+      on~$\mathcal{V}$.
+
+More generally, the forward process need not have the simple mixture form
+\[
+\Pr(\rvx_t|\rvx_0)
+= \mathrm{Cat}\bigl(\rvx_t;\;\alpha_t\rvx_0+(1-\alpha_t)\bm{\pi}\bigr).
+\]
+That form is useful for intuition and appears in common masked and uniform
+constructions, but the Markov law-evolution viewpoint is more general:
+transition matrices govern discrete-time evolution, and rate matrices govern
+continuous-time evolution through the master equation. Structured discrete diffusion models can use transition rules that respect edit distance, graph adjacency, molecular validity, vocabulary structure, or other domain knowledge. In all cases, the same principle remains: the forward Markov process defines a probability path, and generation learns to move along that path in reverse.
+
+\subsection{Three Perspectives on Reverse Modeling}
+\label{subsec:epilogue-three-views}
+
+Once the forward process and its law evolution are in place, the remaining task is the same as in the continuous case: learn a reverse process whose marginal distributions retrace the forward evolution in reverse time, turning simple reference samples into data. In Part~B,
+we organized continuous diffusion models into three perspectives:
+variational (\Cref{ch:variational}), score-based
+(\Cref{ch:score-based,ch:score-sde}), and flow-based
+(\Cref{ch:flow-based}). The same three-way viewpoint carries over to the discrete setting, with one important caveat: these are not mutually exclusive schools or fixed paper categories. They are three ways of identifying what unknown object must be learned in order to reverse the probability path.
+
+\paragraph{Variational Perspective: Learn Reverse Transition Kernels.}
+In the continuous case (\Cref{sec:ddpm}), the variational viewpoint
+treats diffusion as a hierarchical latent-variable model. The forward
+process defines a chain of increasingly noisy latents, and the goal is
+to learn reverse transitions that undo the corruption one step at a
+time. The true reverse kernel $\Pr(\rvx_{k-1}|\rvx_k)$ is intractable
+because it depends on the marginal law of $\rvx_k$, which involves the
+unknown data distribution. The key insight of DDPM is to condition on
+the clean sample $\rvx_0$: the forward posterior
+$\Pr(\rvx_{k-1}|\rvx_k, \rvx_0)$ is Gaussian in closed form, and
+Theorem~\ref{thm:equiv-marginal-kl} shows that training against this
+conditional posterior is equivalent, up to terms independent of the learned reverse model, to training
+against the intractable marginal reverse kernel. The ELBO then
+decomposes into a sum of KL terms (\Cref{eq:ddpm-diffusion}), one per
+noise level, each asking the learned model to match a tractable
+forward posterior.
+
+The same logic applies in the discrete setting. Write $p$ for the joint law
+obtained by drawing $\rvx_0$ from the data distribution and then applying the
+fixed forward chain, and write $p_{\bphi}$ for the learned reverse model. Consider a chain of
+corrupted one-hot states
+\[
+\rvx_0 \;\xrightarrow{\;\rmP_0\;}\; \rvx_1 \;\xrightarrow{\;\rmP_1\;}\;
+\cdots \;\xrightarrow{\;\rmP_{L-1}\;}\; \rvx_L,
+\]
+where $\rvx_0$ is drawn from the data distribution and $\rvx_L$ is close to
+a simple reference distribution, such as all-mask or uniform.  The transitions
+are now categorical rather than Gaussian, but the variational structure is the
+same:
+\begin{itemize}[leftmargin=2em]
+    \item The true reverse $p(\rvx_{k-1}|\rvx_k)$ is intractable,
+      because it depends on the marginal at step~$k$.
+    \item Conditioning on $\rvx_0$ makes the forward posterior tractable
+      via Bayes' rule:
+      \[
+      p(\rvx_{k-1}|\rvx_k, \rvx_0)
+      =
+      \frac{p(\rvx_k|\rvx_{k-1})\;p(\rvx_{k-1}|\rvx_0)}
+             {p(\rvx_k|\rvx_0)},
+      \]
+      where every factor on the right is determined by the forward
+      process.
+    \item Training against these conditional posteriors has the same optimal
+      reverse kernel as training against the intractable marginal reverse
+      kernels; the difference consists of terms independent of $p_{\bphi}$.
+\end{itemize}
+
+Schematically, the discrete diffusion ELBO contains denoising terms of the form
+\[
+\E_{p(\rvx_{0:L})}
+ \Big[
+\mathcal{D}_{\mathrm{KL}} \big(
+  p(\rvx_{k-1}|\rvx_k, \rvx_0)
+  \;\|\;
+  p_{\bphi}(\rvx_{k-1}|\rvx_k)
+\big)
+\Big],
+\qquad k=1,\ldots,L.
+\]
+Depending on the exact model, the full ELBO also includes boundary terms such
+as the terminal prior term and the reconstruction term near $k=0$.  The key
+point is that each denoising term asks the learned reverse kernel to match a
+tractable Bayesian posterior determined by the forward corruption.
+
+Here $p_{\bphi}(\rvx_{k-1}=\rve_i|\rvx_k=\rve_j)$ denotes the neural-network
+parameterized reverse transition probability: given that the system is in
+state~$\rve_j$ at step~$k$, it gives the probability of having come from
+state~$\rve_i$ at step~$k{-}1$.  For each fixed~$\rve_j$, these values form a
+categorical distribution over previous states.
+
+The main formal difference from continuous DDPM is that these KL divergences
+are finite sums over discrete states rather than closed-form Gaussian
+expressions. This reflects a special property of Gaussian distributions: the product of two Gaussian densities in the same variable is proportional to another Gaussian. In continuous DDPM, the
+forward posterior is computed by multiplying Gaussian factors, so the result is itself Gaussian and
+the KL divergence reduces to a simple algebraic expression involving
+only means and covariances (\Cref{sec:ddpm}). In the discrete setting,
+Bayes' rule yields a categorical distribution instead, and each KL term is a sum over states. This sum is exact and conceptually simple, but for large vocabularies or full sequence spaces it may require structure, factorization, subsampling, or specialized parametrization.
+
+A practical point about parametrization is also worth noting. The ELBO asks the
+learned reverse kernel $p_{\bphi}(\rvx_{k-1}|\rvx_k)$ to match a Bayesian
+posterior, but it does not force one unique neural parametrization of that
+kernel. One common choice is a clean-state, or $x_0$-prediction,
+parametrization. The exact marginal reverse kernel satisfies the identity
+\[
+p(\rvx_{k-1}|\rvx_k)
+=
+\sum_{a}
+p(\rvx_{k-1}|\rvx_k,\rvx_0=\rve_a)\,
+p(\rvx_0=\rve_a|\rvx_k),
+\]
+where the sum is over valid clean categories. This is simply marginalization
+over the unknown clean state. Since the posterior $p(\rvx_0|\rvx_k)$ depends on
+the data distribution, it is not available in closed form. A model may therefore
+predict a clean-state distribution $\widehat p_{\bphi}(\rvx_0|\rvx_k)$ and use
+it to define
+\[
+p_{\bphi}(\rvx_{k-1}|\rvx_k)
+:=
+\sum_{a}
+p(\rvx_{k-1}|\rvx_k,\rvx_0=\rve_a)\,
+\widehat p_{\bphi}(\rvx_0=\rve_a|\rvx_k).
+\]
+If $\widehat p_{\bphi}(\rvx_0|\rvx_k)$ were equal to the true posterior
+$p(\rvx_0|\rvx_k)$, this mixture would recover the exact reverse kernel. In
+practice, it is a useful way to tie the learned reverse transition to the known
+forward posterior.
+
+This clean-state parametrization is common in multinomial/D3PM-style
+discrete-time diffusion models~\citep{hoogeboom2021argmax,austin2021structured},
+but it is not the definition of discrete diffusion. D3PM itself notes that one
+could instead predict the reverse logits directly, and later models use other
+structured parametrizations tailored to the forward process
+\citep{sahoo2024simple}. Thus clean-state prediction should be viewed as one
+important parametrization of the variational perspective, not as the only way to
+model the reverse process.
+
+\paragraph{Score/Ratio Perspective: Learn Local Probability Comparisons.}
+In the continuous case (\Cref{ch:score-based,ch:score-sde}), the
+score-based viewpoint starts from a simple question: given a corrupted
+sample $\rvx_t \sim p_t$, what local information about the current density is needed to reverse the diffusion? The answer is the score function
+$\nabla_{\rvx}\log p_t(\rvx)$, which appears in the reverse-time
+SDE and the probability-flow ODE\@. Learning the score with a neural
+network therefore suffices for generation.
+
+In a finite state space, there is no ambient Euclidean geometry, no
+ordinary notion of infinitesimal displacement, and no gradient with respect to the state. A sample does not move
+by taking a small Euclidean step; it changes by jumping from one state to another.
+So the score $\nabla_{\rvx}\log p_t(\rvx)$ has no direct literal analogue. But
+the reverse process must still answer an analogous question: \emph{if the
+system is currently in state~$\rve_j$, how likely is each candidate source state~$\rve_i$ relative to it?}
+
+\subparagraph{Deriving the Reverse Jump Rate.}
+To identify the needed quantity, consider a forward CTMC $\{\rvx_t\}_{0\leq t\leq T}$ with rate
+matrix~$\rmQ_t$ and marginal $\rvp_t$.  The entry $[\rmQ_t]_{ij}$ is the jump rate from
+state~$\rve_i$ to state~$\rve_j$.  Over a short interval~$\Delta t$, the
+probability of the infinitesimal forward event
+$\rvx_t=\rve_i$ and $\rvx_{t+\Delta t}=\rve_j$, for $i\neq j$, is approximately
+\[
+p_t(i)\,[\rmQ_t]_{ij}\,\Delta t.
+\]
+
+Now define the reverse-time process $\bar{\rvx}_s := \rvx_{T-s}$ for $0\leq s\leq T$. Its marginal at reverse time $s$ is $\bar{\rvp}_s=\rvp_{T-s}$. If the reverse process has rate matrix $\bar{\rmQ}_s$, then the corresponding reverse jump from $\rve_j$ to $\rve_i$ must reproduce the same infinitesimal path probability in the reversed temporal order. Taking the limit $\Delta t\to 0$ gives the off-diagonal time-reversal formula
+\begin{mdframed}
+\begin{equation}
+[\bar{\rmQ}_s]_{ji}
+= [\rmQ_{T-s}]_{ij}\;\frac{p_{T-s}(i)}{p_{T-s}(j)},
+\qquad i \neq j,
+\label{eq:reverse-rate-discrete-reverse-time}
+\end{equation}
+\end{mdframed}
+whenever $p_{T-s}(j)>0$. Equivalently, if $t$ denotes the corresponding forward time and $\widetilde{\rmQ}_t$ denotes the reverse generator indexed by that forward time, then
+\begin{equation}
+[\widetilde{\rmQ}_t]_{ji}
+= [\rmQ_t]_{ij}\;\frac{p_t(i)}{p_t(j)},
+\qquad i \neq j.
+\label{eq:reverse-rate-discrete}
+\end{equation}
+The diagonal entries are fixed by the row-sum-to-zero constraint,
+\[
+[\widetilde{\rmQ}_t]_{jj}
+=
+-\sum_{i\neq j}[\widetilde{\rmQ}_t]_{ji}.
+\]
+This is the standard time-reversal formula for CTMCs
+\citep{kelly1979reversibility,anderson2012continuous}, applied to
+discrete diffusion by \citet{campbell2022continuous}. The formula is understood only on states with positive marginal probability. Moreover, the
+reverse process only reverses probability flux along transitions allowed by the
+forward process: if $[\rmQ_t]_{ij}=0$, then the corresponding reverse rate from
+$\rve_j$ to $\rve_i$ is also zero. The statement is not an equilibrium detailed-balance assumption; it is a local time-reversal identity for infinitesimal path probabilities.
+
+\subparagraph{The Ratio as a Discrete Analogue of the Score.}
+Now inspect \Cref{eq:reverse-rate-discrete}.  The forward rate
+$[\rmQ_t]_{ij}$ is known, since the forward process is fixed by design.
+The unknown quantity is the ratio $p_t(i)/p_t(j)$,
+which compares how likely state~$\rve_i$ is relative to
+state~$\rve_j$ under the current marginal.  In inner-product notation,
+$p_t(i) = \langle\rvp_t,\rve_i\rangle$, so the ratio can be written as
+$\langle\rvp_t,\rve_i\rangle / \langle\rvp_t,\rve_j\rangle$.
+
+Why is this a discrete analogue of the score?  In continuous space, the
+score $\nabla_{\rvx}\log p_t(\rvx)$ measures how the log-density changes
+under an infinitesimal displacement.  In a finite state space, the
+natural local comparison is instead across an allowed jump from one state
+to another.  Along a jump from~$\rve_j$ to~$\rve_i$, the change in
+log-probability is
+\[
+\log p_t(i) - \log p_t(j)
+= \log \frac{p_t(i)}{p_t(j)},
+\]
+a finite difference of log-probabilities, playing the role that a
+directional derivative of $\log p_t$ plays in~$\R^D$. This comparison is naturally \emph{edge-local}: the ratio is only needed for
+pairs of states connected by the forward jump structure.  Thus, the discrete
+score is not a Euclidean vector field over $\mathbb{R}^D$; it is a collection
+of local probability comparisons along allowed transitions. For full sequences, the same statement applies with $i$ and $j$ replaced by full configurations, often neighboring configurations under a Hamming-type or graph-based transition structure.
+
+\subparagraph{What the Network Learns.}
+In continuous score-based models, a neural network
+$\rvs_{\bm{\phi}}(\rvx, t)$ is trained to approximate the score
+$\nabla_{\rvx}\log p_t(\rvx)$, and the learned score is plugged into
+the reverse-time SDE to generate samples. The discrete case follows the
+same logic at the level of information: the network must provide the time-dependent ratio information
+needed to determine reverse jump rates via
+\Cref{eq:reverse-rate-discrete}. Generation then proceeds by simulating
+the reverse-time Markov chain or CTMC using the learned transition probabilities or rates.
+
+Different formulations represent this information in different ways. Ratio-based models such as SEDD~\citep{lou2024discrete}
+estimate ratios $p_t(i)/p_t(j)$ or their log-forms using losses inspired
+by score matching. Other continuous-time formulations
+\citep{campbell2022continuous,sun2023scorebased} learn equivalent
+reverse quantities through objectives such as matching conditional transition probabilities. The idea of treating
+local probability comparisons as a discrete analogue of the score is
+formalized by the \emph{concrete score} of \citet{meng2022concrete}.
+Despite these differences in parametrization, the underlying principle
+is shared: learn the local probability comparisons required by time reversal, construct the
+reverse transitions or rates, and simulate backward.
+
+\paragraph{Flow Perspective: Learn a Discrete Transport Field.}
+In the continuous case (\Cref{ch:flow-based}), the flow-based viewpoint
+takes a different route: instead of learning the score and reversing an
+SDE, one directly learns a velocity field $\rvv_t(\rvx)$ whose ODE flow
+transports a reference distribution to the data distribution. The
+training strategy is flow matching
+(\Cref{sec:flow-matching-framework}): the marginal velocity field is
+intractable, but a \emph{conditional} velocity field
+$\rvv_t(\rvx | \rvx_0)$, conditioned on a data or endpoint sample, is available in closed form. The marginal and conditional
+targets are related by
+\[
+\rvv_t(\rvx)
+= \E \big[\rvv_t(\rvx | \rvx_0) | \rvx_t = \rvx\big],
+\]
+an average over all possible conditioning variables given the current state. Computing this average explicitly would require knowing the continuous marginal
+density $p_t(\rvx)$.  The key training trick (\Cref{subsec:fm-instantiations}) is that,
+under squared-error regression, the conditional target has the same population
+minimizer as the intractable marginal target. Training therefore avoids explicit marginal computation by using samples from tractable conditional paths.
+
+The discrete case follows the same idea, with rate matrices replacing velocity fields. Since a discrete state cannot
+move along a continuous trajectory through token space, the role of the velocity field is played by a rate matrix, also called a
+Markov generator, $\rmQ_t$. Recall that the entry $[\rmQ_t]_{ij}$ specifies
+the jump rate from state~$\rve_i$ to state~$\rve_j$; the actual
+probability mass sent from~$\rve_i$ to~$\rve_j$ per unit time is the flux
+\[
+J_t(i,j)=p_t(i)\,[\rmQ_t]_{ij}.
+\]
+In this sense, a rate matrix is a discrete transport field: it determines how probability mass is redistributed over time.
+
+There is one important subtlety. A probability path $\{\rvp_t\}_{t\in[0,T]}$ does not uniquely determine a rate matrix. Many different generators can produce the same derivative $\diff\rvp_t/\diff t$ in the master equation, just as different transport fields can sometimes realize the same marginal evolution under different geometric constraints. A discrete flow-matching method therefore specifies not only a probability path, but also a rule for assigning conditional jump rates or probability currents along that path.
+
+As in continuous flow matching, the marginal rate matrix is generally
+intractable, but conditional versions can often be made explicit.  If we
+condition on an endpoint, for example a clean data state and/or a reference state, one can prescribe a conditional probability
+path and derive tractable conditional jump rates along that path. A neural
+network is then trained, under an appropriate proper loss, to predict the corresponding transition or rate information from corrupted
+samples. The marginal generator is recovered through the same conditional-expectation principle: average the conditional transport object over the unknown endpoint distribution given the current state, but learn this average by supervised regression or classification against conditional targets rather than computing it explicitly.
+
+The parallel with continuous flow matching is therefore:
+\begin{itemize}[leftmargin=2em]
+    \item In continuous flow matching, the network is trained against a
+      conditional velocity target; the marginal velocity emerges as the
+      optimal predictor under the flow-matching loss.
+    \item In discrete flow matching, the network is trained against conditional
+      transition or jump-rate targets; the marginal discrete transport field
+      emerges by the analogous conditional-expectation mechanism.
+\end{itemize}
+In both cases, training avoids the intractable marginal law by working
+with tractable conditional paths and sampled intermediate states.
+
+This perspective is developed by \citet{campbell2024generative} and
+\citet{gat2024discrete} under the heading of discrete flow models or discrete flow matching. More broadly, the flow perspective should be read as a statement about \emph{what object is learned}: a transport field on a discrete state space, represented by transitions, rates, or probability currents.
+
+\subsection{What Is Similar and What Is Genuinely Different?}
+\label{subsec:epilogue-genuine-diff}
+
+The following table summarizes the parallel between continuous and
+discrete diffusion models. Reading across each row shows the same
+conceptual ingredient instantiated in two different settings:
+
+\begin{table}[!t]
+\caption{\textbfs{Continuous and discrete views of probability transport.}
+The same generative modeling ingredients appear in both continuous and finite
+discrete state spaces, but the mathematical objects change: densities become
+probability vectors, ODE/SDE dynamics become Markov chains or CTMCs, and
+reverse modeling is expressed through transition kernels, score/ratio
+information, or discrete transport fields.}
+\label{tb:continuous-discrete-diffusion}
+\centering
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{p{0.15\linewidth} p{0.40\linewidth} p{0.40\linewidth}}
+\toprule
+\textbfs{State}
+& \textbfs{Continuous} $(\rvx \in \R^D)$
+& \textbfs{Discrete} $(\rvx \in \mathcal{V} \subset \{0,1\}^K)$ \\
+\midrule
+
+\textbfs{Law}
+& Density $p_t(\rvx)$
+& Probability vector $\rvp_t \in \Delta^{K-1}$ \\
+\graymidrule
+
+\textbfs{Sample \newline Dynamics}
+& ODE or SDE trajectories
+& Markov-chain or CTMC jumps \\
+\graymidrule
+
+\textbfs{Law \newline Evolution}
+& Continuity or Fokker--Planck equation
+& Transition-matrix propagation or master equation \\
+\graymidrule
+
+\textbfs{Transport \newline Object}
+& Velocity, drift, diffusion, or score field
+& Transition kernel, rate matrix, ratio, or probability current \\
+\graymidrule
+
+\textbfs{Reference \newline Law}
+& Simple distribution, e.g.\ Gaussian
+& Simple distribution, e.g.\ uniform or all-mask \\
+
+\midrule
+\multicolumn{3}{c}{\textbfs{Three Perspectives on Reverse Modeling}} \\
+\midrule
+
+\textbfs{Variational}
+& ELBO with Gaussian or continuous transitions
+& ELBO with categorical transitions \\
+\graymidrule
+
+\textbfs{Score/Ratio}
+& Learn score $\nabla_{\rvx}\log p_t(\rvx)$
+& Learn ratios or log-ratios, e.g.\ $p_t(i)/p_t(j)$ \\
+\graymidrule
+
+\textbfs{Flow}
+& Learn velocity field $\rvv_t(\rvx)$
+& Learn transition, rate, or current field \\
+
+\bottomrule
+\end{tabular}
+\endgroup
+\end{table}
+\noindent
+The parallel is clean, but the discrete setting
+is not simply the continuous theory with gradients replaced by ratios. Several deeper differences are worth highlighting.
+
+\paragraph{No Literal Inverse Map.}
+In a deterministic continuous normalizing flow, the reverse map is literally the inverse of the forward map. In a discrete Markov process, the forward kernel may merge mass from many states and need not be invertible. The reverse process is therefore not obtained by matrix inversion. It is a Bayesian or time-reversal construction that depends on the current marginal law. This is why reverse transition probabilities involve factors such as $p_k(i)/p_{k+1}(j)$, and reverse jump rates involve ratios such as $p_t(i)/p_t(j)$.
+
+\paragraph{Geometry and Sample Paths.}
+In continuous Euclidean space, individual samples evolve along
+continuous-time trajectories: ODE solutions are smooth, and SDE sample
+paths are continuous even though they are typically nowhere
+differentiable. This differential structure makes objects such as
+velocity fields, score functions, and divergences meaningful. In a
+finite state space, by contrast, an individual trajectory is a
+\emph{pure-jump path}: it stays at one state for a random holding time
+and then jumps abruptly to another. What evolves smoothly is not the
+sample path itself, but the probability vector $\rvp_t$, which evolves
+continuously in time on the probability simplex according to the master
+equation. Discrete diffusion therefore still admits a unifying
+description at the level of probability evolution, but its sample-level
+dynamics are governed by jump processes rather than by continuous ODE/SDE
+paths in the data space.
+
+\paragraph{Forward Corruption Structure and Reverse Parametrization.}
+In discrete diffusion, the forward corruption process is often a substantive modeling choice. In continuous Gaussian diffusion, one may vary the schedules $\alpha_t$ and $\sigma_t$, but the forward kernel often remains Gaussian, so the main effect is to control the rate and scale of corruption. In discrete diffusion, by contrast, the transition rule itself can change: one may use uniform corruption, masking, nearest-neighbor transitions, graph-structured transitions, domain-specific transitions, or more general probability paths. As emphasized by D3PM~\citep{austin2021structured}, the forward process can therefore incorporate domain-specific inductive bias directly, and this in turn shapes the reverse generation problem.
+
+This difference also changes the status of reverse parameterizations. In the Gaussian setting, common targets such as noise, denoised data, score, and velocity are linked by simple time-dependent affine transformations. In the discrete setting, reverse transition probabilities, clean-state predictors, probability ratios, and jump rates are connected through normalization, Bayes' rule, and the chosen transition graph. They are related, but not merely interchangeable Gaussian-style reparameterizations. As a result, the variational, score/ratio, and flow descriptions are genuinely different views of the reverse problem, not just different names for the same algebraic target.
+
+\paragraph{Sampling Mechanism.}
+The sampling procedure also differs.  In continuous diffusion, generation is
+usually implemented by numerically integrating an ODE or SDE over a chosen time
+grid.  In discrete diffusion, generation means simulating a reverse Markov
+chain or CTMC\@.  In discrete time, this amounts to sampling categorical reverse
+transitions.  In continuous time, it may involve simulating jumps from learned
+rates, for example by event-based simulation or time discretization.  Thus,
+the role played by numerical ODE/SDE solvers in continuous diffusion is replaced
+by categorical transition sampling or jump-process simulation in the discrete
+setting.
+
+\paragraph{Why Stop Here?}
+Our goal in this section is not to develop the full machinery of discrete diffusion models, but to identify the principle that remains invariant across state spaces. The key point is structural: in continuous spaces, distributional evolution is governed by change-of-variable principles and their differential forms, including the continuity equation and the Fokker--Planck equation. In discrete spaces, the corresponding role is played by Markov operators and the master equation. In both settings, the modeling logic is the same: define a forward corruption process, understand how it transports the distribution, and then learn a reverse transport mechanism for generation. This logic does not depend on whether the underlying state space is continuous or discrete.
+
+What changes are the mathematical objects used to realize this program, not the program itself. In continuous spaces, one works with densities, gradients, velocity fields, and SDE or ODE dynamics. In discrete spaces, one works with probability vectors, transition kernels, jump rates, ratios, and probability currents. These differences matter technically, and they lead to distinct questions of parameterization, training, and sampling. But they do not alter the deeper conclusion: the probability-transport viewpoint is not tied to a particular state space, architecture, or paper lineage. It is a general organizing principle broad enough to encompass both continuous and discrete diffusion within a single conceptual framework.
+
+\clearpage
+\newpage
+
+\section{Closing Remarks of the Book}\label{sec:epilogue-closing}
+Diffusion models may at first appear as a collection of acronyms, parametrizations, and algorithmic variants. Yet the central idea is simple. They provide a way to construct generators by prescribing how probability laws evolve over time. From this viewpoint, generation is not a mysterious black box, but the controlled transport of a cloud of particles under a forward process and its learned reverse.
+
+Throughout this book, this viewpoint has appeared in several forms. In continuous state spaces, variational, score-based, and flow-based formulations provide different ways to describe and learn the reverse of a prescribed law evolution. Diffusion-motivated fast generators, such as flow-map models, belong to the same story as well: they do not abandon the transport viewpoint, but instead ask whether the underlying generative dynamics can be represented more directly and executed more efficiently. In discrete state spaces, the same structural idea reappears in the language of Markov kernels, jump processes, ratios, and master equations.
+
+The main message of this book is therefore not that one particular formulation should replace all others. Rather, diffusion is best understood as a general principle for constructing generators from a prescribed forward process~\citep{lai2026unified}. Under this viewpoint, different state spaces naturally lead to different reverse representations. In continuous settings, one may work with conditional Gaussians, score functions, velocity fields, or more direct flow maps. In discrete settings, one may work with reverse transition probabilities, clean-state predictors, probability ratios, jump rates, or probability currents associated with the underlying Markov process. What matters is not the label of the parametrization, but whether the forward process, the induced evolution of probability laws, and the learned generative mechanism fit together coherently.
+
+We hope this book has made that structure clear: a forward process induces an evolution of probability laws, and generative modeling amounts to learning how to reverse, approximate, or exploit that evolution. Specific methods will continue to change, but this viewpoint gives a stable way to understand why they work, how they relate, and where new developments are likely to come from.
+
+\epigraph{\textit{The important thing is not to stop questioning. Curiosity has its own reason for existence.}}{Albert Einstein}

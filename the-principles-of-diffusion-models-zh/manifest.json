@@ -1,0 +1,504 @@
+{
+  "title": "The Principles of Diffusion Models",
+  "edition": "Unofficial Chinese initial translation",
+  "source_version": "arXiv:2510.21890v3",
+  "source_date": "2026-08-27",
+  "translation_date": "2026-11-25",
+  "website": "https://the-principles-of-diffusion-models.github.io/",
+  "source_url": "https://arxiv.org/src/2510.21890v3",
+  "license": "CC BY-NC-ND 4.0 (original work)",
+  "translation_engine": "Google Translate (gtx)",
+  "human_semantic_review": "Not completed paragraph by paragraph",
+  "files": [
+    {
+      "path": "original/arxiv-2510.21890v3.tar",
+      "bytes": 17434907,
+      "sha256": "23511294c4a1af248ec0daf78f69edb0b477442dfd567fd7364854a9c706b34e"
+    },
+    {
+      "path": "original/principles-diffusion-models-v3-en.pdf",
+      "bytes": 19745365,
+      "sha256": "222dd85adc24ed24db79c86caf502f0c45018288539abcfebae5950d92a6cf32"
+    },
+    {
+      "path": "original/tex/00README.json",
+      "bytes": 805,
+      "sha256": "7262d1d519b41efd276ad0b34342c3307068a26782772ed3b2088e805c5be84f"
+    },
+    {
+      "path": "original/tex/A_Crash-Course-of-DE.tex",
+      "bytes": 47350,
+      "sha256": "57a13c3beb27de2a48c48900f3a5396b262e7bdebb91a63de155394c1fb501d1"
+    },
+    {
+      "path": "original/tex/annotate_eqs.sty",
+      "bytes": 7953,
+      "sha256": "148345872d4af778ba5e374006a9f72ee7f923a5a4e61361c5cacb76f2a13eeb"
+    },
+    {
+      "path": "original/tex/B_Continuity-Equation.tex",
+      "bytes": 45364,
+      "sha256": "2dbaa59e1f62decfe3eafe82a9209f320fe610d439102e27992195a10236ac6e"
+    },
+    {
+      "path": "original/tex/C_SDE-and-Ito.tex",
+      "bytes": 36315,
+      "sha256": "6cb46f44281310b22d9378d574a61da555a58fec955e9e997091bda85ebdc654"
+    },
+    {
+      "path": "original/tex/Chapter-0-Diffusion-High-Level.tex",
+      "bytes": 11639,
+      "sha256": "70b3375e4d1ac0174cf0502b89c093e460ea51cf6f908c9e3da4910916a850e2"
+    },
+    {
+      "path": "original/tex/Chapter-1-Varational-Perspective-From-VAE-to-DDPM.tex",
+      "bytes": 84817,
+      "sha256": "b249983dc072666c023d64b64a0462e40f81f9c2deb6a8228180dbc96d79e7c2"
+    },
+    {
+      "path": "original/tex/Chapter-10-Epilogue-and-Outlook.tex",
+      "bytes": 63439,
+      "sha256": "d2615392b678bdc476e3dc883e489f2be28f05fd913d4463fa36380709acab7b"
+    },
+    {
+      "path": "original/tex/Chapter-2-Score-Based-Perspective-From-EBMs-to-NCSN.tex",
+      "bytes": 94387,
+      "sha256": "cf2d14ce560447bbc1912c5272c665d334a918f821a4683056a9a48c270673a3"
+    },
+    {
+      "path": "original/tex/Chapter-3-Diffusion-Models-Today-Score-SDE-Framework.tex",
+      "bytes": 115292,
+      "sha256": "251a978d013f852095612ae462f82ce41977c1a1b9ed252b411562f6f6a2856b"
+    },
+    {
+      "path": "original/tex/Chapter-4-Flow-Based-Perspective-From-NFs-to-Flow-Matching.tex",
+      "bytes": 122878,
+      "sha256": "34bfdee67f86fad5eb432072ab4dd202903c3058b1e66aa05dd80913488d8cc9"
+    },
+    {
+      "path": "original/tex/Chapter-4-plus-OT-and-Diffusion-Model.tex",
+      "bytes": 95451,
+      "sha256": "b9985b15a1884e62cb022e9585eff0a063d85b2b23114d082d1cffb6d7046ff9"
+    },
+    {
+      "path": "original/tex/Chapter-5-They-Are-All-Equivalent.tex",
+      "bytes": 110111,
+      "sha256": "71c0963a07aee4581d66290426d5425488c0935091e43a6f01503723d678b3fd"
+    },
+    {
+      "path": "original/tex/Chapter-6-Guidance.tex",
+      "bytes": 108870,
+      "sha256": "763ef3e3d42406efc80015c5da984d7e8ed08a1b63f1f704300a63041dfafbe7"
+    },
+    {
+      "path": "original/tex/Chapter-7-Sophisticated-Solvers-for-Fast-Sampling.tex",
+      "bytes": 165019,
+      "sha256": "0ae86a4f67064f70c7a02605f8fc4b2ee7ecf024e8dad66d05d2eb05dafc9986"
+    },
+    {
+      "path": "original/tex/Chapter-8-Post-Training-Methods-for-Fast-Sampling.tex",
+      "bytes": 56593,
+      "sha256": "de0ee4d18cae0520a27f6a3fffdf2e8394236521c7d405708b095e9f7a5c4cb3"
+    },
+    {
+      "path": "original/tex/Chapter-9-Learning-Fast-Generator-from-Scratch.tex",
+      "bytes": 127494,
+      "sha256": "6a25aeb7313702935e0b4f9f2718b07b6670151956497fe51cfaf97760515fdc"
+    },
+    {
+      "path": "original/tex/D_Proofs.tex",
+      "bytes": 72445,
+      "sha256": "8d0a65e3522810bb0cfbbe6d40ee48f8b2c6fc71a412ac16687c01deb97f10a1"
+    },
+    {
+      "path": "original/tex/fnfix.tex",
+      "bytes": 710,
+      "sha256": "0154ac6b7879ca02846e5c1f287dcc91db1702c0ed5d44fd2da592f288e59817"
+    },
+    {
+      "path": "original/tex/Images/appendix/particle_cloud.pdf",
+      "bytes": 23887,
+      "sha256": "2bd3f4aef78fb891088736bc08ffb09266784c1c8db4f010199bd12d8d1af456"
+    },
+    {
+      "path": "original/tex/Images/appendix/vector_field_only.pdf",
+      "bytes": 15407,
+      "sha256": "891a158bb2f63e70e061b189911c2e0a2fafa3de89ba477d117cdb5fa4bfd546"
+    },
+    {
+      "path": "original/tex/Images/appendix/vector_field_with_density.pdf",
+      "bytes": 82904,
+      "sha256": "35a72ba53a6530be5e3cd6edca125387fd978d2465826921022fc3196ac89429"
+    },
+    {
+      "path": "original/tex/Images/PartA/diffusion_forward_vs_reverse.pdf",
+      "bytes": 2553399,
+      "sha256": "94bca527ea1f5f5fea19a8c1596248ae10859c090f1da446dfcc92279c04c8fc"
+    },
+    {
+      "path": "original/tex/Images/PartA/intro-diffusion-reverse.pdf",
+      "bytes": 1160190,
+      "sha256": "9b47bd758ffbc129fe2e917b5fb2079c1efa03ca2dd48f4ff3f91e6a02f49b8d"
+    },
+    {
+      "path": "original/tex/Images/PartA/intro_forward.pdf",
+      "bytes": 313116,
+      "sha256": "49ea2f86b528fb869a571c885837fd9eb961c77f05644fedc3b7538ff09552af"
+    },
+    {
+      "path": "original/tex/Images/PartB/classifier_guidance_v2.pdf",
+      "bytes": 222166,
+      "sha256": "7521237a66ac44f19600184db5a28c0c4c2447cce0e2e2024e94b9f9abb007c3"
+    },
+    {
+      "path": "original/tex/Images/PartB/cov_2d_layers.pdf",
+      "bytes": 2577128,
+      "sha256": "cafe3a6d5e0edb68891d26396ed2be36506107d25ef6417f758a612ff23d8b0d"
+    },
+    {
+      "path": "original/tex/Images/PartB/data_vs_prior_cone_with_oval.pdf",
+      "bytes": 973082,
+      "sha256": "3bd65d1272d44dc4bcec2841e9ff002a366b650879929ef502e5dd8ae4e983da"
+    },
+    {
+      "path": "original/tex/Images/PartB/ddpm_conditional_trick.pdf",
+      "bytes": 176370,
+      "sha256": "379d199c5e784d84225fb904b5a5870390350b333c8aa0aafe55edf728ebd5a4"
+    },
+    {
+      "path": "original/tex/Images/PartB/denoising_score_matching.pdf",
+      "bytes": 139164,
+      "sha256": "a200bc9d9c80aa601d3ee6341c162087557f25b593c6fdd856dc5bd1e072b6a4"
+    },
+    {
+      "path": "original/tex/Images/PartB/dgm-learning.pdf",
+      "bytes": 545418,
+      "sha256": "69b7927cdbcb61ecdd82696d84c4c983642f71c049a71b31c44edfd56018dec3"
+    },
+    {
+      "path": "original/tex/Images/PartB/diffusion-clean.pdf",
+      "bytes": 153075,
+      "sha256": "ed1ecc7d08505aa2ed29ab1cbb603b7a3bccff94f6ad3851bff3099e4ac2761e"
+    },
+    {
+      "path": "original/tex/Images/PartB/discrete_vs_continuous_side_by_side_white.pdf",
+      "bytes": 49678,
+      "sha256": "b4002c2763c5423e75352069d3b802ea696edd154dbd701c9659e99c069fff33"
+    },
+    {
+      "path": "original/tex/Images/PartB/dsm-graph.pdf",
+      "bytes": 142046,
+      "sha256": "5ffe0f480b917a8e1c77168d874c488a02936529f947ac30cb1428e7a84c5e64"
+    },
+    {
+      "path": "original/tex/Images/PartB/ebm-graph.pdf",
+      "bytes": 49117,
+      "sha256": "a88ac3fe7212d5ccec43cf07c8ca3f5aa8b059dbcd7720d53d50bec2b41d5f3b"
+    },
+    {
+      "path": "original/tex/Images/PartB/eot_epsilon_interpolation.pdf",
+      "bytes": 669335,
+      "sha256": "57b8348170c8d94a379d75983ccf0d515b5fe7f4c2fb7f8c293f83786979c98f"
+    },
+    {
+      "path": "original/tex/Images/PartB/Euler.pdf",
+      "bytes": 74443,
+      "sha256": "30435b73d94dc0471309a59d10a6639e52efaa52a9a05e033966aa5acb6f65ff"
+    },
+    {
+      "path": "original/tex/Images/PartB/flow_density.pdf",
+      "bytes": 100047,
+      "sha256": "0da9be62cc308c281fdc72792433c011ee6ab16a0d7a04bda646e0e605264b41"
+    },
+    {
+      "path": "original/tex/Images/PartB/flow_matching_conditional.pdf",
+      "bytes": 126646,
+      "sha256": "65e8e538b11a983507f76466938d06b733cff4e7ba8c570a57861b67650f5b49"
+    },
+    {
+      "path": "original/tex/Images/PartB/forward_sde_ode_trajectories.pdf",
+      "bytes": 240817,
+      "sha256": "eae615c2cdee67924c8504e1225e7e39fc52c2b9b3d391c1f9df1ef245f15e1d"
+    },
+    {
+      "path": "original/tex/Images/PartB/four_panel_simple.pdf",
+      "bytes": 880002,
+      "sha256": "3d389a9575da7100b3416f70d80d1e8b52200803f6090f04c8d527886f72dd6e"
+    },
+    {
+      "path": "original/tex/Images/PartB/langevin_sampling.png",
+      "bytes": 517118,
+      "sha256": "1a4324f524ec68c593904fa05b05cb342380768e45af76a7582195f471dbb4d9"
+    },
+    {
+      "path": "original/tex/Images/PartB/ncsn-graph.pdf",
+      "bytes": 42033,
+      "sha256": "cdab33749e3efdd40f5dd8e3cc74cfcbb9ba5c03596fa475acfc67c94d3fd1d8"
+    },
+    {
+      "path": "original/tex/Images/PartB/ot_2d_coupling_comparison.pdf",
+      "bytes": 201069,
+      "sha256": "ae920d11bb885fc2b2ad284933f99c390346b5e82fdc2995fbd2c276594ee560"
+    },
+    {
+      "path": "original/tex/Images/PartB/ot_illustration.pdf",
+      "bytes": 58695,
+      "sha256": "4fbecc67f06ae3ae27f566d2b91e84b015d8e67e063ea5aef6cdd87d82ce67c6"
+    },
+    {
+      "path": "original/tex/Images/PartB/pfode_vs_ot_2d.pdf",
+      "bytes": 335646,
+      "sha256": "b7973c8eca5656f06e881608cff4e3dc863aa47a108eeedffd8cadec62aa312d"
+    },
+    {
+      "path": "original/tex/Images/PartB/rectified_flow_trained.pdf",
+      "bytes": 78180,
+      "sha256": "9cf8990cad8fcc92885894c55e092df59c83f88ae522821149ad730611c22cf1"
+    },
+    {
+      "path": "original/tex/Images/PartB/reverse_sde_and_ode_trajectories.pdf",
+      "bytes": 211114,
+      "sha256": "017aa06ad2084a2c0e10cd07bf7b35b2417e48d22d873dd454d48342319ac7d9"
+    },
+    {
+      "path": "original/tex/Images/PartB/sb_illustration.pdf",
+      "bytes": 489731,
+      "sha256": "9891d485a1734ef5f1cc842fc699e08645fea10113acd0f52d3193e4c9d30561"
+    },
+    {
+      "path": "original/tex/Images/PartB/score_function_acc.pdf",
+      "bytes": 336544,
+      "sha256": "904ac6b8816697fb20ab99ada2722681e8a39d42649ab0b2a1136acb1c7fbcef"
+    },
+    {
+      "path": "original/tex/Images/PartB/score_function_approximation.pdf",
+      "bytes": 218308,
+      "sha256": "6ea7f7c545fa8db978a73fe50fe05a7c0d025d00f2a531d8a86961e9a04ce7a4"
+    },
+    {
+      "path": "original/tex/Images/PartB/score_function_plot.pdf",
+      "bytes": 235117,
+      "sha256": "baab1fef67c1da9b754f2d684ec1ce3678920a10406b5e94eae18e30bb51adf6"
+    },
+    {
+      "path": "original/tex/Images/PartB/score_landscape_2d.pdf",
+      "bytes": 245127,
+      "sha256": "f86bf8a3dccbd6605d42331f578fdb51b2b0dc82acbf46e9b36bb3ba891bab2f"
+    },
+    {
+      "path": "original/tex/Images/PartB/score_sde_three_dynamics.pdf",
+      "bytes": 131384,
+      "sha256": "7cfdf97e6d7ce8c740fbc7aa3b4a2b53bbb9f7c6812977f71eff4f15afadb62a"
+    },
+    {
+      "path": "original/tex/Images/PartB/sde-forward-noise.pdf",
+      "bytes": 160001,
+      "sha256": "aca55e546b39846bfbb0b10d90ef847681b02a3d81791f646afa6ff444a0ed5c"
+    },
+    {
+      "path": "original/tex/Images/PartB/sde_ode_trajectories.pdf",
+      "bytes": 510071,
+      "sha256": "095a423bd8e9624f6912aff4e680a78c327efa1c16c467aca4e09e3ff1855425"
+    },
+    {
+      "path": "original/tex/Images/PartB/straightness_counterexample.pdf",
+      "bytes": 71293,
+      "sha256": "96d1434d8a2b3ed1b0d24dfe528a3d7cfd6a9392f4d6a729c82a9b3af408c712"
+    },
+    {
+      "path": "original/tex/Images/PartB/triptych_gray_cones_final.pdf",
+      "bytes": 1149027,
+      "sha256": "e956aed1859a9d0e2da0bb1ae2d601b000eeb6ccc3d6c69b2e4dd59fce890a40"
+    },
+    {
+      "path": "original/tex/Images/PartB/vdm-backward.pdf",
+      "bytes": 85979,
+      "sha256": "b84ba7aac7450e5390d3ecad19e845c2e60fe2a9e127cd8d5d10c74e49fb382c"
+    },
+    {
+      "path": "original/tex/Images/PartB/vdm-forward.pdf",
+      "bytes": 123904,
+      "sha256": "c6200270afb810025762fa1c3039fc305f6d07a920a8bd2db37284185b6f2ff7"
+    },
+    {
+      "path": "original/tex/Images/PartB/vdm-sde.pdf",
+      "bytes": 105011,
+      "sha256": "8fb4689733807d1f1df819faf3774ea3db12e08c6424fae95209ef148e2e6a9a"
+    },
+    {
+      "path": "original/tex/Images/PartC/DEIS.pdf",
+      "bytes": 40007,
+      "sha256": "2bbf603e2dd511519ff50930f4f238fc666312fb8dcd0743384fc04875e008e7"
+    },
+    {
+      "path": "original/tex/Images/PartC/guidance.pdf",
+      "bytes": 156459,
+      "sha256": "90acdcd20d200e079591c113d88af8a53341ba076e6a5f1124564b88158ad9af"
+    },
+    {
+      "path": "original/tex/Images/PartC/paradigm-1.pdf",
+      "bytes": 9833,
+      "sha256": "e69c4469d9dde2f2ab29d5a1db1a1eb2cac47215b7b12d353d782ec2a35ae5b0"
+    },
+    {
+      "path": "original/tex/Images/PartC/paradigm-2.pdf",
+      "bytes": 10437,
+      "sha256": "34a119ff9e772ad84e85def5949f3f2d36c78f48569db06325d8fe366747db7d"
+    },
+    {
+      "path": "original/tex/Images/PartC/paradigm-3.pdf",
+      "bytes": 26951,
+      "sha256": "0c2a0dc3698fe95c05b52aa5df0d48aed90dc8ca8f9642a841532711e1e1d40f"
+    },
+    {
+      "path": "original/tex/Images/PartD/ctm-target.pdf",
+      "bytes": 41047,
+      "sha256": "18235b14864d791fe513f987fbaeacafef496264b2e7600a14f2994ceaa6a03b"
+    },
+    {
+      "path": "original/tex/Images/PartD/ctm_gamma.pdf",
+      "bytes": 69764,
+      "sha256": "73081c874f3d687723b95d0f8fbaf483c4227e8d02f56c5c3529ffd8d125aa53"
+    },
+    {
+      "path": "original/tex/Images/PartD/eulerian-1.pdf",
+      "bytes": 115365,
+      "sha256": "926efb82a8c8975d69c0577110343fb4d872845e5c4b9a25bc9b5ebe0120d5d5"
+    },
+    {
+      "path": "original/tex/Images/PartD/eulerian-2.pdf",
+      "bytes": 114807,
+      "sha256": "daf6c89075f49a215bce8f3f3a3bd0d82125ac280b02f10c8837c828846fcfee"
+    },
+    {
+      "path": "original/tex/Images/PartD/flow-map.pdf",
+      "bytes": 38255,
+      "sha256": "ae49c55859b84a8e8c41c9af67e54685dd033bca3b6395d5c73b6f06f380d895"
+    },
+    {
+      "path": "original/tex/Images/PartD/lagrangian-1.pdf",
+      "bytes": 114824,
+      "sha256": "180ca51b99399a1294d68cd3800dba3bfdcd242b2aa52b32b787b04f52d8ab9e"
+    },
+    {
+      "path": "original/tex/Images/PartD/lagrangian-2.pdf",
+      "bytes": 116840,
+      "sha256": "b437b2a82d9aed542e18eced8d48baf7870ec8a7ef455e38ed60a96402a6d8bf"
+    },
+    {
+      "path": "original/tex/Images/PartD/PD.pdf",
+      "bytes": 31847,
+      "sha256": "6b3ffb20e243f6acc1765c7d4edb718e370cbc4e2720fa71bd83db49f94236f4"
+    },
+    {
+      "path": "original/tex/Images/PartD/semigroup.pdf",
+      "bytes": 41383,
+      "sha256": "43a8a9c3c0ee9fd50ac38981199656742026c84e5ae355655330bf3f581414ae"
+    },
+    {
+      "path": "original/tex/Images/PartE/ctmc_trajectory.pdf",
+      "bytes": 12013,
+      "sha256": "46795f1beb7e5ad6b1bcd691b628a2e288126e8be5e5a636959cff18cdec3d83"
+    },
+    {
+      "path": "original/tex/Images/PartE/discrete_vs_continuous_ode.pdf",
+      "bytes": 37497,
+      "sha256": "0e05a263e398b7aea80295bea2152adcf41d82cd78442a67118ba4d4cffaa774"
+    },
+    {
+      "path": "original/tex/Images/PartE/fig_notation_overview.pdf",
+      "bytes": 52952,
+      "sha256": "b89a633019cbbeb191935252e8f0885e854da2750ddc16e89a82903b5174f54a"
+    },
+    {
+      "path": "original/tex/Images/PartE/masked_vs_uniform_diffusion.pdf",
+      "bytes": 40878,
+      "sha256": "ca084c4a0b05c18b5474bc4ae1a8ef2471124db12d7d104985b1b988bd56890f"
+    },
+    {
+      "path": "original/tex/main_v2.bbl",
+      "bytes": 254418,
+      "sha256": "119f98bbc85fd8247d40a8032dd6797d26af9c0c8f53a75740beb0f214720d81"
+    },
+    {
+      "path": "original/tex/main_v2.bib",
+      "bytes": 124528,
+      "sha256": "0c5bd1c66af81b38babda26ac9dc7ed9bcd030c5efd39c28ddd5862987ea4f27"
+    },
+    {
+      "path": "original/tex/main_v2.tex",
+      "bytes": 16905,
+      "sha256": "98aa584d86a32835466f8db3083048632ab070a0583fe689cfd8fc7de7927c47"
+    },
+    {
+      "path": "original/tex/math_commands.tex",
+      "bytes": 15502,
+      "sha256": "1ad14214f1eb7d55eb5186b237366f21156224c7e2ecf0e4882b48c56d7768f5"
+    },
+    {
+      "path": "original/tex/notations.tex",
+      "bytes": 6953,
+      "sha256": "b5dd9fc25bfd04768c933f0e090970e027fe41086ddbd9de431a8357845107c1"
+    },
+    {
+      "path": "original/tex/now-ieee.bbx",
+      "bytes": 19356,
+      "sha256": "bfae623ffa801ae47ca6f48d13fcb46d2c934e8f7c04116400ae492a3704f413"
+    },
+    {
+      "path": "original/tex/nowfnt-arxiv.cls",
+      "bytes": 47629,
+      "sha256": "899a16dee7485a7e9b2b68619fccfde4cc3664c6714a25dffa70e4f767e8151b"
+    },
+    {
+      "path": "original/tex/nowfnt-biblatex.sty",
+      "bytes": 4863,
+      "sha256": "7987a8ce63c85b131b01b01d3b7b590eeeac321d856d7ea57d9a46b11bfa2516"
+    },
+    {
+      "path": "original/tex/NOWFnT-data.tex",
+      "bytes": 3484,
+      "sha256": "3e5c87ba10974b9e569d9a248c53410a716ede3ce7939b5f974411e288888eed"
+    },
+    {
+      "path": "original/tex/nowfnt.cls",
+      "bytes": 47037,
+      "sha256": "4049ee9dc7c56b69e54df3e477acab39f27a651311541167cf4ae5edf58fb1f5"
+    },
+    {
+      "path": "original/tex/nowfntsort.bst",
+      "bytes": 20780,
+      "sha256": "ec536dc29a4dde20b46f71fdcbc680bdc690b8f0566fb7bb1e5ce9346e75ee5b"
+    },
+    {
+      "path": "original/tex/Part-B-diagram.tex",
+      "bytes": 3126,
+      "sha256": "db4721c5ec9a43c897f33ed0147ca89c49225fae20dce89287f2f31754a9ec9b"
+    },
+    {
+      "path": "original/tex/Part-C-D-diagram.tex",
+      "bytes": 2649,
+      "sha256": "206b4b512360078acbfec964120c826fa34d44efee4e5d4d03c2f869d3e0e11c"
+    },
+    {
+      "path": "original/tex/Preface.tex",
+      "bytes": 30484,
+      "sha256": "d9c743d6ed12a9627256130d2ea7c1c15ad2ae74760fe684ce1de5a7a6fc364a"
+    },
+    {
+      "path": "original/tex/Prologue-Deep-Generative-Modeling.tex",
+      "bytes": 67585,
+      "sha256": "c10f058a9c8085f40b12b1da7078d0c255399496c171ad329fe31dccbc392647"
+    },
+    {
+      "path": "original/tex/scaffolding.tex",
+      "bytes": 8207,
+      "sha256": "94965590e9a9d135b6ac723f5ac5fd5f93ee47cd356345d2c7c68a25628dee15"
+    },
+    {
+      "path": "original/tex/theorems.tex",
+      "bytes": 15885,
+      "sha256": "1f2397cf43e0c368d87ec86a8f8c62857ae6115c6f33d86abefb49371442fb02"
+    }
+  ]
+}

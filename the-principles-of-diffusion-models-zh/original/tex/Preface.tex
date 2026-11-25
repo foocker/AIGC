@@ -1,0 +1,356 @@
+\chapter*{Preface and Roadmap}
+\markboth{\sffamily\slshape Preface}
+{\sffamily\slshape Preface}
+
+
+Diffusion models have rapidly become a central paradigm in generative modeling, with a vast body of work spanning machine learning, computer vision, natural language processing, and beyond. This literature is dispersed across communities and highlights different dimensions of progress, including theoretical foundations that concern modeling principles, training objectives, sampler design, and the mathematical ideas behind them; implementation advances that cover engineering practices and architectural choices; practical applications that adapt the models to specific domains or tasks; and system level optimizations that improve efficiency in computation, memory, and deployment.
+
+
+This book sets out to provide a \emph{principled foundation} of diffusion models, focusing on the following central themes:
+\begin{itemize}
+    \item We present the essential concepts and formulations that anchor diffusion model research, giving readers the core understanding needed to navigate the broader literature. We do not survey all variants or domain specific applications; instead we establish a stable conceptual foundation from which such developments can be understood.
+    \item Unlike classical generative models that learn a direct mapping from noise to data, diffusion models view generation as a gradual transformation over time, refining coarse structures into fine details. This central idea has been developed through three main perspectives, i.e., \emph{variational}, \emph{score-based}, and \emph{flow-based} methods, which offer complementary ways to understand and implement diffusion modeling. We focus on the core principles and foundations of these formulations, aiming to trace the origins of their key ideas, clarify the relations among different formulations, and develop a coherent understanding that connects intuitive insight with rigorous mathematical formulation.
+    \item Building on these foundations, we examine how diffusion models can be further developed to generate samples more efficiently, provide greater control over the generative process, and inspire standalone forms of generative modeling grounded in the principles of diffusion.
+\end{itemize}
+
+
+This book is intended for researchers, graduate students, and practitioners who have a basic understanding of deep learning (for example, what a neural network is and how training works), or more specifically, deep generative modeling, and who wish to deepen their grasp of diffusion models beyond surface-level familiarity. By the end, readers will have a principled understanding of the foundations of diffusion modeling, the ability to interpret different formulations within a coherent framework, and the background needed to both apply existing models with confidence and pursue new research directions.
+
+
+% \se{i wouldn't say that unified understanding is a challenge, not really true. You can say that there is a vast literature (xxx many papers), scattered across communities (ml,cv,etc), focusing on different aspects (theory, applications, etc). then say what is the focus, who is the target audience, and the learning outcome (if i were to read this book, what would i expect to be able to do at the end)? }
+
+% \ys{These three paragraphs are filled with empty words and don’t feel “beefy” enough. They will need to be rewritten later.} \ys{We can consider summarizing our main motivations for writing this book here:
+% \begin{itemize}
+%     \item While many tutorials, surveys, and books exist on diffusion models, we focus on the core underlying principles and deliberately avoid detailed discussions of applications.
+%     \item We focus only on concepts and formulations that we believe are relatively mature and well-accepted, rather than transient ideas that are likely to be abandoned in the future.
+%     \item Diffusion models have various formulations, including variational bounds, score-based methods, and flow-based approaches, which can be confusing for beginners. We place special emphasis on clarifying their differences and connections.
+% \end{itemize}}
+
+\section*{\centering \Large Roadmap of This Book}
+
+This book systematically introduces the foundations of diffusion models, tracing them back to their core underlying principles.
+
+\paragraph{Suggested Reading Path.}  
+We recommend reading this book in the presented order to build a comprehensive understanding. Sections marked as \emph{Optional} can be skipped by readers already familiar with the fundamentals. For instance, those comfortable with deep generative models (DGM) may bypass the overview in \Cref{ch:overview-dgm}. Similarly, prior knowledge of Variational Autoencoders (\Cref{sec:vae}), Energy-Based Models (\Cref{sec:ebm}), or Normalizing Flows (\Cref{sec:flow-based-method}) allows skipping these introductory sections. Other optional parts provide deeper insights into advanced or specialized topics and can be consulted as needed.
+
+The book is organized into four main parts.
+\paragraph{Parts A \& B: Foundations of Diffusion Models.}
+This section traces the origins of diffusion models by reviewing three foundational perspectives that have shaped the field\footnote{We remark that our organization of the three perspectives on diffusion
+models is conceptual rather than chronological. For instance,
+\emph{energy-based approaches} draw on a much longer history.
+Statistical mechanics connected probability with energy, while studies
+of Brownian motion and subsequent work described how probability
+distributions evolve over time
+~\citep{gibbs1902elementary,langevin1908brownian,fokker1914mittlere,planck1917satz,kolmogorov1931}. Modern diffusion probabilistic
+models later brought related ideas into generative modeling and
+explicitly drew inspiration from nonequilibrium statistical physics
+~\citep{sohl2015deep}. The three perspectives presented here
+should therefore be understood as modern ways of explaining diffusion
+models, rather than as a strict historical ordering of where their
+underlying ideas first arose.}. \Cref{fig:part-b-roadmap} provides an overview of this part.
+
+\subparagraph{Part A: Introduction to Deep Generative Modeling (DGM).}
+We begin in \Cref{ch:overview-dgm} with a review of the fundamental goals of deep generative modeling. Starting from a collection of data examples, the aim is to build a model that can produce new examples that appear to come from the same underlying, and generally unknown, data distribution. Many approaches achieve this by learning how the data are distributed, either explicitly through a probability model or implicitly through a learned transformation. We then explain how such models represent the data distribution with neural networks, how they learn from examples, and how they generate new samples. The chapter concludes with a taxonomy of major generative frameworks, highlighting their central ideas and key distinctions.
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%
+
+\subparagraph{Part B: Core Perspectives on Diffusion Models.}
+%%%%%%%%%%%%%%%
+
+
+
+\begin{figure}[th!]
+\vspace{-0.5cm}
+    \centering
+    \includegraphics[width=\linewidth]{Images/PartA/diffusion_forward_vs_reverse.pdf}
+    \caption{\textbfs{Forward and reverse diffusion trajectories.} In the forward process (top), a real data sample is gradually corrupted by noise, passing through a sequence of intermediate noisy stages until it becomes indistinguishable from pure noise. In the reverse process (bottom), generation starts from a fresh noise sample and gradually removes noise to produce a new image. The reverse process is not about reconstructing a specific example seen during training. Instead, it begins from a fresh noise and gradually shapes it into a realistic new sample. \figcredit{Created by the authors.}}
+    \label{fig:ill-forward-reverse}
+\end{figure}
+
+Having outlined the general goals and mechanisms of deep generative modeling, we now turn to diffusion models, a class of methods that realize generation as a gradual transformation from noise to data (see \Cref{fig:ill-forward-reverse}). The core idea is simple: a data sample can be progressively corrupted by adding noise until it becomes indistinguishable from pure randomness. This \emph{forward process} moves different data samples into the same simple noise space, which is easy to sample from and serves as the starting point for generation. Along the way, it also creates a smooth sequence of intermediate noisy stages connecting data to noise. To generate, we draw a fresh noise sample from this space and gradually remove noise through a \emph{reverse-time (generation) process}, eventually producing a new data sample. This reverse process does not recover one particular original example; instead, it starts from fresh noise and gradually turns it into realistic data. We examine three interconnected frameworks, each built on this same principle: a forward process that gradually adds noise, and a reverse-time process approximated by a sequence of models that gradually denoise:
+\begin{itemize}
+    \item \textbfs{Variational View} (\Cref{ch:variational}): Originating from Variational Autoencoders (VAEs)~\citep{kingma2013auto}, it frames diffusion as learning a denoising process through a variational objective, giving rise to Denoising Diffusion Probabilistic Models (DDPMs)~\citep{sohl2015deep,ho2020denoising}.
+    \item \textbfs{Score-Based View} (\Cref{ch:score-based}): Rooted in Energy-Based Models (EBMs)\\~\citep{ackley1985learning} and developed into Noise Conditional Score Networks (NCSN)~\citep{song2019generative}. It learns the score function, the gradient of the log data density, which guides how to gradually remove noise from samples. In continuous time, \Cref{ch:score-sde} introduces the \emph{Score SDE framework}, which describes this denoising process as a Stochastic Differential Equation (SDE) and its deterministic counterpart as an Ordinary Differential Equation (ODE). This view connects diffusion modeling with classical differential equation theory, providing a clear mathematical basis for analysis and algorithm design.
+    \item \textbfs{Flow-Based View} (\Cref{ch:flow-based}): Building on Normalizing Flows~\citep{rezende2015variational} and generalized by Flow Matching~\citep{lipman2022flow}, this view models generation as a continuous transformation that transports samples from a simple prior toward the data distribution. The evolution is governed by a velocity field through an ODE, which explicitly defines how probability mass moves over time. This flow-based formulation naturally extends beyond prior-to-data generation to more general \emph{distribution-to-distribution translation} problems, where one seeks to learn a flow connecting any pair of source and target distributions.
+\end{itemize}
+
+\begin{figure}[th!]
+  \centering
+  \resizebox{0.95\linewidth}{!}{%
+    \begin{tikzpicture}[x=2.6cm,y=1cm,line cap=butt]
+      \tikzset{>={Stealth[length=12pt,width=16pt]}}
+      \def\DotR{4pt}
+      \def\LabelAngle{45}
+      \def\DateAboveA{32pt}
+      \def\DateAboveB{32pt}
+      \def\DateXShiftA{0pt}
+      \def\DateXShiftB{0pt}
+      \def\TextBelow{20pt}
+      \def\dx{0.9}      % spacing step
+      \def\XStart{0.4}  % << move EBM right by this many "x" units
+      \newcommand{\nl}{\\}
+
+      % colors
+      \definecolor{PersB}{HTML}{FF7F0E} % EBM, NCSN, Score SDE
+      \definecolor{PersA}{HTML}{1F77B4} % VAE, DPM, DDPM
+      \definecolor{PersC}{HTML}{2CA02C} % NF, NODE, FM
+
+      % Chronological list (even spacing by index)
+      \def\Events{
+        {1985/01}/{\color{PersB}{EBM}},
+        {2013/12}/{\color{PersA}{VAE}},
+        {2014/12}/{\color{PersC}{NF}},
+        {2015/05}/{\color{PersA}{DPM}},
+        {2018/06}/{\color{PersC}{NODE}},
+        {2019/07}/{\color{PersB}{NCSN}},
+        {2020/06}/{\color{PersA}{DDPM}},
+        {2020/11}/{\color{PersB}{Score SDE}},
+        {2022/10}/{\color{PersC}{FM}}
+      }
+
+      % axis
+      \pgfmathsetmacro{\N}{9}
+      \draw[ultra thick,-Stealth] (0,0) -- ({\XStart + (\N-1)*\dx + 0.8},0);
+
+      % draw items
+      \foreach [count=\i] \date/\desc in \Events {
+        \pgfmathsetmacro{\xx}{\XStart + (\i-1)*\dx}
+        \fill[black] (\xx,0) circle[radius=\DotR];
+
+        % date above (vertical, staggered)
+        \ifodd\i
+          \node[above=\DateAboveA,align=center,rotate=90,inner sep=1pt,
+                xshift=\DateXShiftA] at (\xx,0) {\date};
+        \else
+          \node[above=\DateAboveB,align=center,rotate=90,inner sep=1pt,
+                xshift=\DateXShiftB] at (\xx,0) {\date};
+        \fi
+
+        % label below (45°)
+        \node[below=\TextBelow,anchor=north,rotate=\LabelAngle,inner sep=1pt] at (\xx,0)
+          {\shortstack[c]{\strut \desc}};
+      }
+    \end{tikzpicture}%
+  }
+  \caption{\textbfs{Timeline of modern machine-learning perspectives on diffusion models.} Each group shares the same color. 
+  \\
+\sqbullet\ In \Cref{ch:variational}, {Variational Autoencoder (VAE)}~\citep{kingma2013auto} $\to$ {Diffusion Probabilistic Models (DPM)}~\citep{sohl2015deep} $\to$ 
+{DDPM}~\citep{ho2020denoising}. 
+ \\
+\sqbullet\ In \Cref{ch:score-based,ch:score-sde}, {Energy-Based Model (EBM)}~\citep{ackley1985learning} $\to$ {Noise Conditional Score Network (NCSN)}~\citep{song2019generative} $\to$ {Score SDE}~\citep{song2020score}.  \\
+\sqbullet\
+In \Cref{ch:flow-based}, {Normalizing Flow (NF)}~\citep{rezende2015variational} $\to$ {Neural ODE (NODE)}~\citep{chen2018neural} $\to$ {Flow Matching (FM)}~\citep{lipman2022flow}.
+\figcredit{Created by the authors.}}
+  \label{fig:timeline-diffusion-perspectives-equal}
+\end{figure}
+
+Although these perspectives may seem different at first, \Cref{ch:all-equivalent} shows that they are deeply connected. 
+Each uses a \emph{conditioning strategy} that turns the learning objective into a tractable regression problem. 
+At a deeper level, they all describe the same temporal evolution of probability distributions, from the prior toward the data. 
+This evolution is governed by the \emph{Fokker–Planck equation}, which can be viewed as the continuous-time change of variables for densities, ensuring consistency between the stochastic and deterministic formulations.
+
+Since diffusion models can be viewed as approaches for transporting one distribution to another, \Cref{ch:ot-eot} develops their connections to classical optimal transport and the Schrödinger bridge, interpreted as optimal transport with entropy regularization. We review both the static and dynamic formulations and explain their relations to the continuity equation and the Fokker--Planck perspective. This chapter is optional for readers focused on practical aspects, but it provides rigorous mathematical background and pointers to the classical literature for those who wish to study these links in depth. 
+
+% \ys{Some quick thoughts as I read through this part: I like how you categorize the main perspectives on diffusion into three groups, but it feels a bit odd to propose unifying them under the score SDE framework. I tend to view the score SDE framework as part of the score-based perspective. Moreover, the flow-based view emerged after the development of the score SDE framework, so it feels like an overstatement to suggest that it can be directly implied by the score SDE framework.}
+
+%%%%%%%%%
+\begin{figure}[ht!]
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  box/.style = {draw, rounded corners, minimum width=3.6cm, minimum height=1.5cm, align=center},
+  model/.style = {draw, fill=gray!20, minimum width=3.5cm, minimum height=1cm, align=center},
+  arrow/.style = {ultra thick, -{Stealth[length=4mm, width=4mm]}}
+  ]
+
+
+  
+% 2nd layer: Origin
+\node[box] (vae) {Variational \\Autoencoder};
+\node[box, right=1.2cm of vae] (ebm) {Energy-Based Model};
+\node[box, right=1.2cm of ebm] (flow) {Normalizing Flows};
+
+% Box around diffusion models
+\node[draw, rounded corners, minimum width=13.6cm, minimum height=1.0cm, thick, above=3.5cm of ebm, label=above:{\parbox{5cm}{ \centering {Chapter}~\ref{ch:overview-dgm} 
+ }}] (dgm) {Overview of Deep Generative Modeling};
+ 
+% Top layer: Origin
+\node[model, above=1.5cm of vae] (variational-based) {\large\textbfs{Variational View}};
+\node[model, above=1.5cm of ebm] (score-based) {\large\textbfs{Score-Based View}};
+\node[model, above=1.5cm of flow] (flow-based) {\large\textbfs{Flow-Based View}};
+
+% Bottom layer: Diffusion Models
+\node[box, below=2.2cm of vae] (ddpm) {Denoising Diffusion\\Probabilistic Model\\ (DDPM)};
+\node[box, below=2.2cm of ebm] (score) {Noise Conditional\\Score Network \\(NCSN)};
+\node[box, below=2.2cm of flow] (gfm) {Gaussian\\Flow Matching};
+
+% Draw arrows
+\draw[arrow] (vae.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {Chapter~\ref{ch:variational}}}} (ddpm.north);
+
+\draw[arrow] (ebm.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {Chapter}~\ref{ch:score-based}}} (score.north);
+
+\draw[arrow] (flow.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {Chapter}~\ref{ch:flow-based}}} (gfm.north);
+
+\node[box, below=2cm of score] (scoresde) { Continuous-Time Formulation \\ (e.g., Score SDE) \\ \small {Chapter}~\ref{ch:score-sde}};
+
+% Box around diffusion models
+\node[draw, rounded corners, thick, fit={(ddpm) (score) (gfm) (scoresde)}, inner sep=0.3cm, label=below:{\parbox{5cm}{\centering\textbfs{\\ \large Unifying Principles}  \\ \vspace{0.2cm}\small {Chapter}~\ref{ch:all-equivalent} 
+\begin{itemize}
+    \item Conditional Strategy 
+    \item Fokker-Planck Equation
+\end{itemize} }}] (box) {};
+
+
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (ddpm.south) -- ++(0,-0.4) -- ([xshift=-1.0cm]scoresde.north);
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (score.south) -- ++(0,-0.4) -- (scoresde.north);
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (gfm.south) -- ++(0,-0.4) -- ([xshift=1.0cm]scoresde.north);
+
+% Add labels
+\node[align=center, left=0.5cm of box, yshift=8.3cm] {\rotatebox{90}{\textbfs{\large{Perspective}}}};
+\node[align=center, left=0.5cm of box, yshift=5.5cm] {\rotatebox{90}{\textbfs{\large{Origin}}}};
+\node[align=center, left=0.5cm of box] {\rotatebox{90}{\textbfs{\large{Diffusion Model}}}};
+\end{tikzpicture}
+ % end resizebox
+    }
+\end{center}
+\caption{\textbfs{Part B. Unifying and Principled Perspectives on Diffusion Models.} This diagram visually connects classical generative modeling approaches—Variational Autoencoders, Energy-Based Models, and Normalizing Flows—with their corresponding diffusion model formulations. Each vertical path illustrates a conceptual lineage, culminating in the continuous-time framework. The three views (Variational, Score-Based, and Flow-Based) offer distinct yet mathematically equivalent interpretations. \figcredit{Created by the authors.}}
+\label{fig:part-b-roadmap}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%
+
+\paragraph{Part C \& D: Controlling and Accelerating the Diffusion Sampling.}
+
+With the foundational principles unified, we now turn to practical aspects of utilizing diffusion models for efficient generation. Sampling from a diffusion model corresponds to solving a differential equation. However, this procedure is typically computationally expensive. Parts C and D focus on improving generation quality, controllability, and efficiency through enhanced sampling and learned acceleration techniques.
+
+
+
+\subparagraph{Part C: Sampling from Diffusion Models.} The generation process of diffusion models exhibits a distinctive coarse-to-fine refinement: noise is removed step by step, yielding samples with increasingly coherent structure and detail. This property comes with trade-offs. On the positive side, it affords fine-grained control; by adding a guidance term to the learned, time-dependent velocity field, we can steer the ODE flow to reflect user intent and make sampling controllable. On the negative side, the required iterative integration makes sampling slow compared with single-shot generators.
+This part focuses on improving the generative process at inference time, without retraining.
+\begin{itemize}
+    \item \textbfs{Steering Generation} (\Cref{ch:guidance})\textbfs{:} Techniques such as classifier guidance and classifier-free guidance make it possible to condition the generation process on user-defined objectives or attributes. Building on this, we next discuss how the use of a preference dataset can further align diffusion models with such preferences.
+    \item \textbfs{Fast Generation with Numerical Solvers} (\Cref{ch:solvers})\textbfs{:} Sampling can be significantly accelerated using advanced numerical solvers that approximate the reverse process in fewer steps, reducing cost while preserving quality.
+\end{itemize}
+\subparagraph{Part D: Learning Fast Generative Models.} Beyond improving existing sampling algorithms, we investigate how to directly learn fast generators that approximate the diffusion process.
+\begin{itemize}
+    \item \textbfs{Distillation-Based Methods} (\Cref{ch:distillation}):  This approach focuses on training a student model to imitate the behavior of a pre-trained, slow diffusion model (the teacher). Instead of reducing the teacher’s size, the goal is to reproduce its sampling trajectory or output distribution with far fewer integration steps, often only a few or even one.
+    \item \textbfs{Learning from Scratch} (\Cref{ch:fast-scratch})\textbfs{:} Since sampling in diffusion models can be seen as solving an ODE, this approach learns the solution map (i.e., the flow map) directly from scratch, without relying on a teacher model. The learned map can take noise directly to data, or more generally perform anytime-to-anytime jumps along the solution trajectory.
+\end{itemize}
+
+
+% \ys{Should we call it ``distillation-based methods''? Not sure distillation is one type of post-training. That said, we may indeed want to discuss post-training techniques for diffusion models in nearby sections on ``steering generation''. }
+
+\paragraph{Epilogue: Beyond Diffusion on Continuous State Spaces.}
+We close in \Cref{ch:epilogue} by making explicit the principle that has guided the entire book. At its heart, diffusion modeling is not tied to one particular noise type, model class, or even to continuous state spaces. Rather, it is the study of how probability mass evolves under a prescribed time-dependent forward corruption process, and how that evolution can be reversed, approximated, or exploited for generation. In the continuous setting, this principle appears through the change-of-variable formula, the continuity equation, and the Fokker--Planck equation. In the discrete setting, the same structural role is played by transition kernels, continuous-time Markov chains, and the master equation.
+
+This final chapter also shows that the three perspectives developed throughout the book, namely the variational, score-based, and flow-based viewpoints, extend beyond continuous data modeling. Even for discrete data such as text, protein sequences, and other token-based objects, one can formulate reverse modeling through variational objectives, score-like ratio or reverse-rate characterizations, and flow-like transport viewpoints. The mathematical objects change, but the underlying principles do not. In this way, the epilogue serves both as a conceptual culmination of the book and as an outlook toward a broader landscape of generative modeling.
+
+
+\paragraph{Appendices.}
+To ensure our journey is accessible to all, the appendices provide background for foundational concepts. \Cref{app:de} offers a crash course on the differential equations that have become the language of diffusion models. 
+
+The core insight behind diffusion models, despite their varied perspectives and origins, lies in the \emph{change-of-variables formula}. This foundation naturally extends to deeper concepts such as the \emph{Fokker--Planck equation} and the \emph{continuity equation}, which describe how probability densities transform and evolve under mappings defined by functions (discrete time) or differential equations (continuous time). 
+\Cref{app:continuity} offers a gentle introduction that bridges these foundational ideas to more advanced concepts. 
+In \Cref{app:Ito}, we present two powerful but often overlooked tools underlying diffusion models: \emph{Itô's formula} and \emph{Girsanov's theorem}, which provide rigorous support for the Fokker--Planck equation and the reverse-time sampling process. 
+Finally, \Cref{app:proof} gathers proofs of selected propositions and theorems discussed in the main chapters.
+
+
+% \paragraph{What this Book Covers and What Does Not?}
+
+% Overall, from the top-down viewpoint this book covers from the core principle of ``constructing the dynamics that transporting in continuous time from the simple prior distribution to the data distribution while making the distribution at each time snapshot matches with the distributions of pre-scribed process from data-to-noise''. Starting from this diffusion-modeling principle, we discuss the stochastic/deterministic flow to realize the sampling transportation, and establish the controllable and faster way of achieving this transportation.  We do not cover the detailed practical implementations, engineering know-hows, models or architectureal selections, datasets benchmarking, or domain-specific applications. 
+
+
+
+\paragraph{What This Book Covers and What It Does Not.}
+We aim for durability. From a top-down viewpoint, this book begins with a single principle: construct continuous-time dynamics that transport a simple prior to the data distribution while ensuring that the marginal distribution at each time matches the marginal induced by a prescribed forward process from data to noise. From this principle, we develop the stochastic and deterministic flows that enable sampling, show how to steer the trajectory (guidance), and explain how to accelerate it (numerical solvers). We then study diffusion-motivated fast generators, including distillation methods and flow-map models. With these tools, readers can place new papers within a common template, understand why methods work, and design improved models.
+
+We do not attempt to provide an exhaustive survey of the diffusion model literature, nor do we catalog architectures, training practices, hyperparameters, compare empirical results across methods, cover datasets and leaderboards, describe domain- or modality-specific applications, address system-level deployment, provide recipes for large-scale training, or discuss hardware engineering. These topics evolve rapidly and are better covered by focused surveys, open repositories, and implementation guides.
+
+
+
+
+% \begin{figure}[th!]
+% \caption{\textbfs{Part C. Sampling with Diffusion Models.} \Cref{ch:score-sde} shows that diffusion model sampling is equivalent to solving an ODE. From this view, the \textit{left branch} interprets guided generation as steering the velocity field with auxiliary signals. As this process involves solving differential equations, it is inherently slow. To mitigate this, the \textit{middle branch} employs classical numerical solvers to accelerate sampling by efficiently estimating the integral using a pre-trained model $\rvv$. \\
+% \textbfs{Part D. Learning a Fast Diffusion-Based Generator.} The \textit{right branch} takes a different route: directly learning to approximate the ODE solution or its distribution at $t=0$, either using a pre-trained model or training from scratch. The latter yields a standalone generator that avoids costly sampling.
+% }
+% \begin{center}
+% \resizebox{\textwidth}{!}{% 
+% \centering
+% \begin{tikzpicture}[
+%     box/.style={rectangle, draw, thick, minimum width=3cm, minimum height=2cm, align=center},
+%     topbox/.style={rectangle, draw, thick, minimum width=12cm, minimum height=1.5cm, align=center},
+%     arrow/.style={->, thick},
+%     roundbox/.style={rectangle, draw, thick, rounded corners=10pt, minimum width=4cm, minimum height=3cm, align=center}
+% ]
+
+% % Top box
+% \node[topbox, label=above:{\parbox{5cm}{\centering  {Chapter}~\ref{ch:score-sde}}}] (top) at (0,4) {\\
+% \textbfs{Generation with Diffusion Model $\mathbf{v}(\rvx, t)$} \\[0.3cm]
+% $\Longleftrightarrow$ Solve ODE backward from $t = T$ to $0$ with $\mathbf{x}(T) \sim p_{\mathrm{prior}}$: \\[0.2cm]
+% $\displaystyle\frac{\diff\mathbf{x}(t)}{\diff t} = \mathbf{v}(\mathbf{x}(t), t)$ \\[0.3cm]
+% $\displaystyle\Longleftrightarrow \mathbf{x}(0) = \mathbf{x}(T) + \int_0^T \mathbf{v}(\mathbf{x}(t), t)\diff t$
+% };
+
+% % Three bottom boxes
+% \node[roundbox, label=below:{\parbox{5cm}{\centering  {Chapter}~\ref{ch:guidance} 
+%  }}] (left) at (-6,-2) {
+% \\ \large\textbfs{Steering Generation} \\[0.4cm]
+% \parbox{5cm}{
+% \begin{align*}
+%     \displaystyle\mathbf{x}(0) &= \mathbf{x}(T) + \int_0^T [\mathbf{v}(\mathbf{x}(t), t) \\ 
+%     &\qquad \textcolor{darkgray}{+ \textbf{Guidance}}] \diff t
+% \end{align*}}
+% };
+
+% \node[roundbox, label=below:{\parbox{5cm}{\centering {Chapter}~\ref{ch:solvers} 
+%  }}] (center) at (0,-2) {
+% \\ \large\textbfs{Fast Generation} \\
+% \large\textbfs{with Numerical Solvers} \\[-0.6cm]
+% $\displaystyle\mathbf{x}(0) = \mathbf{x}(T) + \eqnmarkbox[Plum]{velocity}{\int_0^T \mathbf{v}(\mathbf{x}(t), t)\diff t}$ \\[-0.8cm]
+% Estimating the integral
+% };
+
+% \node[roundbox, label=below:{\parbox{5cm}{\centering  {Chapter}~\ref{ch:distillation} and {Chapter}~\ref{ch:fast-scratch} 
+%  }}] (right) at (6,-2) {
+% \\ \large\textbfs{Learning a Fast} \\
+% \large\textbfs{Diffusion-Based Generator} \\[-0.6cm]
+% $\displaystyle\mathbf{x}(0) = \eqnmarkbox[Pink]{target}{\mathbf{x}(T) + \int_0^T \mathbf{v}(\mathbf{x}(t), t)\diff t}$ \\[-0.8cm]
+% Learning the Integral
+% };
+
+% % Arrows
+% \draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (top.south) -- ++(-6,-1) -- (left.north);
+% \draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (top.south) -- (center.north);
+% \draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (top.south) -- ++(6,-1) -- (right.north);
+
+% \end{tikzpicture}
+% }
+% \end{center}
+% \label{fig:part-c-d-roadmap}
+% \end{figure}
+
+% \se{i don't think this figure will make sense to readers that don't already know diffusion}
+
+% \se{btw, i think it's integral not integration}
+
+%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+
+
+

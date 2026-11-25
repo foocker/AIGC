@@ -1,0 +1,1669 @@
+\chapter{补充材料与证明}\label{app:proof}
+\section{变分视角}\label{app-sec:var-proof}
+
+
+\subsection{定理~\ref{thm:equiv-marginal-kl}: 边缘 KL 最小化和条件 KL 最小化之间的等价}\label{subsec:proof-equiv-marginal-kl}
+\paragraph{\textit{证明。}} \textbfs{的推导 \Cref{eq:kl-matching}.}
+
+我们首先扩展右侧期望：
+\begin{align*}
+    &\mathbb{E}_{p(\rvx_0, \rvx_i)}\left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0) \| p_\phi(\rvx_{i-1}|\rvx_i)\big)
+    \right]
+    \\
+    =& \int \int p(\rvx_0, \rvx_i)   
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0) \| p_\phi(\rvx_{i-1}|\rvx_i)\big) 
+    \diff\rvx_0 \diff\rvx_i.
+\end{align*}
+根据KL散度的定义，
+\begin{align*}
+    &\mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0) \| p_\phi(\rvx_{i-1}|\rvx_i)\big)
+    = \int p(\rvx_{i-1}|\rvx_i, \rvx_0) 
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)} 
+    \diff\rvx_{i-1}.
+\end{align*}
+将其代入期望，我们有
+\begin{align*}
+    &\int \int \int p(\rvx_0, \rvx_i)  p(\rvx_{i-1}|\rvx_i, \rvx_0) 
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)} 
+    \diff\rvx_{i-1} \diff\rvx_0 \diff\rvx_i.
+\end{align*}
+使用概率链式法则，
+\begin{align*}
+    p(\rvx_0, \rvx_i) 
+    &= p(\rvx_i)   p(\rvx_0|\rvx_i),
+\end{align*}
+我们将积分重写为
+\begin{align*}
+    &\int p(\rvx_i) \int p(\rvx_0|\rvx_i) \int p(\rvx_{i-1}|\rvx_i, \rvx_0)
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)} 
+    \diff\rvx_{i-1} \diff\rvx_0 \diff\rvx_i.
+\end{align*}
+这使我们能够以嵌套形式表达期望：
+\begin{align*}
+    &\mathbb{E}_{p(\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_{i-1}|\rvx_i, \rvx_0)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    \right]
+    \right]
+    \right].
+\end{align*}
+
+接下来，我们应用对数分解：
+\begin{align*}
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    =\log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p(\rvx_{i-1}|\rvx_i)} 
+    + \log \frac{p(\rvx_{i-1}|\rvx_i)}{p_\phi(\rvx_{i-1}|\rvx_i)}.
+\end{align*}
+将其代入期望给出两项：
+\begin{align*}
+    &\mathbb{E}_{p(\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_{i-1}|\rvx_i, \rvx_0)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i, \rvx_0)}{p(\rvx_{i-1}|\rvx_i)}
+    \right]
+    \right]
+    \right]
+    \\
+    &+
+    \mathbb{E}_{p(\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_{i-1}|\rvx_i, \rvx_0)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    \right]
+    \right]
+    \right].
+\end{align*}
+由于第二个对数项不依赖于 $\rvx_0$，根据全概率定律
+\begin{align*}
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_{i-1}|\rvx_i, \rvx_0)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    \right]
+    \right]
+    = \mathbb{E}_{p(\rvx_{i-1}|\rvx_i)} \left[
+    \log \frac{p(\rvx_{i-1}|\rvx_i)}{p_\phi(\rvx_{i-1}|\rvx_i)}
+    \right].
+\end{align*}
+同样，第一项是KL散度
+\begin{align*}
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0)  \|  p(\rvx_{i-1}|\rvx_i)\big)
+    \right].
+\end{align*}
+将它们放在一起，我们得到分解：
+\begin{align*}
+    &\mathbb{E}_{p(\rvx_0, \rvx_i)} \left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0)  \|  p_\phi(\rvx_{i-1}|\rvx_i)\big)
+    \right]
+    \\
+    =& \mathbb{E}_{p(\rvx_i)} \left[
+    \mathbb{E}_{p(\rvx_0|\rvx_i)} \left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i, \rvx_0)  \|  p(\rvx_{i-1}|\rvx_i)\big)
+    \right]
+    \right]
+    \\
+    &+
+    \mathbb{E}_{p(\rvx_i)} \left[
+    \mathcal{D}_{\text{KL}} \big(p(\rvx_{i-1}|\rvx_i)  \|  p_\phi(\rvx_{i-1}|\rvx_i)\big)
+    \right].
+\end{align*}
+
+\textbfs{最优性证明。} 证明：
+\[
+p^*(\rvx_{i-1}|\rvx_i)
+=
+p(\rvx_{i-1}|\rvx_i)
+=
+\mathbb{E}_{p(\rvx_0|\rvx_i)}
+\left[
+p(\rvx_{i-1}|\rvx_i,\rvx_0)
+\right],
+\qquad
+\rvx_i \sim p_i.
+\]
+第一个恒等式源自 KL 散度这一事实 $\mathcal{D}_{\mathrm{KL}}(p \| p_{\bm{\phi}})$ 最小化时 $p^* = p$，假设参数化具有足够的表现力。第二个恒等式直接遵循全概率定律。
+\hfill$\blacksquare$
+
+
+
+\subsection{定理~\ref{thm:ddpm-elbo}: 扩散模型的 ELBO}\label{app:vlb-proof}
+
+\paragraph{\textit{证明。}} 为了符号简单起见，我们表示
+\[
+\rvx_{1:L}:=(\rvx_1,\ldots,\rvx_L).
+\]
+
+\textbfs{步骤 1：应用 Jensen 不等式。}
+边缘对数似然是
+\[
+\log p_{\bm{\phi}}(\rvx_0)
+=
+\log \int p_{\bm{\phi}}(\rvx_0,\rvx_{1:L})\,\diff \rvx_{1:L},
+\]
+联合生成分布是
+\[
+p_{\bm{\phi}}(\rvx_0,\rvx_{1:L})
+=
+p_{\text{prior}}(\rvx_L)\prod_{i=1}^L p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i).
+\]
+
+我们介绍前向噪声分布
+\[
+p(\rvx_{1:L}| \rvx_0)
+=
+\prod_{i=1}^L p(\rvx_i| \rvx_{i-1}),
+\]
+并重写
+\[
+\log p_{\bm{\phi}}(\rvx_0)
+=
+\log \int
+p(\rvx_{1:L}| \rvx_0)
+\frac{p_{\bm{\phi}}(\rvx_0,\rvx_{1:L})}{p(\rvx_{1:L}| \rvx_0)}
+\,\diff \rvx_{1:L}.
+\]
+应用詹森不等式产生
+\[
+\log p_{\bm{\phi}}(\rvx_0)
+\ge
+\mathbb{E}_{p(\rvx_{1:L}| \rvx_0)}
+\left[
+\log
+\frac{p_{\bm{\phi}}(\rvx_0,\rvx_{1:L})}{p(\rvx_{1:L}| \rvx_0)}
+\right]
+=: \mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi}),
+\]
+因此
+\[
+-\log p_{\bm{\phi}}(\rvx_0)
+\le
+-\mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi}).
+\]
+
+\textbfs{第 2 步：展开 ELBO。}
+将分解代入 ELBO 给出
+\begin{align*}
+\mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi})
+&=
+\mathbb{E}_{p(\rvx_{1:L}| \rvx_0)}
+\Bigg[
+\log p_{\text{prior}}(\rvx_L)
++
+\sum_{i=1}^L \log p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
+-
+\sum_{i=1}^L \log p(\rvx_i| \rvx_{i-1})
+\Bigg].
+\end{align*}
+因此，
+\begin{align*}
+-\mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi})
+&=
+\mathbb{E}_{p(\rvx_{1:L}| \rvx_0)}
+\Bigg[
+\log \frac{p(\rvx_L| \rvx_0)}{p_{\text{prior}}(\rvx_L)}
++
+\sum_{i=2}^L
+\log \frac{p(\rvx_{i-1}| \rvx_i,\rvx_0)}{p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)}
+-
+\log p_{\bm{\phi}}(\rvx_0| \rvx_1)
+\Bigg].
+\end{align*}
+这里我们使用了恒等式
+\[
+p(\rvx_{1:L}| \rvx_0)
+=
+p(\rvx_L| \rvx_0)\prod_{i=2}^L p(\rvx_{i-1}| \rvx_i,\rvx_0),
+\]
+遵循前向过程的马尔可夫结构。现在根据术语的依赖性对术语进行分组：
+\begin{align*}
+-\mathcal{L}_{\text{ELBO}}(\rvx_0;\bm{\phi})
+&=
+\underbrace{
+\mathbb{E}_{p(\rvx_L| \rvx_0)}
+\left[
+\log \frac{p(\rvx_L| \rvx_0)}{p_{\text{prior}}(\rvx_L)}
+\right]
+}_{\mathcal{L}_{\text{prior}}(\rvx_0)}
++
+\underbrace{
+\mathbb{E}_{p(\rvx_1| \rvx_0)}
+\left[
+-\log p_{\bm{\phi}}(\rvx_0| \rvx_1)
+\right]
+}_{\mathcal{L}_{\text{recon.}}(\rvx_0;\bm{\phi})}
+\\
+&\quad+
+\underbrace{
+\sum_{i=2}^L
+\mathbb{E}_{p(\rvx_i| \rvx_0)}
+\left[
+\mathcal{D}_{\mathrm{KL}}
+\big(
+p(\rvx_{i-1}| \rvx_i,\rvx_0)
+\|
+p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
+\big)
+\right]
+}_{\mathcal{L}_{\text{diffusion}}(\rvx_0;\bm{\phi})}.
+\end{align*}
+这证明了所声称的分解。
+\hfill$\blacksquare$
+
+
+\clearpage
+\newpage
+
+\section{基于分数的视角}\label{app-sec:score-proof}
+
+\subsection{提议~\ref{sm-trace}: 通过分部积分进行易于处理的分数匹配}\label{app-sec:sm-trace}
+\paragraph{\textit{证明。}}
+
+ \textbfs{扩展 $\mathcal{L}_{\text{SM}}(\bm{\phi})$. }
+        让我们在期望内展开平方差：
+        \begin{align*}
+        \mathcal{L}_{\text{SM}}(\bm{\phi}) &= \frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs_{\bm{\phi}}(\rvx)}_2^2 - 2 \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle + \norm{\rvs(\rvx)}_2^2 \right] \\
+        &= \frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs_{\bm{\phi}}(\rvx)}_2^2 \right] - \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle \right] \\
+        &\quad + \frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs(\rvx)}_2^2 \right].
+        \end{align*}
+        我们现在关注跨积术语：
+        \[
+        \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle \right].
+        \]
+        利用以下事实：
+        \[
+        \nabla_{\rvx} \log p_{\text{data}}(\rvx) = \frac{\nabla_{\rvx}p_{\text{data}}(\rvx)}{p_{\text{data}}(\rvx)},
+        \]
+        并假设 $p_{\text{data}}(\rvx)$ 不为零（例如，在其支持上），叉积项变为：
+        \begin{align*}
+            \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle \right] 
+             &= \int \rvs_{\bm{\phi}}(\rvx)^\top  \nabla_{\rvx} \log p_{\text{data}}(\rvx) p_{\text{data}}(\rvx) \diff \rvx \\
+             &= \int \rvs_{\bm{\phi}}(\rvx)^\top  \nabla_{\rvx}p_{\text{data}}(\rvx) \diff \rvx \\
+             &= \sum_{i=1}^{D} \int  s_{\bm{\phi}}^{(i)}(\rvx) \partial_{x_i}p_{\text{data}}(\rvx) \diff \rvx,
+        \end{align*}
+        哪里 $s_{\bm{\phi}}^{(i)}(\rvx)$ 是 $i$分数函数的第-个分量 
+        \[
+        \rvs_{\bm{\phi}} = \left( s_{\bm{\phi}}^{(1)}, s_{\bm{\phi}}^{(2)}, \dots, s_{\bm{\phi}}^{(D)} \right).
+        \]
+        \proofparagraph{分部分集成。}
+        我们使用以下分部积分公式~\citep{evans10}，源自标准微积分：
+        \begin{lemma*}
+            让 $u, v$ 球上可微分的实值函数 $\mathbb{B}(\bm{0}, R) \subset \mathbb{R}^D$ 半径 $R>0$。那么对于 $i = 1, \ldots, D$，公式成立：
+        \[
+        \int_{\mathbb{B}(\bm{0}, R)} u   \partial_{x_i} v   \diff \rvx = -\int_{\mathbb{B}(\bm{0}, R)} v   \partial_{x_i} u   \diff \rvx + \int_{\partial \mathbb{B}(\bm{0}, R)} u v \nu_i   \diff S,
+        \]
+        哪里 $\nu = (\nu_1, \ldots, \nu_D)$ 是垂直于边界的向外单位 $\partial \mathbb{B}(\bm{0}, R)$---有半径的球体 $R>0$, 和 $\diff S$ 是表面测量值 $\partial \mathbb{B}(\bm{0}, R)$.
+        \end{lemma*}
+        我们应用这个公式 $u(\rvx) := s_{\bm{\phi}}^{(i)}(\rvx)$ 和 $v(\rvx) = p_{\text{data}}(\rvx)$ 对于所有 $i = 1, \dots, D$，假设
+        \[
+        |u(\rvx) v(\rvx)| \to 0 \quad \text{as } R \to \infty.
+        \]
+        对所有结果求和 $i = 1, \dots, D$，我们得到：
+        \begin{align*}
+            \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \langle \rvs_{\bm{\phi}}(\rvx), \rvs(\rvx) \rangle \right] 
+             &= - \sum_{i=1}^{D} \int  \partial_{x_i}s_{\bm{\phi}}^{(i)}(\rvx) p_{\text{data}}(\rvx) \diff \rvx \\
+             &= - \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[\Tr\left(\nabla_{\rvx}\rvs_{\bm{\phi}}(\rvx)\right) \right].
+        \end{align*}
+        结合所有结果，我们有：
+        \begin{align*}
+        \mathcal{L}_{\text{SM}}(\bm{\phi}) &= \underbrace{\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[\Tr\left(\nabla_{\rvx}\rvs_{\bm{\phi}}(\rvx)\right) + \frac{1}{2}  \norm{\rvs_{\bm{\phi}}(\rvx)}_2^2 \right]}_{\widetilde{\mathcal{L}}_{\text{SM}}(\bm{\phi})} \\
+        &\quad + \underbrace{\frac{1}{2}\mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx)} \left[ \norm{\rvs(\rvx)}_2^2 \right]}_{=:C},
+        \end{align*}
+        哪里 $C$ 仅取决于分布 $p_{\text{data}}$，证明结束。
+\hfill$\blacksquare$
+
+\subsection{定理~\ref{thm:sm-dsm}: SM 和 DSM 最小化之间的等价}\label{app-sec:sm-dsm}
+\paragraph{\textit{证明。}} 同时扩展 $\mathcal{L}_{\text{SM}}(\bm{\phi}; \sigma)$ 和 $\mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma)$，我们有：
+\begin{align*}
+ &\mathcal{L}_{\text{SM}}(\bm{\phi}; \sigma) = \frac{1}{2} \mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})} 
+ \begin{aligned}[t]
+         \Big[ 
+    \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 
+    &- 2 \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}) \\
+    &+ \norm{\nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx})}_2^2 
+    \Big], 
+ \end{aligned}
+\\
+&\mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma) = \frac{1}{2} \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)}
+ \begin{aligned}[t]
+         \Big[
+    \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 
+    &- 2 \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top \nabla_{\tilde{\rvx}} \log p_{\sigma}(\tilde{\rvx} | \rvx) \\
+    &+ \norm{\nabla_{\tilde{\rvx}} \log p_{\sigma}(\tilde{\rvx} | \rvx)}_2^2 
+    \Big].
+ \end{aligned}
+\end{align*}
+两个方程相减得出：
+\begin{align*}
+ &\mathcal{L}_{\text{SM}}(\bm{\phi}; \sigma) -\mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma) 
+ \\= \frac{1}{2} &\Bigg( \mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})} \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 - \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)} \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2\Bigg)
+ \\ \quad - &  
+ \begin{aligned}[t]
+ \Bigg(
+      \mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}  &\left[ \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}) \right] \\ 
+      &- \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)}\left[ \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}| \rvx)\right]
+      \Bigg)
+ \end{aligned}
+ \\ \quad +  \frac{1}{2}&\Bigg(\mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}  \norm{\nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx})}_2^2  -  \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)} \norm{\nabla_{\tilde{\rvx}} \log p_{\sigma}(\tilde{\rvx} | \rvx)}_2^2   \Bigg).
+\end{align*}
+接下来，我们逐一讨论这三个术语。对于第一学期，自 $p_\sigma(\tilde{\rvx}) = \int p_{\sigma}(\tilde{\rvx} | \rvx) p_{\text{data}}(\rvx) \diff\rvx$，我们可以将其重写为：
+\begin{align*}
+    \mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})} \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 
+    &= \int \Big( \int p_{\sigma}(\tilde{\rvx} | \rvx) p_{\text{data}}(\rvx)  \diff\rvx \Big) \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 \diff \tilde{\rvx} 
+    \\ &= \int p_{\text{data}}(\rvx) \int p_{\sigma}(\tilde{\rvx} | \rvx) \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2 \diff \tilde{\rvx} \diff\rvx
+    \\ &= \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)} \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)}_2^2.
+\end{align*}
+因此，第一项为零。对于第二个学期：
+\begin{align}\label{eq:dsm-sec-term}
+\begin{aligned}
+          &\mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}\left[ \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}) \right] 
+      \\=&\int  p_\sigma(\tilde{\rvx}) \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \frac{\nabla_{\tilde{\rvx}} p_\sigma(\tilde{\rvx})}{p_\sigma(\tilde{\rvx})}  \diff\tilde\rvx
+        \\=&\int   \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \int p_{\sigma}(\tilde{\rvx} | \rvx) p_{\text{data}}(\rvx) \diff\rvx \diff\tilde\rvx
+    \\=&\int \int  \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top    \nabla_{\tilde{\rvx}}p_{\sigma}(\tilde{\rvx} | \rvx) p_{\text{data}}(\rvx) \diff\tilde\rvx \diff\rvx 
+      \\=  &\mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)}\left[ \rvs_{\bm{\phi}}(\tilde{\rvx}; \sigma)^\top  \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}| \rvx)\right].
+\end{aligned}
+\end{align}
+因此，它也是零。对于第三项，请注意：
+\[
+C:=\frac{1}{2}\Bigg(\mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}  \norm{\nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx})}_2^2  -  \mathbb{E}_{ p_{\text{data}}(\rvx)p_{\sigma}(\tilde{\rvx} | \rvx)} \norm{\nabla_{\tilde{\rvx}} \log p_{\sigma}(\tilde{\rvx} | \rvx)}_2^2   \Bigg)
+\]
+仅取决于 $p_{\text{data}}(\rvx)$ 和 $p_{\sigma}(\tilde{\rvx}|\rvx)$，因此它对于 $\bm{\phi}$.
+\hfill$\blacksquare$
+
+\subsection{引理~\ref{tweedie}: 特威迪公式}\label{app-sec:tweedie}
+我们首先陈述 Tweedie 公式的更一般形式，该公式考虑了与时间相关的高斯扰动，我们在下面提供了其证明。
+
+
+\paragraph{具有时间相关参数的 Tweedie 恒等式。}
+让
+$\rvx_t|\rvx_0 \sim
+\mathcal{N}\big(\cdot; \alpha_t\rvx_0, \sigma_t^2\rmI\big)$。然后特威迪的公式说
+\begin{align*}
+\alpha_t \mathbb{E}_{\mathbf{x}_0 \sim p(\mathbf{x}_0|\rvx_t)}[\mathbf{x}_0|\rvx_t] = \rvx_t + \sigma_t^2 \nabla_{\rvx_t} \log p_t(\rvx_t),
+\end{align*}
+期望取后验分布 $p(\mathbf{x}_0|\rvx_t)$ 的 $\mathbf{x}_0$ 给出观察到的 $\rvx_t$, 和 $p_t(\rvx_t)$ 是边缘密度 $\rvx_t$.
+
+
+\paragraph{\textit{证明。}}
+
+
+\paragraph{边缘密度及其分数。}
+我们记得边缘密度 $\rvx_t$ 由下式给出
+\begin{align*}
+p_t(\rvx_t) = \int p_t(\rvx_t|\rvx_0)  p_0(\rvx_0)  \diff\rvx_0.
+\end{align*}
+我们现在计算分数函数：
+\begin{align*}
+\nabla_{\rvx_t} \log p_t(\rvx_t) 
+= \frac{\nabla_{\rvx_t} p_t(\rvx_t)}{p_t(\rvx_t)} = \frac{1}{p_t(\rvx_t)} \int \nabla_{\rvx_t} p_t(\rvx_t|\rvx_0)  p_0(\rvx_0)  \diff\rvx_0.
+\end{align*}
+因此我们需要计算条件密度的梯度。
+
+\paragraph{条件和重排的梯度。}
+条件高斯密度的梯度为：
+\begin{align*}
+\nabla_{\rvx_t} p_t(\rvx_t|\rvx_0) 
+= -p_t(\rvx_t|\rvx_0) \cdot \sigma_t^{-2} (\rvx_t - \alpha_t \rvx_0).
+\end{align*}
+将其代入前面的表达式，我们有：
+\begin{align*}
+\nabla_{\rvx_t} p_t(\rvx_t) 
+&= \int \nabla_{\rvx_t} p_t(\rvx_t|\rvx_0)  p_0(\rvx_0)  \diff\rvx_0 \\
+&= -\sigma_t^{-2} \int (\rvx_t - \alpha_t \rvx_0)  p_t(\rvx_t|\rvx_0)  p_0(\rvx_0)  \diff\rvx_0 \\
+&= -\sigma_t^{-2} \int (\rvx_t - \alpha_t \rvx_0)  p(\rvx_0|\rvx_t)  p_t(\rvx_t)  \diff\rvx_0 \\
+&= -p_t(\rvx_t)  \sigma_t^{-2} \left(\rvx_t - \alpha_t  \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0\vert \rvx_t] \right).
+\end{align*}
+两边除以 $p_t(\rvx_t)$，我们得到：
+\begin{align*}
+\nabla_{\rvx_t} \log p_t(\rvx_t) 
+= -\sigma_t^{-2} \left(\rvx_t - \alpha_t  \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0\vert \rvx_t] \right).
+\end{align*}
+重新排列产量：
+\begin{align*}
+\rvx_t + \sigma_t^{2} \nabla_{\rvx_t} \log p_t(\rvx_t) 
+= \alpha_t  \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0\vert \rvx_t].
+\end{align*}
+这样就完成了推导。
+
+\subsection{Stein恒等式和替代 SURE 目标}\label{app-sec:stein-identity}
+
+\paragraph{Stein恒等式。} Stein 的恒等式是分部积分技术，它将未知密度下的期望转化为可观察函数及其导数的期望，从而取消配分函数并实现无偏、易处理的目标和测试，而无需评估未知密度或配分函数。我们从最简单的一维情况开始，然后将其扩展到证明 SURE 的替代损失所需的形式。
+\subparagraph{1D，标准正常情况。}
+如果 $z \sim \mathcal{N}(0,1)$ 和 $f$ 具有适当的衰变，则Stein恒等式表明：
+\[
+\E[f'(z)]  =  \E[z f(z)] .
+\]
+表示 $\phi(z) := \tfrac{1}{\sqrt{2\pi}}  e^{-z^2/2}$，一维标准正态密度。证明通过部分积分，使用 $\phi'(z) = -z\phi(z)$，以及消失边界项。为了准确地看到这一点，我们计算
+\[
+\E[f'(z)] 
+= \int_{-\infty}^{\infty} f'(z)  \phi(z)  \diff z.
+\]
+通过部件集成，与 $u=\phi(z)$ 和 $\diff v=f'(z)  \diff z$，我们得到
+\[
+\int f'(z)  \phi(z)  \diff z
+= \Big[ f(z)  \phi(z) \Big]_{-\infty}^{\infty}
+- \int f(z)  \phi'(z)  \diff z.
+\]
+自 $\phi'(z) = -z\phi(z)$ 和 $f(z)\phi(z)\to 0$ 如 $|z|\to\infty$ （衰减条件），边界项消失，我们有
+\[
+\E[f'(z)]  =  \int f(z)  z  \phi(z)  \diff z  =  \E[z f(z)].
+\]
+这就完成了推导并证明了斯坦因恒等式的一维情况。
+
+
+\subparagraph{多变量，标准正态情况。}
+如果 $\rvz \sim \mathcal{N}(\mathbf{0},\rmI_D)$ 和 $g:\R^D \to \R$，那么Stein恒等式是
+\[
+\E[\nabla g(\rvz)]  =  \E[\rvz g(\rvz)].
+\]
+等价地，对于 $\mathbf{u}:\R^D \to \R^D$,
+\begin{align}\label{eq:stein-multi}
+    \E[ \nabla_{\rvz} \cdot\mathbf{u}(\rvz)]  =  \E[\rvz^\top \mathbf{u}(\rvz)] .
+\end{align}
+
+
+\subparagraph{确定需要恒等式。}
+有 $\tilde{\rvx}=\rvx+\sigma\rvz$，其中 $\rvz \sim \mathcal{N}(\mathbf{0},\rmI_D)$以及任何向量函数 $\mathbf{a}$ 具有适当的规律性，
+\begin{align}\label{eq:stein-for-sure}
+    \E\big[(\tilde{\rvx}-\rvx)^\top \mathbf{a}(\tilde{\rvx})  \big|  \rvx\big]
+ =  \sigma^2 \E\big[ \nabla_{\tilde{\rvx}} \cdot\mathbf{a}(\tilde{\rvx})  \big|  \rvx\big]. 
+\end{align}
+这是通过申请获得的 \Cref{eq:stein-multi} 并使用链式法则。
+
+\paragraph{从条件 MSE 导出 SURE。}
+让 $\rmD:\R^D \to \R^D$ 作为降噪器并定义
+\[
+R(\rmD;\rvx):=\E \left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2| \rvx\right].
+\]
+周围展开 $\tilde{\rvx}$:
+\[
+\begin{aligned}
+&~R(\rmD;\rvx) \\
+=&~\E \left[\|\rmD(\tilde{\rvx})-\tilde{\rvx}\|^2  \big|  \rvx\right]
++2 \E \left[(\rmD(\tilde{\rvx})-\tilde{\rvx})^\top(\tilde{\rvx}-\rvx)  \big|  \rvx\right]
++\E \left[\|\tilde{\rvx}-\rvx\|^2  \big|  \rvx\right] \\
+=&~\E \left[\|\rmD(\tilde{\rvx})-\tilde{\rvx}\|^2  \big|  \rvx\right]
++2\Big(\underbrace{\E[(\tilde{\rvx}-\rvx)^\top \rmD(\tilde{\rvx})|\rvx]}_{\substack{\sigma^2 \E[ \nabla_{\tilde{\rvx}} \cdot\rmD(\tilde{\rvx})|\rvx] \\  \text{ by \Cref{eq:stein-for-sure}}
+}}
+-\underbrace{\E[(\tilde{\rvx}-\rvx)^\top \tilde{\rvx}|\rvx]}_{ \sigma^2 D}\Big)
+\\&\qquad\qquad\qquad+\underbrace{\E[\|\tilde{\rvx}-\rvx\|^2|\rvx]}_{ \sigma^2 D} \\
+=&~\E \left[\|\rmD(\tilde{\rvx})-\tilde{\rvx}\|^2
++2\sigma^2  \nabla_{\tilde{\rvx}} \cdot\rmD(\tilde{\rvx})
+-D\sigma^2 | \rvx\right].
+\end{aligned}
+\]
+因此 \emph{可观察到} 代理
+\[ 
+\mathrm{SURE}(\rmD;\tilde{\rvx})
+:= \|\rmD(\tilde{\rvx})-\tilde{\rvx}\|_2^2
++2\sigma^2  \nabla_{\tilde{\rvx}} \cdot\rmD(\tilde{\rvx})
+-D\sigma^2 
+\]
+满足 $\E \left[\mathrm{SURE}(\rmD;\tilde{\rvx}) \big| \rvx\right]=R(\rmD;\rvx)$。因此，最小化 SURE（在期望中或根据经验）相当于在仅使用噪声观测值时最小化真实条件 MSE。
+
+
+
+\subsection{定理~\ref{thm:fpe}: 通过 Fokker–Planck 进行边缘对齐}\label{app-sec:scoresde-fpe-proof}
+
+\paragraph{\textit{证明。}}
+\paragraph{第 1 部分：正向 SDE 的 Fokker-Planck 方程。}
+
+考虑前向 SDE：
+\[
+\diff \rvx(t) = \rvf(\rvx(t), t)  \diff t + g(t)  \diff \rvw(t).
+\]
+扩散矩阵为 $\sigma(t) = g(t) I_D$，所以 $\sigma(t) \sigma(t)^T = g^2(t) I_D$。边缘密度的 Fokker-Planck 方程 $p_t(\rvx)$ 的 $\rvx(t)$ 是：
+\[
+\partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvf(\rvx, t) p_t(\rvx) \bigr] + \frac{1}{2} \sum_{i,j=1}^D \frac{\partial^2}{\partial x_i \partial x_j} \bigl[ (g^2(t) \delta_{ij}) p_t(\rvx) \bigr].
+\]
+计算扩散项：
+\[
+\sum_{i,j=1}^D \frac{\partial^2}{\partial x_i \partial x_j} \bigl[ g^2(t) \delta_{ij} p_t(\rvx) \bigr] = \sum_{i=1}^D \frac{\partial^2}{\partial x_i^2} \bigl[ g^2(t) p_t(\rvx) \bigr] = g^2(t) \Delta_{\rvx} p_t(\rvx).
+\]
+因此：
+\[
+\partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvf(\rvx, t) p_t(\rvx) \bigr] + \frac{1}{2} g^2(t) \Delta_{\rvx} p_t(\rvx).
+\]
+现在，使用以下方法重写：
+\[
+\rvv(\rvx, t) = \rvf(\rvx, t) - \frac{1}{2} g^2(t) \nabla_{\rvx} \log p_t(\rvx).
+\]
+自 $\nabla_{\rvx} \log p_t(\rvx) = \frac{\nabla_{\rvx} p_t(\rvx)}{p_t(\rvx)}$，计算：
+\[
+\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr] = \nabla_{\rvx} \cdot \biggl[ \rvf(\rvx, t) p_t(\rvx) - \frac{1}{2} g^2(t) \frac{\nabla_{\rvx} p_t(\rvx)}{p_t(\rvx)} p_t(\rvx) \biggr].
+\]
+第二项是：
+\[
+\nabla_{\rvx} \cdot \biggl[ -\frac{1}{2} g^2(t) \nabla_{\rvx} p_t(\rvx) \biggr] = -\frac{1}{2} g^2(t) \Delta_{\rvx} p_t(\rvx).
+\]
+因此：
+\[
+\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr] = \nabla_{\rvx} \cdot \bigl[ \rvf(\rvx, t) p_t(\rvx) \bigr] - \frac{1}{2} g^2(t) \Delta_{\rvx} p_t(\rvx).
+\]
+因此：
+\[
+\partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr],
+\]
+验证两种形式的 Fokker-Planck 方程。
+
+\paragraph{第 2 部分：PF-ODE 边缘密度。}
+
+考虑 PF-ODE：
+\[
+\frac{\diff \tilde\rvx(t)}{\diff t} = \rvv(\tilde\rvx(t), t), \quad \rvv(\rvx, t) = \rvf(\rvx, t) - \frac{1}{2} g^2(t) \nabla_{\rvx} \log p_t(\rvx).
+\]
+
+\textbfs{前进方向： $\tilde\rvx(0) \sim p_0$. } 让 $\tilde\rvx(t)$ 遵循 PF-ODE $\tilde\rvx(0) \sim p_0$。流映射 $\bm{\Psi}_t: \mathbb{R}^D \to \mathbb{R}^D$ 定义为：
+\[
+\frac{\diff}{\diff t} \bm{\Psi}_t(\mathbf{x}_0) = \rvv(\bm{\Psi}_t(\mathbf{x}_0), t), \quad \bm{\Psi}_0(\mathbf{x}_0) = \mathbf{x}_0.
+\]
+自 $\tilde\rvx(t) = \bm{\Psi}_t(\tilde\rvx(0))$，密度 $\tilde p_t(\rvx)$ 的 $\tilde\rvx(t)$ 满足连续性方程：
+\[
+\partial_t \tilde p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) \tilde p_t(\rvx) \bigr].
+\]
+自 $\tilde\rvx(0) \sim p_0$，我们有 $\tilde p_0(\rvx) = p_0(\rvx)$。从第 1 部分开始， $p_t(\rvx)$ 满足：
+\[
+\partial_t p_t(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, t) p_t(\rvx) \bigr].
+\]
+两者 $\tilde p_t$ 和 $p_t$ 在相同的初始条件下满足相同的连续性方程 $p_0$。假设足够的平滑度（例如， $\rvv \in C^1$)，解在某些适当的函数空间中是唯一的，所以 $\tilde p_t = p_t$。因此， $\tilde\rvx(t) \sim p_t$ 对于所有 $t \in [0, T]$.
+
+\vspace{0.3cm}
+\textbfs{向后方向： $\tilde\rvx(T) \sim p_T$. } 现在，让 $\tilde\rvx(t)$ 遵循 PF-ODE 从 $t = T$ 至 $t = 0$，与 $\tilde\rvx(T) \sim p_T$。常微分方程为：
+\[
+\frac{\diff}{\diff t} \tilde\rvx(t) = \rvv(\tilde\rvx(t), t).
+\]
+让 $s = T - t$，因此后向 ODE 变为：
+\[
+\frac{\diff}{\diff s} \tilde\rvx(T - s) = -\rvv(\tilde\rvx(T - s), T - s).
+\]
+密度 $\tilde p_{T-s}(\rvx)$ 的 $\tilde\rvx(T - s)$ 满足：
+\[
+\partial_s \tilde p_{T-s}(\rvx) = \nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, T - s) \tilde p_{T-s}(\rvx) \bigr].
+\]
+自 $\tilde\rvx(T) \sim p_T$，我们有 $\tilde p_T = p_T$。福克-普朗克方程 $p_t$ 在 $t = T - s$ 是：
+\[
+\partial_t p_{T-s}(\rvx) = -\nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, T - s) p_{T-s}(\rvx) \bigr].
+\]
+自 $\partial_t = -\partial_s$，我们得到：
+\[
+\partial_s p_{T-s}(\rvx) = \nabla_{\rvx} \cdot \bigl[ \rvv(\rvx, T - s) p_{T-s}(\rvx) \bigr].
+\]
+两者 $\tilde p_{T-s}$ 和 $p_{T-s}$ 在相同的初始条件下满足相同的偏微分方程 $s = 0$ ($\tilde p_T = p_T$）。独特性意味着 $\tilde p_{T-s} = p_{T-s}$，所以 $\tilde\rvx(t) = \tilde\rvx(T - s) \sim p_{T-s} = p_t$，对于所有 $t \in [0, T]$.
+
+\paragraph{第 3 部分：反时 SDE 边缘密度。}
+我们使用正向运行反向时钟验证边缘分布
+\[
+s:=T-t.
+\]
+定义
+\[
+\rvy(s):=\bar\rvx(T-s),
+\qquad s\in[0,T].
+\]
+由于逆向过程从 $\bar\rvx(T)\sim p_T$，我们有
+\[
+\rvy(0)\sim p_T.
+\]
+
+在这种时钟变化下，反时SDE变为
+\[
+\diff\rvy(s)
+=
+\Bigl[
+-\rvf(\rvy(s),T-s)
++
+g^2(T-s)\nabla_{\rvx}\log p_{T-s}(\rvy(s))
+\Bigr]\diff s
++
+g(T-s)\diff\rvw^{\mathrm{rev}}(s),
+\]
+哪里 $\rvw^{\mathrm{rev}}$ 是正向运行时钟下的标准维纳过程 $s$。让 $q_s$ 表示密度 $\rvy(s)$。其福克-普朗克方程为
+\begin{align*}
+\partial_s q_s(\rvx)
+&=
+-\nabla_{\rvx}\cdot
+\Bigl(
+\bigl[
+-\rvf(\rvx,T-s)
++
+g^2(T-s)\nabla_{\rvx}\log p_{T-s}(\rvx)
+\bigr]
+q_s(\rvx)
+\Bigr)
+\\
+&\qquad
++
+\tfrac12 g^2(T-s)\Delta_{\rvx}q_s(\rvx).
+\end{align*}
+
+我们现在检查
+\[
+q_s(\rvx)=p_{T-s}(\rvx)
+\]
+满足该方程。使用
+\[
+\nabla_{\rvx}\log p_{T-s}(\rvx)\,p_{T-s}(\rvx)
+=
+\nabla_{\rvx}p_{T-s}(\rvx),
+\]
+右侧变为
+\begin{align*}
+&\nabla_{\rvx}\cdot
+\bigl[
+\rvf(\rvx,T-s)p_{T-s}(\rvx)
+\bigr]
+-
+g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx)
+\\
+&\qquad
++
+\tfrac12 g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx)
+\\
+&=
+\nabla_{\rvx}\cdot
+\bigl[
+\rvf(\rvx,T-s)p_{T-s}(\rvx)
+\bigr]
+-
+\tfrac12 g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx).
+\end{align*}
+
+另一方面，前向福克-普朗克方程给出
+\[
+\partial_t p_t(\rvx)
+=
+-\nabla_{\rvx}\cdot
+\bigl[\rvf(\rvx,t)p_t(\rvx)\bigr]
++
+\tfrac12g^2(t)\Delta_{\rvx}p_t(\rvx).
+\]
+自 $t=T-s$，链式法则给出
+\begin{align*}
+\partial_s p_{T-s}(\rvx)
+&=
+-\partial_t p_t(\rvx)\big|_{t=T-s}
+\\
+&=
+\nabla_{\rvx}\cdot
+\bigl[
+\rvf(\rvx,T-s)p_{T-s}(\rvx)
+\bigr]
+-
+\tfrac12g^2(T-s)\Delta_{\rvx}p_{T-s}(\rvx).
+\end{align*}
+这正是逆过程的福克-普朗克方程。最后， $q_0=p_T$，与初始分布匹配
+$\rvy(0)\sim p_T$。在保证福克-普朗克解唯一性的正则性假设下，
+\[
+q_s=p_{T-s},
+\qquad s\in[0,T].
+\]
+返回原始扩散时钟 $t=T-s$，我们得到
+\[
+\bar\rvx(t)\sim p_t.
+\]
+因此，当逆时 SDE 从 $t=T$ 至 $t=0$，它遵循与前向 SDE 相同的边缘分布，但顺序相反。
+\hfill$\blacksquare$
+
+\subsection{提议~\ref{dsm-minimizer}: SM 和 DSM 的最小化}\label{app-sec:min-dsm}
+
+\paragraph{\textit{证明。}} 找到最小化器 $\mathbf{s}^*$，我们首先考虑固定时间 $t$ 并分析目标函数中的内在期望：
+\begin{align*}
+\mathcal  J(t, \bm{\phi}) 
+&:= \mathbb{E}_{\rvx_0 \sim p_{\text{data}}} 
+\mathbb{E}_{\rvx_t \sim p_t(\cdot|\rvx_0)} 
+\left[\left\| \mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0) \right\|_2^2 \right].
+\end{align*}
+为了最小化这种期望，我们需要找到 
+$\mathbf{s}_{\bm{\phi}}(\rvx_t, t)$ 
+最小化每个的预期平方误差 $\rvx_t$。我们可以使用联合分布重写这个期望 $X_0$ 和 $X_t$:
+\begin{align*}
+\mathcal J(t, \bm{\phi}) 
+= \iint p_{\text{data}}(\rvx_0) p_t(\rvx_t |\rvx_0) 
+\left\| \mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p(\rvx_t |  \rvx_0) \right\|_2^2 
+ \diff\rvx_0  \diff\rvx_t.
+\end{align*}
+对于每个固定 $\rvx_t$，我们需要最小化：
+\begin{align*}
+\int p(\rvx_0 | X_t = \rvx_t) p_t( \rvx_t) 
+\left\| \mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p(\rvx_t |  \rvx_0) \right\|_2^2 
+ \diff\rvx_0.
+\end{align*}
+自 $p_t(\rvx_t)$ 相对于恒定 
+$\mathbf{s}_{\bm{\phi}}(\rvx_t, t)$，这相当于最小化：
+\begin{align*}
+\int p( \rvx_0 | X_t = \rvx_t) 
+\left\| \mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p(\rvx_t |  \rvx_0) \right\|_2^2 
+  \diff\rvx_0
+\end{align*}
+当 $\mathbf{s}_{\bm{\phi}}(\rvx_t, t)$ 等于条件期望：
+\begin{align*}
+\mathbf{s}^*(\rvx_t, t) 
+= \mathbb{E}_{X_0 \sim p(X_0 | X_t = \rvx_t)} 
+\left[ \nabla_{\rvx_t} \log p(\rvx_t | X_0) \right].
+\end{align*}
+现在我们需要证明这等于 
+$\nabla_{\rvx_t} \log p_t(\rvx_t)$。根据贝叶斯法则和边缘概率的定义：
+\begin{align*}
+p_t(\rvx_t) 
+= \int p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0.
+\end{align*}
+取对数，然后求梯度 $\rvx_t$:
+\begin{align*}
+\nabla_{\rvx_t} \log p_t(\rvx_t) 
+= \frac{\nabla_{\rvx_t} p_t(\rvx_t)}{p_t(\rvx_t)}
+= \frac{\nabla_{\rvx_t} \int p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0}
+{\int p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0}.
+\end{align*}
+在适当的正则性条件下，我们可以交换梯度和积分：
+\begin{align*}
+\nabla_{\rvx_t} \log p_t(\rvx_t) 
+= \frac{\int \nabla_{\rvx_t} p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0}
+{\int p_t(\rvx_t | \rvx_0) 
+p_{\text{data}}(\rvx_0)   \diff\rvx_0}.
+\end{align*}
+使用
+\[
+\nabla_{\rvx_t}p_t(\rvx_t|\rvx_0)
+=
+p_t(\rvx_t|\rvx_0)
+\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0),
+\]
+和贝叶斯规则，我们得到
+\begin{align*}
+\nabla_{\rvx_t}\log p_t(\rvx_t)
+&=
+\int
+p(\rvx_0|\rvx_t)
+\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0)
+\diff\rvx_0 \\
+&=
+\mathbb{E}_{p(\rvx_0|\rvx_t)}
+\left[
+\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0)
+\right]
+=
+\mathbf{s}^*(\rvx_t,t),
+\end{align*}
+完成证明。
+\hfill$\blacksquare$
+
+
+
+\subsection{高斯的闭式分数函数}
+
+为了将来参考，我们将一般多元正态分布的分数公式总结为以下引理：
+
+\lemp{高斯分数}{score-general-gaussian}{让 $\rvx \in \mathbb{R}^D$ 并考虑多元正态分布
+\[
+p(\tilde{\rvx} | \rvx) := \mathcal{N}(\tilde{\rvx}; \bm{\mu}, \bm{\Sigma}),
+\]
+哪里 $\bm{\mu} \in \mathbb{R}^D$ 是平均值和 $\bm{\Sigma} \in \mathbb{R}^{D \times D}$ 是可逆协方差矩阵。其分数函数为
+\begin{align}\label{eq:score-gaussian-formula}
+    \nabla_{\tilde{\rvx}} \log p(\tilde{\rvx} | \rvx) = -\bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
+\end{align}
+}{密度函数 $p(\tilde{\rvx} | \rvx)$ 由下式给出：
+\[
+p(\tilde{\rvx} | \rvx) = \frac{1}{(2\pi)^{D/2} |\bm{\Sigma}|^{1/2}} \exp\left( -\frac{1}{2} (\tilde{\rvx} - \bm{\mu})^\top \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}) \right).
+\]
+为了计算分数函数，我们首先取对数 $ p(\tilde{\rvx} | \rvx) $:
+\[
+\log p(\tilde{\rvx} | \rvx) = -\frac{D}{2} \log(2\pi) - \frac{1}{2} \log |\bm{\Sigma}| - \frac{1}{2} (\tilde{\rvx} - \bm{\mu})^\top \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
+\]
+现在，我们计算梯度 $ \log p(\tilde{\rvx} | \rvx) $ 相对于 $ \tilde{\rvx} $:
+\[
+\nabla_{\tilde{\rvx}} \log p(\tilde{\rvx} | \rvx) = - \frac{1}{2} \nabla_{\tilde{\rvx}} \left( (\tilde{\rvx} - \bm{\mu})^\top \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}) \right).
+\]
+使用链式法则，我们得到：
+\[
+\nabla_{\tilde{\rvx}} \left( (\tilde{\rvx} - \bm{\mu})^\top \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}) \right) = 2 \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
+\]
+因此，分数函数为：
+\begin{align}\label{eq:gaussian-score}
+    \nabla_{\tilde{\rvx}} \log p(\tilde{\rvx} | \rvx) = - \bm{\Sigma}^{-1} (\tilde{\rvx} - \bm{\mu}).
+\end{align}
+}
+
+
+
+
+
+
+\clearpage
+\newpage
+
+\section{基于流的视角}\label{app-sec:flow-proof}
+
+\subsection{引理~\ref{instant-change-of-var}: 变量瞬时变化}
+\paragraph{\textit{证明。}}
+
+\textbfs{方法 1：变量替换公式。 } 我们表示 $p(\rvx(t), t)$ 通过 $p_t(\rvx_t)$。从ODE离散化开始
+\[
+\rvz_{t+\Delta t} = \rvz_t + \Delta t  \rmF(\rvz_t, t),
+\]
+归一化流的变量替换公式（\Cref{eq:nf-change-of-var-log}) 给出
+\begin{align*}
+    \log p_{t+\Delta t}(\rvz_{t+\Delta t}) 
+    &= \log p_t(\rvz_t) - \log \Big| \det\big(\rmI + \Delta t \nabla_{\rvz} \rmF(\rvz_t, t)\big) \Big| \\
+    &= \log p_t(\rvz_t) - \Tr\Big(\log(\rmI + \Delta t \nabla_{\rvz} \rmF(\rvz_t, t)) \Big) \\
+    &= \log p_t(\rvz_t) - \Delta t  \Tr\big(\nabla_{\rvz} \rmF(\rvz_t, t)\big) + \mathcal{O}(\Delta t^2),
+\end{align*}
+我们使用的地方 $\log \det = \Tr \log$ 以及小型扩展 $\Delta t$。采取极限 $\Delta t \to 0$ 生成对数密度的连续时间微分方程。事实上，同样的技巧也适用于 \Cref{eq:log-det-tr}.
+
+\vspace{0.3cm}
+\textbfs{方法 2：连续性方程。 } 我们还可以利用连续性方程，它本质上是变量替换公式：
+\[
+\partial_t p(\rvz,t) = - \nabla_{\rvz} \cdot \big(\rmF(\rvz,t) p(\rvz,t)\big).
+\]
+扩大分歧，
+\[
+\partial_t p = - \big( (\nabla_{\rvz} \cdot \rmF) p + \rmF \cdot \nabla_{\rvz} p \big).
+\]
+沿着轨迹 $\rvz(t)$ 满意 $\frac{\diff \rvz}{\diff t} = \rmF(\rvz(t), t)$，总时间导数为
+\begin{align*}
+\frac{\diff}{\diff t} p(\rvz(t), t) 
+&= \nabla_{\rvz} p \cdot \frac{\diff \rvz}{\diff t} + \partial_t p \\
+&= \nabla_{\rvz} p \cdot \rmF - \big( (\nabla_{\rvz} \cdot \rmF) p + \rmF \cdot \nabla_{\rvz} p \big) \\
+&= - (\nabla_{\rvz} \cdot \rmF) p.
+\end{align*}
+除以 $p(\rvz(t), t)$，我们得出结论
+\[
+\frac{\diff}{\diff t} \log p(\rvz(t), t) = - \nabla_{\rvz} \cdot \rmF(\rvz(t), t).
+\]
+\hfill$\blacksquare$
+
+
+\subsection{定理~\ref{thm:continuity-mass}: 质量守恒准则}\label{app-sec:mass-conservation}
+
+\paragraph{一些先决条件：流图和流诱导密度。} 对于任何初始位置 $\mathbf{x}_0\in\mathbb{R}^D$，流映射 
+$\bm{\Psi}_t:\mathbb{R}^D\to\mathbb{R}^D$ 是ODE的唯一解
+\[
+\frac{\diff}{\diff t} \bm{\Psi}_t(\mathbf{x}_0)
+= \mathbf{v}_t\bigl(\bm{\Psi}_t(\mathbf{x}_0)\bigr), 
+\quad \bm{\Psi}_0(\mathbf{x}_0)=\mathbf{x}_0.
+\]
+根据我们的规律性假设， $\bm{\Psi}_t$ 在两者中连续可导 $t$ 和 $\mathbf{x}_0$。流致密度 $p_t^{\mathrm{fwd}}$ 是初始密度的前推 $p_0$ 通过 $\bm{\Psi}_t$:
+\[
+p_t^{\mathrm{fwd}}(\mathbf{x})
+= p_0\bigl(\bm{\Psi}_t^{-1}(\mathbf{x})\bigr)
+  \Bigl|\det \bigl(\nabla\bm{\Psi}_t^{-1}(\mathbf{x})\bigr)\Bigr|.
+\]
+这给出了密度 $\mathbf{x}$ 和时间 $t$ 从以下位置开始的粒子数量 $p_0=p_{\mathrm{data}}$ 并在速度场下进化 $\mathbf{v}_t$.
+
+
+\paragraph{\textit{非正式证明：}} \textbfs{充分条件： $p_t^{\mathrm{fwd}} = p_t$ $\Rightarrow$ 连续性方程。 }
+在 \Cref{subsec:cov-continuity-eq} 我们获得了 \emph{强解} 连续性方程中取连续时间极限的离散变量变化的公式。在该方法中，密度 $p_t$ 假设足够平滑，所有导数都经典存在并且 PDE 逐点成立。在这里，我们提供了一个互补的推导 \emph{弱感}：仅在对任意平滑测试函数进行积分后才施加连续性方程，这放宽了对两者的正则性要求 $p_t$ 和速度场 $\mathbf{v}_t$。这种弱公式不仅更加严格，因为它容纳了较少的正则解，而且也是偏微分方程理论和数值分析的标准框架。对于任何平滑的测试功能 $ \varphi(\mathbf{x}) $ 通过紧凑的支持，前推属性给出：
+\begin{align*}
+    \int p_t^{\mathrm{fwd}}(\mathbf{x}) \varphi(\mathbf{x})  \diff\mathbf{x} &= \int p_0(\bm{\Psi}_t^{-1}(\mathbf{x})) \left| \det\left( \nabla \bm{\Psi}_t^{-1}(\mathbf{x}) \right) \right| \varphi(\mathbf{x}) \diff\mathbf{x}\\ &=  \int p_0(\mathbf{y}) \varphi(\bm{\Psi}_t(\mathbf{y})) \diff\mathbf{y},
+\end{align*}
+第二个等式是根据变量的变化得出的 $ \mathbf{x} = \bm{\Psi}_t(\mathbf{y}) $，与 $ \diff\mathbf{y} = \left| \det\left( \nabla \bm{\Psi}_t^{-1}(\mathbf{x}) \right) \right| \diff\mathbf{x} $。两边分别求微分 $ t $:
+\[
+\frac{\diff}{\diff t} \int p_t^{\mathrm{fwd}}(\mathbf{x}) \varphi(\mathbf{x}) \diff\mathbf{x} = \frac{\diff}{\diff t} \int p_0(\mathbf{y}) \varphi(\bm{\Psi}_t(\mathbf{y})) \diff\mathbf{y}.
+\]
+
+左侧是：
+\[
+\int \frac{\partial p_t^{\mathrm{fwd}}}{\partial t}(\mathbf{x}) \varphi(\mathbf{x}) \diff\mathbf{x}.
+\]
+
+在右侧：
+\[
+\int p_0(\mathbf{y}) \nabla \varphi(\bm{\Psi}_t(\mathbf{y})) \cdot \mathbf{v}_t(\bm{\Psi}_t(\mathbf{y})) \diff\mathbf{y},
+\]
+自 $ \frac{\partial \bm{\Psi}_t}{\partial t}(\mathbf{y}) = \mathbf{v}_t(\bm{\Psi}_t(\mathbf{y})) $。将变量更改为 $ \mathbf{x} = \bm{\Psi}_t(\mathbf{y}) $，所以 
+\[
+\diff\mathbf{y} = \left| \det\left( \nabla \bm{\Psi}_t^{-1}(\mathbf{x}) \right) \right| \diff\mathbf{x} ,
+\]
+ 和
+\[
+p_0(\mathbf{y}) = p_t^{\mathrm{fwd}}(\mathbf{x}) \left| \det\left( \nabla \bm{\Psi}_t(\mathbf{y}) \right) \right| = \frac{p_t^{\mathrm{fwd}}(\mathbf{x})}{\left| \det\left( \nabla \bm{\Psi}_t^{-1}(\mathbf{x}) \right) \right|}.
+\]
+因此，右侧变为：
+\[
+\int p_t^{\mathrm{fwd}}(\mathbf{x}) \nabla \varphi(\mathbf{x}) \cdot \mathbf{v}_t(\mathbf{x}) \diff\mathbf{x}.
+\]
+
+应用部件集成，利用紧凑的支持 $ \varphi $:
+\[
+\int p_t^{\mathrm{fwd}}(\mathbf{x}) \nabla \varphi(\mathbf{x}) \cdot \mathbf{v}_t(\mathbf{x}) \diff\mathbf{x} = -\int \varphi(\mathbf{x}) \nabla \cdot (p_t^{\mathrm{fwd}}(\mathbf{x}) \mathbf{v}_t(\mathbf{x})) \diff\mathbf{x}.
+\]
+两边相等：
+\[
+\int \left[ \frac{\partial p_t^{\mathrm{fwd}}}{\partial t}(\mathbf{x}) + \nabla \cdot (p_t^{\mathrm{fwd}}(\mathbf{x}) \mathbf{v}_t(\mathbf{x})) \right] \varphi(\mathbf{x}) \diff\mathbf{x} = 0.
+\]
+自 $ \varphi $ 是任意的，我们得出结论：
+\[
+\frac{\partial p_t^{\mathrm{fwd}}}{\partial t} + \nabla \cdot (p_t^{\mathrm{fwd}} \mathbf{v}_t) = 0.
+\]
+给定 $ p_t^{\mathrm{fwd}} = p_t $，这意味着：
+\[
+\frac{\partial p_t}{\partial t} + \nabla \cdot (p_t \mathbf{v}_t) = 0.
+\]
+
+
+\textbfs{必要条件：连续性方程 $ \Rightarrow p_t^{\mathrm{fwd}} = p_t $.} 假设 $ p_t $ 满足连续性方程：
+\[
+\frac{\partial p_t}{\partial t} + \nabla \cdot (p_t \mathbf{v}_t) = 0,
+\]
+具有初始条件 $ p_0(\mathbf{x}) = p_{\mathrm{data}}(\mathbf{x}) $。我们知道 $ p_t^{\mathrm{fwd}} $ 满足相同的连续性方程，如上所示，并且：
+\[
+p_0^{\mathrm{fwd}}(\mathbf{x}) = p_0(\bm{\Psi}_0^{-1}(\mathbf{x})) \left| \det\left( \nabla \bm{\Psi}_0^{-1}(\mathbf{x}) \right) \right| = p_0(\mathbf{x}),
+\]
+自 $ \bm{\Psi}_0(\mathbf{x}) = \mathbf{x} $。因此，两种密度具有相同的初始条件 $ p_0 = p_{\mathrm{data}} $。连续性方程可以重写为：
+\[
+\frac{\partial p}{\partial t} + \mathbf{v}_t \cdot \nabla p + p \nabla \cdot \mathbf{v}_t = 0.
+\]
+这是一阶线性偏微分方程。假设 $ \mathbf{v}_t $ 连续可微分且全局 Lipschitz，并且 $ p_t $ 足够光滑，特征方法保证光滑函数空间中的唯一解。自从 $ p_t $ 和 $ p_t^{\mathrm{fwd}} $ 满足相同的偏微分方程和初始条件，我们得出结论：
+\[
+p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
+\]
+对于所有 $t\in[0,1]$ 和 $\mathbf{x} \in \mathbb{R}^D$. 
+
+这就完成了等价性的证明。
+\hfill$\blacksquare$
+
+\clearpage
+\newpage
+
+\section{理论补充：扩散模型的统一系统观点}\label{app-sec:equiv-para}
+
+\subsection{提议~\ref{equi-para}: 参数化的等价}
+
+\paragraph{\textit{证明：}} 
+如定理中所示~\ref{dsm-minimizer} 关于DSM损失，匹配损失的全局最优
+\[
+\mathbb{E}_t\left[\omega(t)\,\mathbb{E}_{\rvx_0,\bm{\epsilon}}\left[\|\cdot\|_2^2\right]\right]
+\]
+内心期望达到时
+\[
+\mathbb{E}_{\rvx_0,\bm{\epsilon}}\left[\|\cdot\|_2^2\right]
+\]
+针对每个固定最小化 $t$。由于这是一个标准均方误差问题，因此最小值是唯一的。从去噪分数匹配~\citep{vincent2011connection}, 定理~\ref{dsm-minimizer} 表示最优评分函数满足
+\begin{align*}
+    \rvs^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}\left[\nabla_{\rvx}\log p_t(\rvx_t|\rvx_0)\right] = \nabla_{\rvx_t} \log p_t(\rvx_t).
+\end{align*}
+使用恒等式 $\nabla_{\rvx}\log p_t(\rvx_t|\rvx_0) = -\frac{1}{\sigma_t} \bm{\epsilon}$ 用于 $\bm{\epsilon} \sim \mathcal{N}(\bm{0},\rmI)$，我们得到
+\begin{align*}
+    \rvs^*(\rvx_t,t) = -\frac{1}{\sigma_t}\, \bm{\epsilon}^*(\rvx_t,t),
+\end{align*}
+哪里 $\bm{\epsilon}^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\bm{\epsilon}|\rvx_t]$ 是最优的 $\beps$-预测 $\mathcal{L}_{\text{noise}}({\bm{\phi}})$。对于 $\rvx$-预测损失 $\mathcal{L}_{\text{clean}}$，最优估计量为
+\[
+\rvx^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\rvx_0|\rvx_t],
+\]
+根据 Tweedie 公式，它与分数相关
+\[
+\alpha_t\, \rvx^*(\rvx_t,t) = \rvx_t + \sigma_t^2\, \rvs^*(\rvx_t,t).
+\]
+对于 $\rvv$-预测损失 $\mathcal{L}_{\text{velocity}}$，最优估计量为
+\begin{align*}
+    \rvv^*(\rvx_t,t) = \mathbb{E}_{p(\rvx_0|\rvx_t)}[\alpha_t' \rvx_0 + \sigma_t' \bm{\epsilon}|\rvx_t] 
+    = \alpha_t' \rvx^* + \sigma_t' \bm{\epsilon}^*.
+\end{align*}
+将表达式替换为 $\rvx^*$ 和 $\bm{\epsilon}^*$ 就 $\rvs^*$ 产量
+\begin{align*}
+    \rvv^*(\rvx_t,t)
+    = \frac{\alpha_t'}{\alpha_t} \rvx_t + \left( \frac{\alpha_t'}{\alpha_t} \sigma_t^2 - \sigma_t \sigma_t' \right) \rvs^*(\rvx_t,t) = f(t) \rvx_t - \frac{1}{2}g^2(t) \rvs^*(\rvx_t,t),
+\end{align*}
+完成推导。
+
+
+\hfill$\blacksquare$
+
+
+
+\clearpage
+\newpage
+
+
+\section{理论补充：学习快速扩散生成器}\label{app-sec:flow-map}
+
+\subsection{知识蒸馏损失作为通用框架的一个实例 \Cref{eq:general-cm-loss}}
+
+我们从预言机KD损失开始
+\[
+\mathcal{L}_{\mathrm{KD}}^{\text{oracle}}(\btheta)
+=\E_{\rvx_T\sim p_T}\,
+\big\|\rmG_\btheta(\rvx_T,T,0)-\bPsi_{T\to 0}(\rvx_T)\big\|_2^2,
+\]
+哪里 $p_T = p_{\mathrm{prior}}$。对于确定性 ODE 流映射 $\bPsi$ （满足半群性质并且沿轨迹是双射的），边缘满足前推恒等式
+\[
+p_t
+= \bPsi_{0\to t}\,\sharp\,p_{\mathrm{data}}
+= \bPsi_{T\to t}\,\sharp\,p_{\mathrm{prior}}.
+\]
+因此，
+\[
+\bPsi_{s\to T}\,\sharp\,p_s=p_T
+\quad\text{and}\quad
+\bPsi_{T\to 0}\circ\bPsi_{s\to T}=\bPsi_{s\to 0}.
+\]
+更改变量 $\rvx_T=\bPsi_{s\to T}(\rvx_s)$ 与 $\rvx_s\sim p_s$ 给出
+\[
+\mathcal{L}_{\mathrm{KD}}^{\text{oracle}}(\btheta)
+= \E_{\rvx_s\sim p_s} 
+\Big\|\rmG_\btheta \big(\bPsi_{s\to T}(\rvx_s),T,0\big)
+- \bPsi_{s\to 0}(\rvx_s)\Big\|_2^2.
+\]
+定义退缩学生 $\widetilde{\rmG}_\btheta(\rvx_s,s,0):=
+\rmG_\btheta(\bPsi_{s\to T}(\rvx_s),T,0)$ 以统一的流映射形式表达相同的损失（在 $t=0$):
+\begin{align*}
+\mathcal{L}_{\mathrm{KD}}^{\text{oracle}}(\btheta)
+= \E_{\rvx_s\sim p_s} 
+\big\|\widetilde{\rmG}_\btheta(\rvx_s,s,0)-\bPsi_{s\to 0}(\rvx_s)\big\|_2^2.
+\end{align*}
+该推导依赖于通过预言流和半群属性来改变变量。
+
+\hfill$\blacksquare$
+
+\paragraph{传输解释。}
+提议~\ref{vsd-grad} 也承认分布式解释。对于
+\[
+\hat\rvx_t
+=
+\alpha_t\rmG_\btheta(\rvz)+\sigma_t\beps,
+\]
+无穷小的参数扰动引起数据空间位移
+$(\partial_\btheta\hat\rvx_t)\,\diff\btheta$。因此，VSD梯度可以写为
+\[
+\nabla_{\btheta}\mathcal{L}_{\mathrm{VSD}}
+=
+\E\!\left[
+\omega(t)
+\big(\partial_\btheta\hat\rvx_t\big)^\top
+\left(
+\nabla_{\rvx}\log p_t^{\btheta}(\hat\rvx_t)
+-
+\nabla_{\rvx}\log p_t(\hat\rvx_t)
+\right)
+\right].
+\]
+因此，分数不匹配提供了数据空间梯度信号，而生成器雅可比行列式将该信号映射回参数空间；梯度下降然后沿相反方向更新参数。这是分布级传输视图的参数对应部分
+\Cref{sec:wgf-distribution-level-training}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{定理~\ref{thm:ct-cm}: CM 等于 CT 直至 $\mathcal{O}(\Delta s^2)$}
+
+\paragraph{\textit{证明：}} 
+
+\textbfs{步骤 1：DDIM 更新（带有 Oracle 分数）是条件平均值。}
+\begin{align*}
+\hat\rvx_{s'}
+&:= \frac{\alpha_{s'}}{\alpha_s} \rvx_s 
++ \sigma_s^2 \left(\frac{\alpha_{s'}}{\alpha_s}-\frac{\sigma_{s'}}{\sigma_s}\right)\nabla_{\rvx_s}\log p_s(\rvx_s)
+\\
+&= \frac{\alpha_{s'}}{\alpha_s}\bigl(\rvx_s+\sigma_s^2\nabla_{\rvx_s}\log p_s(\rvx_s)\bigr)
+- \sigma_{s'}\sigma_s \nabla_{\rvx_s}\log p_s(\rvx_s)
+\\
+&= \alpha_{s'} \E[\rvx_0|\rvx_s]
++ \sigma_{s'}\Bigl(\frac{\rvx_s-\alpha_s \E[\rvx_0|\rvx_s]}{\sigma_s}\Bigr)
+\\
+&= \alpha_{s'} \E[\rvx_0|\rvx_s] + \sigma_{s'} \E[\beps|\rvx_s]
+\\
+&= \E[\alpha_{s'}\rvx_0+\sigma_{s'}\beps|\rvx_s]
+\\
+&= \E[\rvx_{s'}|\rvx_s].
+\end{align*}
+这里我们使用Tweedie的公式
+\[
+\E[\rvx_0 |\rvx_s]=\frac{\rvx_s+\sigma_s^2\nabla_{\rvx_s}\log p_s(\rvx_s)}{\alpha_s},
+\]
+与共享噪声耦合一起
+\[
+\rvx_s=\alpha_s\rvx_0+\sigma_s\beps,
+\qquad
+\rvx_{s'}=\alpha_{s'}\rvx_0+\sigma_{s'}\beps
+\quad (s'=s-\Delta s),
+\]
+在第三个和第四个等式中。我们还注意到，更准确地说， $\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s]$ 应理解为
+$\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s, s]$，因为 $s'=s-\Delta s$ 确定性固定一次 $s$ 已采样。
+
+
+
+
+\textbfs{步骤 2：围绕条件均值展开 CT $\hat\rvx_{s'}$.}
+
+回想一下 $s$ 首先采样，我们设置 $s':=s-\Delta s$ 确定性的。
+\begin{align*}
+\mathcal{L}_{\mathrm{CT}}
+&= \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\rvx_{s'},s')\big)\Big]
+\\
+&\overset{\text{(1)}}{=} \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[
+w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)
+\\[-2pt]
+&\qquad\qquad\qquad\qquad
++ w(s) \partial_2 d\big(\rvf_{\btheta}(\rvx_s,s),\rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\big[\partial_1\rvf_{\btheta^-}(\hat\rvx_{s'},s')(\rvx_{s'}-\hat\rvx_{s'})\big]
+\\[-2pt]
+&\qquad\qquad\qquad\qquad
++ w(s) \mathcal O \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+\\
+&\overset{\text{(2)}}{=} \E_{s,\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\Big]
+\\
+&\quad+ \E_{s,\rvx_s} \Big[w(s) \partial_2 d\big(\rvf_{\btheta}(\rvx_s,s),\rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\big[\partial_1\rvf_{\btheta^-}(\hat\rvx_{s'},s') \E_{\rvx_{s'}|\rvx_s}(\rvx_{s'}-\hat\rvx_{s'})\big]\Big]
+\\
+&\quad+ \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) \mathcal{O} \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+\\
+&\overset{\text{(3)}}{=} \E_{s,\rvx_s} \Big[w(s) d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\hat\rvx_{s'},s')\big)\Big]
++ \E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s} \Big[w(s) \mathcal{O} \big(\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)\Big]
+\\
+&= \mathcal{L}_{\mathrm{CM}} 
++ \mathcal{O} \big(\E\|\rvx_{s'}-\hat\rvx_{s'}\|^2\big)
+\\
+&\overset{\text{(4)}}{=} \mathcal{L}_{\mathrm{CM}} + \mathcal{O}(\Delta s^2).
+\end{align*}
+这里，(1) 应用二阶泰勒展开 
+\[
+h(\rvx') := d\big(\rvf_{\btheta}(\rvx_s,s), \rvf_{\btheta^-}(\rvx',s')\big)
+\]
+周围 $\hat\rvx_{s'}$ 在第二个参数中。 (2) 使用 \textit{塔楼财产} (a.k.a.\ 总期望定律）：
+\[
+\E_{s,\rvx_s}\E_{\rvx_{s'}|\rvx_s,s}[\cdot]
+=\E_{s,\rvx_s}[\cdot],
+\]
+并注意到里面 $\E_{\rvx_{s'}|\rvx_s,s}$，条款
+\[
+w(s),\ \rvf_{\btheta}(\rvx_s,s),\ \hat\rvx_{s'},\ s'
+\]
+不依赖于随机变量 $\rvx_{s'}$ （自 $s' = s-\Delta s$ 和 $\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s,s]$ 已修复一次 $(s,\rvx_s)$ 已修复）。因此唯一的 $\rvx_{s'}$-依赖已结束 $(\rvx_{s'}-\hat\rvx_{s'})$，内心期望降低为
+$\E_{\rvx_{s'}|\rvx_s,s}(\rvx_{s'}-\hat\rvx_{s'})$ 和
+$\E_{\rvx_{s'}|\rvx_s,s}\|\rvx_{s'}-\hat\rvx_{s'}\|^2$。 (3)用途
+\[
+\E[\rvx_{s'}-\hat\rvx_{s'}|\rvx_s,s]=\bm 0
+\quad\text{because}\quad
+\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s,s].
+\]
+对于 (4)，请注意
+\[
+\E\|\rvx_{s'}-\hat\rvx_{s'}\|^2
+=\E\,\Var(\rvx_{s'}|\rvx_s,s)
+\le \E\|\rvx_{s'}-\rvx_s\|^2.
+\]
+此外，
+\[
+\rvx_{s'}-\rvx_s=(\alpha_{s'}-\alpha_s)\rvx_0+(\sigma_{s'}-\sigma_s)\beps,
+\]
+对于平滑的调度程序， $\alpha_{s'}-\alpha_s=\mathcal{O}(\Delta s)$ 和
+$\sigma_{s'}-\sigma_s=\mathcal{O}(\Delta s)$，因此
+\[
+\E\|\rvx_{s'}-\rvx_s\|^2=\mathcal{O}(\Delta s^2),
+\]
+产生
+\[
+\E\|\rvx_{s'}-\hat\rvx_{s'}\|^2=\mathcal{O}(\Delta s^2).
+\]
+
+
+\hfill$\blacksquare$
+
+
+\subsection{提议~\ref{continuous-time-ct}: CT 梯度的连续时间极限}
+
+\paragraph{\textit{证明：}}
+
+我们通过使用来简化符号 \Cref{eq:cm-discrete} 形式
+\begin{align*}
+\mathcal{L}_{\mathrm{CM}}^{\Delta s}(\btheta,\btheta^-)
+:=
+\E \left[\omega(s)\big\|
+\rvf_{\btheta}(\rvx_s,s) -
+\rvf_{\btheta^-}\big(\bPsi_{s\to s-\Delta s}(\rvx_s),\, s-\Delta s\big)
+\big\|_2^2\right].
+\end{align*}
+为了符号简单，写
+\[
+\tilde\rvx_{s-\Delta s}:=\bPsi_{s\to s-\Delta s}(\rvx_s).
+\]
+
+定义
+\[
+\delta \rvf
+:= \rvf_{\btheta}(\rvx_s,s)-\rvf_{\btheta^-}(\rvx_s,s).
+\]
+然后
+\begin{align*}
+\big\|\rvf_{\btheta}(\rvx_s, s)- \rvf_{\btheta^-}(\tilde\rvx_{s-\Delta s}, s-\Delta s)\big\|_2^2
+=
+\Big\|\delta \rvf
++
+\Big(\rvf_{\btheta^-}(\rvx_s, s)-\rvf_{\btheta^-}(\tilde\rvx_{s-\Delta s}, s-\Delta s)\Big)\Big\|_2^2.
+\end{align*}
+
+应用泰勒展开式 $(\rvx_s,s)$ 给出
+\begin{align*}
+\rvf_{\btheta^-}(\rvx_s,s) -
+\rvf_{\btheta^-}(\tilde\rvx_{s-\Delta s}, s-\Delta s)
+=
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)\,\Delta s
++ \mathcal{O}(|\Delta s|^2),
+\end{align*}
+这里我们使用oracle流映射的一阶展开，
+\[
+\rvx_s - \bPsi_{s\to s-\Delta s}(\rvx_s)
+= \rvv^*(\rvx_s,s)\,\Delta s + \mathcal{O}(|\Delta s|^2),
+\]
+与总差异标识一起
+\[
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+=
+\partial_s \rvf_{\btheta^-}(\rvx_s,s)
++
+\big(\partial_{\rvx}\rvf_{\btheta^-}(\rvx_s,s)\big)\,\rvv^*(\rvx_s,s).
+\]
+
+因此，
+\begin{align*}
+\big\|\rvf_{\btheta}(\rvx_s, s)- \rvf_{\btheta^-}(\tilde\rvx_{s-\Delta s}, s-\Delta s)\big\|_2^2
+=
+\|\delta \rvf\|_2^2
++
+2\,\delta \rvf^\top \frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)\,\Delta s
++
+\mathcal{O}(|\Delta s|^2).
+\end{align*}
+
+现在区分 $\btheta$。自从 $\btheta^-$ 被视为固定的 $\nabla_{\btheta}$ （即，没有通过停止梯度目标进行梯度），没有通过梯度 $\rvf_{\btheta^-}$。因此
+\begin{align*}
+\nabla_{\btheta}\mathcal{L}_{\mathrm{CM}}^{\Delta s}(\btheta,\btheta^-)
+&=
+\nabla_{\btheta}\E\!\left[\omega(s)\|\delta \rvf\|_2^2\right]\\
+&\qquad\qquad
++
+2\,\E\!\left[
+\omega(s)\,
+\nabla_{\btheta}\rvf_{\btheta}(\rvx_s,s)^\top
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+\right]\Delta s
++
+\mathcal{O}(|\Delta s|^2).
+\end{align*}
+
+在目标网络是在线网络的停止梯度副本的比较点，即 $\btheta=\btheta^-$，我们有
+\[
+\delta \rvf
+=
+\rvf_{\btheta}(\rvx_s,s)-\rvf_{\btheta^-}(\rvx_s,s)
+=
+0,
+\]
+因此
+\[
+\nabla_{\btheta}\E\!\left[\omega(s)\|\delta \rvf\|_2^2\right]=0.
+\]
+因此，
+\begin{align*}
+\left.
+\nabla_{\btheta}\mathcal{L}_{\mathrm{CM}}^{\Delta s}(\btheta,\btheta^-)
+\right|_{\btheta=\btheta^-}
+&=
+\left.
+2\,\E\!\left[
+\omega(s)\,
+\nabla_{\btheta}\rvf_{\btheta}(\rvx_s,s)^\top
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+\right]
+\right|_{\btheta=\btheta^-}\Delta s
++
+\mathcal{O}(|\Delta s|^2).
+\end{align*}
+
+除以 $\Delta s$ 并取极限收益率
+\begin{align*}
+\left.
+\lim_{\Delta s\to 0}\frac{1}{\Delta s}\nabla_{\btheta}\mathcal{L}_{\mathrm{CM}}^{\Delta s}(\btheta,\btheta^-)
+\right|_{\btheta=\btheta^-}
+&=
+\left.
+\nabla_{\btheta}\E\!\left[
+2\,\omega(s)\,
+\rvf_{\btheta}^\top(\rvx_s,s)\,
+\frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+\right]
+\right|_{\btheta=\btheta^-}.
+\end{align*}
+这证明了恒等式 $\btheta=\btheta^-$.
+
+\hfill$\blacksquare$
+
+
+\newpage
+\section{（选读）阐明扩散模型 (EDM)}\label{sec:edm}我们在中介绍了神经网络参数化设计的具体标准
+$\rvx$ 预测模型，如阐明扩散模型中提出的
+(电火花加工)~\citep{karras2022elucidating}。 EDM 提供了一个简单的 
+使训练过程更容易优化且更可靠的配方。
+$\rvx$ 预测模型表示为与时间相关的跳跃连接与
+缩放残差 (\Cref{eq:D-parametrization})。中心思想是将输入和回归目标标准化为
+始终保持单位方差，并调整跳跃路径以使残差
+不会随着时间的推移而放大。
+ 这个食谱
+已成为扩散模型实现中广泛采用的默认值
+自然地扩展到流映射学习，尤其是一致性家族
+模型。 
+
+
+
+
+\subsection{神经网络标准$\rvx_{\bm{\phi}}$设计}\label{subsec:D-design-edm}
+
+EDM 考虑 $\rvx$ 预测模型的参数化，用 $\rvx_{\bm{\phi}}(\rvx, t)$\footnote{ 所讨论的符号的轻微滥用来表示，所有四种预测类型都是等效的，并且可以简化为 $\rvx$ 预测情况。 EDM采用这种公式，它经过充分研究，自然符合生成流映射模型的干净样本的目标。}，形式如下： 
+\begin{align}\label{eq:D-parametrization}
+    \rvx_{\bm{\phi}}(\rvx, t) := c_{\mathrm{skip}}(t) \rvx + c_{\mathrm{out}}(t) \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t) \rvx, c_{\mathrm{noise}}(t)\right).
+\end{align}
+这里，$c_{\mathrm{skip}}(t)$、$c_{\mathrm{out}}(t)$、$c_{\mathrm{in}}(t)$ 和 $c_{\mathrm{noise}}(t)$ 是时间相关函数。  
+基于即将推出的实际考虑，选择它们是为了提高训练期间的稳定性和性能。
+
+
+
+将其插入 \Cref{eq:general-dm-loss-D} 中，经过简单的代数运算后目标函数变为 \footnote{ 我们从 $\rvx$ 预测扩散损失开始，通过替换 \Cref{eq:D-parametrization} 中给出的参数化：
+\begin{align*}
+    \begin{aligned}
+      &~\mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)\norm{ \rvx_{\bm{\phi}}(\rvx_t, t) - \rvx_0}_2^2\right] 
+      \\= &~\mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)\Big\Vert c_{\mathrm{skip}}(t) \underbrace{(\alpha_t \rvx_0+\sigma_t\beps)}_{\rvx_t} + c_{\mathrm{out}}(t) \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t) \rvx_t, c_{\mathrm{noise}}(t)\right) - \rvx_0\Big\Vert_2^2\right]
+        \\= &~\mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)c_{\mathrm{out}}^2(t)\Big\Vert  \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t) \rvx, c_{\mathrm{noise}}(t)\right) - \underbrace{\left(\frac{\left(1-c_{\mathrm{skip}}(t)\alpha_t\right)\rvx_0-c_{\mathrm{skip}}(t)\sigma_t \bm{\epsilon}}{c_{\mathrm{out}}(t)}\right)}_{\rvx_{\mathrm{tgt}}(t)}\Big\Vert_2^2\right]
+        \\ = &~\text{\Cref{eq:loss-F}}.
+    \end{aligned}
+\end{align*}
+
+}：
+\begin{align}\label{eq:loss-F}
+   \mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)c_{\mathrm{out}}^2(t)\norm{ \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t)\rvx_t, c_{\mathrm{noise}}(t)\right) - \rvx_{\mathrm{tgt}}(t)}_2^2\right].
+\end{align}
+这里，得到回归目标$\rvx_{\mathrm{tgt}}(t)$为：
+\[
+\rvx_{\mathrm{tgt}}(t) = \frac{\left(1-c_{\mathrm{skip}}(t)\alpha_t\right)\rvx_0-c_{\mathrm{skip}}(t)\sigma_t \bm{\epsilon}}{c_{\mathrm{out}}(t)}.
+\]
+
+通过合并 $p_{\text{data}}$ 的标准差（记为 $\sigma_{\mathrm{d}}$），EDM 提出了以下网络参数化设计准则，可以将其描述为 \emph{ 单位方差准则 }。
+
+\paragraph{ 输入单位方差.} 
+\begin{align*}
+    &\text{Var}_{\rvx_0,\bm{\epsilon}}\left[ c_{\mathrm{in}}(t)\rvx_t\right] = 1 \nonumber
+    \\ \Longleftrightarrow &~c_{\mathrm{in}}^2(t) \text{Var}_{\rvx_0,\bm{\epsilon}}\left[ \alpha_t \rvx_0 +\sigma_t \bm{\epsilon} \right] = 1 \nonumber
+    \\ \Longleftrightarrow &~c_{\mathrm{in}}(t)  = \frac{1}{\sqrt{\sigma_{\mathrm{d}}^2 \alpha_t^2 + \sigma_t^2}},
+\end{align*}
+取正根。 
+\paragraph{ 训练目标单位方差.}
+\begin{align}\label{eq:c-out}
+    &\text{Var}_{\rvx_0,\bm{\epsilon}}\left[ \rvx_{\mathrm{tgt}}(t) \right] = 1 \nonumber
+    \\ \Longleftrightarrow &~c_{\mathrm{out}}^2(t)  = \left(1-c_{\mathrm{skip}}(t)\alpha_t\right)^2 \sigma_{\mathrm{d}}^2 + c_{\mathrm{skip}}^2(t)\sigma_t^2, 
+\end{align}
+具有居中数据（$\E[\rvx_0]=\bm{0}$）。
+\paragraph{最小化从$\rmF_{\bm{\phi}}$到$\rvx_{\bm{\phi}}$的误差放大。} EDM旨在减轻网络学习误差从$\rmF_{\bm{\phi}}$到$\rvx_{\bm{\phi}}$的放大。这是通过选择 $c_{\mathrm{skip}}$ 来最小化 $c_{\mathrm{out}}$ 来实现的：
+\[
+c_{\mathrm{skip}}^* \in \argmin_{c_{\mathrm{skip}}}  c_{\mathrm{out}}^2.
+\]
+使用求解 $\frac{\partial c_{\mathrm{out}}}{\partial c_{\mathrm{skip}}} = 0$ 临界点 $c_{\mathrm{skip}}^*$ 的标准方法，我们得到
+\begin{align*}
+    c_{\mathrm{skip}}^*(t) = \frac{\alpha_t \sigma_{\mathrm{d}}^2 }{\alpha_t^2 \sigma_{\mathrm{d}}^2  + \sigma_t^2}. 
+\end{align*}
+将其代入 \Cref{eq:c-out}，最佳值由下式给出
+\begin{align*}
+    c_{\mathrm{out}}^*(t) = \pm \frac{\sigma_t \sigma_{\mathrm{d}} }{\sqrt{\alpha_t^2 \sigma_{\mathrm{d}}^2  + \sigma_t^2}}. 
+\end{align*}
+按照惯例，我们使用非负分支作为输出比例：
+\[
+c_{\mathrm{out}}^*(t) = \frac{\sigma_t \sigma_{\text d}}
+{\sqrt{\alpha_t^2 \sigma_{\text d}^2 + \sigma_t^2}}
+\;\;\;(\ge 0),
+\]
+这确保了 $c_{\mathrm{out}}(0)=0$ 和 $c_{\mathrm{out}}(t)\to\sigma_{\text d}$ 因为 $\sigma_t$ 足够大，
+产生直观的限制 $\rvx_{\bm{\phi}}(\rvx_t,0)\approx \rvx_t$ 和
+$\rvx_{\bm{\phi}}(\rvx_t,t)\approx \sigma_{\text d}\,\rmF_{\bm{\phi}}(\cdot)$。我们将这些系数总结如下：
+\begin{mdframed}
+表示 $R_t := \alpha_t^2 \sigma_{\mathrm{d}}^2+ \sigma_t^2$，我们有以下选择：
+    \begin{align}\label{eq:edm-coeff}
+        \begin{aligned}
+            c_{\mathrm{in}}(t)  = \frac{1}{\sqrt{R_t}}, \quad
+            c_{\mathrm{skip}}(t) = \frac{\alpha_t \sigma_{\mathrm{d}}^2 }{R_t}, \quad
+            c_{\mathrm{out}}(t) =  \frac{\sigma_t \sigma_{\mathrm{d}} }{\sqrt{R_t}}.
+        \end{aligned}
+    \end{align}
+\end{mdframed}
+
+使用 \Cref{eq:edm-coeff}，回归目标 $\rvx_{\mathrm{tgt}}(t)$ 简化为
+\[
+\rvx_{\mathrm{tgt}}(t) = \frac{1}{\sigma_{\mathrm{d}}}\frac{\sigma_t \rvx_0 - \alpha_t \sigma_{\mathrm{d}}^2\bm{\epsilon} }{\sqrt{R_t}}.
+\] 
+此外，将这些表达式代入 \Cref{eq:D-parametrization} 和 \Cref{eq:loss-F} 使我们能够简化参数化和损失函数，得到：
+\begin{align*}
+    \rvx_{\bm{\phi}}(\rvx, t)=\frac{\alpha_t \sigma_{\mathrm{d}}^2 }{R_t} \rvx + \frac{\sigma_t \sigma_{\mathrm{d}} }{\sqrt{R_t}}\rmF_{\bm{\phi}}\left(\frac{1}{\sqrt{R_t}}\rvx, c_{\mathrm{noise}}(t)\right),
+\end{align*}
+和
+\begin{align*}
+   \mathbb{E}_{\rvx_0, \bm{\epsilon}, t} \left[\omega(t)\frac{\sigma_t^2  }{R_t}\norm{ \sigma_{\mathrm{d}} \rmF_{\bm{\phi}}\left(\frac{1}{\sqrt{R_t}}\rvx_t, c_{\mathrm{noise}}(t)\right) - \left(\frac{\sigma_t \rvx_0 - \alpha_t \sigma_{\mathrm{d}}^2\bm{\epsilon} }{\sqrt{R_t}}\right)}_2^2\right].
+\end{align*}
+
+通过此参数化以及条件 $\alpha_0 \approx 1$ 和 $\sigma_0 \approx 0$，我们观察到  
+\[
+c_{\mathrm{skip}}(0) \approx 1 \quad \text{and} \quad c_{\mathrm{out}}(0) \approx 0.
+\]  
+
+
+\paragraph{$c_{\mathrm{noise}}(t)$.}的选用
+它为$\rmF_{\bm{\phi}}$提供噪声级嵌入；任何
+噪声水平 $\sigma_t$（例如，$c_{\mathrm{noise}}(t)=\log \sigma_t$）的一对一映射是合适的。
+
+\subsection{A 标准EDM的一个特例：$\alpha_t = 1$、$\sigma_t = t$}
+
+我们考虑 EDM 中使用的简化噪声表，其中
+$\alpha_t = 1$ 和 $\sigma_t = t$，也出现在讨论中
+CTM在\Cref{sec:CTM}。在此设置下，前向过程变为
+\[
+\rvx_t = \rvx_0 + t\bm{\epsilon},
+\quad
+\text{with }
+\rvx_0 \sim p_{\text{data}},
+\,\,
+\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI),
+\]
+对应于扰动核
+\[
+p_t(\rvx_t|\rvx_0)
+=
+\mathcal{N}(\rvx_t; \rvx_0, t^2\rmI).
+\]
+
+由此产生的边缘密度是
+\[
+p_t(\rvx)
+=
+\int
+\mathcal{N}(\rvx;\rvx_0,t^2\rmI)
+p_{\mathrm{data}}(\rvx_0)
+\diff\rvx_0
+=
+\bigl[
+p_{\mathrm{data}}
+*
+\mathcal{N}(\bm{0},t^2\rmI)
+\bigr](\rvx).
+\]
+因此，确切的终端边缘是
+$p_T=p_{\mathrm{data}}*\mathcal{N}(\bm{0},T^2\rmI)$。
+当 $T$ 相对于数据规模足够大时，这
+边缘通常近似为
+$\mathcal{N}(\bm{0},T^2\rmI)$，用作采样先验：
+\[
+p_{\mathrm{prior}}(\rvx_T)
+:=
+\mathcal{N}(\rvx_T;\bm{0},T^2\rmI).
+\]
+
+
+
+
+
+
+在此设置下，基于 $\rvx$ 预测 $\rvx_{\bm{\phi}^\times}$（请参阅 \Cref{eq:clean_pf_ode}）的 PF-ODE 简化为
+\begin{align*}
+    \frac{\diff \rvx(t)}{\diff t} = \frac{\rvx(t) - \rvx_{\bm{\phi}^\times}(\rvx(t), t)}{t}.
+\end{align*}
+
+将此公式代入 \Cref{eq:edm-coeff}，神经网络参数化系数变为
+\begin{align}\label{eq:edm-simple-coefficients}
+    c_{\mathrm{in}}(t) = \frac{1}{\sqrt{\sigma_{\mathrm{d}}^2 + t^2}}, \quad
+    c_{\mathrm{skip}}(t) = \frac{\sigma_{\mathrm{d}}^2}{\sigma_{\mathrm{d}}^2 + t^2}, \quad
+    c_{\mathrm{out}}(t) = \pm \frac{t \sigma_{\mathrm{d}}}{\sqrt{\sigma_{\mathrm{d}}^2 + t^2}}.
+\end{align}
+从这些表达式中，我们观察到：
+\begin{itemize}
+    \item 当 $t \approx 0$ 时，噪声水平可以忽略不计，因此
+    $c_{\mathrm{skip}} \approx 1$ 和 $c_{\mathrm{out}} \approx 0$。在这个限度内，
+    跳跃路径占主导地位，网络本质上是通过它的
+    输入，
+    \[
+    \rvx_{\bm{\phi}}(\rvx, t) \approx \rvx.
+    \]
+    \item 当 $t \gg 0$ 时，输入被噪声严重破坏，因此
+    $c_{\mathrm{skip}} \approx 0$ 和 $c_{\mathrm{out}} \approx \sigma_{\mathrm{d}}$。
+    在这种情况下，跳跃路径消失并且模型输出被确定
+    完全由学习到的残差决定，
+    \[
+    \rvx_{\bm{\phi}}(\rvx, t) \approx \sigma_{\mathrm{d}} \rmF_{\bm{\phi}}\left(c_{\mathrm{in}}(t)\rvx, c_{\mathrm{noise}}(t)\right),
+    \]
+    这意味着网络 $\rmF_{\bm{\phi}}$ 预测了干净的缩放代理
+来自归一化噪声输入的信号；在高噪声水平下，模型输出为
+因此完全由学习到的去噪函数决定。
+\end{itemize}
+简而言之，参数化从小 $t$ 的恒等映射平滑地插值
+到大 $t$ 标准化输入的缩放残差预测器。

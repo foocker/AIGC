@@ -3,6 +3,7 @@
 
 ## 本地书稿（2026-11-24）
 
+- [《扩散模型原理》独立中文初译](the-principles-of-diffusion-models-zh/README.md)：基于官方 arXiv v3 TeX，含12章、4个附录、中文PDF及原始英文源码。
 - [原理篇 PDF](AIGCTheory.pdf) / [TeX 主文件](AIGCTheory.tex)：保留现有四章和详细推导，新增六章补齐参考书中的生成目标、流匹配、传输与桥、引导对齐、快速生成、离散理论。
 - [完整 AIGC 书稿 PDF](StabelDiffusion.pdf) / [TeX 主文件](StabelDiffusion.tex)：原稿增补后的原理篇、简短部署与商业应用、既有 Seedance 专题。
 - [Seedance 2.5 专题 PDF](Seedance25.pdf) / [TeX 主文件](Seedance25.tex)：第一章先看完整网络与联合块结构图，随后沿表示、条件、主干、采样和训练逐模块阅读。

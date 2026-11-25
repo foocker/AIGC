@@ -1,0 +1,154 @@
+[
+  {
+    "file": "Preface.tex",
+    "protected_pieces": 201,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 2,
+    "chinese_characters": 4123,
+    "sha256": "7ec0d6cda61e14071fbfca45bb65e517fed35a40acf024fc7eeb549b519604d8"
+  },
+  {
+    "file": "notations.tex",
+    "protected_pieces": 216,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 0,
+    "chinese_characters": 741,
+    "sha256": "0ceb566f6edcf7ea1a48edfc2393410caf9ea6dd78b0d7aff07778b25b2387fe"
+  },
+  {
+    "file": "Prologue-Deep-Generative-Modeling.tex",
+    "protected_pieces": 413,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 19,
+    "chinese_characters": 5396,
+    "sha256": "a6fb96dfa9e9ec3a60adf22c38384ffa299037434cebe1639d73e0268755fcf2"
+  },
+  {
+    "file": "Chapter-0-Diffusion-High-Level.tex",
+    "protected_pieces": 127,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 1,
+    "chinese_characters": 2406,
+    "sha256": "4a332fe07777e36ce69022a223487017dc45dd92cb555727f279f87272cb284d"
+  },
+  {
+    "file": "Chapter-1-Varational-Perspective-From-VAE-to-DDPM.tex",
+    "protected_pieces": 625,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 31,
+    "chinese_characters": 8864,
+    "sha256": "9610ae453e00191b3b5973b6f82e62fce4647bfdfb5aecfef2d9c3eea403cc83"
+  },
+  {
+    "file": "Chapter-2-Score-Based-Perspective-From-EBMs-to-NCSN.tex",
+    "protected_pieces": 884,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 25,
+    "chinese_characters": 9647,
+    "sha256": "bcc68948a162b857263daa0cef44db4e168b75148cc90be762edcd84d3603027"
+  },
+  {
+    "file": "Chapter-3-Diffusion-Models-Today-Score-SDE-Framework.tex",
+    "protected_pieces": 1268,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 58,
+    "chinese_characters": 12297,
+    "sha256": "1438a32ea091ec12b470605872c27d96954bc7a0d90471a1fbd67d9bd8faf425"
+  },
+  {
+    "file": "Chapter-4-Flow-Based-Perspective-From-NFs-to-Flow-Matching.tex",
+    "protected_pieces": 1654,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 40,
+    "chinese_characters": 14389,
+    "sha256": "5cd12fd78e134a0c2d92c2fa6359df84552776fd276df963e85db9f44e61f78f"
+  },
+  {
+    "file": "Chapter-5-They-Are-All-Equivalent.tex",
+    "protected_pieces": 843,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 21,
+    "chinese_characters": 11479,
+    "sha256": "bc053f309a55913483eeff1693315c9a39961d0e9fddd7583c0dfb5776dc6831"
+  },
+  {
+    "file": "Chapter-4-plus-OT-and-Diffusion-Model.tex",
+    "protected_pieces": 1143,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 30,
+    "chinese_characters": 12815,
+    "sha256": "6ffb3f5f41f7d9eae61aedef9eff585f5525c3ddddf9542c6b3b1d0b9c808a20"
+  },
+  {
+    "file": "Chapter-6-Guidance.tex",
+    "protected_pieces": 805,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 37,
+    "chinese_characters": 11194,
+    "sha256": "5d2f1bb08b394d7b030da979098f4db223716d0d3a9c47d6da0f98278e2eeb04"
+  },
+  {
+    "file": "Chapter-7-Sophisticated-Solvers-for-Fast-Sampling.tex",
+    "protected_pieces": 1850,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 63,
+    "chinese_characters": 22078,
+    "sha256": "5c26c76353a09950f68287adfc40e8abdc886a36636a25432b8f4bdd24b7d936"
+  },
+  {
+    "file": "Chapter-8-Post-Training-Methods-for-Fast-Sampling.tex",
+    "protected_pieces": 509,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 15,
+    "chinese_characters": 6578,
+    "sha256": "6e9998088a9e36836f794e51aca25a1d1acaea6edbdf94aedf655abefaae1ae0"
+  },
+  {
+    "file": "Chapter-9-Learning-Fast-Generator-from-Scratch.tex",
+    "protected_pieces": 1414,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 68,
+    "chinese_characters": 13520,
+    "sha256": "a58d72e7e2e67acd1ae337cf3e48c6b373ebfff72e72a62470100881b48aa090"
+  },
+  {
+    "file": "Chapter-10-Epilogue-and-Outlook.tex",
+    "protected_pieces": 697,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 8,
+    "chinese_characters": 11824,
+    "sha256": "f397a40ca97aa65e25aac2b8774825cfc8eb8dc3d31f3784f76cb2bfdbce6675"
+  },
+  {
+    "file": "A_Crash-Course-of-DE.tex",
+    "protected_pieces": 432,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 13,
+    "chinese_characters": 5892,
+    "sha256": "7b1c190d5c51e0402a8f9179da7aa765c2c32248a5c1384b5997f6c1c1e3f533"
+  },
+  {
+    "file": "B_Continuity-Equation.tex",
+    "protected_pieces": 455,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 15,
+    "chinese_characters": 5973,
+    "sha256": "329348dc20e1a7c7cc4f27a16e857b2591a28f1c991c10ab0e55d16c2b951f70"
+  },
+  {
+    "file": "C_SDE-and-Ito.tex",
+    "protected_pieces": 374,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 16,
+    "chinese_characters": 3893,
+    "sha256": "625c4eb64aeff7282dd30c2f6d93b44dcd16fddb4877d8141c4bad39bd92cf57"
+  },
+  {
+    "file": "D_Proofs.tex",
+    "protected_pieces": 676,
+    "formula_and_tex_skeleton_preserved": true,
+    "comment_sensitive_environments_restored": 74,
+    "chinese_characters": 4370,
+    "sha256": "fd53f7b2bb82f4f8d66a150794589894abf39c452f32a8dbbcac08493eed9667"
+  }
+]

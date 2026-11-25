@@ -1,0 +1,1044 @@
+\chapter{Density Evolution: From Change of Variable to Fokker–Planck}\label{app:continuity}
+
+Understanding how probability densities evolve under transformations is fundamental in both probability theory and generative modeling. In particular, diffusion models aim to construct generative processes whose induced density paths reverse a pre-defined forward process. This evolution is governed by the continuity equation or, in the stochastic case, the Fokker-Planck equation.
+
+Although these names may sound unfamiliar or intimidating, they are in fact continuous-time analogues of the change-of-variable formula from basic calculus. In \Cref{sec:cov}, it builds up to them by presenting a progression of change-of-variable formulas, starting from deterministic bijections, and culminating in stochastic differential equations. This progression naturally bridges discrete mappings and continuous-time flow dynamics. See \Cref{fig:unified_framework_CoV} for an overview of this unified framework.
+
+In \Cref{sec:intuition-continuity}, we provide a physical and intuitive interpretation of the continuity equation, emphasizing its connection to the conservation of density in dynamical systems.
+
+\chapterlearning{
+  \item connect the change-of-variable formula to the continuity equation for ODEs and the Fokker--Planck equation for SDEs;
+
+  \item understand the continuity equation as conservation of probability mass, and distinguish particle motion from density evolution;
+
+  \item distinguish the Lagrangian and Eulerian views of transport, including why a density path alone need not determine a unique velocity field;
+
+  \item understand why an SDE and its probability-flow ODE can share the same marginal densities while having different sample paths.
+}{
+The key principle is that the change-of-variable formula describes how
+moving samples changes their probability distribution. This appendix
+develops that idea from deterministic maps to the continuity and
+Fokker--Planck equations, with Wasserstein gradient flow as an optional
+extension to distribution-level training.
+}
+
+\begin{figure}[ht!]
+\centering
+\scalebox{0.9}{ 
+\begin{tikzpicture}[
+    mainbox/.style={draw, thick, rectangle, rounded corners=0pt, minimum width=13cm, minimum height=2.5cm, inner sep=5mm},
+    equationbox/.style={draw, thick, rectangle, rounded corners=5pt, fill=white, inner sep=3mm, text width=5.2cm, align=center},
+    smalltransformbox/.style={draw, thick, rectangle, rounded corners=5pt, fill=white, inner sep=2mm, text width=3.8cm, align=center},
+    boxtitle/.style={font=\bfseries\sffamily\large},
+    myarrow/.style={-Latex, very thick, black},
+    arrowlabel/.style={font=\normalsize, align=left, anchor=west},
+    eqfont/.style={font=\normalsize}
+]
+
+% Row 1: Transform and Density Titles
+\node (transform_title) at (-0.5,-0.5) [boxtitle] {Transform};
+\node (density_title) at (6cm,-0.5) [boxtitle] {Density};
+
+% Row 2
+\node (box1) at (3cm,-2.2cm) [mainbox] {};
+\node (transform1) at ($(box1.west) + (3.2cm, 0)$) [smalltransformbox, eqfont] 
+    {$ \rvx_0\xrightarrow{\,\bPhi\,} \rvx_1$};
+\node (density1) at ($(box1.east) - (3.5cm, 0)$) [equationbox, eqfont]
+    {$p_0(\rvx_0) = p_1(\rvx_1) \left| \det \frac{\partial \bPhi(\rvx_0)}{\partial \rvx_0} \right|$};
+
+% Row 3
+\node (box2) at (3cm,-6.2cm) [mainbox] {};
+\node (transform2) at ($(box2.west) + (3.2cm, 0)$) [equationbox, eqfont, text width=5cm]
+    {$\rvx_0\xrightarrow{\,\bPhi_1\,} \rvx_1\xrightarrow{\,\bPhi_2\,} \cdots\xrightarrow{\,\bPhi_L\,} \rvx_L$};
+\node (density2) at ($(box2.east) - (3.5cm, 0)$) [equationbox, eqfont]
+    {$
+      \begin{array}{c}
+        \textstyle \log p_0(\rvx_0) = \log p_L(\rvx_L) +\\ \sum_{k=0}^{L-1} \log \left| \det \frac{\partial \bPhi_{k+1}(\rvx)}{\partial \rvx_{k}} \right|
+      \end{array}
+    $
+    };
+
+% Arrow 1
+\draw [myarrow] ($(box1.south) + (0,0)$) -- ($(box2.north) + (0,0)$);
+\node [arrowlabel, right=0.2cm of $(box1.south)!0.5!(box2.north)$] {Multiple Bijections};
+
+% Row 4
+\node (box3) at (3cm,-10.2cm) [mainbox] {};
+\node (transform3) at ($(box3.west) + (3.2cm, 0)$) [equationbox, eqfont]
+    {$\frac{\diff\rvx(t)}{\diff t} = \rvf(\rvx(t), t)$, \\defining the flow map $\bPhi_{0\to t}$};
+\node (density3) at ($(box3.east) - (3.5cm, 0)$) [equationbox, eqfont]
+    {$\partial_t p_t(\rvx) = -\nabla \cdot (\rvf(\rvx, t) p_t(\rvx))$};
+
+% Arrow 2
+\draw [myarrow] ($(box2.south) + (0,0)$) -- ($(box3.north) + (0,0)$);
+\node [arrowlabel, right=0.2cm of $(box2.south)!0.5!(box3.north)$] {Continuous-Time Limit};
+
+% Row 5
+\node (box4) at (3cm,-14.2cm) [mainbox] {};
+\node (transform4) at ($(box4.west) + (3.2cm, 0)$) [equationbox, eqfont]
+    {$\diff\rvx(t) = \rvf(\rvx(t), t)\diff t + g(t)\diff\rvw(t)$};
+\node (density4) at ($(box4.east) - (3.5cm, 0)$) [equationbox, eqfont]
+    {$
+      \begin{array}{c}
+        \textstyle \partial_t p_t(\rvx) = -\nabla \cdot (\rvf(\rvx, t) p_t(\rvx)) \\
+        \textstyle + \frac{1}{2} g^2(t)\Delta p_t(\rvx)
+      \end{array}
+    $};
+
+% Arrow 3
+\draw [myarrow] ($(box3.south) + (0,0)$) -- ($(box4.north) + (0,0)$);
+\node [arrowlabel, right=0.2cm of $(box3.south)!0.5!(box4.north)$] {With Gaussian Noise};
+
+\end{tikzpicture}
+}
+\caption{A unified \emph{change-of-variables formula}. From top to bottom: (1) a single bijection; (2) composition of multiple bijections; (3) continuous-time deterministic flow governed by an ODE and the associated continuity equation; (4) stochastic flow modeled by an SDE and the corresponding Fokker–Planck equation. \figcredit{Created by the authors.}}
+\label{fig:unified_framework_CoV}
+\end{figure}
+
+\newpage
+
+\section{Change-of-Variable Formula: \\From Deterministic Maps to Stochastic Flows}\label{sec:cov}
+
+In this section, we aim to demystify the continuity equation and the Fokker-Planck equation by drawing analogies to the classic change-of-variable formula from calculus. We begin with the familiar single-variable case, extend it to the multivariate setting and to probability densities (\Cref{subsec:cov-det}), then generalize to compositions of bijective maps whose continuous-time limit leads to the continuity equation (\Cref{subsec:cov-continuity-eq}). Finally, we incorporate stochasticity by introducing random noise, which naturally extends the continuity equation to the Fokker-Planck equation (\Cref{subsec:cov-fpe}).
+
+
+
+
+
+\subsection{Change-of-Variable Formula for Deterministic Maps}\label{subsec:cov-det}
+We move particles according to a deterministic map and study how their \emph{law} (density) evolves. The key principle is conservation of probability mass, grounded in a fundamental result from calculus and probability: the change-of-variable formula. This formula describes how integrals, and therefore probability densities, transform under smooth bijective mappings. To build intuition, we first consider a single update step, and then extend the discussion to sequential transformations.
+
+
+\paragraph{Single Update.}
+Think of a single update rule induced by applying a vector field (analogous to a force) 
+$\bm{\Psi}:\R^D \to \R^D$ for one unit of time. 
+Starting from an initial particle state $\rvx_0$, its next state is given by
+\[
+\rvx_1 = \bm{\Psi}(\rvx_0).
+\]
+
+\paragraph{Underlying Pattern (a Density) and How it Moves.}
+If the initial states follow an underlying ``law/pattern'' described by a density $p_0$ (i.e., $\rvx_0\sim p_0$),
+then applying $\bm{\Psi}$ produces a new density $p_1$ for $\rvx_1$ (i.e., $\rvx_1\sim p_1$).
+Assuming $\bm{\Psi}$ is a smooth bijection, $p_1$ is obtained from $p_0$ via the standard \emph{change-of-variables formula}:
+\begin{mdframed}
+\begin{equation}\label{eq:change-of-variable-density}
+p_{1}(\rvx_1) = p_{0}(\bm{\Psi}^{-1}(\rvx_1)) \cdot \left| \det \left( \frac{\partial \bm{\Psi}^{-1}}{\partial \rvx_1} \right) \right|.
+\end{equation}
+\end{mdframed}
+Here $\tfrac{\partial \bm{\Psi}}{\partial \rvx}$ is the Jacobian matrix of $\bm{\Psi}$, denoted $\partial_\rvx \bm{\Psi}$.  
+Equivalently, in the original coordinates,
+\[
+p_0(\rvx_0) \;=\; p_1\!\big(\bm{\Psi}(\rvx_0)\big)\;\big|\det \partial_\rvx \bm{\Psi}(\rvx_0)\big|.
+\]
+In words, $\bm{\Psi}$ reshapes the density $p_0$ into $p_1$. The factor $\big|\det \partial_\rvx \bm{\Psi}\big|$ represents the local change in volume; since probability mass is conserved, the density compensates by its inverse.  
+
+As a simple case, if $\bm{\Psi}$ is linear with an invertible matrix $\rmA$ (i.e., $\rvx_1=\rmA\rvx_0$), then
+\[
+p_1(\rvx_1)\;=\;p_0(\rmA^{-1}\rvx_1)\,\big|\det \rmA^{-1}\big|.
+\]
+
+Schematically, we can read it as:
+\[
+\begin{array}{lccc}
+   \text{\textbfs{Sample:}} & \rvx_0 & \xrightarrow{\hspace{0.2cm} \bm{\Psi} \hspace{0.2cm}} & \rvx_1  \\
+   \text{\textbfs{Density:}} & p_{\rvx_0}(\rvx_0) & \xrightarrow{\hspace{0.2cm} \bm{\Psi} \hspace{0.2cm}} & p_{\rvx_1}(\rvx_1) 
+\end{array}
+\]
+
+\paragraph{Why is \Cref{eq:change-of-variable-density} the Change-of-Variables Formula?}
+This comes directly from the familiar rule in calculus.
+
+\subparagraph{Single-Variable Case.}
+Let $y = \Psi(x)$ be smooth and invertible. Rewriting an integral over $y$ in terms of $x$ gives
+\[
+\int g(y)\,\diff y = \int g(\Psi(x)) \cdot |\Psi'(x)|\,\diff x,
+\]
+where $|\Psi'(x)|$ compensates for interval stretching or compression, ensuring area preservation.
+
+\subparagraph{Multivariate Case.}
+For $\bm{\Psi}: \R^D \to \R^D$ with $\rvy=\bm{\Psi}(\rvx)$,
+\[
+\int g(\rvy)\,\diff\rvy
+= \int g(\bm{\Psi}(\rvx)) \,\big|\det(\partial_\rvx \bm{\Psi})\big| \,\diff\rvx,
+\]
+so infinitesimal volumes transform as
+\[
+\diff \rvy = \big|\det(\partial_\rvx \bm{\Psi})\big|\,\diff \rvx.
+\]
+
+From this, the density formula in \Cref{eq:change-of-variable-density} follows:
+\begin{align*}
+p_{\rvy}(\rvy)
+= \int_{\R^D} \delta(\rvy - \bm{\Psi}(\rvx))\, p_{\rvx}(\rvx)\diff \rvx = p_{\rvx}\!\big(\bm{\Psi}^{-1}(\rvy)\big)\,\Big|\det\!\left(\frac{\partial \bm{\Psi}^{-1}}{\partial \rvy}\right)\Big|.
+\end{align*}
+
+
+
+\paragraph{Composing Multiple Bijections.} We now apply several updates in sequence.  
+Let $\rvx_k = \bm{\Psi}_k(\rvx_{k-1})$ for $k=1,\dots,L$; that is,
+\[
+\rvx_0 \xrightarrow{\ \bm{\Psi}_1\ } \rvx_1 \xrightarrow{\ \bm{\Psi}_2\ } \cdots
+\xrightarrow{\ \bm{\Psi}_L\ } \rvx_L,
+\]
+where each $\bm{\Psi}_k:\R^D \to \R^D$ is a smooth bijection.  
+If the initial state follows density $p_0$ (i.e., $\rvx_0 \sim p_0$), then the sequence of updates induces densities $p_1,\dots,p_L$ for $\rvx_1,\dots,\rvx_L$.  
+
+Because probability mass is conserved at each step, the densities evolve according to
+\[
+p_{k}(\rvx_k) \;=\; p_{k-1}(\rvx_{k-1}) \,
+   \Big|\det \partial_{\rvx_{k-1}} \bm{\Psi}_k(\rvx_{k-1})\Big|^{-1},
+   \quad k=1,\dots,L.
+\]
+By recursion, the final density at $\rvx_L$ is
+\begin{mdframed}
+\begin{align}\label{eq:cov-multi-layer-nolog}
+    p_{\rvx_L}(\rvx_L) 
+    = p_{\rvx_0}(\rvx_0) 
+    \cdot \prod_{k=1}^L \left| \det \left( \frac{\partial \bm{\Psi}_k}{\partial \rvx_{k-1}} \right) \right|^{-1}.
+\end{align}
+\end{mdframed}
+Equivalently, in log-density form:
+\begin{align*}
+    \log p_{\rvx_L}(\rvx_L) 
+    = \log p_{\rvx_0}(\rvx_0) 
+    - \sum_{k=1}^L \log \left| \det \left( \frac{\partial \bm{\Psi}_k}{\partial \rvx_{k-1}} \right) \right|.
+\end{align*}
+This expression reflects how each transformation $\bm{\Psi}_k$ stretches or contracts volume, as captured by the Jacobian determinant. The accumulation of these local volume changes along the transformation path determines the final probability density under the composed map.
+
+\Cref{eq:cov-multi-layer-nolog} serves as the core principle underlying Normalizing Flows (see \Cref{subsec:NODE}).
+
+\clearpage
+\newpage
+
+\subsection{Continuous-Time Limit: Continuity Equation}\label{subsec:cov-continuity-eq} 
+
+
+
+We now pass from discrete updates to a continuous description.  
+Suppose the particle motion is driven by a time-varying velocity field 
+$\rvf:\R^D \times [0,T]\to \R^D$.  
+Imagine evolving a particle $\rvx_0 \sim p_0$ through infinitely many small bijective updates.  
+At each step $t$ of length $\Delta t>0$, the update is
+\[
+\rvx_{t+\Delta t} = \bm{\Psi}(\rvx_t) 
+:= \rvx_t + \Delta t\, \rvf(\rvx_t, t).
+\]
+As $\Delta t \to 0$, the composition of these updates converges to a continuous flow governed by a velocity field $\rvf:\R^D \times [0,T]\to \R^D$:
+\begin{align}\label{eq:ode-f-continuity}
+    \frac{\diff \rvx(t)}{\diff t} = \rvf(\rvx(t), t),
+    \qquad \rvx(0) = \rvx_0 \sim p_0.
+\end{align}
+Under suitable smoothness assumptions (see \Cref{app:de}), this ODE admits a unique solution for each initial condition, which defines a deterministic flow map 
+$\bm{\Psi}_{0\to t}:\R^D \to \R^D$.  
+In other words, $\bm{\Psi}_{0\to t}$ brings the initial state $\rvx_0$ to the solution of \Cref{eq:ode-f-continuity} at time $t$:
+\[
+\bm{\Psi}_{0\to t}(\rvx_0) 
+= \rvx_0 + \int_{0}^{t} \rvf(\rvx(\tau), \tau)\,\diff\tau.
+\]
+As a result, the whole distribution also moves: the initial density $p_0$ is transported into the new density $p_t$, the law of $\rvx(t)$.  
+Formally, this is written as a \emph{pushforward}:
+\[
+p_t = \big(\bm{\Psi}_{0\to t}\big)_{\#} p_0.
+\]
+When $\bm{\Psi}_{0\to t}$ is smooth and invertible, this reduces to the familiar change-of-variables rule:
+\[
+p_t(\rvx) 
+= p_0\!\big(\bm{\Psi}_{t\to 0}(\rvx)\big)\,
+   \big|\det \partial_\rvx\bm{\Psi}_{t\to 0}(\rvx)\big|
+= \int \delta\!\left(\rvx - \bm{\Psi}_{0\to t}(\rvx_0)\right) 
+   p_0(\rvx_0)\,\diff\rvx_0. 
+\]
+
+\paragraph{Continuity Equation: How the Density Moves in Time.}
+Rather than writing a separate formula for the density at each time, we can describe how it moves continuously using a differential equation in space $\rvx$ and time $t$.
+The idea is simple: probability mass is conserved, and the velocity field $\rvf$ only redistributes it in space.  
+This gives the \emph{continuity equation}:
+\begin{mdframed}
+\begin{align}\label{eq:continuity-cov}
+    \frac{\partial}{\partial t} p_t(\rvx) 
+    + \nabla \cdot \big( p_t(\rvx)\,\rvf(\rvx, t) \big) = 0.
+\end{align}
+\end{mdframed}
+Here the divergence term $\nabla \cdot (p_t \rvf)$ measures how the flow locally expands or compresses the density, ensuring total probability remains $1$.
+
+This partial differential equation (PDE) ensures that probability mass is conserved as the flow moves particles.  
+In fact, it can be viewed as the continuous-time analogue of the change-of-variables formula.
+
+
+\paragraph{Derivation of Continuity Equation via  Change-of-Variables Formula.} Conceptually, the continuity equation can also be obtained by taking the continuous-time limit of \Cref{eq:cov-multi-layer-nolog}. Here, however, we adopt a more direct derivation based on \Cref{eq:change-of-variable-density}.
+\subparagraph{Discretization and Change-of-Variable Formula.}
+Consider 
+\[
+\mathbf{x}_{t+\Delta t} := \bm{\Psi}(\mathbf{x}_t) = \mathbf{x}_t + \Delta t\, \rvf(\mathbf{x}_t, t),
+\]
+which is actually the forward Euler discretization of the ODE in \Cref{eq:ode-f-continuity} over a small time interval $\Delta t > 0$.
+The Jacobian of the map $\bm{\Psi}$ with respect to $\mathbf{x}_t$ expands as
+\[
+\frac{\partial \bm{\Psi}}{\partial \mathbf{x}_t} = \rmI + \Delta t \nabla_{\mathbf{x}} \rvf(\mathbf{x}_t, t) + \mathcal{O}(\Delta t^2),
+\]
+so its determinant satisfies
+\[
+\det\left( \frac{\partial \bm{\Psi}}{\partial \mathbf{x}_t} \right) = 1 + \Delta t\, \nabla \cdot \rvf(\mathbf{x}_t, t) + \mathcal{O}(\Delta t^2).
+\]
+This uses the standard expansion $\det(\rmI + \Delta t\, \mathbf{A}) = 1 + \Delta t\, \Tr(\mathbf{A}) + \mathcal{O}(\Delta t^2)$ as $\Delta t \to 0$, along with $\nabla \cdot \rvf = \Tr(\nabla_{\mathbf{x}} \rvf)$.
+
+Applying the change-of-variables formula, the log-density evolves as
+\begin{align*}
+\log p_{t+\Delta t}(\mathbf{x}_{t+\Delta t}) = \log p_t(\mathbf{x}_t) - \Delta t\, \nabla \cdot \rvf(\mathbf{x}_t, t) + \mathcal{O}(\Delta t^2).
+\end{align*}
+That is,
+\begin{align}
+    \label{eq:log-density-diff}
+\log p_{t+\Delta t}(\mathbf{x}_{t+\Delta t}) - \log p_t(\mathbf{x}_t) = - \Delta t\, \nabla \cdot \rvf(\mathbf{x}_t, t) + \mathcal{O}(\Delta t^2).
+\end{align}
+
+\subparagraph{Using Taylor Expansion.}
+Now, we expand the left-hand side via multivariate Taylor expansion:
+\begin{align*}
+    &\log p_{t+\Delta t}(\rvx_{t+\Delta t}) 
+    - \log p_t(\rvx_t) 
+    \\= &\Delta t\, \partial_t \log p_t(\rvx_t) 
+    + (\rvx_{t+\Delta t} - \rvx_t)^\top \nabla_{\rvx_t} \log p_t(\rvx_t) 
+    + \mathcal{O}(\Delta t^2).
+\end{align*}
+Substituting $\rvx_{t+\Delta t} - \rvx_t = \rvf(\rvx_t, t)\Delta t$ yields:
+\begin{align*}
+    &\log p_{t+\Delta t}(\rvx_{t+\Delta t}) 
+    - \log p_t(\rvx_t) 
+    \\= & \Delta t\, \partial_t \log p_t(\rvx_t) 
+    + \Delta t\, \rvf(\rvx_t, t)^\top \nabla_{\rvx_t} \log p_t(\rvx_t) 
+    + \mathcal{O}(\Delta t^2).
+\end{align*}
+Matching terms with \Cref{eq:log-density-diff} and letting $\Delta t \to 0$, we conclude that
+\begin{equation*}
+    \partial_t \log p_t(\rvx_t) 
+    = - \nabla_{\rvx_t} \cdot \rvf(\rvx_t, t) 
+    - \rvf(\rvx_t, t)^\top \nabla_{\rvx_t} \log p_t(\rvx_t).
+\end{equation*}
+Exponentiating and using the product rule yields the continuity equation.
+
+
+\paragraph{Lagrangian and Eulerian Views of Deterministic Transport.}
+The same deterministic transport admits two complementary descriptions.
+The \emph{Lagrangian} view follows individual particles through the flow
+map $\bm{\Psi}_{0\to t}$, whereas the \emph{Eulerian} view describes the
+velocity $\rvf(\rvx,t)$ and density $p_t(\rvx)$ at fixed spatial
+locations. Under suitable regularity, these descriptions are consistent:
+a prescribed velocity field generates a particle flow, whose pushforward
+density satisfies the continuity equation.
+
+There is nevertheless an important asymmetry. Once the velocity field and
+initial density are fixed, the resulting flow and density evolution are
+determined. A prescribed density path alone, however, generally does not
+determine a unique velocity field or particle flow.
+ 
+
+\subparagraph{From Velocity to Flow and Density.}
+So far, we have assumed that the velocity field $\rvf$ is given.  
+The particle ODE
+\[
+\frac{\diff \rvx(t)}{\diff t} = \rvf(\rvx(t), t)
+\]
+describes how each particle moves, while the density PDE
+\[
+\partial_t p_t + \nabla \!\cdot \!\big(p_t \rvf_t\big) = 0
+\]
+describes how the entire distribution of particles evolves.  
+These two views are connected: moving particles according to the ODE automatically produces a density that satisfies the PDE.  
+In this case, the particle flow $\bm{\Psi}_{0\to t}$ is uniquely determined: starting from $\rvx(0)\sim p_0$, each trajectory $\rvx(t)$ is fixed, and the resulting density $p_t$ follows the continuity equation.  
+Here, particle dynamics and density dynamics are fully consistent.
+
+\subparagraph{From Density Path to Velocity: Non-Uniqueness.}
+If instead we begin only with the density path $t \mapsto p_t$ (e.g., \Cref{subsec:fm-instantiations} in flow matching), the velocity field is no longer uniquely determined.  
+For example, if a vector field $\mathbf w_t$ satisfies
+\[
+\nabla_{\rvx}\cdot\!\big(p_t(\rvx)\,\mathbf w_t(\rvx)\big)=0
+\qquad\text{(no net flux w.r.t.\ $p_t$),}
+\]
+then both $\rvf_t$ and $\rvf_t+\mathbf w_t$ give rise to the same density evolution.  
+Thus a single density path may correspond to many different flows, and choosing one particular particle flow $\bm{\Psi}_{0\to t}$ amounts to picking a specific velocity field among these possibilities.
+
+Not every given path $p_t$ can actually arise from particles moving under some velocity field.  
+The continuity equation (\Cref{eq:continuity-cov}) provides the consistency check for whether a density path can be ``generated by a flow''.  
+We say that $p_t$ is \emph{realizable} (or \emph{generated by} $\rvf$) if there exists a velocity field $\rvf$ such that particles following
+\[
+\dfrac{\diff \rvx(t)}{\diff t} = \rvf(\rvx(t), t)
+\]
+produce exactly the densities $p_t$ through the flow map $\bm{\Psi}_{0\to t}$.  That is, realizability holds when $p_t$ and $\rvf$ together satisfy \Cref{eq:continuity-cov}.
+
+Intuitively, realizability means that the snapshots of $p_t$ over time can be explained by particles moving under some velocity field, rather than being an arbitrary sequence of distributions.  
+
+
+
+When this condition holds, the density $p_t$ is nothing more than the pushforward of the initial density $p_0$ along the flow map $\bm{\Psi}_{0\to t}$.  
+In this case, the familiar change-of-variables formula applies:
+\begin{align*}
+    p_t = \big(\bm{\Psi}_{0\to t}\big)_{\#} p_0 
+= p_0\!\big(\bm{\Psi}_{t\to 0}(\rvx)\big)\,
+   \big|\det \partial_\rvx\bm{\Psi}_{t\to 0}(\rvx)\big|
+= \int \delta \left(\rvx - \bm{\Psi}_{0\to t}(\rvx_0)\right) 
+   p_0(\rvx_0)\,\diff\rvx_0.
+\end{align*}
+
+
+
+
+\paragraph{(Optional) Conditioning.}
+If an additional conditioning variable $\rvz \sim \pi(\rvz)$ is introduced, the same reasoning applies for each fixed $\rvz$:
+\[
+\frac{\diff \rvx(t)}{\diff t}=\rvv_t(\rvx(t)|\rvz)
+\]
+with pushforward $p_t(\cdot|\rvz)=(\bPsi_{0\to t}(\cdot;\rvz))_{\#}p_0$, and continuity equation
+\[
+\partial_t p_t(\rvx|\rvz)+\nabla\!\cdot\!\big(p_t(\rvx|\rvz)\,\rvv_t(\rvx|\rvz)\big)=0
+\]
+The marginal density is then 
+\[
+p_t(\rvx)=\int p_t(\rvx|\rvz)\pi(\rvz)\diff\rvz.
+\]
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%
+% Dividing by $\Delta t$ and taking the limit $\Delta t \to 0$ gives
+% \[
+% \frac{\diff}{\diff t} \log p(\rvx(t), t) = - \nabla \cdot \rvf(\rvx(t), t),
+% \]
+% which implies
+% \[
+% \frac{\diff}{\diff t} p(\rvx(t), t) = - p(\rvx(t), t) \nabla \cdot \rvf(\rvx(t), t).
+% \]
+
+% Using the chain rule, the total derivative satisfies
+% \[
+% \frac{\diff}{\diff t} p(\rvx(t), t) = \frac{\partial p}{\partial t} + \rvf \cdot \nabla p.
+% \]
+% Equating both expressions yields
+% \[
+% \frac{\partial p}{\partial t} + \rvf \cdot \nabla p = - p \nabla \cdot \rvf,
+% \]
+% which rearranges to the continuity equation as in \Cref{eq:continuity-cov}.
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\subsection{Stochastic Processes: Fokker-Planck Equation}\label{subsec:cov-fpe}
+
+When noise is added, the dynamics follow the SDE as in \Cref{eq:sde}:
+\[
+\diff \rvx(t) = \rvf(\rvx(t), t)\diff t + g(t)\diff \rvw(t).
+\]
+Then, the density $ p_t(\rvx) $ satisfies the Fokker-Planck equation:
+\begin{mdframed}
+    \begin{align*}
+    \frac{\partial p_t(\rvx)}{\partial t}
+&= - \nabla \cdot \left( \rvf(\rvx, t)\, p_t(\rvx) \right)
++ \frac{1}{2} g^2(t)\, \Delta p_t(\rvx)
+\\& = - \nabla \cdot \left(  \left({\rvf(\rvx, t)}-{\frac{1}{2} g^2(t) \nabla_\rvx \log p_t(\rvx)}\right) p_t(\rvx)\right).
+\end{align*}
+\end{mdframed}
+$ \Delta p_t = \nabla \cdot \nabla_\rvx p_t $ is the Laplacian operator. In the first equality, the first term describes transport of probability mass by the deterministic drift $\rvf$, while the second term models the spreading (diffusion) of the density due to stochastic noise with variance proportional to $\tfrac{1}{2} g^2(t) $. The second equality rewrites the same density evolution as a continuity
+equation with velocity
+\[
+\rvf(\rvx,t)
+-
+\frac{1}{2}g^2(t)\nabla_{\rvx}\log p_t(\rvx).
+\]
+Therefore, the deterministic ODE driven by this
+velocity therefore evolves through the same one-time marginal densities
+$p_t$ as the SDE. This is the probability-flow ODE used throughout
+the book.
+
+\rmkb{
+The key point is that the SDE and PF-ODE agree on the \emph{density path},
+but generally not on how samples at different times are coupled. At any
+fixed time $t$, both produce the same distribution $p_t$; equivalently,
+their particle ``snapshots'' have the same histogram.
+
+Across time, however, their sample paths are different. For the PF-ODE,
+once the state $\rvx_s$ is fixed, the later state is determined by
+$\bPsi_{s\to t}(\rvx_s)$. For the SDE, fresh Brownian noise is injected after time $s$, so the later
+state remains random even after conditioning on $\rvx_s$.
+
+Consequently, the two processes may have different transition
+distributions, temporal correlations, and pathwise events, even though
+their marginal density at every individual time is identical. Thus, the
+PF-ODE reproduces the SDE's \emph{marginal density evolution}, rather than
+its full stochastic path law. See \Cref{fig:score-sde-three-dynamics} for illustration.
+}
+
+
+
+The derivation of the Fokker-Planck equation is more involved; we refer the reader to \Cref{subsec:rigorous-proof-fpe}.
+
+
+
+
+
+
+
+\newpage
+\clearpage
+
+\section{Intuition of the Continuity Equation}\label{sec:intuition-continuity}
+In this section, we give a physical interpretation of the continuity equation, highlighting its role as a conservation law for probability density in a dynamical system.
+
+\subsection{Physical Interpretation of the Continuity Equation}
+
+Consider a small fixed control volume (a rectangular box) in 3D space with one corner at $\mathbf{x} = (x, y, z)$ and side lengths $\Delta x$, $\Delta y$, and $\Delta z$. Let $p(\mathbf{x}, t)$ denote the density of a conserved quantity (e.g., mass or probability) at position $\mathbf{x}$ and time $t$. For a sufficiently small box, the total amount of the quantity inside the box is approximately:
+\[
+\text{Total quantity in box} \approx p(\mathbf{x}, t) \Delta x \Delta y \Delta z.
+\]
+
+\paragraph{How Does the Total Change?}
+Changes in the total quantity can only arise from flux across the box’s boundary. Let $\mathbf{j}(\mathbf{x}, t)$ denote the flux vector, representing the amount of quantity flowing per unit area per unit time.
+
+\paragraph{Flux in the $x$-Direction.}
+The inflow through the left face (at $x$) is approximately:
+\[
+j_x(x, y, z, t) \Delta y \Delta z,
+\]
+and the outflow through the right face (at $x + \Delta x$) is:
+\[
+j_x(x + \Delta x, y, z, t) \Delta y \Delta z.
+\]
+Thus, the net \emph{influx} in the $x$-direction is:
+\[
+\left[ j_x(x, y, z, t) - j_x(x + \Delta x, y, z, t) \right] \Delta y \Delta z.
+\]
+
+\paragraph{Net Flux in All Directions.}
+Analogous terms arise in the $y$- and $z$-directions:
+\begin{align*}
+\left[ j_y(x, y, z, t) - j_y(x, y + \Delta y, z, t) \right] \Delta x \Delta z, \\
+\left[ j_z(x, y, z, t) - j_z(x, y, z + \Delta z, t) \right] \Delta x \Delta y.
+\end{align*}
+Summing all contributions, the total net \emph{influx} into the box is:
+\[
+- \nabla \cdot \mathbf{j}(\mathbf{x}, t) \Delta x \Delta y \Delta z.
+\]
+Equivalently, the total net \emph{outflux} from the box is:
+\[
+\nabla \cdot \mathbf{j}(\mathbf{x}, t) \Delta x \Delta y \Delta z.
+\]
+
+\paragraph{Rate of Change Inside the Box.}
+The rate of change of the total quantity within the box is:
+\[
+\frac{\partial p}{\partial t}(\mathbf{x}, t) \Delta x \Delta y \Delta z.
+\]
+
+\paragraph{Conservation Principle.}
+Assuming the quantity is conserved (e.g., total mass or probability is constant in time), the rate of change equals the negative of the net outflux:
+\[
+\frac{\partial p}{\partial t}(\mathbf{x}, t) \Delta x \Delta y \Delta z = - \nabla \cdot \mathbf{j}(\mathbf{x}, t) \Delta x \Delta y \Delta z.
+\]
+
+Canceling the common volume factor and taking the small-box limit, we obtain the local form of the continuity equation:
+\[
+\frac{\partial p}{\partial t} + \nabla \cdot \mathbf{j} = 0.
+\]
+This equation has a simple interpretation: if $\nabla\cdot\mathbf{j}(\mathbf{x},t)>0$, more quantity flows out of the small box than into it, so the density inside decreases. If $\nabla\cdot\mathbf{j}(\mathbf{x},t)<0$, more quantity flows in than out, so the density inside increases.
+
+
+\subsection{Derivation of the Continuity Equation from Conservation Laws}
+
+The small-box argument above gives the local intuition. We now write the same conservation principle in a coordinate-free form over an arbitrary control volume.
+
+The continuity equation formalizes the conservation of a physical quantity, such as mass or charge, in a dynamical system. Let $p(\mathbf{x}, t)$ denote the density of the conserved quantity at position $\mathbf{x} \in \mathbb{R}^D$ and time $t \in [0, T]$, and let $\mathbf{v}(\mathbf{x}, t)$ denote the velocity field. When the quantity is transported by particles moving with velocity $\mathbf{v}(\mathbf{x},t)$, the flux is
+\[
+\mathbf{j}(\mathbf{x},t)=p(\mathbf{x},t)\mathbf{v}(\mathbf{x},t).
+\]
+
+\paragraph{Step 1: Rate of Change within a Control Volume.}  
+Consider an arbitrary control volume $V \subset \mathbb{R}^D$ with boundary $\partial V$. The total amount of the conserved quantity in $V$ is
+\[
+\int_V p(\mathbf{x}, t) \diff V,
+\]
+whose time derivative gives the rate of accumulation:
+\[
+\frac{\partial}{\partial t} \int_V p(\mathbf{x}, t) \diff V.
+\]
+
+\paragraph{Step 2: Net Flux Through the Boundary.}  
+The quantity exits $V$ through $\partial V$ with outward normal vector $\mathbf{n}$. The net outward flux is
+\[
+\int_{\partial V} p(\mathbf{x}, t) \mathbf{v}(\mathbf{x}, t) \cdot \mathbf{n} \diff S.
+\]
+
+\paragraph{Step 3: Conservation Principle.}  
+Conservation implies that the rate of accumulation within $V$ equals the negative of the net outward flux:
+\[
+\frac{\partial}{\partial t} \int_V p \diff V + \int_{\partial V} p \mathbf{v} \cdot \mathbf{n} \diff S = 0.
+\]
+
+\paragraph{Step 4: Divergence Theorem.}  
+Applying the divergence theorem to convert the surface integral to a volume integral:
+\[
+\int_{\partial V} p \mathbf{v} \cdot \mathbf{n} \diff S = \int_V \nabla \cdot (p \mathbf{v}) \diff V.
+\]
+Hence,
+\[
+\frac{\partial}{\partial t} \int_V p \diff V + \int_V \nabla \cdot (p \mathbf{v}) \diff V = 0.
+\]
+Equivalently,
+\[
+\int_V \left(\frac{\partial p}{\partial t}+\nabla\cdot(p\mathbf{v})\right)\diff V=0.
+\]
+Since the control volume $V$ is arbitrary, the integrand must vanish pointwise. This yields the continuity equation:
+\[
+\frac{\partial p}{\partial t}+\nabla\cdot(p\mathbf{v})=0.
+\]
+Using $\mathbf{j}=p\mathbf{v}$, this is the same as
+\[
+\frac{\partial p}{\partial t}+\nabla\cdot\mathbf{j}=0.
+\]
+
+\paragraph{Particle-Level Intuition.}
+Expanding the divergence term gives
+\[
+\frac{\partial p}{\partial t}
++
+\mathbf{v}\cdot\nabla p
++
+p\,\nabla\cdot\mathbf{v}
+=
+0.
+\]
+The first two terms describe the total change of the density along a moving particle:
+\[
+\frac{\diff}{\diff t}p(\mathbf{x}_t,t)
+=
+\frac{\partial p}{\partial t}(\mathbf{x}_t,t)
++
+\mathbf{v}(\mathbf{x}_t,t)\cdot\nabla p(\mathbf{x}_t,t).
+\]
+Therefore,
+\[
+\frac{\diff}{\diff t}p(\mathbf{x}_t,t)
+=
+-
+p(\mathbf{x}_t,t)\nabla\cdot\mathbf{v}(\mathbf{x}_t,t).
+\]
+This provides another useful interpretation: density decreases when nearby particles spread apart, and density increases when nearby particles contract. Thus, the velocity field tells us how individual particles move, while the continuity equation tells us how the entire density evolves.
+
+\clearpage
+\newpage
+
+\section{(Optional) Wasserstein Gradient Flows as Distribution-Level Training}
+\label{sec:wgf-distribution-level-training}
+
+We now step back from diffusion-specific dynamics and take a broader
+distribution-level view of deep generative modeling.  We have discussed that the continuity equation describes how a probability
+distribution moves when its particles move.   The same language can also be used
+to understand the training of deep generative models: a training algorithm updates
+the model parameters, the updated generator moves generated particles, and the
+movement of these particles changes the induced model distribution
+$p_{\bphi}$.
+
+From this viewpoint, different generative modeling methods can be organized
+according to how the model distribution $p_{\bphi}$ is driven toward the data
+distribution $p_{\mathrm{data}}$.  Wasserstein gradient flow gives one
+particularly clean way to describe this movement: it treats training as an
+idealized flow of probability mass in distribution space, which is then
+approximated by finite-dimensional neural network updates.
+
+
+A neural generator $\rmG_{\bphi}$ defines both a function and a probability
+distribution.  If
+\[
+    \rvz\sim p_{\mathrm{prior}},
+    \qquad
+    \rvx=\rmG_{\bphi}(\rvz),
+\]
+then the generated distribution is the pushforward
+\[
+    p_{\bphi}:=(\rmG_{\bphi})_\# p_{\mathrm{prior}}.
+\]
+From the generative modeling viewpoint, the object we ultimately care about is
+how $p_{\bphi}$ approaches the data distribution $p_{\mathrm{data}}$.
+
+This motivates a distribution-level question:
+\begin{question}
+Can we first describe the ideal way to move the model distribution
+$p_{\bphi}$ toward $p_{\mathrm{data}}$, and then update the neural network
+parameters so that the generator approximately realizes this movement?
+\end{question}
+
+Throughout this optional section, $\tau$ denotes \emph{training time}: an
+idealized continuous-time version of the discrete training iteration index.  It
+should not be confused with diffusion/noising time.  We write $\bphi_\tau$ for
+the parameter at training time $\tau$, and $p_{\bphi_\tau}$ for the
+corresponding model distribution.
+
+\paragraph{Moving Model Distributions by Moving Particles.}
+We first describe an ideal distribution-level evolution, before accounting
+for the finite-dimensional parameterization of the neural generator.
+Suppose particles from the current model distribution move according to a
+training-time velocity field $\rvw_\tau$:
+\[
+    \frac{\diff \rvx_\tau}{\diff \tau}
+    =
+    \rvw_\tau(\rvx_\tau),
+    \qquad
+    \rvx_\tau\sim p_{\bphi_\tau}.
+\]
+Then the model distribution evolves according to the continuity equation
+\[
+    \partial_\tau p_{\bphi_\tau}(\rvx)
+    +
+    \nabla_{\rvx}\cdot
+    \big(
+        p_{\bphi_\tau}(\rvx)\rvw_\tau(\rvx)
+    \big)
+    =
+    0.
+\]
+Thus, $\rvw_\tau$ describes how each generated particle moves, while the
+continuity equation describes how the entire generated distribution moves\footnote{This velocity should not be confused with the diffusion-time PF-ODE velocity
+$\rvv^*(\rvx,t)$.  The variable $t$ or $s$ describes noise/denoising time,
+whereas $\tau$ describes training-time evolution of the model distribution.}.
+
+
+
+\paragraph{Choosing the Velocity: Gradient Descent in Distribution Space.}
+Now we need to choose a velocity field $\rvw_\tau$ that moves
+$p_{\bphi_\tau}$ toward $p_{\mathrm{data}}$.  Let
+\[
+    \mathcal{D}(p_{\bphi_\tau},p_{\mathrm{data}})
+\]
+be a discrepancy between the current model distribution and the data
+distribution.  \emph{Wasserstein gradient flow}~\citep{jordan1998variational,ambrosio2005gradient} chooses the particle velocity that
+decreases this discrepancy most directly under the geometry of moving
+probability mass.
+
+To choose the velocity field, we first ask how the discrepancy changes when the
+current distribution is infinitesimally perturbed.  Think of
+$\mathcal{D}(p,p_{\mathrm{data}})$ as a global energy of the distribution
+$p$.  Its first variation gives a pointwise energy potential: it tells us
+which regions of space are costly for the current distribution and which regions
+are favorable.
+
+Concretely, for a small perturbation $p+\epsilon h$, where
+$\epsilon>0$ is small and $\int h(\rvx)\diff\rvx=0$, the first variation is
+defined by
+\[
+    \mathcal{D}(p+\epsilon h,p_{\mathrm{data}})
+    =
+    \mathcal{D}(p,p_{\mathrm{data}})
+    +
+    \epsilon
+    \int
+    \frac{\delta\mathcal{D}}{\delta p}
+    (p,p_{\mathrm{data}})(\rvx)\,
+    h(\rvx)\diff\rvx
+    +
+    \mathop{\mathrm{o}}(\epsilon).
+\]
+Here $p$ is a dummy distribution variable.  After taking the variation, we
+evaluate it at the current model distribution $p=p_{\bphi_\tau}$.
+
+We define the resulting pointwise energy potential by
+\[
+    E_\tau(\rvx)
+    :=
+    \frac{\delta\mathcal{D}}{\delta p}
+    (p_{\bphi_\tau},p_{\mathrm{data}})(\rvx).
+\]
+Intuitively, if $E_\tau(\rvx)$ is large, then placing more probability mass
+near $\rvx$ would increase the discrepancy.  If $E_\tau(\rvx)$ is small,
+then moving mass toward $\rvx$ is favorable.  Therefore, the Wasserstein
+gradient-flow velocity moves particles downhill in this potential:
+\[
+    \rvw_\tau(\rvx)
+    =
+    -
+    \nabla_{\rvx}E_\tau(\rvx).
+\]
+With this choice,
+\[
+    \frac{\diff}{\diff \tau}
+    \mathcal{D}(p_{\bphi_\tau},p_{\mathrm{data}})
+    =
+    -
+    \int
+    p_{\bphi_\tau}(\rvx)
+    \left\|
+        \nabla_{\rvx}E_\tau(\rvx)
+    \right\|_2^2
+    \diff\rvx
+    \le 0.
+\]
+Therefore, Wasserstein gradient flow is gradient descent in the
+$2$-Wasserstein geometry of probability distributions\footnote{We remark that this ideal
+distribution-space dynamics should not be confused with ordinary gradient
+descent on the neural parameters $\bphi$: the latter is constrained by the
+finite-dimensional generator family and generally realizes only an
+approximation to the desired particle motion.}.  The global discrepancy $\mathcal{D}$ defines the
+energy of the whole distribution, the first variation $E_\tau$ defines the
+local energy landscape seen by particles, and
+$-\nabla_{\rvx}E_\tau$ gives the ideal particle velocity for decreasing the
+discrepancy.
+
+\paragraph{Realizing the Distributional Velocity with a Neural Network.}
+The velocity above is a distribution-level object: it says how generated
+particles should move.  A neural generator, however, cannot move every particle
+independently.  It can only move particles through a shared parameter update of
+$\bphi$.
+
+At training time $\tau$, the current generator produces particles
+\[
+    \rvx_i
+    =
+    \rmG_{\bphi_\tau}(\rvz_i),
+    \qquad
+    \rvz_i\sim p_{\mathrm{prior}},
+    \qquad
+    i=1,\ldots,N.
+\]
+A small Wasserstein step moves these particles to
+\[
+    \widetilde{\rvx}_i
+    =
+    \rvx_i+\eta\rvw_\tau(\rvx_i),
+\]
+where $\eta>0$ is a small step size.  The neural network is then updated so
+that its new outputs match these moved particles:
+\[
+    \bphi_{\tau+\eta}
+    \approx
+    \arg\min_{\bphi}
+    \frac{1}{N}
+    \sum_{i=1}^N
+    \left\|
+        \rmG_{\bphi}(\rvz_i)
+        -
+        \operatorname{sg}
+        \big(
+            \rvx_i+\eta\rvw_\tau(\rvx_i)
+        \big)
+    \right\|_2^2.
+\]
+Here $\operatorname{sg}(\cdot)$ denotes stop-gradient, so the moved particles
+are treated as fixed targets.
+
+For a small parameter update $\Delta\bphi$, we have the linearization
+\[
+    \rmG_{\bphi_\tau+\Delta\bphi}(\rvz_i)
+    \approx
+    \rmG_{\bphi_\tau}(\rvz_i)
+    +
+    \big(\partial_{\bphi}\rmG_{\bphi_\tau}(\rvz_i)\big)\Delta\bphi.
+\]
+Therefore, the parameter update approximately solves
+\[
+    \min_{\Delta\bphi}
+    \frac{1}{N}
+    \sum_{i=1}^N
+    \left\|
+        \big(\partial_{\bphi}\rmG_{\bphi_\tau}(\rvz_i)\big)\Delta\bphi
+        -
+        \eta\rvw_\tau(\rvx_i)
+    \right\|_2^2.
+\]
+In words, Wasserstein gradient flow specifies the desired distribution-level
+particle motion, while neural network training projects this motion onto the
+set of movements that can be realized by changing the finite-dimensional
+parameter $\bphi$.
+
+\paragraph{Forward-KL Training: Data-Side Likelihood Learning.}
+A classical distribution-level objective is the data-side, or forward, KL
+divergence:
+\[
+    \mathcal{D}_{\mathrm{FKL}}(p_{\bphi},p_{\mathrm{data}})
+    :=
+    \mathcal D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_{\bphi})
+    =
+    \int
+    p_{\mathrm{data}}(\rvx)
+    \log
+    \frac{p_{\mathrm{data}}(\rvx)}{p_{\bphi}(\rvx)}
+    \diff\rvx.
+\]
+Since $p_{\mathrm{data}}$ is fixed, minimizing this objective is equivalent to
+maximum likelihood (see \Cref{eq:MLE}):
+\[
+    \min_{\bphi}
+    \mathcal D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_{\bphi})
+    \quad
+    \Longleftrightarrow
+    \quad
+    \max_{\bphi}
+    \E_{\rvx\sim p_{\mathrm{data}}}
+    \big[
+        \log p_{\bphi}(\rvx)
+    \big].
+\]
+This is the distribution-level view behind many likelihood-based models.
+Autoregressive models and normalizing flows optimize exact likelihoods;
+likelihood-based VAEs optimize variational lower bounds; energy-based models
+optimize likelihood through positive and negative phases; and diffusion models
+can be related to likelihood or score-matching surrogates through their
+variational and denoising objectives.
+
+From the Wasserstein gradient-flow viewpoint, the forward KL has first
+variation
+\[
+    \frac{\delta}{\delta p}
+    \mathcal D_{\mathrm{KL}}(p_{\mathrm{data}}\|p)
+    =
+    -
+    \frac{p_{\mathrm{data}}}{p}.
+\]
+Evaluating at $p=p_{\bphi_\tau}$ gives the velocity
+\[
+    \rvw_\tau^{\mathrm{FKL}}(\rvx)
+    =
+    \nabla_{\rvx}
+    \left(
+        \frac{p_{\mathrm{data}}(\rvx)}
+             {p_{\bphi_\tau}(\rvx)}
+    \right).
+\]
+This expression involves the density ratio
+$p_{\mathrm{data}}/p_{\bphi_\tau}$, which is usually difficult to estimate
+for implicit generators. In practice, forward-KL or maximum-likelihood
+training is most direct when likelihoods, variational bounds, or suitable
+approximations to the likelihood gradient are available. Score matching
+provides a different route to distribution learning by matching score
+functions rather than directly realizing the forward-KL Wasserstein flow.
+
+The main strength of forward-KL training is that it is data-covering and
+statistically well grounded when a likelihood or a variational surrogate is
+available.  Its limitation is that it often requires tractable densities,
+variational bounds, score-matching surrogates, or expensive negative sampling,
+which makes it less directly compatible with arbitrary implicit generators.
+
+\paragraph{Reverse-KL Training: Model-Side Score-Mismatch Dynamics.}
+The model-side, or reverse, KL divergence is
+\[
+    \mathcal{D}_{\mathrm{RKL}}(p_{\bphi},p_{\mathrm{data}})
+    :=
+    \mathcal D_{\mathrm{KL}}(p_{\bphi}\|p_{\mathrm{data}})
+    =
+    \int
+    p_{\bphi}(\rvx)
+    \log
+    \frac{p_{\bphi}(\rvx)}
+         {p_{\mathrm{data}}(\rvx)}
+    \diff\rvx.
+\]
+Its first variation is
+\[
+    \frac{\delta}{\delta p}
+    \mathcal D_{\mathrm{KL}}(p\|p_{\mathrm{data}})
+    =
+    \log p-\log p_{\mathrm{data}}+1.
+\]
+Evaluating at $p=p_{\bphi_\tau}$ gives the Wasserstein velocity
+\[
+    \rvw_\tau^{\mathrm{RKL}}(\rvx)
+    :=
+    \nabla_{\rvx}\log p_{\mathrm{data}}(\rvx)
+    -
+    \nabla_{\rvx}\log p_{\bphi_\tau}(\rvx).
+\]
+Thus, reverse-KL training induces a score-mismatch force:
+\[
+    \text{target score}
+    -
+    \text{model score}.
+\]
+The target score attracts generated particles toward high-density regions of the
+data distribution, while the model score repels particles from regions where the
+current model distribution is already too concentrated.
+
+In diffusion distillation and distribution matching (see \Cref{sec:VSD}), this idea is usually
+applied at a noise level $s$.  Let $p_s$ denote the teacher or noised-data
+distribution, and let $p_{\bphi_\tau,s}$ denote the noised distribution of
+current generator samples.  The reverse-KL objective
+\[
+    \E_s
+    \left[
+        w(s)
+        \mathcal D_{\mathrm{KL}}(p_{\bphi_\tau,s}\|p_s)
+    \right]
+\]
+induces the score-mismatch velocity
+\[
+    \rvw_{\tau,s}^{\mathrm{RKL}}(\rvx)
+    :=
+    \nabla_{\rvx}\log p_s(\rvx)
+    -
+    \nabla_{\rvx}\log p_{\bphi_\tau,s}(\rvx).
+\]
+At the parameter level, for generated noisy samples
+$\hat\rvx_s\sim p_{\bphi_\tau,s}$, one obtains gradients of the form
+\[
+    \nabla_{\bphi}
+    \mathcal D_{\mathrm{KL}}(p_{\bphi,s}\|p_s)
+    \big|_{\bphi=\bphi_\tau}
+    =
+    \E_{\hat\rvx_s\sim p_{\bphi_\tau,s}}
+    \left[
+        \left(
+            \nabla_{\rvx}\log p_{\bphi_\tau,s}(\hat\rvx_s)
+            -
+            \nabla_{\rvx}\log p_s(\hat\rvx_s)
+        \right)^\top
+        \partial_{\bphi}\hat\rvx_s
+    \right].
+\]
+Thus, the score difference
+\[
+\nabla_{\rvx}\log p_s(\hat\rvx_s)
+-
+\nabla_{\rvx}\log p_{\bphi_\tau,s}(\hat\rvx_s)
+\]
+provides the distribution-level descent direction that drives the parameter
+gradient. The actual movement of individual generated samples is mediated by
+the shared neural parameterization, as discussed above. This score-difference gradient is the basic distribution-level mechanism
+behind reverse-KL-based methods such as DMD and VSD: estimate the target and
+model scores on generated samples and use their difference to update the
+generator.
+
+The main strength of reverse-KL training is that it is naturally compatible with
+implicit generators once the relevant scores can be estimated.  It is also
+mode-seeking, which can improve visual fidelity in one-step or few-step
+generation.  Its limitation is that it can drop modes, depends strongly on the
+quality of score estimates, and may require an additional model-score network or
+a strong teacher.
+
+The same attraction-repulsion interpretation also appears in drifting-style
+particle updates~\citep{weber2023the,deng2026generative}.  In the terminology
+of \citet{lai2026unified}, DMD/VSD/SiD provide parametric score-based
+instantiations of this score-mismatch dynamics, while drifting-style
+approaches~\citep{weber2023the,deng2026generative} provide a
+nonparametric kernel-based instantiation.
+
+
+\paragraph{Closing Remarks.}
+In summary, the continuity equation provides the common language behind both
+diffusion dynamics and distribution-level training.  In diffusion models, it
+describes how the intermediate distributions $p_t$ evolve along a prescribed
+noise or probability-flow dynamics.  In Wasserstein gradient flow, the same
+equation describes how the model distribution $p_{\bphi_\tau}$ evolves during
+training as generated particles move toward the data distribution
+$p_{\mathrm{data}}$.
+
+This viewpoint therefore broadens the role of the continuity equation beyond
+diffusion models.  It lets us interpret generative modeling as the design of
+distributional dynamics: different methods choose different discrepancies,
+different particle velocities, and different parameter updates to drive
+$p_{\bphi}$ toward $p_{\mathrm{data}}$.  From this perspective, diffusion
+models, likelihood-based models, distribution-matching methods, and
+score-mismatch-based approaches can be viewed under a shared distribution-level
+taxonomy.
+
+
+
+\clearpage
+\newpage

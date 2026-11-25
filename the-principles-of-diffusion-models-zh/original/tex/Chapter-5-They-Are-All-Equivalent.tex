@@ -1,0 +1,2123 @@
+\chapter{A Unified and Systematic Lens on Diffusion Models}\label{ch:all-equivalent} 
+
+\epigraph{
+    \textit{Mathematics is the art of giving the same name to different things.
+}}{Henri Poincaré}
+
+This chapter presents a systematic viewpoint that connects the variational, score-based, and flow-based perspectives within a coherent picture. Although motivated by different intuitions, these approaches converge on the same core mechanism underlying modern diffusion models: define a forward corruption process that traces a path of marginal distributions, then learn the local
+quantities needed to construct generative dynamics that follow this path in reverse. Building on \Cref{ch:variational,ch:score-based,ch:score-sde,ch:flow-based}, we observe a common recipe: define a forward corruption process that traces a path of marginals, then learn a time varying vector field that transports a simple prior to the data distribution along this path.
+
+A key ingredient across all perspectives is the conditioning trick introduced in \Cref{sec:conditional-trick}, which transforms an intractable marginal objective into a tractable conditional one, leading to stable and efficient training.
+
+In \Cref{sec:elucidating} we analyze the training objective in a systematic way, identifying its essential components and clarifying how loss functions are formulated in the variational, score-based, and flow-based viewpoints.
+
+
+\Cref{sec:equivalent-parametrizations} shows that any affine forward noise injection of the form $\rvx_t = \alpha_t \rvx_0 + \sigma_t \beps$ can be equivalently transformed into the standard linear schedule $\rvx_t = (1 - t)\rvx_0 + t\beps$. Moreover, common parameterizations such as noise prediction, clean data prediction, score prediction, and velocity prediction are interchangeable at the level of gradients. Thus, the choices of noise schedulers and parameterizations both adhere to the same  modeling principle.
+
+
+
+Finally, \Cref{sec:comparison-connection} brings the discussion together and identifies the governing rule: the Fokker–Planck equation. Whether viewed as a variational scheme (discrete time denoising), a score-based method (SDE formulation), or a flow-based method (ODE formulation), each constructs a generator whose marginals follow the same density evolution. The Fokker–Planck equation thus serves as the universal constraint respected by all three viewpoints, with differences arising only in parameterization and training objectives.
+
+\chapterlearning{
+  \item recognize the common conditioning principle behind variational, score-based, and flow-based training: an intractable marginal target can be learned through tractable conditional targets;
+  \item understand the four common prediction types---clean data, noise, score, and velocity---and convert between their oracle predictions when the forward schedule is nondegenerate;
+  \item disentangle the main design choices in diffusion training: the forward noise schedule, prediction target, time-sampling distribution, and time weighting, and understand which changes are mathematical reparameterizations and which can still affect practical optimization;
+  \item distinguish different notions of ``equivalence'': representing the same oracle information, having equivalent population objectives up to weighting or additive constants, tracing the same marginal density path, and behaving identically as a practical training or sampling algorithm;
+  \item understand how different affine probability paths are related through time reparameterization and spatial rescaling, while keeping track of what these transformations do and do not preserve;
+  \item understand how the continuity and Fokker--Planck equations provide the density-level principle connecting variational, deterministic ODE, and stochastic SDE descriptions of diffusion models.
+}{
+This chapter is the conceptual keystone of the book. For a first pass, focus
+on the conditioning principle, the relationships among the four prediction
+types, and the continuity/Fokker--Planck view that connects the three
+perspectives. The central lesson is not to memorize every conversion formula,
+but to ask what notion of equivalence is being used and what that equivalence
+actually preserves. The detailed analysis of weighting, schedules, and
+parameterization choices can then be revisited to understand why mathematically
+equivalent formulations may still behave differently in practice.
+}
+
+\newpage
+
+\section{Conditional Tricks: The Secret Sauce of Diffusion Models}\label{sec:conditional-trick}
+Until now, we have explored diffusion models from three seemingly distinct origins: variational, score-based, and flow based perspectives. Each was originally motivated by different goals and led to its own training objectives (with a fixed $t$):
+\begin{itemize}
+    \item \textbfs{Variational View:} Learn a parametrized density $p_{\bm{\phi}}(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)$ to approximate the oracle reverse transition $p(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)$ by minimizing:
+    \[
+    \mathcal{J}_{\text{KL}}(\bm{\phi}) := \mathbb{E}_{p_t(\mathbf{x}_t)}\left[
+        \mathcal{D}_{\mathrm{KL}}\big(p(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t) \| p_{\bm{\phi}}(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)\big)
+    \right];
+    \]
+    \item \textbfs{Score-Based View:} Learn a score model $\rvs_{\bm{\phi}}(\rvx_t, t)$ to approximate the marginal score $\nabla_{\rvx} \log p_t(\rvx_t)$ via:
+    \[
+    \mathcal{J}_{\text{SM}}(\bm{\phi}) := \mathbb{E}_{p_t(\rvx_t)}\left[
+       \left\| \rvs_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx} \log p_t(\rvx_t) \right\|_2^2
+    \right];
+    \]
+    \item \textbfs{Flow-Based View:} Learn a velocity model $\rvv_{\bm{\phi}}(\rvx_t, t)$ to match the oracle velocity $\rvv_t(\rvx_t)$ (e.g., defined by \Cref{eq:marginal-oracle-velocity}) by minimizing:
+    \[
+    \mathcal{J}_{\text{FM}}(\bm{\phi}) := \mathbb{E}_{p_t(\rvx_t)} \left[
+        \left\| \rvv_{\bm{\phi}}(\rvx_t, t) - \rvv_t(\rvx_t) \right\|_2^2
+    \right].
+    \]
+\end{itemize}
+
+At first glance, these objectives seem hopelessly intractable, since they all require access to oracle quantities that are fundamentally unknowable in general. But here comes the exciting twist: each method independently arrives at the same elegant solution to this problem: \emph{conditioning on the data $\rvx_0$}. This technique transforms each intractable training target into a tractable one.
+
+
+
+This elegant ``conditioning technique'' rewrites the objectives as expectations
+over the known Gaussian conditionals $p_t(\rvx_t | \rvx_0)$, yielding
+tractable conditional targets and training objectives that are
+gradient-equivalent to their marginal counterparts:
+\begin{itemize}
+    \item \textbfs{Variational View} (\Cref{eq:kl-matching})\textbfs{:}
+    \[
+    \mathcal{J}_{\text{KL}}(\bm{\phi}) = \underbrace{\mathbb{E}_{\rvx_0} \mathbb{E}_{p_t(\rvx_t|\rvx_0)} \left[
+        \mathcal{D}_{\mathrm{KL}}\big(p(\rvx_{t-\Delta t}|\rvx_t, \rvx_0) \| p_{\bm{\phi}}(\rvx_{t-\Delta t}|\rvx_t)\big)
+    \right]}_{\mathcal{J}_{\text{CKL}}(\bm{\phi})} + C;
+    \]    
+    \item \textbfs{Score-Based View} (\Cref{eq:score-matching})\textbfs{:}
+    \[
+    \mathcal{J}_{\text{SM}}(\bm{\phi}) = \underbrace{\mathbb{E}_{\rvx_0} \mathbb{E}_{p_t(\rvx_t|\rvx_0)} \left[
+        \left\| \rvs_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p_t(\rvx_t | \rvx_0) \right\|_2^2
+    \right]}_{\mathcal{J}_{\text{DSM}}(\bm{\phi})} + C;
+    \]
+    \item \textbfs{Flow-Based View} (\Cref{eq:fm-cfm})\textbfs{:}
+    \[
+    \mathcal{J}_{\text{FM}}(\bm{\phi}) = \underbrace{\mathbb{E}_{\rvx_0} \mathbb{E}_{p_t(\rvx_t|\rvx_0)} \left[
+        \left\| \rvv_{\bm{\phi}}(\rvx_t, t) - \rvv_t(\rvx_t | \rvx_0) \right\|^2
+    \right]}_{\mathcal{J}_{\text{CFM}}(\bm{\phi})} + C.
+    \]
+\end{itemize}
+To build a unified view, we next revisit the conditional KL, score, and velocity objectives in a systematic manner. Crucially, these objectives are not only tractable but also equivalent to their original forms up to a constant vertical shift. 
+The conditional versions ($\mathcal{J}_{\text{CKL}}$,
+$\mathcal{J}_{\text{DSM}}$, $\mathcal{J}_{\text{CFM}}$) differ from the
+originals ($\mathcal{J}_{\text{KL}}$, $\mathcal{J}_{\text{SM}}$,
+$\mathcal{J}_{\text{FM}}$) only by a constant that is independent of the
+model parameters. Consequently, each conditional objective has the same
+minimizers as its original counterpart within the same model class.
+
+To see what these minimizers ideally recover, suppose the model is expressive
+enough to represent the exact oracle. Despite their different objectives, all
+three perspectives then share the same conceptual pattern:
+\[
+\underbrace{\text{marginal oracle}}_{\text{generally intractable}}
+=
+\mathbb{E}_{\rvx_0\sim p(\cdot|\rvx_t)}
+\left[
+\underbrace{\text{conditional oracle}}_{\text{tractable given }\rvx_0}
+\right].
+\]
+That is, conditioning on the clean sample $\rvx_0$ gives a tractable target,
+and averaging these conditional targets over the possible clean samples
+consistent with $\rvx_t$ recovers the desired marginal oracle. Concretely,
+
+\begin{mdframed}
+    \begin{align}\label{eq:three-minimizer-oracle}
+\begin{aligned}
+        p^*(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t) &= \mathbb{E}_{\mathbf{x}_0 \sim p(\cdot|\mathbf{x}_t)} \big[p(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t, \mathbf{x}_0)\big] &&= p(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t), \\
+    \mathbf{s}^*(\mathbf{x}_t, t) &= \mathbb{E}_{\mathbf{x}_0 \sim p(\cdot|\mathbf{x}_t)} \big[\nabla_{\mathbf{x}_t} \log p_t(\mathbf{x}_t|\mathbf{x}_0)\big] &&= \nabla_{\mathbf{x}_t} \log p_t(\mathbf{x}_t), \\
+    \mathbf{v}^*(\mathbf{x}_t, t) &= \mathbb{E}_{\mathbf{x}_0 \sim p(\cdot|\mathbf{x}_t)} \big[\mathbf{v}_t(\mathbf{x}_t|\mathbf{x}_0)\big] &&= \mathbf{v}_t(\mathbf{x}_t).
+\end{aligned}
+\end{align}
+\end{mdframed}
+
+For the variational view, the first identity follows from marginalizing the
+conditional reverse transition over $\rvx_0$, and the KL objective is minimized
+by the resulting marginal reverse transition. For score and velocity matching,
+the squared-error objectives are least-squares regressions whose population
+minimizers are the corresponding conditional expectations. These identities
+describe the unrestricted population oracles; a restricted neural model need
+not represent them exactly. Below is a concrete example of a scenario with a finite number of data points.
+
+
+\exm{Closed-Form Oracle Targets on a Finite Dataset}{
+To make \Cref{eq:three-minimizer-oracle} more concrete, suppose the data distribution is the empirical measure
+\[
+\hat p_0=\frac{1}{N}\sum_{i=1}^N \delta_{\rvx_0^{(i)}},
+\]
+where $\{\rvx_0^{(i)}\}_{i=1}^N$ denotes the finite training set. 
+
+In \Cref{eq:three-minimizer-oracle}, the notation
+\[
+\rvx_0 \sim p(\cdot|\rvx_t)
+\]
+means that we average over the posterior distribution of the clean sample given the noisy observation $\rvx_t$. Equivalently, for any quantity $\rvh(\rvx_0)$,
+\[
+\mathbb{E}_{\rvx_0 \sim p(\cdot|\rvx_t)}[\rvh(\rvx_0)]
+=
+\int \rvh(\rvx_0)\, p(\rvx_0|\rvx_t)\diff\rvx_0.
+\]
+
+By Bayes' rule,
+\[
+p(\rvx_0|\rvx_t)
+=
+\frac{p_t(\rvx_t|\rvx_0)\,p_{\text{data}}(\rvx_0)}
+{\int p_t(\rvx_t|\tilde{\rvx}_0)\,p_{\text{data}}(\tilde{\rvx}_0)\diff\tilde{\rvx}_0}.
+\]
+Under the standard Gaussian diffusion forward process,
+\[
+p_t(\rvx_t|\rvx_0^{(i)})
+=
+\mathcal{N}\left(\rvx_t;\alpha_t \rvx_0^{(i)}, \sigma_t^2 \rmI\right),
+\]
+so the conditional likelihood is explicit. However, at the population level, the posterior $p(\rvx_0|\rvx_t)$ still requires averaging over the full data distribution $p_{\text{data}}$.
+
+If we now replace $p_{\text{data}}$ by the empirical measure
+\[
+\hat p_0=\frac{1}{N}\sum_{i=1}^N \delta_{\rvx_0^{(i)}},
+\]
+then the posterior $p(\rvx_0|\rvx_t)$ is supported only on the training examples, and its mass at $\rvx_0^{(i)}$ is
+\[
+p(\rvx_0=\rvx_0^{(i)}|\rvx_t)
+=
+\frac{p_t(\rvx_t|\rvx_0^{(i)})}
+{\sum_{j=1}^N p_t(\rvx_t|\rvx_0^{(j)})}
+=: w_i(\rvx_t,t),
+\qquad
+\sum_{i=1}^N w_i(\rvx_t,t)=1.
+\]
+Hence the posterior expectation above reduces to the finite sum
+\[
+\mathbb{E}_{\rvx_0 \sim p(\cdot|\rvx_t)}[\rvh(\rvx_0)]
+=
+\sum_{i=1}^N w_i(\rvx_t,t)\rvh(\rvx_0^{(i)}).
+\]
+Thus, in the finite-dataset case, the abstract posterior averaging in \Cref{eq:three-minimizer-oracle} becomes a concrete weighted average over the training set, with weights $w_i(\rvx_t,t)$. We now make these three cases explicit.
+
+\paragraph{Variational View.}
+The oracle reverse transition becomes
+\[
+p^*(\rvx_{t-\Delta t}|\rvx_t)
+=
+\sum_{i=1}^N
+w_i(\rvx_t,t) 
+p(\rvx_{t-\Delta t}|\rvx_t,\rvx_0^{(i)}).
+\]
+Here each conditional reverse kernel
+\[
+p(\rvx_{t-\Delta t}|\rvx_t,\rvx_0^{(i)})
+\]
+is itself available in closed form under Gaussian diffusion; in fact, it is Gaussian as shown in Lemma~\ref{ddpm-reverse-kernel}. So the true reverse kernel is simply a posterior-weighted mixture of explicit Gaussian bridges. 
+
+\paragraph{Score-Based View.}
+Likewise, the oracle score becomes
+\[
+\mathbf{s}^*(\rvx_t,t)
+=
+\sum_{i=1}^N
+w_i(\rvx_t,t) 
+\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0^{(i)}).
+\]
+The conditional score is explicit:
+\[
+\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0^{(i)})
+=
+-\frac{\rvx_t-\alpha_t\rvx_0^{(i)}}{\sigma_t^2}.
+\]
+Therefore,
+\[
+\mathbf{s}^*(\rvx_t,t)
+=
+-\frac{1}{\sigma_t^2}
+\left(
+\rvx_t-\alpha_t\sum_{i=1}^N w_i(\rvx_t,t) \rvx_0^{(i)}
+\right).
+\]
+So the marginal score points from the noisy sample toward a posterior-weighted average of training examples.
+
+\paragraph{Flow-Based View.}
+The same phenomenon appears for flow matching:
+\[
+\mathbf{v}^*(\rvx_t,t)
+=
+\sum_{i=1}^N
+w_i(\rvx_t,t) 
+\mathbf{v}_t(\rvx_t|\rvx_0^{(i)}).
+\]
+Again, the building blocks are explicit. The corresponding conditional velocity field has closed form:
+\[
+\mathbf{v}_t(\rvx_t|\rvx_0^{(i)})
+=
+{\alpha}'_t \rvx_0^{(i)}
++
+\frac{{\sigma}'_t}{\sigma_t}\bigl(\rvx_t-\alpha_t\rvx_0^{(i)}\bigr).
+\]
+Hence the oracle velocity is also an explicit posterior-weighted average over the dataset.
+
+Taken together, these formulas show that, on a finite dataset, all three oracle targets reduce to explicit posterior-weighted averages of closed-form conditional quantities.
+
+\paragraph{Remark on Memorization.} The formulas above characterize the exact oracle targets induced by the empirical distribution $\hat p_0$, rather than by the unknown population distribution $p_{\mathrm{data}}$. If the model learned these empirical targets perfectly at every noise level, and if the reverse process were computed without error, then generation would exactly reproduce the empirical distribution $\hat p_0$. Since $\hat p_0$ assigns probability only to the training examples, the generated samples would be drawn from the training set itself. In this idealized sense, perfect fitting of the empirical oracle amounts to memorization.
+
+However, a practically trained diffusion model, need not realize this oracle exactly: it is learned with finite model capacity and finite optimization, and its generated distribution is further affected by model approximation and numerical sampling errors. Therefore, the finite-dataset calculation establishes memorization as an exact empirical solution, but does not imply that every practically trained model necessarily memorizes its training set.
+
+}
+
+The common conditional reformulation is no coincidence: by making training tractable, it reveals a profound unification. Variational diffusion, score-based SDEs, and flow matching are simply different facets of the same principle. Three perspectives, one insight, elegantly connected. We will continue to explore their equivalence throughout the rest of this chapter.
+
+\newpage
+\clearpage
+
+\section{A Roadmap for Elucidating Training Losses in Diffusion Models
+}\label{sec:elucidating}
+
+This section builds a systematic view of training losses in diffusion models.  
+In \Cref{subsec:four-predictions}, we extend the standard three objectives to a broader set of four parameterizations, showing how they arise from different modeling perspectives.  
+In \Cref{subsec:summary-disentagle}, we then distill these results into a general framework that disentangles the structure of diffusion objectives, laying the groundwork for the equivalence results in \Cref{sec:equivalent-parametrizations}.
+
+
+
+
+\subsection{Four Common Parameterizations in Diffusion Models}\label{subsec:four-predictions}
+Throughout this section, we consider the forward perturbation kernel
+\[
+p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf{x}_0, \sigma_t^2 \mathbf{I} \right),
+\]
+where $\mathbf{x}_0 \sim p_{\mathrm{data}}$, as defined in \Cref{eq:forward_kernel}, unless stated otherwise.
+
+
+
+Let $\omega: [0, T] \to \mathbb{R}_{>0}$ denote a positive time-weighting function.  
+The four standard parameterizations (noise $\bm{\epsilon}_{\bm{\phi}}$, clean $\rvx_{\bm{\phi}}$, score $\rvs_{\bm{\phi}}$, and velocity $\rvv_{\bm{\phi}}$), together with their respective minimizers $\bm{\epsilon}^*$, $\rvx^*$, $\rvs^*$, and $\rvv^*$, are summarized below for clarity and to facilitate further discussion.
+
+\paragraph{Variational View.} Based on the KL divergence in DDPMs (see \Cref{subsec:ddpm-prediction,subsec:connection-vdm}), this approach reduces to predicting either the expected noise that produces $\mathbf{x}_t$ or the expected clean signal that $\mathbf{x}_t$ was perturbed from.
+\begin{enumerate}
+    \item \textbfs{$\beps$-Prediction (Noise Prediction)} \citep{ho2020denoising}:
+    \begin{equation}\label{eq:noise-def}
+        \bm{\epsilon}_{\bm{\phi}}(\mathbf{x}_t,t) \approx \mathbb{E}[\bm{\epsilon}|\mathbf{x}_t]=\bm{\epsilon}^*(\rvx_t, t)
+    \end{equation}
+    with training objective
+    \[
+        \mathcal{L}_{\text{noise}}(\bm{\phi}) := \mathbb{E}_t \left[\omega(t) \mathbb{E}_{\mathbf{x}_0, \bm{\epsilon}} \left\| \bm{\epsilon}_{\bm{\phi}}(\mathbf{x}_t,t) - \bm{\epsilon} \right\|_2^2 \right].
+    \]
+    Here, $\beps^*$ means the average noise that was injected to obtain the given $\rvx_t$.
+
+    \item \textbfs{$\rvx$-Prediction (Clean Prediction)} \citep{kingma2021variational,karras2022elucidating,song2023consistency}:
+    \begin{equation}\label{eq:clean-def}
+        \mathbf{x}_{\bm{\phi}}(\mathbf{x}_t,t) \approx \mathbb{E}[\mathbf{x}_0|\mathbf{x}_t]=\rvx^*(\rvx_t, t)
+    \end{equation}
+    with training objective
+    \[
+        \mathcal{L}_{\text{clean}}(\bm{\phi}) := \mathbb{E}_t \left[\omega(t) \mathbb{E}_{\mathbf{x}_0, \bm{\epsilon}} \left\| \mathbf{x}_{\bm{\phi}}(\mathbf{x}_t,t) - \mathbf{x}_0 \right\|_2^2 \right].
+    \]
+    Here, $\rvx^*$ means the average of all plausible clean guesses, given the noisy observation $\rvx_t$.
+\end{enumerate}
+
+\paragraph{Score-Based View.} Predicts the score function at noise level $t$, which points in the average direction to denoise $\mathbf{x}_t$ back toward all possible clean samples that could have generated it:
+\begin{enumerate}
+    \item[3.]  \textbfs{Score Prediction} \citep{song2019generative,song2020score}:
+    \begin{equation}\label{eq:score-def}
+        \mathbf{s}_{\bm{\phi}}(\mathbf{x}_t,t) \approx \nabla_{\mathbf{x}_t} \log p_t(\mathbf{x}_t) = \mathbb{E}\left[\nabla_{\mathbf{x}_t} \log p_t(\mathbf{x}_t|\mathbf{x}_0) |\mathbf{x}_t\right] = \rvs^*(\rvx_t, t)
+    \end{equation}
+    with training objective
+    \[
+        \mathcal{L}_{\text{score}}(\bm{\phi}) := \mathbb{E}_t \left[\omega(t) \mathbb{E}_{\mathbf{x}_0, \bm{\epsilon}} \left\| \mathbf{s}_{\bm{\phi}}(\mathbf{x}_t,t) - \nabla_{\mathbf{x}_t} \log p_t(\mathbf{x}_t|\mathbf{x}_0) \right\|_2^2 \right],
+    \]
+    where the conditional score satisfies $\nabla_{\mathbf{x}_t} \log p_t(\mathbf{x}_t|\mathbf{x}_0) = -\frac{1}{\sigma_t} \bm{\epsilon}$.
+\end{enumerate}
+
+
+\paragraph{Flow-Based View.} Predicts the instantaneous average velocity of the data as it evolves through $\mathbf{x}_t$:
+\begin{enumerate}
+    \item[4.] \textbfs{$\rvv$-Prediction (Velocity Prediction)} \citep{lipman2022flow,liu2022rectified,salimans2021progressive,albergo2023stochastic}:
+    \begin{equation}\label{eq:velocity-def}
+        \mathbf{v}_{\bm{\phi}}(\mathbf{x}_t, t) \approx \mathbb{E}\left[\left. \frac{\diff  \mathbf{x}_t}{\diff  t} \right| {\mathbf{x}_t}\right] =\rvv^*(\rvx_t, t)
+    \end{equation}
+    with training objective
+    \[
+        \mathcal{L}_{\text{velocity}}(\bm{\phi}) := \mathbb{E}_t \left[\omega(t) \mathbb{E}_{\mathbf{x}_0, \bm{\epsilon}} \left\| \mathbf{v}_{\bm{\phi}}(\mathbf{x}_t,t) - \rvv_t(\rvx_t | \rvx_0,\bm{\epsilon}) \right\|_2^2 \right],
+    \]
+    where the conditional velocity is $\rvv_t(\rvx_t|\rvx_0,\bm{\epsilon}) = \alpha_t' \mathbf{x}_0 + \sigma_t' \bm{\epsilon}$.
+
+Here, $\rvv^*$ indicates the average velocity vector passing through the observation point $\rvx_t$.
+\end{enumerate}
+
+
+Building on the insight from \Cref{eq:three-minimizer-oracle}, all four prediction types ultimately aim to approximate a conditional expectation in the form of the average noise, clean data, score, or velocity given an observed $\mathbf{x}_t$.
+
+
+
+
+
+
+
+
+
+\subsection{Disentangling the Training Objective of Diffusion Models}\label{subsec:summary-disentagle}
+As shown in \Cref{subsec:four-predictions}, the objective functions for the four prediction types commonly share the following template form for diffusion model training:
+% \begin{align}    \label{eq:general-dm-loss-D}
+% \begin{aligned}
+%    &\mathcal{L}(\bm{\phi}):=\\ &\mathbb{E}_{\rvx_0, \bm{\epsilon}}\int_{0}^{T} \underbrace{\eqnmarkbox[OliveGreen]{wgt}{\omega(t)} \eqnmarkbox[NavyBlue]{tsample}{p_{\text{time}}(t)}}_{\text{time weighting}}\underbrace{\norm{ \eqnmarkbox[Plum]{target}{\mathrm{NN}_{\bm{\phi}}}(\eqnmarkbox[Pink]{para}{\rvx_t}, t) - \eqnmarkbox[Plum]{target}{(A_t \rvx_0 + B_t \bm{\epsilon}) }}_2^2}_{\text{squared $\ell_2$ part}}\diff t.
+% \end{aligned}
+% \end{align}
+
+\begin{align}    \label{eq:general-dm-loss-D}
+\begin{aligned}
+   \mathcal{L}(\bm{\phi}):=\mathbb{E}_{\rvx_0, \bm{\epsilon}} \underbrace{\eqnmarkbox[NavyBlue]{tsample}{\mathbb{E}_{p_{\text{time}}(t)}}}_{\substack{\text{time} \\ \vspace{0.5cm} \text{distribution}}}\Big[ \underbrace{\eqnmarkbox[OliveGreen]{wgt}{\omega(t)}}_{\substack{\text{time} \\ \vspace{0.5cm}\text{weighting}}}\underbrace{\norm{ \eqnmarkbox[Plum]{target}{\mathrm{NN}_{\bm{\phi}}}(\eqnmarkbox[Pink]{para}{\rvx_t}, t) - \eqnmarkbox[Plum]{target}{(A_t \rvx_0 + B_t \bm{\epsilon}) }}_2^2}_{\text{MSE part}}\Big].
+\end{aligned}
+\end{align}
+
+
+
+Here, to enhance training efficiency and optimize the diffusion model learning pipeline, several key design choices are crucial~\citep{karras2022elucidating,lu2024simplifying}:
+\begin{enumerate}
+    \item[(A)] Noise schedule in the forward process of $\eqnmarkbox[Pink]{para}{\rvx_t}$ via $\alpha_t$ and $\sigma_t$;
+    \item[(B)] Prediction types of $\eqnmarkbox[Plum]{target}{\mathrm{NN}_{\bm{\phi}}}$ and their associated regression targets $\eqnmarkbox[Plum]{target}{(A_t \rvx_0 + B_t \bm{\epsilon}) }$;
+    \item[(C)] Time-weighting function $\eqnmarkbox[OliveGreen]{wgt}{\omega(\cdot)} \colon [0,T] \to \mathbb{R}_{\geq 0}$;
+    \item[(D)] Time distribution $\eqnmarkbox[NavyBlue]{tsample}{p_{\text{time}}}$.
+\end{enumerate}
+
+We elaborate on these four components here to serve as a roadmap for the discussions in the following sections.
+
+\paragraph{(A) Noise Schedule $\alpha_t$ and $\sigma_t$.}
+Users have the flexibility to choose schedules tailored to their applications, with common examples summarized in \Cref{tb:interpolant_instances}. Importantly, as we will demonstrate in \Cref{eq:fm-general-affine-formula,eq:any-to-trig}, all affine flows of the form $\mathbf{x}_t = \alpha_t \mathbf{x}_0 + \sigma_t \bm{\epsilon}$ are mathematically equivalent. Specifically, any such interpolation can be converted to the canonical linear schedule ($\alpha_t = 1 - t$, $\sigma_t = t$) or to a trigonometric schedule ($\alpha_t = \cos t$, $\sigma_t = \sin t$) by appropriate time reparametrization and spatial rescaling.
+
+
+\paragraph{(B) Parameterization $\mathrm{NN}_{\bm{\phi}}$ and Training Target $A_t \rvx_0 + B_t \bm{\epsilon}$.}
+\begin{table}[th!]
+  \caption{Summary of the Relationships Between Different Parameterizations.
+All four parameterizations are mathematically equivalent and can be converted into one another through straightforward algebraic transformations.
+}
+  \small
+  \centering
+  \resizebox{0.43\textwidth}{!}{
+  \begin{tabular}{ccc}
+     \toprule
+      Regression Target =    &  \multicolumn{2}{c}{$A_t\rvx_0 + B_t \bm{\epsilon}$} \\
+              &   $A_t$   & $B_t$ \\
+       \midrule
+    Clean & $1 $   & $0$ \\
+      Noise & $0$   &  $1$\\
+    Conditional Score & $0 $   &  -$\frac{1}{\sigma_t}$ \\
+     Conditional  Velocity & $\alpha_t' $   &  $\sigma_t'$ \\
+ \bottomrule
+  \end{tabular}
+  }
+  \label{tb:A_t-B_t-parametrizations}
+\end{table}
+There are two choices that are often coupled in diffusion training:
+\emph{what quantity the network directly predicts} and \emph{which quantity
+is compared in the training loss}. Clean data, noise, score, and velocity can
+be used for either purpose.
+
+\subparagraph{Matched Prediction and Loss.}
+The common choice, used in \Cref{eq:general-dm-loss-D}, is to train the
+network directly in the same prediction type that it outputs. Each prediction
+type then has a corresponding conditional training target of the form
+\[
+\text{Regression Target}
+=
+A_t\rvx_0+B_t\beps,
+\]
+where $A_t$ and $B_t$ depend on the prediction type and the forward schedule
+$(\alpha_t,\sigma_t)$. These targets are summarized in
+\Cref{tb:A_t-B_t-parametrizations}.
+
+For example, an $\rvx$-prediction network is compared with the clean target
+$\rvx_0$, whereas a $\rvv$-prediction network is compared with the conditional
+velocity
+\[
+\rvv_t
+=
+\alpha_t'\rvx_0+\sigma_t'\beps.
+\]
+As shown later in \Cref{eq:predictions-equivalence}, the four prediction types
+encode the same oracle information and can be converted into one another.
+
+\subparagraph{Predicting One Quantity and Evaluating the Loss in Another.}
+The network output and the quantity used in the loss can also be chosen
+separately. The network prediction is first converted using the relations in
+\Cref{eq:predictions-equivalence}, and the loss is then computed against the
+corresponding target in the converted prediction type.
+
+For example, under the canonical schedule
+\[
+\rvx_t=(1-t)\rvx_0+t\beps,
+\]
+suppose the network directly predicts clean data
+$\rvx_{\bm{\phi}}(\rvx_t,t)$. Converting this prediction to velocity gives
+\[
+\rvv_{\bm{\phi}}(\rvx_t,t)
+=
+\frac{\rvx_t-\rvx_{\bm{\phi}}(\rvx_t,t)}{t},
+\]
+while the conditional velocity target satisfies
+\[
+\rvv_t
+=
+\frac{\rvx_t-\rvx_0}{t}.
+\]
+Therefore,
+\[
+\left\|
+\rvv_{\bm{\phi}}(\rvx_t,t)-\rvv_t
+\right\|_2^2
+=
+\frac{1}{t^2}
+\left\|
+\rvx_{\bm{\phi}}(\rvx_t,t)-\rvx_0
+\right\|_2^2.
+\]
+Thus, with the network output fixed as clean prediction, evaluating a velocity
+loss is exactly equivalent to applying an additional time-dependent weight to
+the clean-prediction loss. The corresponding relations for general affine
+schedules and other prediction types are summarized later in
+\Cref{eq:s-e-x-v-equi}.
+
+Changing the quantity predicted directly by the network has an additional
+effect. Although the oracle predictions are algebraically convertible, a
+finite neural network is then trained to represent a different function, with
+different output scales and parameter gradients. The choice of network
+prediction can therefore interact with model architecture and optimization,
+while the choice of loss also controls the relative weighting of prediction
+errors across noise levels.
+
+For clarity, \Cref{eq:general-dm-loss-D} uses the matched prediction-and-loss
+case unless stated otherwise.
+
+% Users can flexibly choose the model's prediction target: the clean signal, noise, score, or velocity prediction. As detailed in \Cref{subsec:four-predictions}, all these prediction types share a common regression target of the form
+% \[
+%     \text{Regression Target} = A_t \mathbf{x}_0 + B_t \bm{\epsilon},
+% \]
+% where the coefficients $A_t$ and $B_t$ depend on both the chosen prediction type and the schedule $(\alpha_t, \sigma_t)$. These relationships are summarized in \Cref{tb:A_t-B_t-parametrizations}.
+
+% Although these four parameterizations appear distinct, we will demonstrate in \Cref{eq:predictions-equivalence} that they can be transformed into one another through simple algebraic manipulations. Furthermore, we will also show in \Cref{eq:s-e-x-v-equi} that the squared-$\ell_2$ loss term in \Cref{eq:general-dm-loss-D} remains gradient-equivalent across all prediction types, differing only by a time-weighting factor (beyond $\omega(t) p_{\mathrm{time}}(t)$) that depends solely on the noise schedule $(\alpha_t, \sigma_t)$.
+
+
+
+
+
+
+
+% \paragraph{(C) Time Distribution $p_{\text{time}}(t)$.} Since the training loss is an expectation over $t$, sampling times from $p_{\mathrm{time}}(t)$ is mathematically equivalent to weighting the per-$t$ MSE by $p_{\mathrm{time}}(t)$; this factor can be absorbed into the existing time weighting $\omega(t)$\footnote{Our target population objective over time is an integral of the form
+% \[
+% \mathcal{L} = \int_{0}^{T} \omega(t)\mathtt{mse}(t)\diff t,
+% \]
+% where $\mathtt{mse}(t)$ denotes the per-$t$ MSE-like term.
+% If we draw $t\sim p_{\mathrm{time}}(t)$ during training, an unbiased Monte Carlo estimator of $\mathcal{L}$ is obtained by
+% \[
+% \widehat{\mathcal{L}} = \mathbb{E}_{t\sim p_{\mathrm{time}}} \left[ \tfrac{\omega(t)}{p_{\mathrm{time}}(t)} \mathtt{mse}(t) \right],
+% \]
+% i.e., sampling and weighting are interchangeable via importance weighting.}.  However, empirical evidence\footnote{In practice, though, we approximate the training objective using minibatch SGD on 
+% a discrete set of times. Under this approximation, different choices of 
+% $p_{\mathrm{time}}(t)$ change both the variance of the gradients and the 
+% effective weight placed on each time step. For this reason we discuss 
+% $p_{\mathrm{time}}(t)$ (sampling) and $\omega(t)$ (weighting) separately.} indicates that different choices of $p_{\mathrm{time}}(t)$ can affect performance. Therefore, we discuss the time distribution $p_{\mathrm{time}}(t)$ and the time weighting function $\omega(t)$ separately. 
+
+% A common choice for the time distribution is the uniform distribution over $[0,T]$~\citep{ho2020denoising,song2020score,lipman2022flow,liu2022rectified}. Alternative options include the log-normal distribution~\citep{karras2022elucidating} and adaptive importance sampling methods~\citep{song2021maximum,kingma2021variational}.
+
+
+% \paragraph{(C) Time Distribution $p_{\text{time}}(t)$.}
+% We next consider how the noise level $t$ is sampled during training.
+% Let $\mathcal{L}_t(\bm{\phi})$ denote the expected squared-error term in
+% \Cref{eq:general-dm-loss-D} at a fixed time $t$. Then
+% \[
+% \mathcal{L}(\bm{\phi})
+% =
+% \mathbb{E}_{t\sim p_{\text{time}}}
+% \left[
+% \omega(t)\mathcal{L}_t(\bm{\phi})
+% \right].
+% \]
+
+% There are two conceptually different ways to interpret the distribution used
+% to sample $t$. The simplest question is: \emph{if we sample some noise levels
+% more often, should they also count more in the training objective?}
+
+% If the answer is yes, then $p_{\text{time}}$ is part of the objective:
+% \[
+% \mathcal{L}(\bm{\phi})
+% =
+% \int_0^T
+% p_{\text{time}}(t)\omega(t)
+% \mathcal{L}_t(\bm{\phi})\diff t.
+% \]
+% Changing $p_{\text{time}}$ therefore changes the effective weighting
+% $p_{\text{time}}(t)\omega(t)$ over noise levels, unless $\omega(t)$ is
+% adjusted accordingly.
+
+% Alternatively, we may want to keep a target objective fixed,
+% \[
+% \mathcal{L}_{\mathrm{target}}(\bm{\phi})
+% =
+% \int_0^T
+% \bar{\omega}(t)\mathcal{L}_t(\bm{\phi})\diff t,
+% \]
+% but sample more frequently from certain times only to estimate this integral
+% more efficiently. If $t\sim q(t)$, importance weighting gives
+% \[
+% \mathcal{L}_{\mathrm{target}}(\bm{\phi})
+% =
+% \mathbb{E}_{t\sim q}
+% \left[
+% \frac{\bar{\omega}(t)}{q(t)}
+% \mathcal{L}_t(\bm{\phi})
+% \right],
+% \]
+% assuming $q(t)>0$ wherever $\bar{\omega}(t)>0$. In this case, changing $q$
+% leaves the target objective unchanged and changes only its stochastic
+% estimator, such as its variance.
+
+% The key distinction is therefore:
+% \begin{center}
+% \small
+% \renewcommand{\arraystretch}{1.3}
+% \begin{tabular}{@{}r@{\;\;$\Longrightarrow$\;\;}l@{}}
+% $p_{\text{time}}$ determines objective weighting
+% &
+% different weighting, different objective
+% \\
+% $q$ is a proposal $+$ importance correction
+% &
+% same objective, different estimator
+% \end{tabular}
+% \end{center}
+
+% We therefore keep time sampling and time weighting conceptually separate.
+% When time is sampled uniformly, as in many standard formulations, this
+% distinction is largely hidden because the uniform density contributes only a
+% constant factor. For nonuniform sampling, however, it is important to specify
+% which role is intended.
+
+% For example, EDM~\citep{karras2022elucidating} samples noise levels from a
+% nonuniform training distribution together with a separate loss weighting, so
+% the two jointly determine the effective training objective. In contrast,
+% ScoreFlow~\citep{song2021maximum} explicitly uses a nonuniform proposal with
+% importance correction to reduce estimator variance while preserving its
+% likelihood-weighted objective. A closely related viewpoint appears in
+% VDM~\citep{kingma2021variational} and \citet{kingma2023understanding}: even
+% when $t$ is sampled uniformly, the noise schedule can induce a nonuniform
+% distribution over log-SNR, which can itself be interpreted as an
+% importance-sampling distribution.
+
+% \paragraph{(D) Time-Weighting Function $\omega(t)$.} A common choice for the weighting function is the constant weighting $\omega \equiv 1$~\citep{ho2020denoising,karras2022elucidating,lipman2022flow,liu2022rectified}, although adaptive weighting schemes have also been proposed~\citep{karras2023analyzing}. Certain choices of $\omega(t)$ transform \Cref{eq:general-dm-loss-D} into a tighter upper bound on the negative log-likelihood, effectively reformulating the objective as maximum likelihood training. Notable weighting schemes for $\omega(t)$ include setting $\omega(t) = g^2(t)$~\citep{song2021maximum}, where $g$ is the diffusion coefficient from the forward SDE in \Cref{eq:sde_forward}. Other approaches use signal-to-noise ratio (SNR) weighting~\citep{kingma2021variational} or monotonic weighting functions~\citep{kingma2023understanding}, where $\omega(t)$ is a monotone function of time.
+
+% Among these choices, monotonic weighting is especially interesting: it is not merely a reweighting of the training loss, but also admits a clean variational interpretation. In particular, \citet{kim2022soft,kingma2023understanding} showed that, under a monotonicity condition, the diffusion objective is equivalent, up to an additive constant, to an average ELBO over Gaussian-augmented data.
+
+% \subparagraph{Monotonic Weighting and the ELBO-with-Augmentation View.}
+% We now explain this interpretation. Under a monotonicity condition on the weighting, the
+% diffusion objective is equivalent, up to an additive constant, to an
+% average ELBO over \emph{Gaussian-noise-augmented data}. After rewriting the objective into the common weighted-loss form, this interpretation depends on the induced weighting over noise levels rather than on the particular parameterization. Accordingly, we use the $\beps$-parameterization below purely as a convenient notation.
+
+% The starting point is the weighted-loss form established above. Let
+% $\Lambda_t := \log(\alpha_t^2/\sigma_t^2)$ denote the log
+% signal-to-noise ratio. By a change of variables from $t$ to $\Lambda$,
+% the diffusion objective can be written as
+% \[
+% \mathcal{L}_\omega(\rvx_0)
+% = \frac{1}{2}
+% \int_{\Lambda_{\min}}^{\Lambda_{\max}}
+% \omega(\Lambda) 
+% \E_{\beps}\!\left[
+% \|\beps_{\bm{\phi}}(\rvx_\Lambda,\Lambda)-\beps\|_2^2
+% \right]
+% \diff\Lambda,
+% \]
+% where $\omega(\Lambda)$ is the effective weighting function. At the
+% population-objective level, the loss depends only on $\omega(\Lambda)$ and
+% the endpoints, not on the noise schedule between them.
+
+% The key step is to connect the per-level denoising error to a global variational quantity. Recall from the ELBO formulation of DDPM (\Cref{eq:ddpm-elbo,eq:ddpm-diffusion}) in the variational perspective that the full negative ELBO
+% contains a sum of KL terms comparing the forward and reverse processes
+% across all noise levels. We now restrict this comparison to only the
+% remaining portion of the diffusion path from noise level $t$ to the
+% terminal time $T$, and, without loss of generality, take $T=1$. For
+% each $t \in [0,1]$, define
+% \begin{equation}\label{eq:partial-chain-kl}
+% L(t;\rvx_0)
+% :=
+% \mathcal{D}_{\mathrm{KL}}\!\big(
+%   p(\rvx_{t:1} |\rvx_0)
+%   \;\|\;
+%   p_{\bm{\phi}}(\rvx_{t:1})
+% \big),
+% \end{equation}
+% where $\rvx_{t:1} := \{\rvx_s\}_{s \in [t,1]}$ denotes the
+% continuous-time stochastic path from level $t$ to the terminal level,
+% $p(\rvx_{t:1} |\rvx_0)$ is the forward-process path measure over
+% this portion given $\rvx_0$, and $p_{\bm{\phi}}(\rvx_{t:1})$ is the
+% corresponding path measure of the learned reverse model. This is the
+% continuous-time analogue of restricting the sum in
+% $\mathcal{L}_{\mathrm{diffusion}}$ (\Cref{eq:ddpm-diffusion}) to steps
+% $i \geq t$. At $t = 0$, $L(0;\rvx_0)$ recovers the full negative ELBO
+% up to an additive constant; at $t = 1$, only the terminal mismatch
+% remains.
+
+% Intuitively, $L(t;\rvx_0)$ measures the variational cost that the
+% generative model incurs when it must reverse the forward process
+% starting from corruption level $t$: for large $t$, much of the
+% corruption has already occurred and the remaining cost is small; for
+% small $t$, the model must account for nearly the full reverse process,
+% so the cost is large.
+
+% One can show that the rate at which this cost changes with $t$ is
+% precisely the per-level denoising error:
+% \[
+% \frac{\diff}{\diff t}L(t;\rvx_0)
+% =
+% \frac{1}{2}\frac{\diff\Lambda_t}{\diff t} 
+% \E_{\beps}\!\left[
+% \|\beps_{\bm{\phi}}(\rvx_t,t)-\beps\|_2^2
+% \right].
+% \]
+% This identity reveals that the denoising loss at each noise level is
+% not an isolated regression target but the instantaneous rate of change
+% of the global variational cost in \Cref{eq:partial-chain-kl}.
+% Substituting into the weighted loss and applying integration by parts
+% transfers the derivative from $L$ onto the weighting function:
+% \[
+% \mathcal{L}_\omega(\rvx_0)
+% =
+% \int_0^1
+% \frac{\diff}{\diff t} \omega(\Lambda_t)\;
+% L(t;\rvx_0) \diff t
+% + \text{Constant}.
+% \]
+% If $\omega(\Lambda_t)$ is monotone increasing in $t$ (equivalently, monotone
+% decreasing in $\Lambda$), then
+% $\frac{\diff}{\diff t} \omega(\Lambda_t)\ge 0$ and can be normalized into a
+% probability distribution $p_\omega(t)$ over noise levels. The objective
+% becomes
+% \[
+% \mathcal{L}_\omega(\rvx_0)
+% =
+% \E_{t\sim p_\omega}\!\big[L(t;\rvx_0)\big]+ \text{Constant}.
+% \]
+% Since $L(t;\rvx_0)$ is, up to an additive constant, the negative ELBO
+% associated with the Gaussian-perturbed sample $\rvx_t$, monotonic
+% weighting admits a simple data-augmentation interpretation: the
+% diffusion objective is equivalent to maximizing an average ELBO over
+% noise-augmented data, where the augmentation strength is distributed
+% according to $p_\omega$. Thus, the
+% weighting function is not merely an abstract coefficient in the loss; it
+% determines how training is allocated across different corruption levels.
+% This makes the objective more interpretable and helps clarify why the
+% choice of weighting can affect both optimization and the structures the
+% model emphasizes during learning.
+\paragraph{(C) Time Distribution $p_{\text{time}}(t)$.}
+We next consider how time $t$, and hence the noise level, is sampled during
+training. For convenience, define the fixed-time regression loss
+\[
+\mathcal{L}_t(\bm{\phi})
+:=
+\mathbb{E}_{\rvx_0,\beps}
+\left[
+\left\|
+\mathrm{NN}_{\bm{\phi}}(\rvx_t,t)
+-
+\bigl(A_t\rvx_0+B_t\beps\bigr)
+\right\|_2^2
+\right],
+\qquad
+\rvx_t=\alpha_t\rvx_0+\sigma_t\beps.
+\]
+Then \Cref{eq:general-dm-loss-D} can be written compactly as
+\[
+\mathcal{L}(\bm{\phi})
+=
+\mathbb{E}_{t\sim p_{\text{time}}}
+\left[
+\omega(t)\mathcal{L}_t(\bm{\phi})
+\right].
+\]
+Thus, if no correction is applied, sampling some times more frequently also
+gives them more weight in the objective. At the level of the exact expected
+loss, only the product $p_{\text{time}}(t)\omega(t)$ matters.
+
+A different use of nonuniform sampling is \emph{importance sampling}.
+Suppose the objective above is fixed, but we instead draw times from a proposal
+$q_{\text{time}}(t)$. Then
+\[
+\mathcal{L}(\bm{\phi})
+=
+\mathbb{E}_{t\sim q_{\text{time}}}
+\left[
+\frac{p_{\text{time}}(t)}{q_{\text{time}}(t)}
+\omega(t)\mathcal{L}_t(\bm{\phi})
+\right],
+\]
+provided $q_{\text{time}}(t)>0$ wherever
+$p_{\text{time}}(t)\omega(t)>0$.
+With this correction, changing $q_{\text{time}}$ leaves the objective
+unchanged and changes only its Monte Carlo estimator, for example its variance.
+
+The key distinction is therefore:
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}r@{\;\;$\Longrightarrow$\;\;}l@{}}
+change $p_{\text{time}}$ in the objective
+&
+different weighting, different objective
+\\
+change $q_{\text{time}}$ $+$ importance correction
+&
+same objective, different estimator
+\end{tabular}
+\end{center}
+
+We therefore keep time sampling and loss weighting conceptually separate.
+Uniform time sampling makes this distinction less visible because its density
+contributes only a constant factor, whereas with nonuniform sampling one must
+specify whether the sampling distribution defines the objective or merely
+serves as an importance-sampling proposal.
+
+Both uses appear in diffusion-model training. ScoreFlow explicitly uses
+importance sampling to reduce the variance of a fixed likelihood-weighted
+objective~\citep{song2021maximum}. VDM and subsequent analyses similarly show
+that, when the objective is fixed in noise-level coordinates, the noise
+schedule can act as an importance-sampling distribution
+~\citep{kingma2021variational,kingma2023understanding}.
+EDM~\citep{karras2022elucidating}, by contrast, specifies both a nonuniform
+training distribution over noise levels and a separate loss weighting, whose
+combination determines the effective training weight.
+
+
+\paragraph{(D) Time-Weighting Function $\omega(t)$.}
+For a fixed $p_{\text{time}}$, the weighting function $\omega(t)$ determines
+the relative contribution of different times to the training objective.
+Together with the previous paragraph, the effective weighting over time is
+therefore $p_{\text{time}}(t)\omega(t)$.
+
+A simple baseline is uniform time sampling with $\omega(t)\equiv1$, as in the
+standard simplified $\beps$-prediction and FM/RF objectives
+~\citep{ho2020denoising,lipman2022flow,liu2022rectified}.
+Other weightings emphasize different noise regimes and can also carry
+likelihood or variational interpretations. For example, for the score-matching
+objective, the likelihood weighting $\omega(t)=g^2(t)$ yields an upper bound
+on the negative log-likelihood under suitable regularity conditions
+~\citep{song2021maximum}. More generally, SNR-dependent weightings provide a
+common way to redistribute training emphasis across noise levels
+~\citep{kingma2021variational,kingma2023understanding}.
+
+\subparagraph{Monotonic Weighting and the ELBO-with-Augmentation View.}
+A useful way to describe the corruption level is through the
+\emph{log signal-to-noise ratio} (log-SNR)
+\[
+\Lambda_t
+:=
+\log\frac{\alpha_t^2}{\sigma_t^2}.
+\]
+We use $\Lambda$ for the full log-SNR, distinguishing it from the
+half-log-SNR coordinate
+$\lambda_t=\log(\alpha_t/\sigma_t)=\tfrac12\Lambda_t$
+used later in \Cref{ch:solvers}.
+Since $\Lambda_t$ decreases as the forward process becomes noisier, after
+expressing the loss in a common prediction parameterization, let
+$w(\Lambda)$ denote the effective weight assigned to each log-SNR level.
+
+A useful result of \citet{kingma2023understanding} is that, if
+$w(\Lambda)$ is non-increasing in $\Lambda$ (equivalently, its weight does
+not decrease as the forward process becomes noisier), then the weighted
+diffusion objective can be rewritten, up to terms independent of the model
+parameters, as an average negative ELBO over Gaussian-perturbed data%
+\footnote{
+To see why monotonicity matters, define the remaining variational cost from
+noise level $t$ onward as
+\[
+L(t;\rvx_0)
+:=
+\mathcal{D}_{\mathrm{KL}}
+\left(
+p(\rvx_{[t,T]}|\rvx_0)
+\,\Vert\,
+p_{\bm{\phi}}(\rvx_{[t,T]})
+\right),
+\]
+where $\rvx_{[t,T]}:=\{\rvx_s\}_{s\in[t,T]}$ denotes the remaining
+continuous diffusion path. This is the continuous-time counterpart of the
+negative ELBO in \Cref{eq:ddpm-elbo}, starting from corruption level $t$;
+more precisely, it equals the expected negative ELBO of the perturbed sample
+$\rvx_t$, up to terms independent of $\bm{\phi}$.
+
+For $\beps$-prediction, \citet{kingma2023understanding} show that
+\[
+\frac{\diff}{\diff t}L(t;\rvx_0)
+=
+\frac{1}{2}\frac{\diff\Lambda_t}{\diff t}
+\E_{\beps}
+\left[
+\left\|
+\beps_{\bm{\phi}}(\rvx_t,t)-\beps
+\right\|_2^2
+\right].
+\]
+Hence the weighted diffusion loss is
+\[
+-\int_0^T
+w(\Lambda_t)
+\frac{\diff}{\diff t}L(t;\rvx_0)\diff t
+=
+w(\Lambda_0)L(0;\rvx_0)
++
+\int_0^T
+\frac{\diff}{\diff t}w(\Lambda_t)
+L(t;\rvx_0)\diff t
++
+C,
+\]
+where $C$ is independent of $\bm{\phi}$.
+If $w(\Lambda)$ is non-increasing in $\Lambda$, then
+$\frac{\diff}{\diff t}w(\Lambda_t)\geq0$ because $\Lambda_t$ decreases with
+$t$. Thus, after normalization, the terms above form a nonnegative weighting
+over ELBOs at different Gaussian corruption levels, which gives the
+ELBO-with-Gaussian-augmentation interpretation.
+}.
+
+Thus, monotonic weighting has a concrete probabilistic interpretation:
+rather than merely emphasizing some noise levels more than others, it can be
+viewed as averaging variational training over Gaussian-corrupted versions of
+the data at different corruption strengths.
+
+\paragraph{Conclusion.}
+For our purposes, the main lesson is that many apparent design choices
+in diffusion training can be understood through how they reshape the
+effective weighting over noise levels in the objective. This weighting
+in turn influences both the optimization landscape in practice and, in
+special cases such as monotonic weighting, the variational
+interpretation of the loss.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+\section{Equivalence in Diffusion Models}\label{sec:equivalent-parametrizations}
+Many formulations of diffusion models look different because they use
+different prediction types, training objectives, noise schedules, or
+continuous-time dynamics. In this section, we clarify in what precise sense
+these formulations can be equivalent at the exact theoretical level, and how
+their behavior can still differ for learned models in practice.
+
+At the exact or oracle level, several notions of equivalence will appear:
+\begin{itemize}
+    \item \textbfs{Predictions.}
+    Given the noisy observation $\rvx_t$ and the forward schedule, clean-data,
+    noise, score, and velocity oracles contain the same information and can be
+    converted into one another algebraically.
+    
+    \item \textbfs{Training Objectives.}
+    Squared-error objectives written in different prediction types can differ by
+    positive time-dependent factors while sharing the same pointwise oracle
+    minimizer. These factors determine how strongly different noise levels are
+    weighted during training.
+    
+    \item \textbfs{Affine Forward Process.}
+    At the particle level, affine forward processes
+    \[
+    \rvx_t=\alpha_t\rvx_0+\sigma_t\beps
+    \]
+    can be related to canonical affine forms through state rescaling and a
+    corresponding canonical coordinate. When this coordinate evolves
+    monotonically with time, the relation also defines a time reparameterization.
+    
+    \item \textbfs{Marginal Density Paths.}
+    At the density level, different deterministic and stochastic dynamics can
+    produce the same marginal path $\{p_t\}_{t\in[0,T]}$. Their sample
+    trajectories may differ, while the evolution of $p_t$ is governed by the
+    corresponding continuity or Fokker-Planck equation.
+\end{itemize}
+We develop these connections from prediction to sampling.
+\Cref{subsec:four-equiv-para} first relates the four common oracle prediction
+types and their training losses.
+\Cref{subsec:pf-ode-different-para} then shows how these predictions lead to
+different expressions of the same oracle PF--ODE.
+Next, \Cref{subsec:all-flows-are-equiv} relates affine probability paths to
+canonical linear and trigonometric forms.
+Finally, \Cref{subsec:concept-why-v-affine} develops additional intuition for
+the canonical linear schedule and velocity prediction, including their
+implications for training and numerical integration.
+
+
+These exact relationships provide a common mathematical foundation, while
+the practical choices remain meaningful. Finite neural networks may
+approximate equivalent oracle quantities differently, and loss weighting,
+optimization, model architecture, and numerical integration can lead to
+different training and sampling behavior.
+
+
+
+
+\subsection{Four Prediction Types Are Equivalent}\label{subsec:four-equiv-para}
+We begin by analyzing the design choices for component (B) in \Cref{eq:general-dm-loss-D}. 
+
+We have seen that the four prediction types are not independent choices but different views of the same underlying quantity.  
+For example, noise and clean predictions are directly related (\Cref{subsec:ddpm-prediction}), as are score and noise predictions (\Cref{sec:SMLD}).  
+This recurring pattern points to a deeper principle: all four parameterizations are algebraically equivalent and can be converted into one another through simple transformations.  
+To make this connection precise, we state the following proposition, illustrated in \Cref{fig:equiv-parametrizations}, following~\citep{kingma2021variational}.
+\proppp{Equivalence of Parametrizations}{equi-para}{
+Let the optimal predictions minimizing their respective objectives be
+\[
+\bm{\epsilon}^*(\rvx_t,t) , \quad \rvx^*(\rvx_t,t), \quad \rvs^*(\rvx_t,t) , \quad \rvv^*(\rvx_t,t),
+\]
+corresponding to noise, clean, score, and velocity parameterizations. These satisfy the following equivalences:
+\begin{equation}\label{eq:predictions-equivalence}
+\begin{aligned}
+\bm{\epsilon}^*(\rvx_t,t) &= -\sigma_t \rvs^*(\rvx_t,t), \\
+\rvx^*(\rvx_t,t) &= \frac{1}{\alpha_t} \rvx_t
++ \frac{\sigma_t^2}{\alpha_t} \rvs^*(\rvx_t,t), \\
+\rvv^*(\rvx_t,t) &= \alpha_t' \rvx^* + \sigma_t' \bm{\epsilon}^* 
+= f(t)\rvx_t - \frac{1}{2} g^2(t)\rvs^*(\rvx_t,t).
+\end{aligned}
+\end{equation}
+Here, $f(t)$ and $g(t)$ are related to $\alpha_t$ and $\sigma_t$ via Lemma~\ref{forward-sde}.
+Moreover, these minimizers satisfy the identities given in \Cref{eq:noise-def,eq:clean-def,eq:score-def,eq:velocity-def}. 
+}{The proof is similar to that of Theorem~\ref{dsm-minimizer}, which analyzes the global optimum of various matching losses under the DSM objective. See \Cref{app-sec:equiv-para} for details.
+}
+
+
+\begin{figure}[th]
+    \centering
+\begin{tikzpicture}[
+    node distance=2cm and 3cm,
+    box/.style={rectangle,draw,fill=gray!10,minimum width=2.5cm,minimum height=1cm,align=center},
+    arr/.style={-{Latex[length=3mm,width=2mm]},thick,font=\footnotesize},
+    lbl/.style={draw,rounded corners,fill=white,fill opacity=1,inner sep=2pt}
+  ]
+  % 1) Nodes
+  \node[box]            (Score)    {\textbfs{Score}};
+  \node[box,right=of Score]   (Noise)    {\textbfs{Noise}};
+  \node[box,below=of Noise]   (Velocity) {\textbfs{Velocity}};
+  \node[box,below=of Score]   (Clean)    {\textbfs{Clean}};
+
+  % 2) Arrows on background layer
+  \begin{pgfonlayer}{background}
+    \draw[arr] (Score)    -- (Noise);
+    \draw[arr] (Score)    -- (Clean);
+    \draw[arr] (Score)    -- (Velocity);
+    \draw[arr] (Noise)    -- (Velocity);
+    \draw[arr] (Noise)    -- (Score);
+    \draw[arr] (Clean)    -- (Score);
+    \draw[arr] (Clean)    -- (Velocity);
+    \draw[arr] (Velocity) -- (Clean);
+    \draw[arr] (Velocity) -- (Score);
+    \draw[arr] (Velocity) -- (Noise);
+  \end{pgfonlayer}
+
+  % 3) Labels (on main layer, thus on top of arrows)
+  \node[lbl] at ($(Score)!0.5!(Noise)+(0,0.5)$)
+    (eqlabel) {$\displaystyle \bm{\epsilon}^* = -\sigma_t\rvs^*$};
+  \node[lbl] at ($(Score)!0.5!(Clean)+(-1.2,0)$)
+    (xlabel) {$\displaystyle \rvx^* =\tfrac1{\alpha_t}\rvx_t + \tfrac{\sigma_t^2}{\alpha_t}\rvs^*$};
+  \node[lbl] at ($(Velocity)!0.5!(Score)-(0,0.0)$)
+    (vlabel) {$\displaystyle \rvv^* = f(t)\rvx_t - \tfrac12 g^2(t)\rvs^*$};
+  \node[lbl] at ($(Clean)!0.5!(Noise)+(4.2,0)$)
+    (vvlabel) {$\displaystyle  \rvv^*=\alpha_t'\rvx^*+\sigma_t'\bm{\epsilon}^*(\bm{\star})$};
+  \node[lbl] at ($(Clean)!0.5!(Velocity)+(0,-0.4)$)
+    (vvlabel) {$\displaystyle (\bm{\star})$};
+
+
+\end{tikzpicture}
+\caption{\textbfs{Equivalent relations among the four oracle
+parameterizations.}
+Each oracle prediction can be converted
+into the others using the forward schedule and the observed state $\rvx_t$.
+For example,
+$\rvv^*=\alpha_t'\rvx^*+\sigma_t'\bm{\epsilon}^*$, while $\rvx$- and
+$\beps$-predictions satisfy
+$\rvx_t=\alpha_t\rvx^*+\sigma_t\bm{\epsilon}^*$.
+\figcredit{Created by the authors.}}
+    \label{fig:equiv-parametrizations}
+\end{figure}
+The proposition is most naturally understood as an equivalence of
+\emph{oracle information}. At any noise level, knowing one oracle prediction,
+together with the noisy observation $\rvx_t$ and the forward schedule,
+determines the others through the identities in
+\Cref{eq:predictions-equivalence}. For example, the score determines the
+posterior-mean clean prediction, and either of these determines the PF-ODE
+velocity. Thus, at the oracle level, these parameterizations contain the same
+information about the underlying diffusion process.
+
+For a learned model, however, one must distinguish this oracle equivalence
+from the quantity predicted directly by the neural network. One may choose
+any of
+\[
+\bm{\epsilon}_{\bm{\phi}}(\rvx_t,t),
+\quad
+\rvx_{\bm{\phi}}(\rvx_t,t),
+\quad
+\rvs_{\bm{\phi}}(\rvx_t,t),
+\quad
+\rvv_{\bm{\phi}}(\rvx_t,t)
+\]
+as the network output. Once one prediction is taken as primary, the others
+can be defined through the same algebraic conversions as in
+\Cref{eq:predictions-equivalence}. In particular, for a trained model with
+parameters $\bm{\phi}^\times$, these converted predictions are exactly
+consistent by construction; for example,
+\[
+\rvx
+=
+\alpha_t
+\rvx_{\bm{\phi}^\times}(\rvx,t)
++
+\sigma_t
+\beps_{\bm{\phi}^\times}(\rvx,t).
+\]
+These conversions are useful both during and after training. For instance,
+a noise prediction can be converted into a score for reverse-SDE sampling
+or into a velocity for PF-ODE sampling.
+
+The network prediction parameterization should also be distinguished from
+the \emph{training loss}. As discussed in component (B) of
+\Cref{eq:general-dm-loss-D}, the quantity output by the network need not be
+the quantity on which the loss is evaluated: the prediction may first be
+converted into another parameterization before computing the objective.
+Such a conversion generally changes a squared-error objective by a
+time-dependent weighting, as shown later in \Cref{eq:s-e-x-v-equi}.
+
+These distinctions matter for finite neural networks. Although the oracle
+targets are information-equivalent, directly predicting different quantities
+leads the network to represent and optimize different functions, and the
+corresponding objectives may weight noise levels differently. Consequently,
+models trained independently under different prediction parameterizations
+need not produce identical empirical predictions or identical PF-ODEs.
+The equivalence in this proposition therefore concerns the information
+carried by the ideal oracle predictions; the network output parameterization
+and the training objective remain separate and meaningful design choices.
+
+
+\subsection{PF-ODE in Different Parameterizations}\label{subsec:pf-ode-different-para} 
+The PF-ODE admits several equivalent parameterizations (score, noise, denoised, and velocity). 
+Although interchangeable in principle, the choice has practical consequences: it changes the stiffness of the vector field, the behavior of discretization error, and the ease of optimization.
+For fast sampling with advanced ODE solvers (see \Cref{ch:solvers}), practitioners often work with $\beps$ or $\rvx$ prediction because they align well with solver inputs and reduce error accumulation.
+For training generators that use only a few function evaluations (see \Cref{ch:fast-scratch}), $\rvx$ or $\rvv$ prediction often yields smoother objectives and better step to step consistency.
+
+
+We write the PF-ODE under each parameterization and make
+the conversions explicit using \Cref{eq:predictions-equivalence}. The
+results are collected in the following proposition.
+
+\proppnp{PF-ODE in Different Parameterizations}{pf-ode-para}{
+Let $\alpha_t$ and $\sigma_t$ be the forward perturbation schedules, and denote time derivatives by
+$\alpha_t' := \tfrac{\diff \alpha_t}{\diff t}$ and $\sigma_t' := \tfrac{\diff \sigma_t}{\diff t}$.
+Then the empirical PF-ODE admits the equivalent forms
+\begin{align}\label{eq:clean_pf_ode}
+\begin{aligned}
+    \frac{\diff \rvx(t)}{\diff t}
+&= \frac{\alpha_t'}{\alpha_t} \rvx(t)
+ - \sigma_t \left(\frac{\alpha_t'}{\alpha_t}-\frac{\sigma_t'}{\sigma_t}\right)
+   \bm{\epsilon}^*(\rvx(t), t) \\    
+&= \frac{\sigma_t'}{\sigma_t} \rvx(t)
+ + \alpha_t \left(\frac{\alpha_t'}{\alpha_t}-\frac{\sigma_t'}{\sigma_t}\right)
+   \rvx^*(\rvx(t), t) \\
+&= \frac{\alpha_t'}{\alpha_t} \rvx(t)
+ + \sigma_t^{2} \left(\frac{\alpha_t'}{\alpha_t}-\frac{\sigma_t'}{\sigma_t}\right)
+   \rvs^*(\rvx(t), t) \\ 
+   &= \alpha_t'\rvx^*(\rvx(t), t) + \sigma_t' \beps^*(\rvx(t), t)\\
+&= \rvv^*(\rvx(t), t).
+\end{aligned}
+\end{align}
+}
+To see the Score SDE notation, we recall Lemma~\ref{forward-sde}.  If we set
+\[
+f(t) = \frac{\alpha_t'}{\alpha_t}, 
+\quad
+g^2(t) = \frac{\diff}{\diff t} \big(\sigma_t^2\big) 
+         - 2 \frac{\alpha_t'}{\alpha_t} \sigma_t^2
+       = 2\sigma_t\sigma_t' - 2 \frac{\alpha_t'}{\alpha_t} \sigma_t^2,
+\]
+then the PF-ODE can be written in the familiar Score SDE form:
+\[
+\frac{\diff \rvx(t)}{\diff t}
+= f(t) \rvx(t)  -  \frac{1}{2} g^2(t) \rvs^*(\rvx(t),t).
+\]
+
+To give a concrete sense of how the PF-ODE is discretized
+for sampling, we will present in \Cref{sec:revisit-ddim} the update rule of a
+widely used diffusion-based ODE sampler, the DDIM scheme. This example will show how an Euler discretization naturally connects with the PF-ODE.
+
+
+
+
+
+
+
+\subsection{All Affine Flows Are Equivalent}\label{subsec:all-flows-are-equiv}
+We next analyze the design choices for component (A) in \Cref{eq:general-dm-loss-D}.
+
+\paragraph{State-Level Equivalence.}
+A convenient canonical interpolation used in FM~\citep{lipman2022flow} and RF~\citep{liu2022rectified} is
+\[
+\rvx_t^{\mathrm{FM}}=(1-t) \rvx_0+t \beps = \rvx_{0}+t(\beps-\rvx_0),
+\]
+whose velocity is the constant vector $\beps-\rvx_0$. The key point of this subsection is that the apparent simplicity of this choice is not essential: any affine interpolation
+\[
+\rvx_t=\alpha_t \rvx_0+\sigma_t \beps
+\]
+can be written as a time–reparameterized and rescaled version of the canonical path. Define
+\[
+c(t):=\alpha_t+\sigma_t,
+\qquad
+\tau(t):=\frac{\sigma_t}{\alpha_t+\sigma_t}
+\quad\big(c(t)\neq 0\big).
+\]
+A direct algebraic rewrite yields
+\begin{align*}
+\rvx_t
+&=\alpha_t \rvx_0+\sigma_t \beps
+\\
+&=\big(\alpha_t+\sigma_t\big) \left(\frac{\alpha_t}{\alpha_t+\sigma_t}\rvx_0+\frac{\sigma_t}{\alpha_t+\sigma_t}\beps\right) \\
+&=c(t) \left(\big(1-\tau(t)\big)\rvx_0+\tau(t)\beps\right)
+=c(t) \rvx_{\tau(t)}^{\mathrm{FM}}.
+\end{align*}
+Hence, whenever $c(t)\neq0$, every affine path can be represented pointwise
+as a scalar rescaling of the canonical path. If, in addition, $\tau(t)$ is
+continuous and strictly monotone over the time interval of interest, then
+$t\mapsto\tau(t)$ is also a genuine change of time variable, and the two paths
+are related by time reparameterization together with the rescaling $c(t)$.
+For the usual forward diffusion schedules, monotonic decay of the
+signal-to-noise ratio implies monotonic evolution of $\tau(t)$.
+
+For the associated velocities, apply the chain rule to $\rvx_t=c(t)\rvx_{\tau(t)}^{\mathrm{FM}}$:
+\begin{align*}
+\rvv(\rvx_t,t)
+&:= \frac{\diff}{\diff t}\left(\alpha_t\rvx_0 +\sigma_t \beps\right)
+\\&=\frac{\diff}{\diff t}\big(c(t)\rvx_{\tau(t)}^{\mathrm{FM}}\big)
+\\
+&=c'(t) \rvx_{\tau(t)}^{\mathrm{FM}}+c(t) \tau'(t) \frac{\diff}{\diff s}\rvx^{\mathrm{FM}}_{s}\bigg|_{s=\tau(t)} \\
+&=c'(t) \rvx_{\tau(t)}^{\mathrm{FM}}+c(t) \tau'(t) \rvv^{\mathrm{FM}} \left(\rvx_{\tau(t)}^{\mathrm{FM}},\tau(t)\right),
+\end{align*}
+since $\rvv^{\mathrm{FM}}(\rvx^{\mathrm{FM}}_{\tau},\tau)=-\rvx_0+\beps$ along the canonical path.
+
+We summarize the above derivation as a formal statement in the following proposition.
+
+\proppnp{Equivalence of Affine Flows}{equiv-interpolation}{
+Let
+$\rvx_t^{\mathrm{FM}}=(1-t)\rvx_0+t\beps$
+and
+$\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$,
+with
+$c(t):=\alpha_t+\sigma_t\neq0$
+and
+$\tau(t):=\sigma_t/(\alpha_t+\sigma_t)$.
+Then
+\begin{align}\label{eq:fm-general-affine-formula}
+\begin{aligned}
+\rvx_t
+&=
+c(t)\rvx_{\tau(t)}^{\mathrm{FM}},
+\\
+\rvv(\rvx_t,t)
+&=
+c'(t)\rvx_{\tau(t)}^{\mathrm{FM}}
++
+c(t)\tau'(t)
+\rvv^{\mathrm{FM}}
+\left(
+\rvx_{\tau(t)}^{\mathrm{FM}},\tau(t)
+\right).
+\end{aligned}
+\end{align}
+Thus, every affine interpolation with $c(t)\neq0$ admits this canonical
+state-level representation. When $\tau(t)$ is additionally continuous and
+strictly monotone, it can also be interpreted as a time reparameterization
+together with the scalar rescaling $c(t)$.
+}
+
+\subparagraph{Equivalence with Trigonometric Flow.}
+Another widely used affine flow is the trigonometric interpolation~\citep{salimans2021progressive,albergo2023stochastic,lu2024simplifying}. 
+As a concrete example, we also show that \emph{any} affine flow can be expressed in this form. 
+The trigonometric path is defined by
+\begin{align}\label{eq:trig-para}
+\rvx^{\mathrm{Trig}}_u := \cos(u) \rvx_0 + \sin(u)\beps .
+\end{align}
+Let $R_t := \sqrt{\alpha_t^2 + \sigma_t^2}$ and assume $R_t>0$. Choose an angle $\tau_t$ so that
+\[
+\cos \tau_t = \frac{\alpha_t}{R_t},
+\qquad
+\sin \tau_t = \frac{\sigma_t}{R_t}.
+\]
+Then every affine interpolation $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ admits a pointwise rescaled and re-timed trigonometric path:
+\begin{align}\label{eq:any-to-trig}
+\rvx_t
+= \alpha_t\rvx_0+\sigma_t\beps
+= R_t \left(\frac{\alpha_t}{R_t}\rvx_0+\frac{\sigma_t}{R_t}\beps\right)
+= R_t \rvx^{\mathrm{Trig}}_{\tau_t}.
+\end{align}
+The pair $(\alpha_t,\sigma_t)$ is a point in the plane. Normalizing by $R_t$ places it on the unit circle, which fixes the angle $\tau_t$ and hence the state $\rvx^{\mathrm{Trig}}_{\tau_t}$; the radius $R_t$ gives the overall scale. If $\tau_t$ can additionally be chosen as a continuous and strictly monotone
+function of $t$ on the interval of interest, then this state-level
+representation also defines a genuine time reparameterization.
+
+Differentiating $\rvx^{\mathrm{Trig}}_u$ with respect to $u$ gives its velocity,  
+\[
+\rvv^{\mathrm{Trig}}_u = -\sin(u) \rvx_0 + \cos(u) \beps.
+\]
+Through the same change of variables as in \Cref{eq:any-to-trig}, this relation provides closed-form conversions for the velocity (and analogously for other parameterizations).
+
+
+Summarizing the above discussion, we arrive at the following conclusion:
+\msg{Conclusion}{}{Regardless of the schedule $(\alpha_t,\sigma_t)$, including VE, VP (such as trigonometric), FM, or RF, affine interpolations are mutually convertible by a suitable change of time variable and a scalar rescaling.}
+
+
+
+\paragraph{Training Objectives of Four Parameterizations.}
+Let $\rvx_t=\alpha_t \rvx_0+\sigma_t \beps$ with $\sigma_t>0$ and differentiable $(\alpha_t,\sigma_t)$ such that $\alpha_t'\sigma_t-\alpha_t\sigma_t'\neq 0$. Consider the oracle targets
+\[
+\beps^*(\rvx_t,t)=\E[\beps|\rvx_t],\quad 
+\rvx_0^*(\rvx_t,t)=\E[\rvx_0|\rvx_t],\quad
+\rvv^*(\rvx_t,t)=\E[\alpha_t'\rvx_0+\sigma_t'\beps|\rvx_t].
+\]
+From Proposition~\ref{equi-para}, they satisfy
+\[
+\nabla_{\rvx_t}\log p_t(\rvx_t)
+= -\frac{1}{\sigma_t} \beps^*(\rvx_t,t)
+= \frac{\alpha_t}{\sigma_t^2} \left(\rvx_0^*(\rvx_t,t)-\frac{\rvx_t}{\alpha_t}\right),
+\quad
+\rvv^*=\alpha_t' \rvx_0^*+\sigma_t' \beps^*.
+\]
+Under the head conversions
+\[
+\rvs_{\bphi} \equiv -\frac{1}{\sigma_t} \beps_{\bphi}
+\equiv \frac{\alpha_t}{\sigma_t^2} \left(\rvx_{\bphi}-\frac{\rvx_t}{\alpha_t}\right),
+\]
+and the velocity-to-score conversion is
+\[
+\rvs_{\bphi}
+= \frac{\alpha_t}{\sigma_t(\alpha_t'\sigma_t-\alpha_t\sigma_t')} \rvv_{\bphi}
+- \frac{\alpha_t'}{\sigma_t(\alpha_t'\sigma_t-\alpha_t\sigma_t')} \rvx_t,
+\]
+the per–sample squared losses match up to time–dependent weights:
+\begin{align}\label{eq:s-e-x-v-equi}
+\begin{aligned}
+\big\|\rvs_{\bphi}-\nabla_{\rvx_t}\log p_t(\rvx_t)\big\|_2^2
+&=\frac{1}{\sigma_t^2} \big\|\beps_{\bphi}-\beps^*\big\|_2^2 \\
+&=\frac{\alpha_t^2}{\sigma_t^4} \big\|\rvx_{\bphi}-\rvx_0^*\big\|_2^2 \\
+&=\left(\frac{\alpha_t}{\sigma_t(\alpha_t'\sigma_t-\alpha_t\sigma_t')}\right)^{ 2}
+\big\|\rvv_{\bphi}-\rvv^*\big\|_2^2 .
+\end{aligned}
+\end{align}
+
+By Proposition~\ref{equiv-interpolation}, any affine flow $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$
+is transferable to the canonical FM path via $\rvx_t=c(t)\rvx^{\mathrm{FM}}_{\tau(t)}$ with
+$c(t)=\alpha_t+\sigma_t$ and $\tau(t)=\sigma_t/(\alpha_t+\sigma_t)$. Differentiating gives
+\[
+\rvv_{\bphi}(\rvx_t,t)=c'(t)\rvx^{\mathrm{FM}}_{\tau(t)}
++c(t)\tau'(t)\rvv^{\mathrm{FM}}_{\bphi} \left(\rvx_{\tau(t)}^{\mathrm{FM}},\tau(t)\right),
+\qquad
+\rvx_{\tau(t)}^{\mathrm{FM}}=\frac{\rvx_t}{c(t)},
+\]
+and the same relation holds for $\rvv^*$. Hence the velocity loss transforms by
+\begin{align*}
+    \big\|\rvv_{\bphi}(\rvx_t,t)-\rvv^*(\rvx_t,t)\big\|_2^2
+= \big(c(t) \tau'(t)\big)^2
+\Big\|\rvv^{\mathrm{FM}}_{\bphi} \left(\frac{\rvx_t}{c(t)},\tau(t)\right)
+-\big(\rvv^{\mathrm{FM}}\big)^* \left(\frac{\rvx_t}{c(t)},\tau(t)\right)\Big\|_2^2.
+\end{align*}
+
+With the above observation, we arrive at the following conclusion:
+\msg{Conclusion}{}{Score, noise, clean, and velocity training objectives are theoretically equivalent up to time–dependent weights (and, for velocity, an affine head conversion involving $\rvx_t$) determined by $(\alpha_t,\sigma_t)$.}
+
+
+\subsection{(Optional) Analysis of Parametrizations and the Canonical Flow}\label{subsec:concept-why-v-affine}
+Even though we have shown in the previous sections that all four parameterizations are mathematically equivalent and can be transformed into one another, and that the forward affine noise-injection flow is equivalent to the canonical form
+\[
+\rvx_t^{\mathrm{FM}} = (1-t) \rvx_0 + t \beps,
+\]
+in this subsection we provide further intuition and analyze the potential advantages of using the $\rvv$-prediction parameterization together with this canonical affine flow.
+
+
+This subsection asks a simple question: \emph{how do different parameterizations and schedules shape what the model learns and how we sample?} We proceed in two conceptual perspectives:
+\begin{itemize}
+    \item \textbfs{Regression Targets and Schedules.}
+    We focus on why combining $\rvv$-prediction with the canonical linear
+    schedule $(\alpha_t,\sigma_t)=(1-t,t)$ is natural: it keeps the conditional
+    velocity target scale constant in time and removes the explicit
+    schedule-curvature terms from the velocity decomposition.
+  \item \textbfs{Solver Implications.}
+We examine how this parameterization interacts with numerical integration,
+while deferring the detailed solver analysis to \Cref{ch:solvers}.
+\end{itemize}
+
+Before proceeding, we distinguish between two types of velocity fields to avoid ambiguity. The \emph{conditional velocity}, which serves as a tractable training target, is defined as
+\[
+\rvv_t(\rvx_t |\rvz) = \rvx_t' = \alpha_t' \rvx_0 + \sigma_t' \beps, 
+\quad \text{where } \rvz = (\rvx_0, \beps),
+\]
+while the \emph{oracle (marginalized) velocity}, used to move samples during inference of PF-ODE solving, is given by
+\[
+\rvv^*(\rvx, t) = \E\big[\rvv_t(\cdot |\rvz)  \big|  \rvx_t = \rvx\big].
+\]
+
+\paragraph{Perspective 1: Why $(\alpha_t,\sigma_t)=(1-t,t)$ is a Natural Schedule.}
+Writing $\sigma_t:=\zeta(t)$ and $\alpha_t:=1-\zeta(t)$ for a time-varying $\zeta(t)$, the conditional velocity becomes
+\[
+\rvv_t(\rvx_t |\rvz)
+=\zeta'(t)(\beps-\rvx_0),
+\quad\text{where } \rvz=(\rvx_0,\beps).
+\]
+
+
+\subparagraph{Unit-Scale Regression Targets.}
+For the canonical schedule $\zeta(t)=t$, the conditional velocity $\rvv_t(\cdot |\rvz)$ satisfies
+\begin{align}\label{eq:unit-velocity}
+\mathbb{E}\left[\|\rvv_t(\cdot |\rvz)\|_2^2\right]
+=\E_{\beps}\norm{\beps}_2^2+\E_{\rvx_0}\norm{\rvx_0}^2_2 = D + \underbrace{\Tr\Cov[\rvx_0]}_{\text{total variance}}+\underbrace{\norm{\E\rvx_0}^2_2}_{\text{mean}}.
+\end{align}
+Thus the expected target magnitude is constant in $t$. After standardizing the data to zero mean and identity covariance (i.e., $\Cov[\rvx_0]=\rmI$), the two components
+$\alpha_t'\rvx_0$ and $\sigma_t'\beps$ contribute comparably for all $t$, avoiding gradient explosion/vanishing near the endpoints.
+To see this, we consider the diffusion's training objective:
+\[
+\mathcal{L}_{\mathrm{velocity}}(\bphi)
+= \E_{t}  \E_{\rvx_0,\beps}\left[\big\|\rvv_{\bphi}(\rvx_t,t) - \rvv_t(\rvx_t|\rvz)\big\|_2^2
+\right].
+\]
+By applying the chain rule, the gradient of this loss with respect to the model parameters $\bphi$ is
+\[
+\nabla_{\bphi}\mathcal{L}_{\mathrm{velocity}}(\bphi)
+= 2  \E_{t}  \E_{\rvx_0,\beps} \left[
+  \partial_{\bphi}\rvv_{\bphi}(\rvx_t,t)^{\top} \left(\rvv_{\bphi}(\rvx_t,t) - \rvv_t(\rvx_t|\rvz)\right)
+\right].
+\]
+Thus the scale of the target $\|\rvv_t(\rvx_t|\rvz)\|_2$ influences gradient stability:
+if it collapses to $0$ (or blows up) at some $t$, gradients tend to vanish (or explode), 
+all else equal. With the canonical choice $\zeta(t)=t$, 
+\Cref{eq:unit-velocity} gives a $t$-independent target magnitude, so there is no 
+endpoint ($t=0$ or $t=1$) collapse or blow-up arising from the regression signal
+(assuming $\E\|\partial_{\bphi}\rvv_{\bphi}(\rvx_t,t)\|^2$ 
+and any time-weights are controlled).
+
+
+\subparagraph{Interplay of the Canonical Schedule and $\rvv$-Prediction.}
+Under the affine path $\rvx_t=\alpha_t \rvx_0+\sigma_t\beps$, the oracle velocity decomposes as
+\[
+\rvv^*(\rvx, t)=\alpha_t' \rvx^*(\rvx,t)+\sigma_t' \beps^*(\rvx,t),
+\]
+with $\rvx^*=\E[\rvx_0|\rvx_t=\rvx]$ and $ \beps^*=\E[\beps|\rvx_t=\rvx]$.
+Differentiating at fixed $\rvx$ gives
+\[
+\partial_t \rvv^*
+=\underbrace{\alpha_t'' \rvx^*+\sigma_t'' \beps^*}_{\text{schedule curvature}}
++ \alpha_t' \partial_t \rvx^*+\sigma_t' \partial_t \beps^*.
+\]
+With the linear schedule $\alpha_t=1-t,\ \sigma_t=t$, the curvature terms vanish
+($\alpha_t''=\sigma_t''=0$), so the time-variation of $\rvv^*$ primarily reflects the
+posterior evolution $(\partial_t \rvx^*,\partial_t \beps^*)$ rather than the schedule.
+This effect is especially clean for $\rvv$-prediction: the coefficients $\alpha_t',\sigma_t'$
+are constants ($-1$ and $+1$), avoiding extra $t$-dependent rescaling in the drift.
+By contrast, score-, $\rvx_0$, or $\beps$-parameterizations often introduce ratios such as
+$\sigma_t'/\sigma_t$ or $\alpha_t'/\alpha_t$ that can vary sharply near the endpoints,
+even under a linear schedule. Hence, while not exclusive in principle, the linear
+$(1-t,t)$ schedule combined with $v$-prediction offers a particularly stable and
+transparent time dependence for the oracle velocity.
+
+\subparagraph{Minimizing the Conditional Energy.} We next adopt a more theoretical perspective of optimal transport (see \Cref{ch:ot-eot}). 
+Here, the \emph{conditional kinetic energy} quantifies the total expected motion 
+of the conditional velocity along the forward path, that is,
+the amount of instantaneous movement (or kinetic effort) required to traverse from 
+$\rvx_0$ to $\beps$:
+\[
+\mathcal K[\zeta]
+:=\int_0^1 \E_{\rvx_0,\beps}\!\big[\|\rvv_t(\cdot |\rvz)\|_2^2\big]\diff t
+=\Big(D+\Tr\Cov[\rvx_0]+\|\E\rvx_0\|_2^2\Big)
+\int_0^1 \big(\zeta'(t)\big)^2\diff t.
+\]
+Minimizing $\mathcal K[\zeta]$ therefore corresponds to finding the smoothest, least-energy
+path in expectation within the affine interpolation family
+\[
+\rvx_t=(1-\zeta(t))\rvx_0+\zeta(t)\beps.
+\]
+With the boundary conditions $\zeta(0)=0$ and $\zeta(1)=1$, the
+Euler--Lagrange equation $\zeta''(t)=0$ gives the minimizer $\zeta(t)=t$, corresponding to a
+straight conditional path. This means that, among all smooth schedules $\zeta$ in this family,
+the canonical flow $\zeta(t)=t$ is the most energy-efficient way to move from $\rvx_0$ to
+$\beps$. We will revisit this point in Proposition~\ref{ot-conditional-flow}
+for a more detailed treatment.
+
+
+\subparagraph{Remark on the Energy of the Oracle Velocity.}
+The linear schedule $\zeta(t)=t$ always minimizes the \emph{conditional}
+velocity energy derived above, but it need not minimize the energy of the
+marginalized oracle velocity $\rvv^*$. The reason is that the magnitude of
+$\rvv^*$ can vary along the probability path, so the energy-minimizing schedule
+may traverse different parts of the path at different speeds.
+
+To make this dependence explicit, let
+\[
+\rvy_u=(1-u)\rvx_0+u\beps,
+\qquad u\in[0,1],
+\]
+where $u$ denotes position along the affine probability path, and define
+\[
+\mathbf{b}_u(\rvy)
+:=
+\E\!\left[\beps-\rvx_0|\rvy_u=\rvy\right],
+\qquad
+\kappa(u)
+:=
+\E_{\rvy_u}
+\left[
+\|\mathbf{b}_u(\rvy_u)\|_2^2
+\right].
+\]
+Here, $\kappa(u)$ measures the expected squared magnitude of the oracle
+velocity per unit movement along the path.
+
+A schedule $u=\zeta(t)$ specifies how quickly this path is traversed. Since
+$\rvx_t=\rvy_{\zeta(t)}$, the oracle velocity becomes
+\[
+\rvv^*(\rvx,t)
+=
+\zeta'(t)\mathbf{b}_{\zeta(t)}(\rvx),
+\]
+with kinetic energy
+\[
+\mathcal{K}_{\mathrm{marg}}[\zeta]
+=
+\int_0^1
+\kappa(\zeta(t))
+\bigl(\zeta'(t)\bigr)^2
+\diff t.
+\]
+Assuming $\kappa(u)>0$ and sufficient regularity, minimizing this energy gives
+\[
+\kappa(\zeta(t))
+\bigl(\zeta'(t)\bigr)^2
+=
+\text{constant},
+\qquad\text{or equivalently}\qquad
+\zeta'(t)
+\propto
+\frac{1}{\sqrt{\kappa(\zeta(t))}}.
+\]
+Thus, the energy-minimizing schedule moves more slowly where the oracle
+velocity has larger expected magnitude and faster where it has smaller
+magnitude.
+
+Consequently, $\zeta(t)=t$ minimizes the marginal-velocity energy only when
+$\kappa(u)$ is constant along the path. This highlights the distinction from
+the conditional-velocity result above, where the linear schedule is always the
+constant-speed minimum-energy choice within the affine family.
+
+
+
+% \paragraph{Perspective 2: Why Velocity Prediction Can Be Considered Natural for Sampling.}
+
+% \subparagraph{Semilinear Form of the PF-ODE under $\rvx$-, $\beps$-, and $\rvs$-Predictions.}
+% Under the clean, noise, and score parameterizations, the drift takes a semilinear form (see the first three identities in \Cref{eq:clean_pf_ode}):
+% \[
+% \frac{\diff \rvx(t)}{\diff t}= \underbrace{L(t) \rvx(t)}_{\text{linear part}} + \underbrace{\rmN_\bphi(\rvx(t),t)}_{\text{nonlinear part}},
+% \quad
+% \rmN_\bphi\in\{\rvx_{\bphi}, \beps_{\bphi}, \rvs_{\bphi}\}.
+% \]
+
+
+
+% When the linear drift $L(t) \rvx(t)$ drives changes in $\rvx(t)$ at very different rates in some directions compared with the nonlinear part, the system is \emph{stiff}, meaning that the Jacobian (in $\rvx$) of the drift
+% \[
+% \rmJ(\rvx,t):=L(t)+\nabla_{\rvx}\rmN_\bphi(\rvx,t)
+% \]
+% has eigenvalues whose real parts differ by orders of magnitude (a larger magnitude corresponds to a faster direction)\footnote{%
+% Let the PF–ODE drift be $\rmF(\rvx,t)=L(t) \rvx+\rmN_{\bphi}(\rvx,t)$ and assume
+% $\rmN_{\bphi}$ is (locally) Lipschitz in $\rvx$ with constant $\mathrm{Lip}_{\rmN_{\bphi}}(t)$.
+% For nearby states $\rvx,\rvy$,
+% \[
+% \|\rmF(\rvx,t)-\rmF(\rvy,t)\|
+% \le \underbrace{\big(\|L(t)\|+\mathrm{Lip}_{\rmN_{\bphi}}(t)\big)}_{=:~C(t)} \|\rvx-\rvy\|.
+% \]
+% Equivalently, the Jacobian (w.r.t.\ $\rvx$)
+% \[
+% \rmJ(\rvx,t)=L(t)+\nabla_{\rvx}\rmN_\bphi(\rvx,t)
+% \]
+% satisfies $\|\rmJ(\rvx,t)\|_{\mathrm{op}} \le C(t)$ ( i.e., the operator norm induced by the Euclidean norm on $\R^D$). Hence, the real parts of all eigenvalues of $\rmJ$ are bounded in magnitude by $C(t)$.
+% Thus a large $C(t)$ means fast local rates, so explicit solvers need small steps ($h\lesssim 1/C(t)$).}. For instance, the dynamics may involve a ``fast linear'' change alongside a ``slow nonlinear'' one in $\rvx(t)$. In such cases, explicit solvers must take very small time steps to remain numerically stable.
+
+
+
+
+% To address this imbalance, higher-order stable solvers often apply an \emph{integrating factor} 
+% that treats the linear term $L(t) \rvx$ analytically and discretizes only the slower nonlinear remainder, albeit at the cost of additional algebraic and implementation complexity. \Cref{ch:solvers} is dedicated to a detailed discussion of this topic.
+
+
+% \subparagraph{PF-ODE under $\rvv$-Prediction.} With $\rvv$-prediction, the model directly learns the velocity field and integrates
+% \[
+% \frac{\diff \rvx(t)}{\diff t}
+% =\rvv_{\bphi}(\rvx(t),t)
+% \approx \rvv^*(\rvx(t),t).
+% \]
+% In this formulation, the explicit linear term is absorbed into a single learned field, 
+% so the dynamics no longer split into separate parts. The step size is thus governed by how smoothly 
+% the learned field $\rvv_{\bphi}(\rvx,t)$ varies with $\rvx$ and $t$, rather than by the 
+% magnitude of a prescribed scalar coefficient $L(t)$. In other words, the potentially 
+% rapid linear drift is folded into one coherent velocity field, reducing time-scale 
+% disparity and simplifying numerical integration. 
+ 
+
+% Later in \Cref{subsec:ddim-different-para}, we will illustrate, with a simple example, 
+% the structural simplicity of $\rvv$-prediction in the sampling process. 
+% To obtain the same discretization update of the PF-ODE as DDIM~\citep{song2020denoising} 
+% (one of the most widely used fast samplers in diffusion modeling), 
+% a plain Euler step under the $\beps$-, $\rvx$-, or $\rvs$-parameterizations only 
+% \emph{approximates} the linear term rather than computing it exactly 
+% (see \Cref{eq:euler-step}). Consequently, these parameterizations require a more advanced approach, 
+% the \emph{exponential integrator}, to isolate and compute the linear term exactly. 
+% In contrast, with $\rvv$-prediction, there is no separate linear term to isolate 
+% in the PF-ODE drift, so the plain Euler update naturally coincides with the DDIM formulation.  A closely related analogy appears in \Cref{subsec:dpm-heun}: the second-order DPM-Solver~\citep{lu2022dpm} 
+% coincides with the classical Heun method: for $\rvv$-prediction this is plain Heun,  
+% whereas for $\beps$-, $\rvx$-, or $\rvs$-prediction it is the  exponential Heun. We leave the detailed discussion to their respective sections.
+
+
+
+% We remark that any improvements in generation (such as achieving higher sample quality 
+% with fewer model evaluations in PF-ODE solving) depend on both how accurately 
+% $\rvv_{\bphi}$ approximates the oracle velocity and how effectively the sampling 
+% algorithm (including the numerical integrator, discretization schedule, and step-size 
+% control) interacts with it. Thus, adopting the $\rvv$-parameterization 
+% does not by itself guarantee better sampling performance.
+
+\paragraph{Perspective 2: Why Velocity Prediction Can Be Considered Natural for Sampling.}
+
+Sampling with the PF-ODE ultimately requires its velocity field.
+This makes $\rvv$-prediction particularly direct: the network predicts the
+quantity that appears on the right-hand side of the ODE itself. By comparison,
+$\rvx$-, $\beps$-, and $\rvs$-predictions encode the same oracle velocity
+through a combination of the current state and the network prediction.
+
+At the oracle level, these are exactly convertible forms of the same
+$\rvv^*(\rvx,t)$ by \Cref{eq:clean_pf_ode}; hence, the underlying oracle
+PF-ODE is unchanged by the choice of parameterization. Here, we focus on how
+the learned PF-ODE is expressed during sampling; the loss used to train the
+corresponding prediction can be chosen separately.
+
+\subparagraph{PF-ODE under $\rvx$-, $\beps$-, and $\rvs$-Predictions.}
+The first three identities in \Cref{eq:clean_pf_ode} share the form
+\[
+\frac{\diff\rvx(t)}{\diff t}
+=
+\underbrace{L(t)\rvx(t)}_{\text{known linear term}}
++
+\underbrace{\rmN_{\bm{\phi}^{\times}}(\rvx(t),t)}_{\text{network-dependent term}},
+\]
+where $L(t)$ denotes the corresponding known scalar coefficient determined by
+the noise schedule, and $\rmN_{\bm{\phi}^{\times}}$ contains the appropriate
+time-dependent coefficient multiplying the clean, noise, or score prediction.
+For example, under $\beps$-prediction,
+\[
+L(t)
+=
+\frac{\alpha_t'}{\alpha_t},
+\qquad
+\rmN_{\bm{\phi}^{\times}}(\rvx,t)
+=
+-\sigma_t
+\left(
+\frac{\alpha_t'}{\alpha_t}
+-
+\frac{\sigma_t'}{\sigma_t}
+\right)
+\beps_{\bm{\phi}^{\times}}(\rvx,t).
+\]
+
+This form is useful for numerical integration because the known linear term can
+be handled analytically while the network-dependent term is approximated
+numerically. Exponential-integrator-based diffusion solvers such as
+DPM-Solver~\citep{lu2022dpm} exploit precisely this structure. We develop this
+solver viewpoint in detail in \Cref{ch:solvers}.
+
+\subparagraph{PF-ODE under $\rvv$-Prediction.}
+With $\rvv$-prediction, the PF-ODE takes the direct and simple form
+\[
+\frac{\diff\rvx(t)}{\diff t}
+=
+\rvv_{\bm{\phi}^{\times}}(\rvx(t),t)
+\approx
+\rvv^*(\rvx(t),t).
+\]
+Thus, a single network evaluation directly provides the quantity required by
+a standard ODE solver, without first combining the prediction with a separate
+linear term.
+
+The canonical linear schedule makes this connection especially transparent.
+For
+\[
+\rvx_t=(1-t)\rvx_0+t\beps,
+\]
+a velocity prediction determines the corresponding endpoint predictions
+\[
+\widehat{\rvx}_0
+=
+\rvx_t-t\rvv_{\bm{\phi}^{\times}}(\rvx_t,t),
+\qquad
+\widehat{\beps}
+=
+\rvx_t+(1-t)\rvv_{\bm{\phi}^{\times}}(\rvx_t,t).
+\]
+Using this single prediction to move from $t$ to $s$ gives
+\[
+(1-s)\widehat{\rvx}_0+s\widehat{\beps}
+=
+\rvx_t
++
+(s-t)\rvv_{\bm{\phi}^{\times}}(\rvx_t,t),
+\]
+which is exactly the plain Euler update for the learned velocity field under
+the canonical linear schedule. Thus, the combination of $\rvv$-prediction and
+the linear schedule gives a particularly direct connection between the model
+prediction and numerical integration of the PF-ODE. We defer a detailed
+discussion of numerical solvers and more general schedules to
+\Cref{ch:solvers}.
+
+Taken together, $\rvv$-prediction directly provides the velocity required by
+the PF-ODE, whereas the other prediction types represent the same oracle
+dynamics through schedule-dependent transformations. This direct
+correspondence is the main sense in which velocity prediction can be
+considered natural for sampling.
+
+
+
+
+\paragraph{Conclusion.}
+While $\rvv$-prediction combined with the canonical linear schedule offers certain theoretical advantages, such as a constant target magnitude and the absence of schedule curvature, these properties do not necessarily make it universally superior. In practice, model performance depends on a range of interacting factors, including network architecture, normalization schemes, loss weighting over time, the choice of sampler and discretization steps, guidance strength, regularization strategy, data scaling, and overall training budget. Different datasets and objectives may favor alternative parameterizations or schedules, and the optimal configuration is ultimately an empirical question that should be resolved through validation and ablation studies.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\section{Beneath It All: The Fokker–Planck Equation}\label{sec:comparison-connection}
+
+
+\begin{figure}[htbp]
+\begin{center}
+\scalebox{0.9}{ 
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    box/.style={draw, rounded corners=8pt, minimum width=4.5cm, minimum height=1.2cm, align=center, font=\footnotesize},
+    section/.style={draw, thick, minimum width=12cm, minimum height=3cm, align=center},
+    central/.style={draw, thick, fill=gray!10, minimum width=8cm, minimum height=1.5cm, align=center},
+    arrow/.style={->, ultra thick, >=Stealth},
+    bidir/.style={<->, thick, >=Stealth},
+    label/.style={font=\small, align=center}
+]
+
+% Forward Process Section
+\node[section] (forward_section) at (0, 4) {\\ \\ \\ \\ \\ \\ \small Forward from $p_{\mathrm{data}}$ at $t = 0$};
+\node[font=\Large\sffamily\bfseries] at (0, 5.1) {Forward Process};
+
+\node[box] (var_forward) at (-3.5, 4) {
+    \textbfs{Variational Approach:}\\
+    Defining $p(\mathbf{x}_t|\mathbf{x}_{t-\Delta t})$, or\\
+    $p_t(\mathbf{x}_t|\mathbf{x}_0) \Leftrightarrow \mathbf{x}_t = \alpha_t \mathbf{x}_0 + \sigma_t \boldsymbol{\epsilon}$
+};
+
+\node[box] (sde_forward) at (3.5, 4) {
+    \textbfs{Forward SDE:}\\
+    $\diff\mathbf{x}(t) = f(t)\mathbf{x}(t)\diff t + g(t)\diff \rvw(t)$
+};
+
+% Central Equation
+\node[central] (central) at (0, 1) {
+    \textbfs{Continuity Equation/Fokker-Planck Equation}\\
+    for $p_t(\mathbf{x})$
+};
+
+% Reverse Process Section
+\node[section] (reverse_section) at (0, -3) [minimum height=5.2cm] {\\ \\ \\ \\  \\ \\ \\ \\ \\ \\ \small Reverse from $p_{\mathrm{prior}}$ at $t = T$};
+\node[font=\Large\sffamily\bfseries] at (0, -0.8) {Reverse Process}; % Moved down slightly
+
+\node[box, minimum width=3.6cm] (var_reverse) at (-4.0, -2.0) {
+    \textbfs{Variational Approach:}\\
+    $p(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)$\\ from Bayes' rule
+};
+
+\node[box] (ode) at (3, -4.3) {
+    \textbfs{PF-ODE:}\\
+    $\diff\mathbf{x} (t) = \mathbf{v}^*(\mathbf{x} (t), t)\diff t$
+};
+
+\node[box] (sde_reverse) at (3, -2.0) {
+    \textbfs{Reverse SDE:}\\
+    $\diff\bar{\mathbf{x}}  = \left[\mathbf{v}^* - \frac{1}{2}\gamma^2(t)\mathbf{s}^*\right]\diff t + \gamma(t)\diff\bar{ \rvw}(t)$
+};
+
+% Arrows from sections to central equation
+\draw[arrow] ($(forward_section.south)+(0,-0.)$) -- ($(central.north)+(0,0.)$);
+\draw[arrow] ($(reverse_section.north)+(0,0.)$) -- ($(central.south)+(0,-0.)$);
+
+% Bidirectional arrow between forward approaches
+\draw[bidir] (var_forward) -- (sde_forward) node[midway, above, label] {Lemma~\ref{forward-sde}};
+
+% Connections in reverse section
+
+% From var_reverse to sde_reverse (slightly curved down)
+\draw[->, thick, >=Stealth]
+    ($(var_reverse.east)+(0,0.1)$) -- ($(sde_reverse.west)+(-0,0.1)$)
+    node[midway, above, label] { $\Delta t \to 0$ };
+
+% From sde_reverse to var_reverse (slightly curved up)
+\draw[->, thick, >=Stealth]
+    ($(sde_reverse.west)+(0,-0.2)$) -- ($(var_reverse.east)+(0,-0.2)$)
+    node[midway, below, label] {\scriptsize{discretization}};
+
+% Vertical arrow from sde_reverse to ode (going up)
+\draw[->, thick, >=Stealth]
+    ($(sde_reverse.south)+(0, 0)$) -- ($(ode.north)+(0, 0)$)
+    node[midway, right] {$\gamma \equiv 0$};
+
+% Vertical arrow from ode to sde_reverse (going down)
+\draw[->, thick, >=Stealth]
+    ($(ode.north)+(-0.4, 0)$) -- ($(sde_reverse.south)+(-0.4, 0)$)
+    node[midway, left] {$\gamma \not\equiv 0$};
+
+
+\end{tikzpicture}
+}
+\end{center}
+\caption{\textbfs{Unified perspective connecting variational, SDE, and ODE formulations through the continuity equation, where all $p_t(\rvx)$ evolve under a shared dynamic.} The velocity field $\rvv^*(\rvx, t) = f(t)\rvx - \frac{1}{2}g^2(t)\rvs^*(\rvx, t)$ is governed by the score function $\rvs^*(\rvx, t) := \nabla_\rvx \log p_t(\rvx)$. Coefficients $f(t)$, $g(t)$, $\sigma_t$, and $\alpha_t$ are pre-defined time-dependent functions, and $\gamma(t)$ is a tunable time-varying hyperparameter.
+\figcredit{Created by the authors.}}
+\label{fig:unified_framework}
+\end{figure} 
+
+
+
+
+
+In this section, we show that the three main perspectives of diffusion models—variational, score-based, and flow-based—are not separate constructions but arise from a single unifying principle: the continuity (Fokker–Planck) equation that governs density evolution under a chosen forward process.  
+
+
+First, we recall that the analysis in \Cref{eq:heuristic-fpe-sde} unifies the variational perspective, based on discrete kernels and Bayes' rule, with the score-based SDE perspective of continuous dynamics. We establish this connection by showing that variational models act as consistent discretizations of the underlying forward and reverse SDEs. Specifically, the marginal densities calculated step-by-step via the discrete kernels evolve in a manner consistent with the Fokker–Planck equation that governs the continuous-time dynamics. This confirms that the two perspectives are fundamentally equivalent.
+
+
+
+ 
+ We then connect the flow-based and score-based views. In \Cref{subsec:flow-score}, we show that an ODE flow determines a density path whose marginals can always be realized by a family of stochastic processes. This places deterministic flows and stochastic SDEs within the same family.  
+
+Together, these results unify the three perspectives under one framework (see \Cref{fig:unified_framework}). At last, we conclude this chapter  in \Cref{subsec:takeaway-dm-gaussianfm}.
+
+
+
+% \subsection{Connection of Variational Approach and Score SDE}\label{subsec:var-score}
+% In this section we show that forward and reverse marginals obey the same Fokker–Planck structure, with time reversal arising naturally from the variational approach. Starting from the discrete time formulation of variational diffusion models (such as DDPM), we apply Bayes’ rule to derive the reverse marginal density path. This path, initialized at the forward-diffused distribution $p_T$, exactly retraces the forward process in reverse. From \Cref{eq:heuristic-fpe-sde}, the forward density path $p_t$ is known to satisfy the Fokker–Planck equation for all $t\in(0,T]$. Combining these observations, we conclude that both the forward and reverse density paths, viewed variationally, are governed by the same Fokker–Planck dynamics.
+
+
+
+
+
+% \paragraph{Reverse One-Step Kernel and Reverse Marginals.}
+
+% From \Cref{subsec:fpe-reason} we have the forward one-step kernel
+% \[
+% p(\rvx_{t+\Delta t}|\rvx_t=\rvy)
+% =\mathcal N \big(\rvx_{t+\Delta t}; \rvy+\rvf(\rvy,t)\Delta t,  g^2(t)\Delta t \rmI\big),
+% \]
+% whose induced marginals satisfy the Fokker–Planck equation as $\Delta t\to0$.  
+% The Taylor–Gaussian smoothing argument there justifies using first–order expansions in $\Delta t$ below.
+
+
+% By Bayes’ rule, for any $\Delta t>0$,
+% \[
+% p(\rvx_{t-\Delta t}=\rvy |\rvx_t=\rvx)
+% =\frac{p(\rvx_t=\rvx |\rvx_{t-\Delta t}=\rvy)  p_{t-\Delta t}(\rvy)}{p_t(\rvx)}.
+% \]
+% Starting the reverse chain from $p^{\mathrm{rev}}_0:=p_T$, one checks that for any measurable $A\subset\mathbb R^D$,
+% \[
+% p^{\mathrm{rev}}_{\Delta t}(A)
+% =\int p(\rvx_{t-\Delta t}\in A |\rvx_t=\rvx) p_t(\rvx) \diff\rvx
+% =\int \mathbf 1_A(\rvy) p_{t-\Delta t}(\rvy) \diff\rvy.
+% \]
+% Hence $p^{\mathrm{rev}}_{\Delta t}=p_{t-\Delta t}$, and iterating gives
+% \[
+% p^{\mathrm{rev}}_{k\Delta t}=p_{T-k\Delta t}\qquad (k\in\mathbb Z_{\ge0}).
+% \]
+% Taking $\Delta t\to0$ yields the exact identity
+% \[
+% p^{\mathrm{rev}}_s = p_{T-s},\qquad 0\le s< T.
+% \]
+
+% \paragraph{Reverse Marginals and the Fokker–Planck.}
+% Because $p_t$ satisfies the forward Fokker–Planck
+% \[
+% \partial_t p_t(\rvx)
+% = -\nabla_{\rvx} \cdot \big(\rvf(\rvx,t) p_t(\rvx)\big)
+% + \frac{g^2(t)}{2} \Delta_{\rvx} p_t(\rvx),
+% \]
+% the identity $p^{\mathrm{rev}}_s=p_{T-s}$ immediately implies
+% \begin{align*}
+%     \partial_s p^{\mathrm{rev}}_s(\rvx)
+% &= -\partial_t p_t(\rvx)\big|_{t=T-s}
+% \\&= \nabla_{\rvx}\cdot \big(\rvf(\rvx,T-s) p^{\mathrm{rev}}_s(\rvx)\big)
+% - \frac{g^2(T-s)}{2} \Delta_{\rvx} p^{\mathrm{rev}}_s(\rvx).
+% \end{align*}
+% Thus the reverse marginals satisfy the \emph{time–flipped Fokker–Planck equation}.  
+% No separate PDE derivation is needed: it follows directly from the Bayes identity.
+
+% \paragraph{(Sanity Check) Consistency with the Reverse–Time SDE.} 
+% The small–step Bayes expansion (see \Cref{subsec:reverse-sde-reason}) gives
+% \begin{align*} 
+% &p(\rvx_{t-\Delta t}|\rvx_t) \\=&\mathcal N \Big(\rvx_{t-\Delta t}; \rvx_t-\big[\rvf(\rvx_t,t)-g^2(t) \nabla_{\rvx}\log p_t(\rvx_t)\big]\Delta t, g^2(t)\Delta t \rmI\Big) + \mathcal O(\Delta t). 
+% \end{align*}
+% This is precisely the Euler--Maruyama update of the reverse-time SDE, with drift
+% \[
+% \rvf^{\rm rev}(\rvx,t)  =  \rvf(\rvx,t) - g^2(t) \nabla_{\rvx}\log p_t(\rvx),
+% \]
+% and diffusion coefficient $g(t)$. Reparametrizing forward in $s=T-t$, the corresponding marginals satisfy the Fokker-Planck equation
+% \[
+% \partial_s p^{\mathrm{rev}}_s
+% = -\nabla_{\rvx} \cdot \big(\rvf^{\rm rev}(\rvx,T-s)  p^{\mathrm{rev}}_s\big)
+% + \frac{g^2(T-s)}{2} \Delta_{\rvx} p^{\mathrm{rev}}_s,
+% \]
+% which coincides with the time–flipped form already obtained from Bayes’ rule.
+
+
+% \paragraph{Conclusion.}
+% The above analysis establishes a direct connection between the variational view (discrete kernels and Bayes inversion) and the score-based SDE view (continuous dynamics) through density evolution. Variational diffusion models can be interpreted as consistent discretizations of forward and reverse SDEs in the particle perspective, and their marginals evolve under the same Fokker–Planck law, showing that the two perspectives are fundamentally two sides of the same coin.
+
+
+% \paragraph{Forward Transition Kernel and Fokker-Planck Equation.}
+% As in \Cref{eq:transition-forward-f-g}, define the forward transition kernel\footnote{In the limit $\Delta t \to 0$, the discrete-time perturbation $p(\rvx_{t+\Delta t}|\rvx_t)$ recovers the infinitesimal transition dynamics of the forward SDE in \Cref{eq:sde_forward}.} as
+% \begin{align*}
+%     p(\rvx_{t+\Delta t}|\rvx_t) := \mathcal{N}\left(\rvx_{t+\Delta t}; \rvx_t + \rvf(\rvx_t, t)\Delta t, g^2(t) \Delta t \rmI\right).
+% \end{align*}
+% This induces the marginal density $p_t(\rvx) = \mathbb{E}_{\rvx_0 \sim p_{\mathrm{data}}}\left[p_t(\rvx|\rvx_0)\right]$, where $p_t(\rvx|\rvx_0)$ denotes the conditional perturbation kernel at time $t$. By applying a first-order Taylor expansion to the difference $p_{t+\Delta t}(\rvx) - p_t(\rvx)$ with respect to $\Delta t$ and an integration by parts, we obtain the following discrete-time approximation:
+% \begin{align*}
+%     \frac{p_{t+\Delta t}(\rvx) - p_{t}(\rvx)}{\Delta t} = -\nabla_\rvx \cdot \left[\rvf(\rvx, t)  p_t(\rvx)\right] + \frac{g^2(t)}{2} \Delta p_t(\rvx) + \mathcal{O}(\Delta t),
+% \end{align*}
+% where $\Delta p_t(\rvx)$ denotes the Laplacian of $p_t$ with respect to $\rvx$. This expression represents a time-discretized version of the Fokker-Planck equation. As $\Delta t \to 0$, the above expression converges to the continuous-time Fokker-Planck equation. 
+
+% \paragraph{Reverse Transition Kernel and Fokker-Planck Equation.}
+% Furthermore, in \Cref{subsec:reverse-sde-reason}, we conceptually derive the reverse-time transition using Bayes' rule. When $\Delta t \approx 0$, we have
+% \begin{align*}
+%     &p(\rvx_{t - \Delta t}|\rvx_t)\\
+%     =~&p(\rvx_t|\rvx_{t - \Delta t}) \cdot \frac{p_{t - \Delta t}(\rvx_{t - \Delta t})}{p_t(\rvx_t)} \\
+%     =~&p(\rvx_t|\rvx_{t - \Delta t}) \cdot \exp\left(\log p_{t - \Delta t}(\rvx_{t - \Delta t}) - \log p_t(\rvx_t)\right) \\
+%     \approx~&\mathcal{N}\left(\rvx_{t - \Delta t}; \rvx_t - \left[\rvf(\rvx_t, t) - g^2(t) \nabla_{\rvx_t} \log p_t(\rvx_t)\right] \Delta t, g^2(t) \Delta t \mathbf{I}\right) \cdot \left(1 + \mathcal{O}(\Delta t)\right),
+% \end{align*}
+% where we applied a first-order Taylor approximation. This is the Euler Maruyama step of the reverse time SDE in \Cref{eq:sde_backward} and it converges to the continuous-time reverse-time SDE as described in \Cref{eq:sde_backward}. In addition, by initializing the reverse-time dynamics with $p^{\text{rev}}_0 := p_T$, the reverse-time marginal density $p^{\text{rev}}_t$ satisfies
+% \[
+% p^{\text{rev}}_t = p_{T - t},
+% \]
+% which implies that $p^{\text{rev}}_t$ also follows the Fokker-Planck equation with time flipped (see \Cref{app-sec:scoresde-fpe-proof} for details).
+
+
+% These heuristic insights vividly reveal how the variational framework, exemplified by DDPM, emerges as a natural time-discretized counterpart to both the forward and reverse-time SDEs. Strikingly, the marginal densities in both directions evolve under the same discretized Fokker–Planck dynamics, underscoring a deep and elegant connection between discrete-time diffusion models and their continuous-time stochastic foundations. 
+
+% As illustrated in \Cref{fig:unified_framework}, this unified view emphasizes two key takeaways: (1) the variational approach is fundamentally a discretization of the SDE formulation, and (2) by matching the pre-specified marginal densities governed by the forward Fokker–Planck equation, we preserve the generative consistency across both discrete and continuous frameworks.
+
+
+
+
+
+\subsection{Connection of Flow-Based Approach and Score SDE}\label{subsec:flow-score}
+
+A remarkable aspect of diffusion model lies in how different dynamic systems, deterministic or stochastic, can trace out the same evolution of probability distributions. In this section, we reveal a natural and elegant connection between ODE-based flows of \Cref{sec:flow-matching-framework} and Score SDEs. Specifically, we show that the velocity field defining a generative ODE can be transformed into a stochastic counterpart that follows the same Fokker-Planck dynamics, providing a principled bridge between deterministic interpolation and stochastic sampling. This offers us a continuous family of models, ranging from ODEs to SDEs, that generate the same data distribution path.
+
+We consider the continuous-time setup where the perturbation kernel is given by
+\[
+p_t(\rvx_t|\rvx_0) = \mathcal{N}(\rvx_t; \alpha_t \rvx_0, \sigma_t^2 \rmI),
+\]
+where $\rvx_0 \sim p_{\mathrm{data}}$. This conditional distribution induces a marginal density path $p_t(\rvx_t) = \mathbb{E}_{\rvx_0 \sim p_{\mathrm{data}}}[p(\rvx_t|\rvx_0)]$ as usual, with $p_T\approx p_{\mathrm{prior}}$.
+
+To match this density path, consider the ODE
+\begin{align}\label{eq:ode-velocity}
+    \frac{\diff\rvx(t)}{\diff t} = \mathbf{v}_t(\rvx(t)), \quad t \in [0,T],
+\end{align}
+where $\mathbf{v}_t(\rvx) =\E\left[\alpha_t'\rvx_0+\sigma_t'\beps|\rvx\right]$ is the oracle velocity  as shown in \Cref{eq:marginal-oracle-velocity} (noting that time is flipped to follow the diffusion model convention). Integrating \eqref{eq:ode-velocity} backward from $\rvx(T)\sim p_{\mathrm{prior}}$ yields samples from $p_0$.
+
+Although this ODE suffices for generating high-quality samples, incorporating stochasticity may improve sample diversity. This motivates the following question:
+\begin{question}
+Is there an SDE whose dynamics, starting from $p_{\mathrm{prior}}$, yield the same marginal densities as the ODE in \Cref{eq:ode-velocity}?
+\end{question}
+This statement affirms that there exists a family of reverse-time SDEs that induce the same marginal density path as the corresponding PF-ODE.  
+ The densities induced by these SDEs satisfy the same Fokker–Planck equation for this path, and therefore their one time marginals coincide with the prescribed interpolation $\{p_t\}_{t\in[0,T]}$\footnote{For completeness, a forward SDE representation (not needed here) is
+\[
+\diff \rvx(t)=f(t) \rvx(t) \diff t+g(t) \diff \rvw(t),
+\]
+with $f(t)$ and $g(t)$ related to $(\alpha_t,\sigma_t)$ via \Cref{eq:kernel-sde-equiv}.}.
+
+
+% \proppp{Reverse-Time SDEs Generate the Same Marginals as Interpolations}{rev-sde-interpolant}{Let $\gamma(t) \geq 0$ be an arbitrary time-dependent coefficient. Consider the reverse-time SDE
+% \begin{align}\label{eq:general-reverse-sde}
+%     \diff \bar\rvx(t) = \left[ \rvv(\bar\rvx(t), t) - \tfrac{1}{2} \gamma^2(t) \rvs(\bar\rvx(t), t) \right] \diff \bar t + \gamma(t) \diff \bar{ \rvw}(t),
+% \end{align}
+% evolving backward from $\bar\rvx(T) \sim p_{\mathrm{prior}}$ down to $t = 0$. Then this process $\{\bar\rvx(t)\}_{t\in[0,T]}$ matches the prescribed marginals $\{p_t\}_{t \in [0,T]}$, induced by the ODE's density path. Here, $\rvs(\rvx, t) := \nabla_{\rvx} \log p_t(\rvx)$ is the score function, and it is related to the velocity field $\rvv(\rvx, t)$ by
+% \begin{align}\label{eq:score-velocity}
+% \begin{aligned}
+%         \rvv(\rvx, t) &= f(t)\rvx - \frac{1}{2}g^2(t)\rvs(\rvx, t), \\ \text{or }\quad  \rvs(\rvx, t) &= \frac{1}{\sigma_t}  \frac{\alpha_t \rvv(\rvx, t) - \alpha_t' \rvx}{\alpha_t' \sigma_t - \alpha_t \sigma_t'}.
+% \end{aligned}
+% \end{align}
+% }{The reverse-time Fokker–Planck equation corresponding to \Cref{eq:general-reverse-sde} is
+% \[
+% \partial_{\bar t} p
+% = -\nabla \cdot \Big( \big[\rvv - \tfrac{1}{2}\gamma^2 \rvs \big] p \Big)
+%   + \tfrac{1}{2}\gamma^2 \Delta p .
+% \]
+% Using the identity $\nabla \cdot (\rvs p) = \Delta p$ (since $\rvs = \nabla \log p$), the diffusion terms cancel, yielding
+% \[
+% \partial_{\bar t} p = -\nabla \cdot (\rvv p),
+% \]
+% which is precisely the probability–flow continuity equation; see Appendix~A.2 of \citet{ma2024sit}.
+% }
+
+\proppp{Reverse-Time SDEs Generate the Same Marginals as Interpolations}{rev-sde-interpolant}{
+Let $\gamma(t) \geq 0$ be an arbitrary time-dependent coefficient. Consider
+the reverse-time SDE, written in the original time variable $t$ and integrated
+backward from $T$ to $0$,
+\begin{align}\label{eq:general-reverse-sde}
+    \diff \bar\rvx(t)
+    =
+    \Big[
+        \rvv^*(\bar\rvx(t), t)
+        - \tfrac{1}{2}\gamma^2(t)\rvs^*(\bar\rvx(t), t)
+    \Big]\diff t
+    + \gamma(t)\diff\bar{\rvw}(t),
+    \qquad t:T\to 0 .
+\end{align}
+with terminal condition $\bar\rvx(T)\sim p_T$. Then this process
+$\{\bar\rvx(t)\}_{t\in[0,T]}$ matches the prescribed marginals
+$\{p_t\}_{t\in[0,T]}$ induced by the ODE's density path. Here,
+$\rvs^*(\rvx,t):=\nabla_{\rvx}\log p_t(\rvx)$ is the score function, and it is
+related to the velocity field $\rvv^*(\rvx,t)$ by
+\begin{align}\label{eq:score-velocity}
+    \rvv^*(\rvx, t)
+    =
+    f(t)\rvx
+    -
+    \frac{1}{2}g^2(t)\rvs^*(\rvx,t),
+    \quad
+    \rvs^*(\rvx,t)
+    =
+    \frac{1}{\sigma_t}
+    \frac{\alpha_t\rvv^*(\rvx,t)-\alpha_t'\rvx}
+    {\alpha_t'\sigma_t-\alpha_t\sigma_t'} .
+\end{align}
+}{
+The reverse-time Fokker--Planck equation, written with respect to the original
+time variable $t$ while the process is integrated backward, is
+\[
+\partial_t p_t
+=
+-\nabla\cdot
+\Big(
+\big[
+\rvv^*
+-
+\tfrac{1}{2}\gamma^2\rvs^*
+\big]p_t
+\Big)
+-
+\tfrac{1}{2}\gamma^2\Delta p_t .
+\]
+Using the identity $\nabla\cdot(\rvs^*p_t)=\Delta p_t$ since
+$\rvs^*=\nabla\log p_t$, the second-order terms cancel, yielding
+\[
+\partial_t p_t
+=
+-\nabla\cdot(\rvv^*p_t),
+\]
+i.e., the first-order continuity equation associated with the PF-ODE. Hence
+the reverse-time SDE and the ODE induce the same marginal density path
+$\{p_t\}$. See Appendix~A.2--A.3 of \citet{ma2024sit}.
+}
+
+
+At the oracle level of Proposition~\ref{rev-sde-interpolant},
+$\gamma(t)$ can be chosen arbitrarily without changing the prescribed
+marginal density path: the $\gamma$-dependent drift and diffusion terms cancel
+exactly in the Fokker--Planck equation. Some representative choices are:
+\begin{itemize}
+    \item Setting $\gamma(t) = 0$ recovers the ODE in \Cref{eq:ode-velocity}.
+    \item When $\gamma(t) = g(t)$, \Cref{eq:general-reverse-sde} becomes the reverse-time SDE in \Cref{eq:sde_backward}, since the oracle velocity $\rvv(\rvx, t)$ satisfies (see Proposition~\ref{equi-para}):
+    \[
+    \rvv^*(\rvx, t) = f(t)\rvx - \tfrac{1}{2}g^2(t)\rvs^*(\rvx, t).
+    \]
+    \item Other choices for $\gamma(t)$ have been explored; e.g., \citet{ma2024sit} select $\gamma(t)$ to minimize the KL gap between $p_{\mathrm{data}}$ and the $t=0$ density obtained by solving \Cref{eq:general-reverse-sde} from $t=T$.
+\end{itemize}
+Following Score SDE, the trained velocity field $\rvv_{\bm{\phi}^\times}(\rvx, t)$ can be converted into a parameterized score function $\rvs_{\bm{\phi}^\times}(\rvx, t)$ via \Cref{eq:score-velocity}. Plugging this into \Cref{eq:general-reverse-sde} defines an \emph{empirical reverse-time SDE}, which can be sampled by numerically integrating from $t=T$ with $\bar\rvx(T) \sim p_{\mathrm{prior}}$.
+
+This proposition highlights a remarkable flexibility of diffusion models:
+once a \emph{marginal density path} $\{p_t\}_{t\in[0,T]}$ is induced by the
+forward process, it can be realized by an entire family of reverse-time
+dynamics, including the PF-ODE and the reverse-time SDEs
+\[
+\diff\bar\rvx(t)
+=
+\big[
+\rvv^*(\bar\rvx,t)
+-\tfrac12\gamma^2(t)\rvs^*(\bar\rvx,t)
+\big]\diff t
++
+\gamma(t)\diff\bar\rvw(t),
+\quad
+\gamma(t)\geq0,
+\]
+from $t=T$ to $t=0$. Although $\gamma(t)$ changes the stochastic dynamics of individual
+trajectories, the corresponding Fokker--Planck equations all reduce, for the
+prescribed density path, to the same governing density equation:
+\[
+\partial_t p_t
+=
+-\nabla_{\rvx}\cdot
+\bigl(\rvv^*(\rvx,t)p_t(\rvx)\bigr).
+\]
+Indeed, using
+$\rvs^*(\rvx,t)=\nabla_{\rvx}\log p_t(\rvx)$, the additional
+$\gamma$-dependent drift and diffusion terms cancel at the density level.
+Thus, $\gamma(t)$ controls the stochasticity of sample trajectories while
+preserving the same oracle one-time marginals, connecting the deterministic
+PF-ODE with a family of stochastic SDE counterparts, as illustrated in
+\Cref{fig:unified_framework}.
+
+
+\newpage
+
+\section{Closing Remarks}\label{subsec:takeaway-dm-gaussianfm}
+% \jcr{
+% As we have seen, diffusion models arise from diverse origins, including variational, score based, and flow based viewpoints. Despite differences in forward noise schedules and parameterizations, these approaches are equivalent in spirit (\Cref{sec:equivalent-parametrizations}). They share a conditioning strategy that yields a tractable, gradient equivalent training objective (\Cref{sec:conditional-trick}), and they construct reverse transitions that respect the forward marginals governed by the Fokker-Planck equation (\Cref{sec:comparison-connection}).
+
+% A broader lesson emerges. Rather than directly learning a single latent to data map, modern diffusion methods learn the evolution of densities and realize generation by integrating the induced dynamics. Many contemporaneous formulations look different yet instantiate the same principle: learn a time dependent vector field that transports a simple prior to data. The synthesis in \Cref{fig:unified_framework} illustrates this unity.
+
+% Two questions follow for future work. To what extent does learned density evolution already capture the core of generative modeling? If limitations remain, what alternatives might transcend this paradigm? Differential equations provide a natural language for these models, but they need not be the final word. We close by marking this milestone and by inviting work that tests the boundaries of the framework.
+
+
+
+% }
+
+This chapter has served as the keystone of our theoretical exploration, synthesizing the variational, score-based, and flow-based perspectives into a single, cohesive framework. We have shown that these three seemingly distinct approaches are not merely parallel but are deeply and fundamentally interconnected.
+
+Our unification rests on two core insights. First, we identified the secret sauce common to all frameworks: a conditioning trick that transforms an intractable marginal training objective into a tractable conditional one, enabling stable and efficient learning. Second, we established that the Fokker-Planck equation is the universal law governing the evolution of probability densities. All three perspectives, in their own way, construct a generative process that respects this fundamental dynamic.
+
+
+Furthermore, we showed that the oracle noise, clean-data, score, and velocity
+predictions contain the same information and can be converted into one another
+algebraically. This oracle equivalence does not make the prediction
+parameterization merely cosmetic: finite-capacity networks may approximate
+these targets differently, their training objectives can weight errors across
+noise levels differently, and finite-step numerical solvers can behave
+differently depending on the representation in which the dynamics are
+approximated. The important lesson is therefore to distinguish equivalence of
+the underlying continuous theory from equivalence of a practical training or
+sampling algorithm. At the density level, however, the common principle remains: modern diffusion
+methods construct dynamics whose marginals transport a simple prior toward the
+data distribution along a prescribed probability path.
+
+
+With this unified and principled foundation firmly established, we are now equipped to move from the foundational theory to the practical application and acceleration of diffusion models. The central insight that generation is equivalent to solving a differential equation provides a powerful platform for control and optimization. The subsequent parts of this monograph will leverage this unified understanding to address key practical challenges:
+\begin{enumerate}
+    \item Part C will focus on improving the sampling process at inference time. We will explore how to steer the generative trajectory for controllable generation (\Cref{ch:guidance}) and investigate advanced numerical solvers to dramatically accelerate the slow, iterative sampling process (\Cref{ch:solvers}).
+    \item Part D will then look beyond iterative solvers to learn fast generators directly. We will examine methods that can produce high-quality samples in just one or a few steps, either through distillation from a teacher model (\Cref{ch:distillation}) or by training from scratch (\Cref{ch:fast-scratch}).
+\end{enumerate}
+
+Having unified the \textit{what} and \textit{why} of diffusion models, we now turn our attention to the exciting and practical frontiers of \textit{how}.
+
+
+
+
+
+
+
+
+

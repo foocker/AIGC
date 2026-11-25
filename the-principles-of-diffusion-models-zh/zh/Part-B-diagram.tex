@@ -1,0 +1,63 @@
+\vspace*{\fill}  % push content down
+
+\begin{figure}[ht!]
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  box/.style = {draw, rounded corners, minimum width=3.6cm, minimum height=1.5cm, align=center},
+  model/.style = {draw, fill=gray!10, minimum width=3.5cm, minimum height=1cm, align=center},
+  arrow/.style = {ultra thick, -{Stealth[length=4mm, width=4mm]}}
+  ]
+
+
+  
+% 2nd layer: 起源
+\node[box] (vae) {变分\\自编码器};
+\node[box, right=1.2cm of vae] (ebm) {能量模型};
+\node[box, right=1.2cm of ebm] (flow) {归一化流};
+
+% Box around diffusion models
+\node[draw, rounded corners, minimum width=13.6cm, minimum height=1.0cm, thick, above=3.5cm of ebm, label=above:{\parbox{5cm}{ \centering {章}~\ref{ch:overview-dgm} 
+ }}] (dgm) {深度生成建模概览};
+ 
+% Top layer: 起源
+\node[model, above=1.5cm of vae] (variational-based) {\large\textbfs{变分视角}};
+\node[model, above=1.5cm of ebm] (score-based) {\large\textbfs{分数视角}};
+\node[model, above=1.5cm of flow] (flow-based) {\large\textbfs{流视角}};
+
+% Bottom layer: 扩散模型s
+\node[box, below=2.2cm of vae] (ddpm) {去噪扩散\\概率模型\\ (DDPM)};
+\node[box, below=2.2cm of ebm] (score) {噪声条件\\分数网络 \\(NCSN)};
+\node[box, below=2.2cm of flow] (gfm) {高斯\\流匹配};
+
+% Draw arrows
+\draw[arrow] (vae.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {章~\ref{ch:variational}}}} (ddpm.north);
+
+\draw[arrow] (ebm.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {章}~\ref{ch:score-based}}} (score.north);
+
+\draw[arrow] (flow.south) -- node[midway, anchor=center, yshift=3.5pt, xshift=-8pt] {\rotatebox{90}{\small {章}~\ref{ch:flow-based}}} (gfm.north);
+
+\node[box, below=2cm of score] (scoresde) { 连续时间表述 \\ (例如分数SDE) \\ \small {章}~\ref{ch:score-sde}};
+
+% Box around diffusion models
+\node[draw, rounded corners, thick, fit={(ddpm) (score) (gfm) (scoresde)}, inner sep=0.3cm, label=below:{\parbox{5cm}{\centering\textbfs{\\ \large 统一原理}  \\ \vspace{0.2cm}\small {章}~\ref{ch:all-equivalent} 
+\begin{itemize}
+    \item 条件化策略
+    \item Fokker--Planck方程
+\end{itemize} }}] (box) {};
+
+
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (ddpm.south) -- ++(0,-0.4) -- ([xshift=-1.0cm]scoresde.north);
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (score.south) -- ++(0,-0.4) -- (scoresde.north);
+\draw[ultra thick, -{Stealth[length=4mm, width=4mm]}, rounded corners=4pt] (gfm.south) -- ++(0,-0.4) -- ([xshift=1.0cm]scoresde.north);
+
+% Add labels
+\node[align=center, left=0.5cm of box, yshift=8.3cm] {\rotatebox{90}{\textbfs{\large{视角}}}};
+\node[align=center, left=0.5cm of box, yshift=5.5cm] {\rotatebox{90}{\textbfs{\large{起源}}}};
+\node[align=center, left=0.5cm of box] {\rotatebox{90}{\textbfs{\large{扩散模型}}}};
+\end{tikzpicture}
+ % end resizebox
+    }
+\end{center}
+\end{figure}
+
