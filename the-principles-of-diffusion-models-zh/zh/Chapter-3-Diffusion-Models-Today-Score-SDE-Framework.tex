@@ -1,56 +1,40 @@
 \chapter{当代扩散模型：分数SDE框架}\label{ch:score-sde}
 
 \epigraph{
-    \textit{只有一种精确的方式来表达这些定律，那就是通过微分方程。它们的优点是基础性强，并且据我们所知，是精确的。
+    \textit{表达物理定律只有一种精确的方式，那就是微分方程。它们的长处在于足够基本，而且据我们所知，足够精确。
 }}{理查德·费曼}
 
 
 
-前两章分别介绍了扩散模型的变分视角和源于能量模型的分数视角。本章把时间推广到连续情形，用\emph{分数 SDE}~\citep{song2020score}在同一个框架中描述 DDPM 与 NCSN。
+前两章分别从变分视角和分数视角考察了扩散模型，后者自然来自 EBM 的表述。现在我们再进一步，进入\emph{连续时间框架}。其核心是\emph{分数 SDE}~\citep{song2020score}，它给出一个连续时间的视角，把 DDPM 与 NCSN 纳入同一框架。在同一个框架中描述 DDPM 与 NCSN。
 
-可以想象在数据与噪声之间不断插入更多中间噪声水平。在连续时间极限下，噪声水平随时间平滑变化，前向和反向过程可写为
+我们不再只处理有限个噪声水平，而是设想在数据与噪声之间不断插入更多的中间水平。取连续时间极限时，噪声水平随时间平滑变化，于是有了这幅基本图景：
 \[
     p_{\mathrm{data}}
-    \;\xrightarrow{\text{forward SDE}}\;
+    \;\xrightarrow{\text{前向 SDE}}\;
     p_T \approx p_{\mathrm{prior}},
     \qquad
     p_{\mathrm{prior}}
-    \;\xrightarrow{\text{reverse dynamics}}\;
+    \;\xrightarrow{\text{反向动力学}}\;
     p_{\mathrm{data}}.
 \]
-前向 SDE 描述了数据如何逐渐损坏为噪声，播放
-DDPM 中噪声表的连续时间作用或噪声序列
-NCSN 级别。一旦指定了这个前向过程，主要的挑战是
-相反方向的生成：从简单的噪声分布开始，
-我们如何恢复数据分布？
+前向 SDE 描述数据如何逐步被污染成噪声，它在连续时间上扮演的角色，相当于 DDPM 中的噪声调度表或 NCSN 中的那串噪声水平。前向过程一旦给定，主要的难题就落在相反方向的生成上：从简单的噪声分布出发，怎样才能恢复数据分布？
 
-关键数量是与时间相关的分数
+关键的量是与时间相关的分数
 \[
     \nabla_{\rvx}\log p_t(\rvx),
 \]
-它描述了每次噪声分布的局部几何形状
-$t$。一旦知道这个分数，或者通过神经网络近似，它就可以确定用于生成的逆时动态，将噪声转换为数据。这导致两个互补的
-描述：随机 \emph{ 反向时间 SDE} 和确定性
-\emph{ 概率流 ODE} (PF-ODE)。尽管他们的样本轨迹是
-不同的是，它们可以遵循相同的边缘分布演化。
+它刻画 $t$ 时刻带噪分布的局部几何。只要已知该分数，或用神经网络把它逼近出来，就能确定用于生成的反向时间动力学，把噪声变成数据。由此得到两种互补的描述：随机的\emph{反向时间 SDE} 与确定性的\emph{概率流 ODE}（PF-ODE）。二者的样本轨迹虽然不同，却可以遵循相同的边缘分布演化。
 
-这种连续时间视图将生成问题转变为解决问题
-微分方程，为随机性的一系列广泛工具打开了大门
-过程、微分方程和数值分析。特别是有一次
-生成动力学被写成 SDE 或 ODE，标准数值
-可以使用方法来模拟它们，而更高级的求解器可以改进
-采样效率和准确性。因此，这一观点不仅提供了
-扩散模型的统一数学描述，也是一种实用的
-为理解和设计更快的采样方法奠定了基础
-本书稍后会介绍。\chapterlearning{
-  \item 了解DDPM和NCSN的离散噪声水平如何导致连续时间前向SDE逐渐将数据转化为噪声；
-  \item 了解如何通过随机反向时间 SDE 或确定性概率流 ODE (PF-ODE) 来描述从噪声生成数据的过程；
-  \item 解释反向时间 SDE 和 PF-ODE 如何在各自样本轨迹不同的情况下遵循相同的边缘分布序列，并理解 福克尔-普朗克方程如何描述概率密度的连续时间演化；
-  \item 了解如何通过去噪分数匹配来学习时间相关分数，然后通过反向时间 SDE 或 PF-ODE 用于采样；
-  \item 了解PF-ODE如何也可以向前运行进行反演，并通过变量的连续变化公式跟踪概率密度的变化，从而实现似然评估；
-  \item 将 VE 和 VP SDE 视为同一连续时间扩散框架的两个重要实例，连接回 NCSN 和 DDPM。
+这一连续时间视角把生成问题变成求解微分方程，从而打开了随机过程、微分方程与数值分析中的一整套工具。特别是，一旦把生成动力学写成 SDE 或 ODE，就可以用标准数值方法模拟它们，而更高级的求解器还能进一步提升采样的效率与精度。因此这一视角不仅给出扩散模型统一的数学描述，也为理解和设计本书后面介绍的更快采样方法打下了实用基础。\chapterlearning{
+  \item 了解 DDPM 与 NCSN 的离散噪声水平如何对应到一个连续时间的前向 SDE，它把数据逐步转化为噪声；
+  \item 了解从噪声生成数据的过程，既可以用随机的反向时间 SDE 描述，也可以用确定性的概率流 ODE（PF-ODE）描述；
+  \item 解释反向时间 SDE 与 PF-ODE 如何在各自样本轨迹不同的情况下遵循相同的边缘分布序列，并理解福克尔—普朗克方程如何描述概率密度的连续时间演化；
+  \item 了解如何用去噪分数匹配学出与时间相关的分数，再通过反向时间 SDE 或 PF-ODE 用于采样；
+  \item 了解 PF-ODE 同样可以正向运行以做反演，并借助连续的变量替换公式追踪概率密度的变化，从而评估似然；
+  \item 把 VE SDE 与 VP SDE 视为同一连续时间扩散框架下的两个重要实例，并对应回 NCSN 与 DDPM。
 }{
-刚接触随机微分方程的读者可以根据需要查阅\Cref{app:de}中的微分方程附录。对于第一遍，重点关注正向 SDE、反向时间 SDE 和 PF-ODE 的角色，以及它们的训练和采样程序。在主图清晰之后，可以重新审视高斯示例和可选推导。
+刚接触随机微分方程的读者，可按需查阅 \Cref{app:de} 的微分方程附录。第一遍阅读时，请把重点放在前向 SDE、反向时间 SDE 与 PF-ODE 各自扮演的角色上，以及它们的训练与采样流程。主图清楚之后，再回头看高斯示例和可选的推导。
 }
 
 
@@ -178,38 +162,29 @@ $t$。一旦知道这个分数，或者通过神经网络近似，它就可以�
 \begin{figure}[th!]
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/score_landscape_2d.pdf}
-    \caption{\textbfs{ 时间相关分数景观的图示。}
-随着噪声水平的增加，扰动密度 $p_t(\rvx)$ 从集中在数据模式附近的多峰分布（数据）演变为广泛的近单峰分布（先前）。
-因此，分数场 $\nabla_{\rvx}\log p_t(\rvx)$ 从将样本拉向附近模式的尖锐局部矢量场变为指向整体质心的平滑全局场。
-这个与时间相关的分数字段是基于分数的扩散模型（即分数 SDE）中学习的关键对象。 \figcredit{由作者使用AI辅助编码创建。}}
+    \caption{\textbfs{与时间相关的分数景观示意。}
+随着噪声水平上升，扰动后的密度 $p_t(\rvx)$ 由集中在数据模态附近的多峰分布（数据）演化为宽而近单峰的分布（先验）。
+相应地，分数场 $\nabla_{\rvx}\log p_t(\rvx)$ 也从小$t$时把样本急剧拉向附近模态的局部向量场，变为大$t$时平缓指向整体质心的全局场。
+这一与时间相关的分数场，正是基于分数的扩散模型（即分数 SDE）所学习的关键对象。 \figcredit{由作者借助 AI 辅助编码创建。}}
     \label{fig:time-dependent-score}
 \end{figure}
 
-多种噪声尺度的使用是 NCSN 和 DDPM 框架成功的关键因素。在本节中，我们将介绍该框架的基础 \emph{分数 SDE}~\citep{song2020score}，它通过考虑连续的噪声水平来提升这个想法。正向和反向扩散过程的连续时间极限已经被注意到 \citet{sohl2015deep}，但是 \citet{song2020score} 通过将数据演化公式化为随机/常微分方程，使这一观点成为中心，其中噪声水平随着时间的推移平稳增加。这个公式的核心是 \emph{与时间相关的分数函数} $\nabla_{\rvx}\log p_t(\rvx)$: 在每个噪声级别~$t$，它指向当前噪声分布下密度较高的区域~$p_t$，正是这个量决定了如何反转扩散。作为 \Cref{fig:time-dependent-score} 说明，分数场从急剧收敛到小的个体数据模式演变~$t$ 轻轻地指向整个全球中心~$t$。这种连续时间公式不仅统一了先前的离散时间模型，而且还为生成建模提供了有原则且灵活的基础：在所有噪声级别上学习这一系列分数函数可以减少求解微分方程问题的生成。
+使用多种噪声尺度，是 NCSN 与 DDPM 框架取得成功的关键。本节介绍该框架的基础——\emph{分数 SDE}~\citep{song2020score}，它把这一想法提升为连续的噪声水平。前向与反向扩散过程的连续时间极限，\citet{sohl2015deep} 已经注意到；而 \citet{song2020score} 把这一视角推到中心位置，将数据演化写成随机/常微分方程，其中噪声水平随时间平滑增长。这一表述的核心是\emph{与时间相关的分数函数} $\nabla_{\rvx}\log p_t(\rvx)$：在每个噪声水平 $t$ 上，它指向当前带噪分布 $p_t$ 密度更高的区域，而正是这个量决定了如何反转扩散。如 \Cref{fig:time-dependent-score} 所示，在 $t$ 较小时分数场急剧地收敛到各个数据模态，在 $t$ 较大时则平缓地指向整体中心。这一连续时间表述不仅统一了此前的离散时间模型，也为生成建模提供了有原则且灵活的基础：只要在所有噪声水平上学出这一族分数函数，生成问题就化为求解微分方程。
+
+\subsection{动机：从离散过程到连续时间}\label{subsec:scoresde-motivation}
 
 
-
-
-
-
-
-
-
-\subsection{动机：从离散过程到连续时间过程}\label{subsec:scoresde-motivation}
-
-
-我们重新审视 NCSN 和 DDPM 的前向噪声注入方案。 NCSN 使用一系列逐渐增加的噪声级别 $\{\sigma_i\}_{i=1}^L$。每个干净的样品 $\rvx_0 \sim p_{\mathrm{data}}$ 被扰乱为
+我们回头看看 NCSN 与 DDPM 的前向加噪方案。NCSN 使用一串逐渐增大的噪声水平 $\{\sigma_i\}_{i=1}^L$，每个干净样本 $\rvx_0 \sim p_{\mathrm{data}}$ 被扰动为
 \[
 \rvx_{\sigma_i} = \rvx_0 + \sigma_i \bm{\epsilon}_i, 
 \qquad \bm{\epsilon}_i \sim \mathcal{N}(\bm{0}, \rmI).
 \]
-DDPM 使用方差计划增量注入噪声 $\{\beta_i\}_{i=1}^L$\footnote{在 \Cref{sec:ddpm}，DDPM前向步长写为 $\rvx_i = \sqrt{1-\beta_i^2}\,\rvx_{i-1} + \beta_i\,\bm{\epsilon}_i$，其中 $\beta_i$ 表示注入噪声的标准偏差 $\alpha_i := \sqrt{1-\beta_i^2}$。在这里以及本章中，我们遵循以下约定： \citet{song2020score}，其中 $\beta_i$ 而是表示注入噪声的方差，因此 $\rvx_i = \sqrt{1-\beta_i}\,\rvx_{i-1} + \sqrt{\beta_i}\,\bm{\epsilon}_i$。这两个约定的关系是 $\beta_i^{\textup{(here)}} = \bigl(\beta_i^{\textup{(Ch.\ \ref{ch:variational})}}\bigr)^2$ 并产生相同的动态。}:
+DDPM 则按一个方差计划逐步注入噪声 $\{\beta_i\}_{i=1}^L$\footnote{\Cref{sec:ddpm} 中把 DDPM 的前向步写作 $\rvx_i = \sqrt{1-\beta_i^2}\,\rvx_{i-1} + \beta_i\,\bm{\epsilon}_i$，其中 $\beta_i$ 表示所注入噪声的标准差，记 $\alpha_i := \sqrt{1-\beta_i^2}$。本章沿用 \citet{song2020score} 的约定，$\beta_i$ 表示所注入噪声的\emph{方差}，即 $\rvx_i = \sqrt{1-\beta_i}\,\rvx_{i-1} + \sqrt{\beta_i}\,\bm{\epsilon}_i$。两种约定的关系为 $\beta_i^{\textup{(此处)}} = \bigl(\beta_i^{\textup{(第~\ref{ch:variational} 章)}}\bigr)^2$，所描述的动力学相同。}：
 \[
 \rvx_i = \sqrt{1 - \beta_i}\, \rvx_{i-1} + \sqrt{\beta_i}\, \bm{\epsilon}_i, 
 \qquad \bm{\epsilon}_i \sim \mathcal{N}(\bm{0}, \rmI).
 \]
-
-我们在离散时间网格上一起查看它们，其中的顺序更新 $\rvx_t$ 至 $\rvx_{t+\Delta t}$ 采用以下形式\footnote{为了方便起见，我们使用 $\rvx(t)$ 和 $\rvx_t$ 可互换（对于其他随时间变化的变量类似）以表示时间样本 $t$.}:
+把两者放到同一个离散时间网格上来看，从 $\rvx_t$ 到 $\rvx_{t+\Delta t}$ 的一步更新都具有如下形式\footnote{为书写方便，我们用 $\rvx(t)$ 与 $\rvx_t$ 互换表示 $t$ 时刻的样本（其他随时间变化的量同理）。}：
 \begin{align*}
     \text{\textbfs{NCSN:}} \,\,
     & \rvx_{t+\Delta t} = \rvx_t + \sqrt{\sigma_{t+\Delta t}^2 - \sigma_t^2} \bm{\epsilon}_t 
@@ -218,11 +193,11 @@ DDPM 使用方差计划增量注入噪声 $\{\beta_i\}_{i=1}^L$\footnote{在 \Cr
     & \rvx_{t+\Delta t} = \sqrt{1 - \beta(t)\Delta t} \rvx_t + \sqrt{\beta(t)\Delta t} \bm{\epsilon}_t 
     &&\approx \rvx_t - \frac{1}{2} \beta(t) \rvx_t  \Delta t + \sqrt{\beta(t)\Delta t}  \bm{\epsilon}_t,
 \end{align*}
-其中 $\bm{\epsilon}_t \sim \mathcal{N}(\bm{0}, \rmI)$。有趣的是，两种噪声注入过程都遵循共同的结构模式：
+其中 $\bm{\epsilon}_t \sim \mathcal{N}(\bm{0}, \rmI)$。有趣的是，两种加噪过程遵循同一个结构模式：
 \begin{align}\label{eq:euler-discrete-sde}
     \rvx_{t+\Delta t} \approx \rvx_t + \rvf(\rvx_t, t) \Delta t + g(t) \sqrt{\Delta t}\, \bm{\epsilon}_t,
 \end{align}
-与 $\rvf: \mathbb{R}^D \times \mathbb{R} \to \mathbb{R}^D$ 和 $g: \mathbb{R} \to \mathbb{R}$ 由以下公式给出：
+其中 $\rvf: \mathbb{R}^D \times \mathbb{R} \to \mathbb{R}^D$ 与 $g: \mathbb{R} \to \mathbb{R}$ 取值如下：
 \begin{align*}
     \text{\textbfs{NCSN:}} \quad 
     & \rvf(\rvx, t) = 0, \qquad g(t) = \sqrt{\frac{\diff \sigma^2(t)}{\diff t}} \\[0.5em]
@@ -234,106 +209,110 @@ DDPM 使用方差计划增量注入噪声 $\{\beta_i\}_{i=1}^L$\footnote{在 \Cr
 \begin{figure}
     \centering
     \includegraphics[width=0.9\linewidth]{Images/PartB/sde-forward-noise.pdf}
-    \caption{\textbfs{离散时间噪声添加步骤的图示。} 它增加了来自 $t$ 至 $t + \Delta t$ 带平均漂移 $\rvf(\rvx_t, t)$ 和扩散系数 $g(t)$. \figcredit{由作者创建。}}
+    \caption{\textbfs{离散时间加噪步骤示意。} 从 $t$ 到 $t + \Delta t$ 的一步带有平均漂移 $\rvf(\rvx_t, t)$ 与扩散系数 $g(t)$。 \figcredit{由作者创建。}}
     \label{fig:sde-forward-noise}
-\end{figure}该公式对应于以下高斯跃迁：
+\end{figure}
+
+这一形式对应如下高斯转移核：
 \begin{align}\label{eq:transition-forward-f-g}
     p(\rvx_{t+\Delta t} |\rvx_t) := \mathcal{N}\!\left(\rvx_{t+\Delta t}; \rvx_t + \rvf(\rvx_t, t)\Delta t,\, g^2(t)\Delta t\, \rmI\right),
 \end{align}
-其中，由于符号的轻微滥用，我们将 $\rvx_t$ 视为固定样本，将 $\rvx_{t+\Delta t}$ 视为随机变量。
+这里略作符号混用：把 $\rvx_t$ 视为已给定的样本，把 $\rvx_{t+\Delta t}$ 视为随机变量。
 
-作为$\Delta t \to 0$（概念上可以理解为准备\emph{无穷多个}噪声层），离散时间过程收敛到在时间上向前演化的连续时间SDE\footnote{\Cref{eq:transition-forward-f-g}中的前向转移核收敛为$\Delta t\to0$，解为相应的Itô SDE。完全严格的证明依赖于我们遵循文献的先进结果。}：
+当 $\Delta t \to 0$（可以理解为概念上引入了\emph{无穷多}层噪声）时，离散时间过程收敛到如下的、沿时间正向演化的连续时间 SDE\footnote{\Cref{eq:transition-forward-f-g} 中的前向转移核在 $\Delta t\to0$ 时的极限，其解就是相应的 Itô SDE。完全严格的证明依赖文献中的高等结果，此处从略。}：
 \begin{align*}
     \diff \rvx(t) = \rvf(\rvx(t), t) \diff t + g(t) \diff \rvw(t),
 \end{align*}
-其中 $\rvw(t)$ 是标准维纳过程（或布朗运动）。
-\rmkb{虽然这里不需要完整的正式定义，但 \emph{ 维纳过程 } 是一个连续时间随机过程 $ \rvw(t) $，它从零开始，具有独立增量，并且满足对于任何 $ s < t $，增量 $ \rvw(t) - \rvw(s) $ 服从均值为零的正态分布和方差 $ t - s $。它代表独立高斯波动随时间的累积，虽然它几乎肯定是连续的，但它是不可微分的。
+其中 $\rvw(t)$ 是标准维纳过程（即布朗运动）。
+\rmkb{这里不需要完整的严格定义，只需知道\emph{维纳过程}是一个连续时间随机过程 $\rvw(t)$：它从零出发，具有独立增量，并且对任意 $s < t$，增量 $\rvw(t) - \rvw(s)$ 服从均值为零、方差为 $t - s$ 的正态分布。它刻画的是独立高斯涨落随时间的累积；它几乎必然连续，却处处不可微。
 
-在无穷小的时间间隔 $[t, t + \diff t]$ 上，维纳过程的增量定义为
+在无穷小时间区间 $[t, t + \diff t]$ 上，维纳过程的增量定义为
 \[
 \diff \rvw(t) := \rvw(t + \diff t) - \rvw(t),
 \]
-其被建模为均值和方差为零的高斯随机变量 $\diff t$：
+它被建模为均值为零、方差为 $\diff t$ 的高斯随机变量：
 \[
 \diff \rvw(t) \sim \mathcal{N}(\bm{0}, \diff t \rmI).
 \]}
 
-\Cref{app:sde-intro} 中提供了对 SDE 基础的简要介绍，\Cref{app:Ito} 中提供了更高级的讨论。然而，我们可以从概念上理解离散公式和连续公式之间的联系如下：
+SDE 基础知识的简要介绍见 \Cref{app:sde-intro}，更深入的讨论见 \Cref{app:Ito}。不过，离散形式与连续形式之间的联系，可以从概念上这样理解：
 \begin{itemize}
     \item $\rvx(t+\Delta t) - \rvx(t) \approx \diff \rvx(t)$，
     \item $\Delta t \approx \diff t$，
     \item $\sqrt{\Delta t} \bm{\epsilon}_t \sim \mathcal{N}(\bm{0}, \Delta t \rmI) \approx \diff \rvw(t)$。
 \end{itemize}
-一旦指定了漂移 $\rvf(\rvx,t)$ 和扩散 $g(t)$，正向时间 SDE 就会自动引发反向时间 SDE，将终端噪声分布传输回数据分布。反向动态仅涉及单个未知项，令人惊讶的是每个连续时间级别的 \emph{score 函数 }。这将分数匹配确定为训练目标；一旦学习到分数，采样就相当于将反向时间 SDE 与学习到的分数进行数值积分。
+一旦给定漂移 $\rvf(\rvx,t)$ 与扩散 $g(t)$，前向时间 SDE 就自动诱导出一个反向时间 SDE，把终端的噪声分布运回数据分布。反向动力学中只含一个未知项，而且出乎意料地简单——就是每个连续时间水平上的\emph{分数函数}。这就把分数匹配确立为训练目标：分数一旦学到，采样就等价于对带学习分数的反向时间 SDE 做数值积分。
 
 
-虽然 \Cref{sec:scoresde-training-sampling} 提出了实际实现，但我们首先研究了 \Cref{subsec:forward-sde} 和 \Cref{subsec:reverse-sde} 中正向和反向过程的理论基础。
+\Cref{sec:scoresde-training-sampling} 会给出实际实现\Cref{sec:scoresde-training-sampling} 会给出实际实现，但我们先看理论基础：\Cref{subsec:forward-sde} 与 \Cref{subsec:reverse-sde} 分别讨论前向与反向过程。
 
 \subsection{正向时间 SDE：从数据到噪声}\label{subsec:forward-sde}
 \begin{figure}[th!]
     \centering
     \includegraphics[width=\textwidth]{Images/PartB/forward_sde_ode_trajectories.pdf}
-        \caption{\textbfs{(1D) 扩散模型中前向过程的可视化。} 该过程从采样的初始点开始（表示为``$\times$'') 来自复杂的双峰数据分布 ($p_0 = p_{\mathrm{data}}$) 并演化为简单的单峰高斯先验 ($p_T \approx p_{\mathrm{prior}}$）。背景热图说明了不断变化的边缘概率密度， $p_t$，随着时间的推移而平滑。显示了样本轨迹的演变过程 $t=0$ 至 $t=T$将随机前向 SDE 过程（蓝色路径）与其确定性对应过程 PF-ODE（白色路径）进行比较。请注意，PF-ODE 是密度的确定性传输图，通常不是从单点开始的样本路径的平均值。 \figcredit{由作者创建。}}
+        \caption{\textbfs{扩散模型前向过程的可视化（一维）。} 过程从复杂双峰数据分布（$p_0 = p_{\mathrm{data}}$）中采样的初始点（以“$\times$”标记）出发，演化为简单的单峰高斯先验（$p_T \approx p_{\mathrm{prior}}$）。背景热图显示随时间平滑变化的边缘概率密度 $p_t$。图中还给出样本轨迹从 $t=0$ 到 $t=T$ 的演化，把随机的 前向 SDE 过程（蓝色路径）与其确定性对应物 PF-ODE（白色路径）相比较。请注意，PF-ODE 是密度的确定性传输映射，通常并不是从单点出发的样本路径的均值。 \figcredit{由作者创建。}}
 
     \label{fig:sde-density-traj}
 \end{figure}
 
 
-通过这个公式，早期基于离散时间的方法，例如 NCSN~\citep{song2019generative} 和 DDPM~\citep{sohl2015deep,ho2020denoising}，可以统一下 \emph{连续时间} 通过随机过程的框架 $\rvx(t)$ 由间隔上定义的前向 SDE 控制 $[0, T]$:
+有了这一表述，此前的离散时间方法，如 NCSN~\citep{song2019generative} 与 DDPM~\citep{sohl2015deep,ho2020denoising}，就可以统一到\emph{连续时间}框架之下：由定义在区间 $[0, T]$ 上的前向 SDE 支配随机过程 $\rvx(t)$：
 \begin{mdframed}
 \begin{equation}\label{eq:sde_forward}
     \diff\rvx(t) = \mathbf{f}(\rvx(t), t) \diff t + g(t) \diff\rvw(t), \quad \rvx(0) \sim p_{\mathrm{data}}.
 \end{equation}
 \end{mdframed}
-在这里， $\mathbf{f}(\cdot, t)\colon\mathbb{R}^D\to\mathbb{R}^D$ 是漂移， $g(t) \in \mathbb{R}$ 是标量扩散系数，并且 $\rvw(t)$ 表示标准维纳过程。我们将此称为 \emph{转发SDE}，它描述了干净的数据如何随着时间的推移逐渐被扰动为噪声。一旦漂移 $\mathbf{f}$ 和扩散系数 $g$ 已指定，前向过程已完全确定，描述了数据变量如何通过高斯噪声的注入逐渐损坏。特别是，诱导了两个随时间变化的密度族：
-\paragraph{扰动核。} 
-条件法
+其中 $\mathbf{f}(\cdot, t)\colon\mathbb{R}^D\to\mathbb{R}^D$ 是漂移，$g(t) \in \mathbb{R}$ 是标量扩散系数，$\rvw(t)$ 表示标准维纳过程。我们称之为\emph{前向 SDE}，它描述干净数据如何随时间逐步被扰动成噪声。
+
+一旦给定漂移 $\mathbf{f}$ 与扩散系数 $g$，前向过程就完全确定，它描述了数据变量如何在不断注入高斯噪声的过程中被逐步污染。具体而言，由此引出两族随时间变化的密度。
+
+\paragraph{扰动核。}
+条件分布
 \[
 p_t(\rvx_t |\rvx_0)
 \]
-描述如何清理数据样本 $ \rvx_0 \sim p_{\mathrm{data}} $ 演变成其嘈杂的对应物 $\rvx_t$ 当时 $t$。一般来说，漂移项 $\rvf(\rvx,t)$ 在 \Cref{eq:sde_forward} 可以是任意函数 $\rvx$，但一个常见且分析方便的选择是假设它是仿射的：
+描述干净数据样本 $ \rvx_0 \sim p_{\mathrm{data}} $ 如何演化为 $t$ 时刻的带噪版本 $\rvx_t$。一般地，\Cref{eq:sde_forward} 中的漂移项 $\rvf(\rvx,t)$ 可以是 $\rvx$ 的任意函数；但一个常见、且便于解析处理的选择，是假定它为仿射形式：
 \begin{equation}\label{eq:affine-drift}
     \rvf(\rvx,t) = f(t) \rvx, 
 \end{equation}
-其中 $f(t)$ 是标量函数 $t$，通常被视为非正数。在这种结构下，条件过程仍然是高斯给定的
-$\rvx_0$，并且扰动核承认通过求解相关均值-方差 ODE 获得的闭式解~\citep{sarkka2019applied}
-（另见 \Cref{subsec:scoresde-perturbation-kernel}). {特别是，
+其中 $f(t)$ 是 $t$ 的标量函数，通常取非正值。在这一结构下，给定 $\rvx_0$ 后的条件过程仍是高斯的，且扰动核可由求解相应的均值—方差 ODE 得到闭式解~\citep{sarkka2019applied}
+（另见 \Cref{subsec:scoresde-perturbation-kernel}）。具体为
 \[
 p_t(\rvx_t |\rvx_0) = \mathcal{N} \big(\rvx_t; \rvm(t), P(t)\mathbf I_D\big),
 \]
-有
+其中
 \[
 \rvm(t) = \exp \Big(\int_0^t f(u) \diff u\Big) \rvx_0,
 \quad
 P(t) = \int_0^t \exp \Big(2 \int_s^t f(u) \diff u\Big) g^2(s) \diff s,
 \]
-和初始条件 $\rvm(0)=\rvx_0$, $P(0)=0$.}
+初始条件为 $\rvm(0)=\rvx_0$，$P(0)=0$。
 
-这种显式形式允许采样 $\rvx_t$ 给定 $\rvx_0$ 直接进行，无需对 SDE 进行数值积分，因此该术语 \emph{免模拟}。 NCSN 和 DDPM 都属于这种仿射漂移设置。 在剩下的部分中，我们开发了任意漂移的一般理论 $\rvf(\rvx,t)$，但当闭式分析有用时，我们将返回仿射漂移。
+有了这一显式形式，给定 $\rvx_0$ 时可以直接采样 $\rvx_t$，无需对 SDE 做数值积分，这正是\emph{免模拟}（simulation-free）一词的由来。NCSN 与 DDPM 都属于这种仿射漂移的设定。下文将建立任意漂移 $\rvf(\rvx,t)$ 下的一般理论，而在闭式分析有用时再回到仿射漂移。
 
 
 
-\paragraph{边缘密度.} 
-时间边缘密度 $ p_t(\rvx_t) $ 通过对扰动核进行积分得到：
+\paragraph{边缘密度。}
+时间边缘密度 $ p_t(\rvx_t) $ 由对扰动核积分得到：
 \begin{equation}\label{eq:scoresde-oracle-marginal}
-    p_t(\rvx_t) := \int p_t(\rvx_t|\rvx_0) p_{\mathrm{data}}(\rvx_0) \diff \rvx_0, \quad \text{with } p_0 = p_{\mathrm{data}}.
+    p_t(\rvx_t) := \int p_t(\rvx_t|\rvx_0) p_{\mathrm{data}}(\rvx_0) \diff \rvx_0, \quad \text{其中 } p_0 = p_{\mathrm{data}}.
 \end{equation}
 
-通过适当选择系数$f(t)$和$g(t)$，前向过程逐渐添加噪声，直到有效忘记初始状态的影响。随着 $T$ 变大，条件分布 $p_T(\mathbf{x}_T |\mathbf{x}_0)$ 不再依赖于 $\mathbf{x}_0$，因为它的均值演变为
+适当选取系数 $f(t)$ 与 $g(t)$，前向过程会不断加噪，直到初始状态的影响被有效遗忘。$T$ 变大时，条件分布 $p_T(\mathbf{x}_T |\mathbf{x}_0)$ 不再依赖 $\mathbf{x}_0$，因为其均值演化为
 \[
-\rvm(T) = \exp\!\Big(\int_0^T f(u)\diff u\Big) \mathbf{x}_0  \longrightarrow  \mathbf{0}, \quad \text{as } T\to\infty,
+\rvm(T) = \exp\!\Big(\int_0^T f(u)\diff u\Big) \mathbf{x}_0  \longrightarrow  \mathbf{0}, \quad \text{当 } T\to\infty,
 \]
-如果 $f(u)$ 为非正数，则指数因子会衰减。同时，方差增长并稳定以匹配选定的先验分布。因此，边缘
+只要 $f(u)$ 非正、使指数因子衰减即可。与此同时，方差不断增长并稳定到所选先验分布的取值。于是边缘分布
 \[
 p_T(\mathbf{x}_T) = \int p_T(\mathbf{x}_T |\mathbf{x}_0) p_{\mathrm{data}}(\mathbf{x}_0)\diff\mathbf{x}_0,
 \]
-它最初表示数据样本的复杂混合，收敛到简单的先验 $p_{\mathrm{prior}}$，通常是高斯分布。在这个限度内，
+它最初是数据样本上的复杂混合，最终收敛到简单的先验 $p_{\mathrm{prior}}$，通常取高斯分布。在该极限下，
 \[
 p_T(\mathbf{x}_T) \approx p_{\mathrm{prior}}(\mathbf{x}_T) 
-\quad \text{and} \quad 
+\quad \text{且} \quad 
 p_T(\mathbf{x}_T |\mathbf{x}_0) \approx p_{\mathrm{prior}}(\mathbf{x}_T),
 \]
-因此，前向过程将任何数据分布映射到易于处理的先验中，为反转和生成提供了方便的起点。
+因此前向过程把任意数据分布都映射到一个易于处理的先验，为反转与生成提供了方便的起点。
 
 
 
@@ -348,18 +327,14 @@ p_T(\mathbf{x}_T |\mathbf{x}_0) \approx p_{\mathrm{prior}}(\mathbf{x}_T),
 \begin{figure}[th!]
     \centering
     \includegraphics[width=\textwidth]{Images/PartB/reverse_sde_and_ode_trajectories.pdf}
-    \caption{\textbfs{数据生成的逆时随机过程的可视化。} 
-它从简单先验分布中抽取的样本开始 
-（$p_{\mathrm{prior}}$）在$t=T$（表示为“$\times$”），向后进化 
-及时使用反向SDE。产生的轨迹终止于 $t=0$ 
-并共同形成目标双峰数据分布 
-（$p_0 = p_{\mathrm{data}}$）。背景热图说明了如何 
-概率密度逐渐从简单的高斯分布转变为 
-复杂的目标分布。
+    \caption{\textbfs{用于数据生成的逆时随机过程可视化。} 
+过程从 $t=T$ 时由简单先验分布（$p_{\mathrm{prior}}$）抽取的样本出发（以“$\times$”标记），借助反向 SDE 沿时间反向演化；所得轨迹终止于 $t=0$，共同形成目标的双峰数据分布（$p_0 = p_{\mathrm{data}}$）。背景热图显示概率密度如何由简单的高斯分布逐步转变为复杂的目标分布。
 \figcredit{由作者创建。}}
     \label{fig:sde-density-back-traj}
 \end{figure}
-直观上，从噪声生成数据可以通过“反转”前向过程来实现：从先验分布中采样的随机点开始，并及时向后演化以获得生成的样本。对于确定性系统（即 ODE），这个想法自然有效。由于不涉及随机性，反转时间只是意味着沿着与正向过程相同的路径追踪相反方向上的点的轨迹\footnote{从技术上讲，这对应于使用时间翻转替换$t \leftrightarrow T - t$.}来求解ODE。相比之下，SDE 在每个时间步都包含随机性，这意味着单个点可以沿着许多看似合理的随机轨迹演化。因此，逆向此类过程更加微妙\footnote{单纯地翻转时间并不能产生正确的逆向过程。}。虽然单个随机轨迹是不可逆的，但值得注意的是这些轨迹的分布是可以逆转的。这是由 \citet{anderson1982reverse} 的基本结果形式化的，它表明时间反转过程 $\{ \bar{\rvx}(t) \}_{t \in [0, T]}$\footnote{ 我们使用“bar”符号来区分反向过程 $\{ \bar{\rvx}(t) \}_{t \in [0, T]}$ 和正向过程 $\{ \rvx(t) \}_{t \in [0, T]}$，由正向过程的正向时间 SDE 定义。} 的正向过程\Cref{eq:sde_forward} 本身由定义明确的 SDE 管理。该逆时过程从 $T$ 演变为 $0$，其动态由下式给出：
+直观上，从噪声生成数据可以通过“反转”前向过程来实现：从先验分布中抽一个随机点，再沿时间反向演化，就得到生成的样本。对确定性系统（即 ODE）来说，这一想法自然成立：由于不涉及随机性，反转时间不过是把同一个点的轨迹沿原路径反过来追一遍\footnote{严格说来，这相当于作时间翻转替换 $t \leftrightarrow T - t$ 后求解 ODE。}。相比之下，SDE 在每步都含随机性，单个点可以沿许多看似合理的随机轨迹演化，因此反转这类过程要微妙得多\footnote{简单地把时间倒过来，并不能得到正确的反转过程。}。
+
+虽然单条随机轨迹不可逆，但深刻的一点是：这些轨迹上的\emph{分布}是可以反转的。这一结论由 \citet{anderson1982reverse} 的一个基础性结果给出：\Cref{eq:sde_forward} 中前向过程的时间反转过程 $\{ \bar{\rvx}(t) \}_{t \in [0, T]}$\footnote{我们用上划线区分反向过程 $\{ \bar{\rvx}(t) \}_{t \in [0, T]}$ 与前向时间 SDE 所定义的前向过程 $\{ \rvx(t) \}_{t \in [0, T]}$。}，本身也由一个定义良好的 SDE 支配。该逆时过程从 $T$ 演化到 $0$，其动力学为：
 \begin{mdframed}
 \begin{align}\label{eq:sde_backward}
 \begin{aligned}[t]
@@ -368,89 +343,82 @@ p_T(\mathbf{x}_T |\mathbf{x}_0) \approx p_{\mathrm{prior}}(\mathbf{x}_T),
 \end{aligned}
 \end{align}
 \end{mdframed}
-这里，$\bar{\rvw}(t)$表示逆时标准维纳过程，定义为$\bar{\rvw}(t) := \rvw(T - t) - \rvw(T)$。
+这里 $\bar{\rvw}(t)$ 表示逆时方向上的标准维纳过程，定义为 $\bar{\rvw}(t) := \rvw(T - t) - \rvw(T)$。
 
 \rmkb{
-在本章中，$t$ 表示原始扩散时钟：
-$t=0$ 对应于数据，$t=T$ 对应于噪声。
-因此，\Cref{eq:sde_backward}中的逆时SDE被集成
-从$t=T$下降到$t=0$，所以$\diff t<0$沿着相反的过程。
-同样地，可以引入一个正向运行的反向时钟
-$s:=T-t$;除非另有说明，我们保留原始时钟$t$。
+本章中 $t$ 始终指原始的扩散时钟：
+$t=0$ 对应数据，$t=T$ 对应噪声。
+因此 \Cref{eq:sde_backward} 中的逆时 SDE 是从 $t=T$ 向下积分到 $t=0$ 的，沿反向过程有 $\diff t<0$。
+也可以另引入一个正向运行的“反向时钟”
+$s:=T-t$；除特别说明外，我们仍沿用原始时钟 $t$。
 }
 
-为了建立 \Cref{eq:sde_backward} 的直觉，我们在 \Cref{subsec:example-gaussian} 中提供了一个具有高斯数据分布和线性高斯动力学的具体示例。这一设置在分析上是易于处理的：可以直接使用基本微积分和线性代数推导时间反转公式，而无需调用 \citet{anderson1982reverse} 的完整一般理论。
+为建立对 \Cref{eq:sde_backward} 的直觉，我们在 \Cref{subsec:example-gaussian} 中给出一个具体例子：数据分布为高斯、动力学为线性高斯。这一设定在解析上完全可处理：直接用基本的微积分与线性代数就能导出时间反转公式，无需动用 \citet{anderson1982reverse} 的完整一般理论。
 
+值得注意的是，随机性（$g\neq 0$）的存在引入了一个额外的校正项 $-g^2(t) \nabla_{\rvx} \log p_t(\bar{\rvx}(t))$，它刻画扩散的影响，并确保反向动力学正确地重现前向 SDE 所诱导的边缘分布演化（见 \Cref{subsec:fpe-sde-ode}）。
 
-请注意，随机性 ($g\neq 0$) 的存在引入了一个额外的校正项 $ -g^2(t) \nabla_{\rvx} \log p_t(\bar{\rvx}(t))$，它解释了扩散的影响，并确保反向动力学正确地再现由前向 SDE 引起的边缘分布的演化（请参阅 \Cref{subsec:fpe-sde-ode}）。
+\paragraph{从概念上讲，为什么逆过程有效？}
+\Cref{subsec:reverse-sde-reason} 通过与 DDPM 变分框架相联系（可选，但很有启发），给出了逆时 SDE 的一个直观推导。这里再补充一些直觉，说明逆时动力学如何从噪声中恢复出结构化的数据。
 
-\paragraph{ 从概念上讲，为什么逆过程有效？} \Cref{subsec:reverse-sde-reason} 通过将反向时间 SDE 连接到 DDPM 变分框架（可选但富有洞察力），呈现了反向时间 SDE 的直观推导。在这里，我们提供了关于逆时动力学如何从噪声中恢复结构化数据的补充直觉。
+乍看之下，逆时过程里还带着布朗噪声，似乎自相矛盾。如果前向扩散是不断把数据摊成越来越嘈杂的形态，那么反过来做——尤其是一个还要经由 $\bar{\rvw}(t)$ 额外引入随机性的过程——怎么反而能生成集中在数据流形附近的干净结构化样本？关键在于，逆时 SDE 注入的并不是任意随机性。扩散项 $g(t)\diff\bar{\rvw}(t)$ 始终与分数驱动的漂移 $- g^2(t)\nabla_{\rvx}\log p_t(\bar{\rvx}(t))$ 相耦合。两者相互制衡：分数把轨迹引向密度更高的区域，噪声则带来受控的随机性，使过程得以探索，又不至于淹没动力学本身。
 
-
-乍一看，逆时间过程中布朗噪声的存在似乎是自相矛盾的。如果前向扩散将数据传播到噪声越来越大的配置中，则尚不清楚如何反转这一过程，特别是通过 $\bar{\rvw}(t)$ 引入额外随机性的过程，可以产生集中在数据流形附近的干净的结构化样本。关键在于反向时间 SDE 并没有注入任意随机性。扩散项 $g(t)\diff\bar{\rvw}(t)$ 始终与分数驱动的漂移 $- g^2(t)\nabla_{\rvx}\log p_t(\bar{\rvx}(t))$ 耦合。总之，这些术语相互平衡：分数引导轨迹走向更高密度的区域，而噪声则引入受控随机性，允许探索而不会压倒动态。
-
-为了更清楚地看到这一点，请回到朗之万直觉 \Cref{eq:continuous-langevin}。当 $f(t)\equiv 0$, \Cref{eq:sde_backward} 读取
+为了更清楚地看到这一点，回到 \Cref{eq:continuous-langevin} 中的朗之万直觉。当 $f(t)\equiv 0$ 时，\Cref{eq:sde_backward} 就化为
 \[
 \diff\bar{\rvx}(t)
 = - g^2(t) \nabla_{\rvx}\log p_t\!\big(\bar{\rvx}(t)\big) \diff t
 + g(t)  \diff\bar{\rvw}(t).
 \]
-通过重新参数化时间向前 $s:=T-t$ （所以 $\diff t=-\diff s$)，并将布朗运动定律重命名为 $\diff\bar{\rvw}(t)=-\diff\rvw_s$。写作 $\bar{\rvx}_s:=\bar{\rvx}(T-s)$ 和 $\pi_s:=p_{T-s}$ 然后给出
-\begin{align*}
-    \diff\bar{\rvx}_s
-&= g^2(T-s) \nabla\log \pi_s \big(\bar{\rvx}_s\big) \diff s
-+ g(T-s) \diff\rvw_s
-\\&=
-2\tau(s) \nabla\log \pi_s\!\big(\bar{\rvx}_s\big) \diff s
-+ \sqrt{2\tau(s)} \diff\rvw_s,
-\quad
-\tau(s):=\tfrac{1}{2}g^2(T-s).
-\end{align*}
-具有随时间变化的温度的 Langevin 形式 $\tau(s)$，针对不断发展的密度 $\pi_s$。根据特威迪公式 (\Cref{eq:tweedie})，分数方向 $\nabla\log \pi_s$ 指向每个时间片的条件干净信号，因此漂移不断“拉回”去噪结构。至关重要的是， $g(t)$ 是 \emph{退火} 沿着相反的轨迹。早期（$s\approx 0$, i.e., $t\approx T$), $g(T-s)$ 通常较大，因此注入的噪声更强，并且过程探索更广泛。作为 $s$ 增加， $g(T-s)$ 减少，随机项减弱，分数项占主导地位，将样本拉入高密度区域 $\pi_s$;通过 $s=T$ (i.e., $t=0$)，轨迹集中在数据流形附近。
+把时间正向重新参数化为 $s:=T-t$（于是 $\diff t=-\diff s$），并按分布把布朗运动改写为 $\diff\bar{\rvw}(t)=-\diff\rvw_s$。记 $\bar{\rvx}_s:=\bar{\rvx}(T-s)$、$\pi_s:=p_{T-s}$，便得到一个温度随时间变化的朗之万形式：温度 $\tau(s)$ 随时间变化，目标密度 $\pi_s$ 也在演化。由 Tweedie 公式（\Cref{eq:tweedie}），分数方向 $\nabla\log \pi_s$ 在每个时间片上指向条件干净信号，因此漂移会不断把去噪后的结构“拉回来”。
+
+关键在于，$g(t)$ 沿反向轨迹\emph{退火}。在早期（$s\approx 0$，即 $t\approx T$），$g(T-s)$ 通常较大，注入的噪声更强，过程探索得更广。随着 $s$ 增大，$g(T-s)$ 减小，随机项逐渐减弱、分数项占据主导，把样本拉进 $\pi_s$ 的高密度区域；到 $s=T$（即 $t=0$）时，轨迹已集中在数据流形附近。
 
 
+\paragraph{逆时 SDE 的能力概览。}
 
 
-
-\paragraph{反向时间 SDE 功能概述。}
-
-
-与时间相关的分数如何发挥作用是令人着迷的
+耐人寻味的是，与时间相关的分数
 \[
 \rvs(\rvx, t) := \nabla_{\rvx} \log p_t(\rvx)
 \]
-自然出现在 \Cref{eq:sde_backward}。一旦前向系数 $f(t)$ 和 $g(t)$ 已指定，分数是反向动态中唯一剩余的未知数。这就凸显了它的核心作用：有了分数在手，逆向过程就确定了，采样就相当于数值积分 \Cref{eq:sde_backward} 带有学习的分数。由于预言机分数通常缺乏封闭式表达，我们采用以下方法 \Cref{ch:score-based} 并训练神经网络 $\mathbf{s}_{\bm{\phi}}(\rvx, t)$ 通过分数匹配来近似；看到 \Cref{subsec:sde-train} 了解详情。替代 $\rvs(\rvx, t)$ 与 $\mathbf{s}_{\bm{\phi}}(\rvx, t)$ 在 \Cref{eq:sde_backward} 则完全指定反向动态。生成对应于求解反向时间 SDE $t = T$，从 $\rvx_T \sim p_{\mathrm{prior}}$, 至 $t = 0$。重要的是， \citet{anderson1982reverse} 证明正向和反向过程的边缘密度一致，确保样本在 $t=0$ 大约遵循 $p_{\mathrm{data}}$ 当 $p_{\mathrm{prior}} \approx p_T$。我们将进一步探讨这一点 \Cref{subsec:sde-sample}.
+自然而然地出现在 \Cref{eq:sde_backward} 中。前向系数 $f(t)$ 与 $g(t)$ 一旦给定，分数就是反向动力学中唯一剩下的未知量。这正凸显了它的核心地位：分数在手，反向过程就完全确定，采样也就化归为用学到的分数对 \Cref{eq:sde_backward} 做数值积分。
+
+由于真实分数一般没有闭式表达，我们沿用 \Cref{ch:score-based} 的做法，训练神经网络 $\mathbf{s}_{\bm{\phi}}(\rvx, t)$ 通过分数匹配去逼近它；细节见 \Cref{subsec:sde-train}。把 \Cref{eq:sde_backward} 中的 $\rvs(\rvx, t)$ 换成 $\mathbf{s}_{\bm{\phi}}(\rvx, t)$，反向动力学就完全指定了。
+
+生成就是从 $t = T$ 出发、以 $\rvx_T \sim p_{\mathrm{prior}}$ 为初值，把逆时 SDE 反解到 $t = 0$。重要的是，\citet{anderson1982reverse} 证明了前向与反向过程的边缘密度一致，因而当 $p_{\mathrm{prior}} \approx p_T$ 时，$t=0$ 处的样本近似服从 $p_{\mathrm{data}}$。这一点我们将在 \Cref{subsec:sde-sample} 中进一步展开。
 
 
 
 
-
-
-\subsection{生成的确定性过程（概率流 ODE）}\label{subsec:pf-ode}
- 虽然 SDE 在 \Cref{eq:sde_backward} 引入随机性并可能增加生成样本的多样性，出现一个问题：
+\subsection{生成用的确定性过程（概率流 ODE）}\label{subsec:pf-ode}
+ 尽管 \Cref{eq:sde_backward} 中的 SDE 引入了随机性，也可能增加生成样本的多样性，但由此引出一个问题：
 \begin{question}
-    是否有必要使用SDE进行采样 \Cref{eq:sde_backward}?
-\end{question}受 \citet{maoutsa2020interacting} 的启发，\citet{song2020score} 还引入了一种确定性过程，即 ODE，它演化出与前向 SDE 具有相同边缘分布的样本。这个过程$\{\tilde\rvx(t)\}_{t\in[0,T]}$\footnote{我们使用波形符来区分与正向和反向时间SDE相关的过程。展望未来，为了简单起见，我们省略了这种符号区别。}，称为 \emph{ 概率流 ODE (PF-ODE)}，由下式给出：
+    是否必须使用 \Cref{eq:sde_backward} 中的 SDE 来采样？
+\end{question}
+受 \citet{maoutsa2020interacting} 启发，\citet{song2020score} 还引入了一个确定性过程，即一个 ODE，它演化出的样本与前向 SDE 具有相同的边缘分布。这个过程 $\{\tilde\rvx(t)\}_{t\in[0,T]}$\footnote{我们用波浪号区分与前向、逆时 SDE 相关的过程。后文为简洁起见省略这一记号区分。}称为\emph{概率流 ODE}（PF-ODE），其形式为：
 \begin{mdframed}
     \begin{equation}\label{eq:prob_ode_gt}
     \frac{\diff}{\diff t}\tilde\rvx(t) = \mathbf{f}(\tilde\rvx(t), t) - \frac{1}{2} g^2(t) \nabla_{\rvx} \log p_t(\tilde\rvx(t)).
     \end{equation}
 \end{mdframed}
 
-与 SDE 情况类似，可以用学习的近似值替换真实分数，并对从 $t = T$ 到 $t = 0$ 的逆时 ODE 进行积分以生成样本。具体来说，生成的样本（PF-ODE 在时间 $t=0$ 的解）采用以下形式
+与 SDE 的情形类似，可以用学到的近似分数替换真实分数，并从 $t = T$ 积分到 $t = 0$ 求解这个逆时 ODE 来生成样本。具体地，生成的样本（即 PF-ODE 在 $t=0$ 的解）具有形式
 \[
 \tilde\rvx(T) + \int_{T}^{0} \Big[ \mathbf{f}(\tilde\rvx(\tau), \tau) - \frac{1}{2} g^2(\tau)  \nabla_{\rvx} \log p_\tau(\tilde\rvx(\tau)) \Big]   \diff \tau,
 \]
-其中初始条件为 $\tilde\rvx(T) \sim p_{\mathrm{prior}}$。由于该积分在封闭形式下很难处理，因此实际生成依赖于数值求解器（例如，欧拉方法，请参阅 \Cref{eq:euler-maruyama}）。
+初始条件为 $\tilde\rvx(T) \sim p_{\mathrm{prior}}$。该积分一般没有闭式解，实际生成因而依赖数值求解器（例如欧拉法，见 \Cref{eq:euler-maruyama}）。因此实际生成依赖于数值求解器（例如，欧拉方法，请参阅 \Cref{eq:euler-maruyama}）。
 
-与反向时间 SDE 相比，PF-ODE 具有两个关键优势：
+与逆时 SDE 相比，PF-ODE 有两个关键优势：
 \begin{itemize}
-    \item ODE 可以在从 $t=0$ 到 $t=T$ 或从 $t=T$ 到 $t=0$ 的任一方向上积分，使用相同的方程公式，前提是在所选端点指定相应的初始条件。这种双向性与 SDE 形成鲜明对比，SDE 通常只允许前向时间积分。
-    \item 它受益于为 ODE 开发的各种成熟、现成的数值求解器。
+    \item 同一个方程既可以从 $t=0$ 积分到 $t=T$，也可以从 $t=T$ 积分到 $t=0$，只需在所选端点给定相应的初始条件。这种双向性与 SDE 形成鲜明对比：SDE 一般只支持沿时间正向积分。
+    \item 它可以受益于为 ODE 开发的各类成熟、现成的数值求解器。
 \end{itemize}
 
+需要强调，PF-ODE 并不是把 \Cref{eq:sde_backward} 中的扩散项直接删掉就得到的；特别是其漂移项中那个 $\frac{1}{2}$ 的因子，有明确的来由。概括地说，\Cref{eq:prob_ode_gt} 是通过这样选取 ODE 的漂移而得到的：使其演化保留与 \Cref{eq:sde_forward} 中前向 SDE 相同的边缘密度。保证边缘对齐的基本原理（即福克尔—普朗克方程~\citep{oksendal2003stochastic}）将在下一节详述。
 
-我们强调，PF-ODE并不是通过简单地去掉\Cref{eq:sde_backward}中的扩散项得到的；值得注意的是，$\frac{1}{2}$ 的漂移项中的因子有一个原则性的起源。在高层次上，\Cref{eq:prob_ode_gt} 通过选择 ODE 的漂移而产生，使其演化保留与 \Cref{eq:sde_forward} 中的前向 SDE 相同的边缘密度。确保边缘对齐的基本原理（即福克尔-普朗克方程~\citep{oksendal2003stochastic}）将在下一节中详细介绍。
+
+\clearpage
+\newpage
+
 
 
 \clearpage
@@ -463,16 +431,16 @@ $s:=T-t$;除非另有说明，我们保留原始时钟$t$。
 
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/score_sde_three_dynamics.pdf}
-\caption{\textbfs{三种动态共享相同的边缘 $p_t$.}
-\textbfs{上面板：噪声方向。}
-前向 SDE，用作锚参考，定义边缘
-$p_t$ 通过将数据扩散到高斯先验。当 PF-ODE 确定性地遵循相同的边缘路径时 \emph{及时向前运行}. \textbfs{下面板：去噪方向。}
-反向时间 SDE 和 PF-ODE \emph{时间向后运行} 按照福克尔-普朗克方程的保证，反向产生相同的边缘。反向时间 SDE 提供随机去噪过程，而 PF-ODE 提供确定性去噪过程。因此，重复的密度快照是有意为之的：这些过程在一次性边缘水平上一致，但在样本水平动态方面有所不同。 PF-ODE 出现在两个面板中，因为它是可以在任一时间方向上积分的确定性流。
-\figcredit{由作者使用人工智能辅助编码创建。}}
+\caption{\textbfs{三种动力学共享相同的边缘分布 $p_t$。}
+\textbfs{上方面板：加噪方向。}
+作为锚定参考，前向 SDE 通过把数据扩散到高斯先验来定义边缘分布
+$p_t$；当 PF-ODE \emph{沿时间正向运行}时，它确定性地沿同一条边缘分布路径前进。\textbfs{下方面板：去噪方向。}
+逆时 SDE 与 PF-ODE \emph{沿时间反向运行}，在福克尔—普朗克方程的保证下反向给出相同的边缘分布。逆时 SDE 给出随机的去噪过程，PF-ODE 给出确定性的去噪过程。可见图中重复出现的密度快照是有意为之：这些过程在单时刻边缘分布这一层面上彼此一致，但在样本层面的动力学上各不相同。PF-ODE 同时出现在两个面板中，因为它是可以在任一时间方向上积分的确定性流。
+\figcredit{由作者借助 AI 辅助编码创建。}}
     \label{fig:score-sde-three-dynamics}
     \vspace{-2cm}
 \end{figure}
-在本节中，我们介绍 \emph{福克尔-普朗克方程} 作为控制扩散模型的中心原则。它描述了概率密度在噪声动态下如何演变，并作为存在随机性时变量变换公式的自然模拟（参见 \Cref{app:continuity}）。从定义边缘的前向扩散过程开始 $p_t$我们解释了反向时间 SDE 和 PF-ODE 是如何设计来重现相同的边缘族的。然后，我们通过高斯示例具体化这一原理，其中可以直接、显式地计算反向时间 SDE 和 PF-ODE。
+本节把\emph{福克尔—普朗克方程}作为支配扩散模型的中心原则来介绍。它描述概率密度在带噪动力学下如何演化，可视为存在随机性时“变量替换公式”的自然对应（见 \Cref{app:continuity}）。我们从定义边缘分布 $p_t$ 的前向扩散过程出发，说明逆时 SDE 与 PF-ODE 如何被设计成重现同一族边缘分布；随后用一个高斯例子把这一原则落到实处——在那里逆时 SDE 与 PF-ODE 都能直接、显式地算出来。随后用一个高斯例子把这一原则落到实处——在那里逆时 SDE 与 PF-ODE 都能直接、显式地算出来。
 
 
 
@@ -482,17 +450,15 @@ $p_t$ 通过将数据扩散到高斯先验。当 PF-ODE 确定性地遵循相同
 
 
 
-
-
-\subsection{福克尔-普朗克方程确保边缘密度对齐}
-扩散模型的一个中心概念是 \emph{不同的过程可以导致相同的边缘分布序列} （我们将在本小节稍后进行说明）。目标是构建一个能够转变的流程 $p_{\mathrm{prior}}$ 进入 $p_{\mathrm{data}}$ 通过跨时间调整边缘，特别是在 $t=0$。该过程的具体形式是次要的，只要它易于处理并允许有效采样。这自然会引出一个基本问题：
+\subsection{用福克尔—普朗克方程保证边缘密度一致}
+扩散模型的一个核心观念是：\emph{不同的过程可以给出相同的边缘分布序列}（本小节稍后会具体说明）。我们的目标是构造出一个过程，通过在各时刻对齐边缘分布、尤其是在 $t=0$ 处对齐，把 $p_{\mathrm{prior}}$ 变成 $p_{\mathrm{data}}$。过程的具体形式反倒是次要的，只要它可处理、且能高效采样即可。这自然引出一个根本问题：
 
 
 \begin{question}
-我们如何确保不同的过程产生相同的边缘分布？
+怎样才能保证不同的过程给出完全相同的边缘分布？
 \end{question}
 
-回到我们的设置，一旦指定了前向 SDE，它就定义了从 $p_{\mathrm{data}}$ 到 $p_{\mathrm{prior}}$ 的边缘密度的演变。然后构造反向时间 SDE 和 PF-ODE，以便它们的轨迹产生与正向过程的轨迹完全匹配的边缘分布。这种对应关系的关键在于福克尔-普朗克方程，该方程控制着扩散过程中边缘密度如何演变。 \Cref{fig:score-sde-three-dynamics} 中提供了说明。以下定理~\citep{anderson1982reverse,song2020score} 为这种连接奠定了基础：
+回到我们的设定：前向 SDE 一旦给定，就确定了边缘密度从 $p_{\mathrm{data}}$ 演化到 $p_{\mathrm{prior}}$ 的过程。随后构造的逆时 SDE 与 PF-ODE，要使它们的轨迹给出与前向过程完全一致的边缘分布。这一对应关系的关键在于福克尔—普朗克方程，它支配着边缘密度在扩散过程中的演化。示意见 \Cref{fig:score-sde-three-dynamics}。下面的定理~\citep{anderson1982reverse,song2020score} 为这一联系奠定了基础：以下定理~\citep{anderson1982reverse,song2020score} 为这种连接奠定了基础：
 \thmp{通过福克尔-普朗克方程进行边缘对齐}{fpe}{
 考虑前向 SDE
 \[
@@ -574,59 +540,42 @@ $t=T$ 至 $t=0$。沿着这个反向演化，它的边缘分布在
 \Cref{app-sec:scoresde-fpe-proof} 中提供了证明，而 \Cref{subsec:fpe-reason} 使用概率边缘化技术提供了福克尔-普朗克方程背后的进一步直觉。
 }
 
-\paragraph{固定边缘的多个条件分布。}
-了解 PF-ODE 如何传输 $p_{\mathrm{data}}$ 及时向前（或等效 $p_{\mathrm{prior}}$ 相反），考虑 \emph{流映射} $\bPsi_{s \to t}: \mathbb{R}^D \to \mathbb{R}^D$，其中 $\bPsi_{s \to t}(\rvx_s)$ 表示此时的PF-ODE解 $t$ 初始化自 $\rvx_s$ 当时 $s$，任何时间 $s, t \in[0,T]$。换句话说，这张映射有一个初始状态 $\rvx_s$ 并直接跳转到其状态 $t$:
+\paragraph{固定边缘分布下的多重条件分布。}
+要理解 PF-ODE 如何把 $p_{\mathrm{data}}$ 向前传输（等价地，把 $p_{\mathrm{prior}}$ 向后传输），可以引入 \emph{流映射} $\bPsi_{s \to t}: \mathbb{R}^D \to \mathbb{R}^D$：对任意时刻 $s, t \in[0,T]$，$\bPsi_{s \to t}(\rvx_s)$ 表示在时刻 $s$ 由 $\rvx_s$ 出发的 PF-ODE 解在时刻 $t$ 的取值。换句话说，这个映射取一个初始状态 $\rvx_s$，直接跳到它在时刻 $t$ 的状态：
 \begin{align}\label{eq:flow-map-def}
 \bPsi_{s \to t}(\rvx_s) \coloneqq \rvx_s + \int_s^t \rvv(\rvx_\tau, \tau)\mathrm{d}\tau,
 \end{align}
-有速度场
+其中速度场为
 \begin{align*}
 \rvv(\rvx, \tau) := \rvf(\rvx, \tau) - \frac{1}{2} g^2(\tau)\nabla_{\rvx}\log p_\tau(\rvx).
 \end{align*}
-此处，积分捕获沿 PF-ODE 轨迹累积的净位移。术语 \emph{流映射} 在微分方程、动力系统和连续介质力学中确实是经典：它表示从其时间位置携带状态的映射 $s$ 到达当时的位置 $t$ 在给定的动态下。速度场
-$\rvv(\rvx,t)$ 描述瞬时运动，而流图
-$\bPsi_{s\to t}$ 记录有限时间间隔内的累积运动~\citep{arnold1988geometrical,chorin1993mathematical}\footnote{这张映射背后的物理思想要古老得多。十八世纪的流体力学已经通过速度场和跟踪材料粒子的演化来研究运动，特别是在欧拉和拉格朗日的基础著作中
-~\citep{euler1757fluid,lagrange1783fluid}.}。我们在整本书中都以这种标准的数学和物理意义使用该术语，特别是在讨论快速扩散生成器时 \Cref{ch:distillation,ch:fast-scratch}。在温和平滑度假设下 $\rvv$，流映射
-$\bPsi_{s \to t}: \mathbb{R}^D \to \mathbb{R}^D$ 是平滑双射\footnote{
-剧透：PF-ODE 流映射 $\bPsi_{s\to t}$ 正是承载的归一化流（NF）双射 $p_s$ 至 $p_t$ （详见
-\Cref{sec:flow-based-method}）。不同之处在于，一旦前向 SDE 及其边缘密度固定，PF-ODE 公式就唯一指定其相关的速度场， $\rvv(\rvx,t)
-=
-\rvf(\rvx,t)
--\frac{1}{2}g^2(t)\nabla_{\rvx}\log p_t(\rvx)$，而归一化流或连续时间归一化流直接参数化并学习速度场。两者都依赖于相同的变量连续变化原理。
-}。对于任何 $t\in[0,T]$， \emph{前推密度} 定义为
+这里的积分刻画了沿 PF-ODE 轨迹累积的净位移。\emph{流映射} 这个术语在微分方程、动力系统和连续介质力学中本就是经典概念：它指的是在给定动力学下，把状态从时刻 $s$ 的位置带到时刻 $t$ 的位置的那个映射。速度场 $\rvv(\rvx,t)$ 描述的是瞬时运动，而流映射 $\bPsi_{s\to t}$ 记录的是有限时间区间内累积起来的运动~\citep{arnold1988geometrical,chorin1993mathematical}\footnote{这个映射背后的物理思想要古老得多。十八世纪的流体力学就已经通过速度场、通过追踪物质粒子的演化来研究运动，欧拉和拉格朗日的奠基性著作尤其如此~\citep{euler1757fluid,lagrange1783fluid}。}。全书都在这一标准的数学与物理意义上使用该术语，讨论基于扩散的快速生成器时尤其如此（见 \Cref{ch:distillation,ch:fast-scratch}）。在对 $\rvv$ 的温和光滑性假设下，流映射 $\bPsi_{s \to t}: \mathbb{R}^D \to \mathbb{R}^D$ 是光滑双射\footnote{%
+剧透一下：PF-ODE 的流映射 $\bPsi_{s\to t}$ 正是把 $p_s$ 搬运到 $p_t$ 的标准化流（NF）双射（详见 \Cref{sec:flow-based-method}）。区别在于：一旦前向 SDE 及其边缘密度确定，PF-ODE 公式就唯一地指定了与之相伴的速度场 $\rvv(\rvx,t) = \rvf(\rvx,t) -\frac{1}{2}g^2(t)\nabla_{\rvx}\log p_t(\rvx)$；而标准化流（或连续时间标准化流）则直接对速度场做参数化并加以学习。两者依赖的都是同一条“变量连续变化”的原理。
+}。
+
+
+对任意 $t\in[0,T]$，定义 \emph{前推密度} 为
 \[
 p_t^{\mathrm{fwd}}(\rvx_t) := \int \delta\bigl(\rvx_t - \bPsi_{0 \to t}(\rvx_0)\bigr)\, p_{\mathrm{data}}(\rvx_0) \,\diff \rvx_0,
 \]
-表示 $\bm{\Psi}_{0\to t} \sharp p_{\mathrm{data}}$，代表时间上的分布 $t$ 下 $\bm{\Psi}_{0\to t}$。定理~\ref{thm:fpe} 确保 $p_t^{\mathrm{fwd}} = p_t$，其中 $p_t$ 是前向 SDE 的边缘密度，相当于确定性 PF-ODE 和随机核：
+记作 $\bm{\Psi}_{0\to t} \sharp p_{\mathrm{data}}$，表示在 $\bm{\Psi}_{0\to t}$ 作用下时刻 $t$ 的分布。定理~\ref{thm:fpe} 保证 $p_t^{\mathrm{fwd}} = p_t$，其中 $p_t$ 是前向 SDE 的边缘密度，于是确定性的 PF-ODE 与随机核给出同一个结果：
 \[
 p_t(\rvx_t) = \int p_t(\rvx_t |\rvx_0)\, p_{\mathrm{data}}(\rvx_0)\,\diff \rvx_0
 = \int \delta\bigl(\rvx_t - \bm{\Psi}_{0\to t}(\rvx_0)\bigr)\, p_{\mathrm{data}}(\rvx_0)\,\diff \rvx_0.
 \]
 
-这意味着无限多个条件 $Q_t(\rvx_t |\rvx_0)$ 产量相同 $p_t(\rvx_t)$，例如：
+这说明，无穷多个条件分布 $Q_t(\rvx_t |\rvx_0)$ 都能给出同一个 $p_t(\rvx_t)$，例如：
 \begin{itemize}
-  \item \textbfs{随机（无模拟）：} $Q_t(\rvx_t |\rvx_0) = p_t(\rvx_t |\rvx_0)$,
-  \item \textbfs{确定性（需要 ODE 求解）：} $Q_t(\rvx_t |\rvx_0) = \delta\bigl(\rvx_t - \bm{\Psi}_{0\to t}(\rvx_0)\bigr)$,
-  \item \textbfs{混合物：} $Q_t(\rvx_t |\rvx_0) = \lambda p_t(\rvx_t |\rvx_0) + (1-\lambda)\delta\bigl(\rvx_t - \bm{\Psi}_{0\to t}(\rvx_0)\bigr)$, $\lambda\in[0,1]$.
+  \item \textbfs{随机型（免模拟）：} $Q_t(\rvx_t |\rvx_0) = p_t(\rvx_t |\rvx_0)$,
+  \item \textbfs{确定型（需要求解 ODE）：} $Q_t(\rvx_t |\rvx_0) = \delta\bigl(\rvx_t - \bm{\Psi}_{0\to t}(\rvx_0)\bigr)$,
+  \item \textbfs{混合型：} $Q_t(\rvx_t |\rvx_0) = \lambda p_t(\rvx_t |\rvx_0) + (1-\lambda)\delta\bigl(\rvx_t - \bm{\Psi}_{0\to t}(\rvx_0)\bigr)$, $\lambda\in[0,1]$.
 \end{itemize}
-这种非唯一性 $Q_t(\rvx_t |\rvx_0)$ 源于边缘约束不能唯一确定条件分布的事实。这个概念再次出现在 \Cref{subsec:fm-framework} 和 \Cref{subsec:ddim}。特别是，存在一整套反向时间 SDE，它们与相同的边缘条件一致。 $p_t$.
+$Q_t(\rvx_t |\rvx_0)$ 之所以不唯一，是因为边缘约束并不能唯一确定条件分布。这一想法会在 \Cref{subsec:fm-framework} 和 \Cref{subsec:ddim} 中再次出现。特别地，存在整整一族反向时间 SDE，它们都与同一个边缘分布 $p_t$ 相容。
 
-\msg{观察}{Matching Prescribed Marginal Densities}{
-多个过程可以产生相同的边缘密度序列；真正重要的是满足福克尔-普朗克方程。这一基本见解为我们设计生成过程提供了非凡的灵活性，这些过程从 $ p_{\mathrm{prior}} $ 至 $ p_{\mathrm{data}} $，反之亦然。
+\msg{观察}{匹配预设的边缘密度}{
+多个过程可以产生相同的边缘密度序列；真正要紧的是满足福克尔—普朗克方程。这一基本洞见赋予我们极大的灵活性：设计从 $ p_{\mathrm{prior}} $ 到 $ p_{\mathrm{data}} $（或反向）的生成过程时，有大量可选方案。
 }
-福克尔-普朗克方程是扩散模型的核心，植根于基本原理 \emph{变量变换公式} 概率密度（参见 \Cref{app:continuity} 用于系统治疗）。这一原则远非一个次要的技术细节，而是在我们的整个开发过程中反复出现，尤其是在 \Cref{sec:flow-matching-framework}.
-
-
-
-
-
-\subsection{可计算示例：高斯动力学的演化}\label{subsec:example-gaussian}
-当 $p_{\mathrm{data}}$ 是正态分布（或高斯混合），分数函数接受封闭式表达式。这使得它成为建立关于扩散过程的直觉的理想设置：我们可以仅使用基本微积分来显式导出反向时间 SDE 和 PF-ODE，而无需借助高级数学工具。在本小节中，我们将说明这些方程在这种易于处理的情况下的表现。
-
-
-
-\paragraph{使用高斯函数精确计算反向时间 SDE。}
- 当 $p_{\mathrm{data}}$ 为高斯分布，公式为 \Cref{eq:sde_backward} 可以直接推导，无需依赖一般理论和证明 \citet{anderson1982reverse}。为了说明核心思想，我们考虑一维情况；以同样的方式扩展到更高的维度。从正向SDE开始
+福克尔—普朗克方程是扩散模型的核心，其根源是概率密度最基本的 \emph{变量替换公式}（系统处理见 \Cref{app:continuity}）。这绝不是一个次要的技术细节：这条原理贯穿本书的整个推演过程，在 \Cref{sec:flow-matching-framework} 中体现得尤为突出。取一小段欧拉步长 $\Delta t>0$:以同样的方式扩展到更高的维度。从正向SDE开始
 \[
 \diff x(t)  =  f(t)  x(t)  \diff t  +  g(t)  \diff w_t,
 \]
@@ -634,53 +583,55 @@ p_t(\rvx_t) = \int p_t(\rvx_t |\rvx_0)\, p_{\mathrm{data}}(\rvx_0)\,\diff \rvx_0
 \[
 x_{t+\Delta t}  =  a  x_t  +  r  \epsilon,
 \]
-其中 $a:=1+f(t)\Delta t$, $r:=g(t)\sqrt{\Delta t}$, 和 $ \epsilon\sim\mathcal N(0,1)$。等价地，前向一步转移核是高斯的：
+其中 $a:=1+f(t)\Delta t$, $r:=g(t)\sqrt{\Delta t}$, $ \epsilon\sim\mathcal N(0,1)$。等价地，前向的一步转移核是高斯的：
 \[
 x_{t+\Delta t}   |   x_t  \sim  \mathcal N\!\big(\cdot;a  x_t,   r^2\big).
 \]
-自 $p_{\mathrm{data}}$ 假设为高斯分布，当前时刻的边缘 $t$ 也是高斯分布，其形式如下：
+既然假定 $p_{\mathrm{data}}$ 是高斯分布，时刻 $t$ 的当前边缘分布 $p_t$ 也必然是高斯分布，形式如下：
 \[
 x_t \sim \mathcal N(\cdot;m_t,   s_t^2),
 \]
-对于某些标量 $m_t$ 和 $s_t$。因此，调节相当于将两个高斯相乘并重新归一化。这使得代数保持基本。
+其中标量 $m_t$ 与 $s_t$（应为 $s_t$）。于是求条件分布就归结为把两个高斯相乘再重新归一化，代数运算始终保持在初等水平。
 
-根据贝叶斯规则，条件密度在常数范围内是先验核和转换核的乘积：
+由贝叶斯公式，条件密度正比于先验与转移核的乘积：
 \begin{align*}
     p(x_t   |   x_{t+\Delta t})  &\propto p(x_{t+\Delta t} | x_t   ) p_t(\rvx_t) \\&\propto
 \exp\Big(-\frac{(x_t-m_t)^2}{2s_t^2}\Big)  
 \exp\Big(-\frac{(x_{t+\Delta t}-a  x_t)^2}{2r^2}\Big).
 \end{align*}
-指数是二次 $x_t$。展开平方和分组项可以准确显示哪些系数重要：
+指数部分是 $x_t$ 的二次式。把两个平方项都展开并按项归并，就能清楚地看出哪些系数真正起作用：
 \[
 -2\log p(x_t   |   x_{t+\Delta t})
  = 
 A  x_t^2  -  2 B  x_t  +  \text{const},
 \]
-与
+其中
 \[
 A:=\frac{1}{s_t^2}+\frac{a^2}{r^2},\quad
 B:=\frac{m_t}{s_t^2}+\frac{a  x_{t+\Delta t}}{r^2}.
 \]
-这里 $A$ 是精度之和（先验精度加上通过传输的转换内核精度 $a$），同时 $B$ 是对应的目标的精确加权总和。有了这些，完成平方就可以在一行中得到后验：
+这里 $A$ 是各精度之和（先验精度，加上经 $a$ 传递过来的转移核精度），$B$ 则是对应的、以精度加权的目标值之和。有了这两项，配方一步就能给出后验：有了这些，完成平方就可以在一行中得到后验：
 \[
 A x_t^2 - 2 B x_t
   =  
 A\Big(x_t-\frac{B}{A}\Big)^2  -  \frac{B^2}{A},
 \]
-所以条件分布是带方差的高斯分布 $1/A$ 和的意思 $B/A$:
+于是条件分布是高斯分布，方差为 $1/A$，均值为 $B/A$：
 \[
 \Var(x_t   |   x_{t+\Delta t})   =   \frac{1}{\frac{1}{s_t^2}+\frac{a^2}{r^2}},
 \qquad
 \mathbb E[x_t   |   x_{t+\Delta t}]   =  
 \frac{\frac{m_t}{s_t^2}+\frac{a  x_{t+\Delta t}}{r^2}}{\frac{1}{s_t^2}+\frac{a^2}{r^2}}.
 \]
-这些封闭形式已经描述了任何小 $\Delta t$。为了读取反向时间 SDE，我们现在将它们扩展为小的 $\Delta t$。使用 $a=1+f(t)\Delta t$ 和 $r^2=g^2(t)\Delta t$。作为 $\Delta t\to 0$，贡献 $\frac{a^2}{r^2}\sim \frac{1}{g^2(t)\Delta t}$ 主导精度，因此方差变为
+这两个闭式结果已经刻画了任意小 $\Delta t$ 下的反向转移。要从中读出反向时间 SDE，接着对小的 $\Delta t$ 做展开。
+
+代入 $a=1+f(t)\Delta t$ 与 $r^2=g^2(t)\Delta t$。当 $\Delta t\to 0$ 时，$\frac{a^2}{r^2}\sim \frac{1}{g^2(t)\Delta t}$ 这一项在精度中占主导，因此方差变为这些封闭形式已经描述了任何小 $\Delta t$。为了读取反向时间 SDE，我们现在将它们扩展为小的 $\Delta t$。使用 $a=1+f(t)\Delta t$ 和 $r^2=g^2(t)\Delta t$。作为 $\Delta t\to 0$，贡献 $\frac{a^2}{r^2}\sim \frac{1}{g^2(t)\Delta t}$ 主导精度，因此方差变为
 \[
 \Var(x_t   |   x_{t+\Delta t})
 = \left(\frac{1}{s_t^2}+\frac{a^2}{r^2}\right)^{-1}
 = g^2(t)  \Delta t  +  \mathcal{O}(\Delta t^2),
 \]
-这告诉我们反向步骤具有相同的扩散尺度 $g(t)$ 作为前进的一步。对于平均值，扩大比率 $B/A$ 到第一笔订单：
+这说明反向步骤的扩散尺度 $g(t)$ 与前向步骤相同。至于均值，把比值 $B/A$ 展开到一阶：
 \[
 \mathbb E[x_t   |   x_{t+\Delta t}]
   =  x_{t+\Delta t}
@@ -690,7 +641,7 @@ A\Big(x_t-\frac{B}{A}\Big)^2  -  \frac{B^2}{A},
 \right]  +  \mathcal{O}(\Delta t^2).
 \]
 
-将均值和方差放在一起产生一步反向转移核
+把均值与方差合在一起，就得到一步反向转移核
 \[
 x_t    |    x_{t+\Delta t}
  \sim 
@@ -699,7 +650,7 @@ x_{t+\Delta t} + \Delta t\!\left[-\left(f+\frac{g^2}{s_t^2}\right)  x_{t+\Delta 
  g^2  \Delta t\right)
  +  \mathcal{O}(\Delta t^2).
 \]
-这被认为是 Euler--Maruyama 更新，从
+这正是从 $t+\Delta t$ 回溯到 $t$ 的 Euler--Maruyama 更新：这被认为是 Euler--Maruyama 更新，从
 $t+\Delta t$ 至 $t$:
 \[
 x_t - x_{t+\Delta t}
@@ -707,7 +658,7 @@ x_t - x_{t+\Delta t}
 + \frac{g^2}{s_t^2} m_t\right]
 + g\sqrt{\Delta t}\,\epsilon.
 \]
-这个向后漂移可以用分数来写，因为对于高斯边缘 $p_t=\mathcal N(m_t,s_t^2)$,
+这个反向漂移可以用分数函数表示，因为对高斯边缘 $p_t=\mathcal N(m_t,s_t^2)$ 有
 \[
 \partial_x \log p_t(x) = -\frac{x-m_t}{s_t^2}
  \Longrightarrow
@@ -716,7 +667,7 @@ x_t - x_{t+\Delta t}
 =
 -\left[f x-g^2\partial_x\log p_t(x)\right].
 \]
-因此，让 $\Delta t\to0$ 给出原始扩散时钟上的逆时SDE，
+于是令 $\Delta t\to0$，就得到原始扩散时钟下的反向时间 SDE：
 \[
 \diff \bar x(t)
 =
@@ -729,23 +680,24 @@ g^2(t)\partial_x\log p_t(\bar x(t))
 g(t)\diff\bar w(t),
 \qquad t:T\to0.
 \]
-这与一般的逆时SDE完全匹配
-\Cref{eq:sde_backward}。在向量形式中，标量导数
+这与 \Cref{eq:sde_backward} 中的一般反向时间 SDE 完全一致。写成向量形式时，标量导数 $\partial_x\log p_t$ 换成 $\nabla_{\rvx}\log p_t$。在向量形式中，标量导数
 $\partial_x\log p_t$ 替换为
 $\nabla_{\rvx}\log p_t$.
 
-\paragraph{使用高斯函数精确计算 PF-ODE。}
-当假设数据分布为高斯分布时，我们也可以直接推导PF-ODE公式，避免了福克尔-普朗克方程等繁琐的机械操作。最后，我们将看到 PF-ODE 的边缘密度与正向 SDE 和反向时间 SDE 的边缘密度一致，这为将要讨论的 Fokker-Planck 理论提供了建设性的验证。 \Cref{subsec:fpe-sde-ode}。假设 $x_t\sim\mathcal N(\cdot;m_t,s_t^2)$ 当时 $t$。尺寸的一个小的确定性步骤 $\Delta t$ 可以写成平滑图
+\paragraph{用高斯情形精确计算 PF-ODE。}
+当假定数据分布为高斯时，我们同样可以直接推出 PF-ODE 的公式，避开福克尔—普朗克方程这类笨重的工具。最后会看到，PF-ODE 的边缘密度与正向 SDE、反向时间 SDE 的边缘密度完全吻合，这为 \Cref{subsec:fpe-sde-ode} 中将要讨论的福克尔—普朗克理论提供了一个构造性的验证。
+
+
+设在时刻 $t$ 有 $x_t\sim\mathcal N(\cdot;m_t,s_t^2)$。一个尺寸为 $\Delta t$ 的小确定性步长可以写成一个光滑映射
 \[
 x_{t+\Delta t}=\Phi_{t,\Delta t}(x_t)
 = x_t + \Delta t v_t(x_t) + \mathcal{O}(\Delta t^2),
 \]
-这只是一阶泰勒展开 $\Delta t$。我们的目标是构建一个速度场，其确定性流再现相同的高斯边缘演化。一个特别简单的选择是仿射速度场
+它不过是关于 $\Delta t$ 的一阶泰勒展开。我们的目标是构造一个速度场，使其确定性流复现同样的高斯边缘演化。一个特别简单的选择是仿射速度场这只是一阶泰勒展开 $\Delta t$。我们的目标是构建一个速度场，其确定性流再现相同的高斯边缘演化。一个特别简单的选择是仿射速度场
 \[
 v_t(x)=a_t x+b_t.
 \]
-由于仿射动力学保持高斯性，我们可以确定 $a_t$ 和 $b_t$
-通过将均值和方差的演化与前向 SDE 的演化相匹配。将其插回到步骤中给出
+由于仿射动力学保持高斯性，我们可以通过令均值与方差的演化与前向 SDE 的演化相匹配，来确定 $a_t$ 与 $b_t$。把它代回步长公式，得到
 \[
 x_{t+\Delta t}=(1+\alpha_t \Delta t) x_t+\beta_t \Delta t+\mathcal{O}(\Delta t^2),
 \qquad
@@ -758,23 +710,7 @@ x_{t+\Delta t}=(1+\alpha_t \Delta t) x_t+\beta_t \Delta t+\mathcal{O}(\Delta t^2
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-现在我们将 $x_t\sim\mathcal N(\cdot;m_t,s_t^2)$ 推入该映射并跟踪一阶均值和方差：
+现在把 $x_t\sim\mathcal N(\cdot;m_t,s_t^2)$ 代入该映射，并追踪到一阶的均值与方差：
 \begin{align*}
 \mathbb E[x_{t+\Delta t}]
 &= m_t+\Delta t(\alpha_t m_t+\beta_t)+\mathcal{O}(\Delta t^2),
@@ -782,38 +718,36 @@ x_{t+\Delta t}=(1+\alpha_t \Delta t) x_t+\beta_t \Delta t+\mathcal{O}(\Delta t^2
 \Var(x_{t+\Delta t})
 &= s_t^2+\Delta t (2\alpha_t s_t^2)+\mathcal{O}(\Delta t^2).
 \end{align*}
-另一方面，正向 SDE $\diff x=f(t) x \diff t+g(t) \diff w_t$ 具有基本矩公式（参见 \Cref{eq:mean-var-evolution}）：
+另一方面，正向 SDE $\diff x=f(t) x \diff t+g(t) \diff w_t$ 有初等的矩演化公式（见 \Cref{eq:mean-var-evolution}）：
 \[
 m_t' = f(t) m_t,
 \qquad
 (s_t^2)' = 2 f(t) s_t^2 + g^2(t).
 \]
-匹配 $\Delta t$ 的系数得出
+令 $\Delta t$ 的系数相等，得到
 \[
 \alpha_t = f(t)+\frac{g^2(t)}{2 s_t^2},
 \qquad
 \beta_t = - \frac{g^2(t)}{2 s_t^2} m_t.
 \]
 
-有了这些选择，步骤就变成了
+这样选定系数后，一步更新就变成
 \[
 x_{t+\Delta t}
 = x_t + \Delta t\!\left[\Big(f(t)+\frac{g^2(t)}{2s_t^2}\Big)x_t
 -\frac{g^2(t)}{2s_t^2} m_t\right]+\mathcal{O}(\Delta t^2).
 \]
-由于对于高斯 $p_t=\mathcal N(m_t,s_t^2)$ 我们有 $\partial_x\log p_t(x)=-(x-m_t)/s_t^2$，因此我们可以将括号重写为
-$f(t) x_t - \tfrac12 g^2(t) \partial_x\log p_t(x_t)$。
-因此，
+由于对高斯 $p_t=\mathcal N(m_t,s_t^2)$ 有 $\partial_x\log p_t(x)=-(x-m_t)/s_t^2$，方括号里的表达式可以改写为 $f(t) x_t - \tfrac12 g^2(t) \partial_x\log p_t(x_t)$。于是
 \[
 x_{t+\Delta t}
 = x_t + \Delta t\Big[f(t) x_t - \tfrac12 g^2(t) \partial_x\log p_t(x_t)\Big] + \mathcal{O}(\Delta t^2).
 \]
-最后，除以 $\Delta t$ 并令 $\Delta t\to 0$ 得出 PF-ODE
+最后，两边除以 $\Delta t$ 并令 $\Delta t\to 0$，即得 PF-ODE
 \[
 x'(t)  =  f(t) x(t)  -  \tfrac12 g^2(t) \partial_x\log p_t\!\big(x(t)\big).
 \]
 
-要了解为什么此 ODE 与正向 SDE（和反向时间 SDE）具有相同的边缘，请观察上面的漂移是线性加上偏移的。因此，$x(t)$ 仿射地依赖于 $x(0)$，并且仿射映射将高斯函数发送到高斯函数。此外，沿该 ODE 的均值 $m_t$ 和方差 $s_t^2$ 满足与前向 SDE 完全相同的两个标量 ODE（通过我们的匹配），具有相同的初始值。因此，$p_t=\mathcal N(m_t,s_t^2)$ 对于每次 $t$ 的两种演化都是相同的。
+要看清这条 ODE 为什么与正向 SDE（以及反向时间 SDE）具有相同的边缘分布，只需注意上面的漂移是“线性项加偏移项”的形式。因此 $x(t)$ 仿射地依赖于 $x(0)$，而仿射映射把高斯映射为高斯。再者，沿该 ODE 演化的均值 $m_t$ 与方差 $s_t^2$，满足的正好是前向 SDE 的那两个标量 ODE（这正是前面匹配系数的结果），初始条件也相同。因此，对每个 $t$，两种演化给出的 $p_t=\mathcal N(m_t,s_t^2)$ 都完全一致。
 
 
 
@@ -828,42 +762,26 @@ x'(t)  =  f(t) x(t)  -  \tfrac12 g^2(t) \partial_x\log p_t\!\big(x(t)\big).
 \section{分数 SDE 的训练与采样}\label{sec:scoresde-training-sampling}
 
 \subsection{训练}\label{subsec:sde-train}
-基于 \Cref{ch:score-based} 的理念，我们使用时间条件神经网络来近似预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$ 
-\[
-\mathbf{s}_{\bm{\phi}} = \mathbf{s}_{\bm{\phi}}(\rvx, t)
-\]
-在所有 $t\in[0,T]$ 中，通过最小化 \Cref{eq:sm} 中的分数匹配目标：
+沿用 \Cref{ch:score-based} 的思路，我们用一个以时间为条件的神经网络 $\mathbf{s}_{\bm{\phi}} = \mathbf{s}_{\bm{\phi}}(\rvx, t)$ 来逼近预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$（对所有 $t\in[0,T]$），做法是最小化 \Cref{eq:sm} 中的分数匹配目标：
 \begin{equation*}
 \mathcal{L}_{\text{SM}}(\bm{\phi}; \omega(\cdot)) := \frac{1}{2} \mathbb{E}_{t\sim p_{\text{time}}}  \mathbb{E}_{\rvx_t \sim p_t}\left[\omega(t) \left\|\mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx} \log p_t(\rvx_t)\right\|_2^2\right],
 \end{equation*}
-其中 $p_{\text{time}}$ 是某种时间分布（例如，$[0,T]$ 上的均匀分布），$\omega(\cdot)$ 是时间加权函数。
+其中 $p_{\text{time}}$ 是某个时间分布（例如 $[0,T]$ 上的均匀分布），$\omega(\cdot)$ 是时间加权函数。
 
 \begin{figure}[th!]
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/denoising_score_matching.pdf}
     \caption{\textbfs{去噪分数匹配技巧。}
     \textbfs{(左)}
-    对于固定噪声样本 $\rvx_t$，边缘分数
-    $\nabla_{\rvx_t}\log p_t(\rvx_t)$ 指向嘈杂的区域
-    样本的可能性更大。直接计算它需要结合
-    来自所有可能的干净样本 $\rvx_0$ 的贡献
-    生产了$\rvx_t$，一般很难处理。
+    给定一个含噪样本 $\rvx_t$，边缘分数 $\nabla_{\rvx_t}\log p_t(\rvx_t)$ 指向的是“更可能出现该含噪样本”的方向。要直接算出它，必须把产生 $\rvx_t$ 的所有可能干净样本 $\rvx_0$ 的贡献聚合起来，这通常难以处理。
     \textbfs{(右)}
-    然而，在训练期间，干净的样本 $\rvx_0$ 用于生成
-    $\rvx_t$ 是已知的。对于高斯扰动，相应的
-    条件分数
-    $\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0)$ 为封闭形式，
-    提供一个简单向量作为回归目标。跨训练
-    例如，这些条件分数向量平均到边缘
-    分数。因此，去噪分数匹配可以学习所需的边缘分数，而无需
-直接回归通常难以处理的分数
-$\nabla_{\rvx_t}\log p_t(\rvx_t)$，其评估需要求平均值
-数据分布中所有可能的样本。
-    \figcredit{由作者使用AI辅助编码创建。}}
+    不过，训练时用于生成 $\rvx_t$ 的那个干净样本 $\rvx_0$ 是已知的。对高斯扰动而言，相应的条件分数 $\nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0)$ 有闭式表达，可以直接给出一个向量作为回归目标。在整个训练集上，这些条件分数向量会平均成边缘分数。因此，去噪分数匹配可以学到所需的边缘分数，而不必直接回归那个通常难以处理的分数 $\nabla_{\rvx_t}\log p_t(\rvx_t)$——它的计算需要对数据分布中所有可能的样本取平均。
+    \figcredit{由作者使用 AI 辅助编码创建。}}
+
     \label{fig:score-and-denoising-score}
 \end{figure}
 
-避免依赖棘手的预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$，DSM 损失 \Cref{eq:dsm-loss} 已就业。以数据点为条件 $\rvx_0$，这种方法允许使用分析上易于处理的分数 $\nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0)$ 通过 \Cref{eq:score-gaussian-formula}，具体示例在 \Cref{sec:instances}。具体来说，我们利用以下损失函数：
+为避免依赖难以处理的预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$，我们改用 \Cref{eq:dsm-loss} 中的 DSM 损失。以数据点 $\rvx_0$ 为条件，这一做法可以借助 \Cref{eq:score-gaussian-formula} 使用解析上可处理的条件分数 $\nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0)$，具体例子见 \Cref{sec:instances}。我们具体使用如下损失函数：
 \begin{mdframed}
     \begin{equation}\label{eq:conti-dsm_loss-real}
 \begin{aligned}
@@ -872,7 +790,10 @@ $\nabla_{\rvx_t}\log p_t(\rvx_t)$，其评估需要求平均值
 \end{aligned}
 \end{equation}
 \end{mdframed}
-其中 $\rvx_0 \sim p_{\mathrm{data}}$. \Cref{eq:conti-dsm_loss-real} 可以解释为连续时间对应的 \Cref{eq:nscn}，用积分代替离散情况下的求和。与定理中的结果类似~\ref{thm:sm-dsm}，最小化 \Cref{eq:conti-dsm_loss-real} 唯一确定如下：
+其中 $\rvx_0 \sim p_{\mathrm{data}}$。\Cref{eq:conti-dsm_loss-real} 可以看作 \Cref{eq:nscn} 的连续时间对应物：离散情形下的求和，在这里换成了积分。
+
+
+与定理~\ref{thm:sm-dsm} 的结果类似，\Cref{eq:conti-dsm_loss-real} 的最小化器唯一确定如下：
 
 \proppp{DSM 的最小化}{dsm-minimizer}{
 最小化器 $\mathbf{s}^*$ 满足
@@ -882,18 +803,18 @@ $\nabla_{\rvx_t}\log p_t(\rvx_t)$，其评估需要求平均值
     = \mathbb{E}_{\rvx_0 \sim p(\rvx_0 | \rvx_t)} \big[ \nabla_{\rvx_t} \log p_t(\rvx_t | \rvx_0) \big]= \nabla_{\rvx_t} \log p_t(\rvx_t),
 \end{aligned}
 \end{align}
-对于几乎所有 $\rvx_t \sim p_t$ 和 $t \in [0,T]$. }{ 
-DSM目标可以理解为最小二乘误差问题。具体来说，在每个时间 $t$，最优分数函数由对数条件密度梯度的条件期望给出，在贝叶斯规则下，其等价于对数边缘密度的梯度。详细证明见附录~\ref{app-sec:min-dsm}.
+对几乎所有的 $\rvx_t \sim p_t$ 与 $t \in [0,T]$ 成立。}{
+DSM 目标可以理解为一个最小二乘问题。具体地说，在每个时刻 $t$，最优分数函数等于“对数条件密度之梯度”在给定 $\rvx_t$ 下的条件期望；由贝叶斯公式，它又等价于对数边缘密度的梯度。详细证明见附录~\ref{app-sec:min-dsm}。
 }
 
 
-\subsection{采样和推理}\label{subsec:sde-sample}
+\subsection{采样与推理}\label{subsec:sde-sample}
 \begin{figure}[th!]
     \centering
     \vspace{-0.8cm}
     \includegraphics[width=\linewidth]{Images/PartB/sde_ode_trajectories.pdf}
     \vspace{-0.6cm}
-    \caption{\textbfs{(2D) 从 Score SDE 采样的图示。} 前向 SDE 设计为 $\diff\rvx(t)=\sqrt{2t}\diff\rvw(t)$，有漂移 $\mathbf{f}\equiv\mathbf{0}$ 和扩散系数 $g(t)=\sqrt{2t}$ 开 $[0,T]$，演化出二模高斯混合 $p_0=p_{\mathrm{data}}$ 进入 $p_T\approx p_{\mathrm{prior}}:=\mathcal{N}(\mathbf{0},T^2\mathbf{I})$。显示的是反向时间 SDE 的采样轨迹（蓝色；通过以下方式求解） \Cref{eq:euler-maruyama}) 和 PF-ODE（红色；通过 \Cref{eq:euler-ode}）。从随机点开始 $\rvx_T\sim p_{\mathrm{prior}}$ （黑暗``$\times$'')，两条轨迹都朝着 $p_{\mathrm{data}}$ 如 $t\to 0$.
+    \caption{\textbfs{(2D) 从 Score SDE 采样的图示。} 前向 SDE 取 $\diff\rvx(t)=\sqrt{2t}\diff\rvw(t)$，即在 $[0,T]$ 上漂移 $\mathbf{f}\equiv\mathbf{0}$、扩散系数 $g(t)=\sqrt{2t}$，它把一个双峰高斯混合 $p_0=p_{\mathrm{data}}$ 演化为 $p_T\approx p_{\mathrm{prior}}:=\mathcal{N}(\mathbf{0},T^2\mathbf{I})$。图中画出了反向时间 SDE 的采样轨迹（蓝色；由 \Cref{eq:euler-maruyama} 求解）与 PF-ODE 的采样轨迹（红色；由 \Cref{eq:euler-ode} 求解）。从一个随机点 $\rvx_T\sim p_{\mathrm{prior}}$（深色“$\times$”）出发，当 $t\to 0$ 时两条轨迹都向 $p_{\mathrm{data}}$ 的支撑集移动。两条轨迹都朝着 $p_{\mathrm{data}}$ 如 $t\to 0$.
     \figcredit{由作者创建。}}
     \label{fig:sde_ode_trajectories}
 \end{figure}
@@ -903,44 +824,42 @@ DSM目标可以理解为最小二乘误差问题。具体来说，在每个时�
 \[
 \mathbf{s}_{\bm{\phi}^\times} := \mathbf{s}_{\bm{\phi}^\times}(\rvx, t) \approx \nabla_{\rvx} \log p_t(\rvx),
 \]
-我们替换了棘手的预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$ 在反向时间 SDE 中（\Cref{eq:sde_backward}) 和 PF-ODE (\Cref{eq:prob_ode_gt}) 与学习到的代理 $\mathbf{s}_{\bm{\phi}^\times}(\rvx, t)$。这种替换可以通过 SDE 或 ODE 进行易于处理的推理。为了清楚起见，我们将结果过程区分为 $\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(t)$ 和 $\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t)$分别，但在后面的部分中将省略这种区别。\footnote{这是为了简化本小节之后的符号。}
+我们就可以把反向时间 SDE（\Cref{eq:sde_backward}）和 PF-ODE（\Cref{eq:prob_ode_gt}）中那个难以处理的预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$ 换成学到的代理 $\mathbf{s}_{\bm{\phi}^\times}(\rvx, t)$。有了这个替换，无论走 SDE 还是走 ODE，推理都变得可计算。为清楚起见，我们把得到的过程分别记作 $\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(t)$ 与 $\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t)$，但后文将不再作此区分。\footnote{这样做是为了在本小节之后简化记号。}
 
 \paragraph{经验反向时间 SDE。}
-通过替换训练好的分数模型 $\mathbf{s}_{\bm{\phi}^\times}$ 为真实分数 \Cref{eq:sde_backward}，我们得到用于生成的参数化逆时SDE：
+把训练好的分数模型 $\mathbf{s}_{\bm{\phi}^\times}$ 代入 \Cref{eq:sde_backward} 中的真实分数，就得到用于生成的参数化反向时间 SDE：
 \begin{equation}\label{eq:sde_backward_sub}
     \diff \rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(t) = \left[\mathbf{f}\left(\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(t), t\right) - g^2(t) \mathbf{s}_{\bm{\phi}^\times}\left(\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(t), t\right) \right] \diff t + g(t) \diff \bar{\rvw}(t).
 \end{equation}
-为了生成样本，我们首先绘制一个初始值 $\rvx_T$ 来自先验分布 $p_{\mathrm{prior}}$ 然后数值求解 \Cref{eq:sde_backward_sub} 时间向后 $t=T$ 至 $t=0$。一个标准的数值求解器是 Euler-Maruyama 方法，它提供了离散更新规则：
+要生成一个样本，先从先验分布 $p_{\mathrm{prior}}$ 中抽取初值 $\rvx_T$，再对 \Cref{eq:sde_backward_sub} 做时间上从 $t=T$ 到 $t=0$ 的数值求解。标准做法是 Euler--Maruyama 方法，它给出如下离散更新规则：
 \begin{equation}\label{eq:euler-maruyama}
 \rvx_{t - \Delta t} \leftarrow \rvx_t - \left[ \mathbf{f}(\rvx_t, t) - g^2(t)  \mathbf{s}_{\bm{\phi}^\times}(\rvx_t, t) \right] \Delta t + g(t) \sqrt{\Delta t} \cdot \boldsymbol{\epsilon},
 \end{equation}
-其中 $\boldsymbol{\epsilon} \sim \mathcal{N}(\bm{0}, \mathbf{I})$ 和 $\Delta t > 0$ 是步长。
+其中 $\boldsymbol{\epsilon} \sim \mathcal{N}(\bm{0}, \mathbf{I})$，$\Delta t > 0$ 是步长。
 
-迭代此更新规则产生最终样本 $\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(0)$。如果分数模型准确，则这些生成样本的分布，表示为 $p_{\bm{\phi}^\times}^{\mathrm{SDE}}(\cdot; 0)$，提供了接近真实数据分布的近似值\footnote{理论上，估计精度取决于之间的差异 $p_T$ 和 $p_{\mathrm{prior}}$ （通常可以忽略不计），模型训练误差和数值离散化误差~\citep{de2022convergence,wang2024evaluating}。我们在这里不追求正式的界限。}:
+反复迭代这一更新规则，就得到最终样本 $\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(0)$。如果分数模型足够准确，这些生成样本的分布（记作 $p_{\bm{\phi}^\times}^{\mathrm{SDE}}(\cdot; 0)$）就是对真实数据分布的一个很接近的近似\footnote{理论上，估计精度取决于 $p_T$ 与 $p_{\mathrm{prior}}$ 之间的差距（通常可以忽略）、模型的训练误差，以及数值离散化误差~\citep{de2022convergence,wang2024evaluating}。这里不追求形式化的界。}：
 \[
 p_{\bm{\phi}^\times}^{\mathrm{SDE}}(\cdot; 0) \approx p_{\mathrm{data}}(\cdot).
 \]
-确实，对于VP构建，DDPM采样方案
-\Cref{eq:ddpm-sampling} 与上面的 Euler-Maruyama 离散化具有相同的连续时间反向 SDE 极限；看到 \Cref{sec:instances}.
+事实上，在 VP 构造下，\Cref{eq:ddpm-sampling} 中的 DDPM 采样方案与上面的 Euler--Maruyama 离散化具有相同的连续时间反向 SDE 极限；参见 \Cref{sec:instances}。
 
-
-\paragraph{经验 PF-ODE。}  
-PF-ODE 定义了连续流连接 $p_{\mathrm{prior}}$ 和 $p_{\mathrm{data}}$，启用采样、编码和精确似然评估。以下部分提供了有关每个操作的更多详细信息。
-\subparagraph{I. 使用 PF-ODE 采样。} 替换中的 oracle 分数 \Cref{eq:prob_ode_gt} 与 $\mathbf{s}_{\bm{\phi}^\times}$ 产生经验 PF-ODE：
+\paragraph{经验 PF-ODE。}
+PF-ODE 定义了一条连接 $p_{\mathrm{prior}}$ 与 $p_{\mathrm{data}}$ 的连续流，使采样、编码和精确似然评估都成为可能。下面分别说明这几种操作。
+\subparagraph{I. 用 PF-ODE 采样。} 把 \Cref{eq:prob_ode_gt} 中的预言机分数替换为 $\mathbf{s}_{\bm{\phi}^\times}$，即得经验 PF-ODE：
 \begin{equation}\label{eq:prob_ode_sub}
     \frac{\diff}{\diff t} \rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t) = \mathbf{f}\left(\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t), t\right) - \frac{1}{2} g^2(t) \mathbf{s}_{\bm{\phi}^\times}\left(\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t), t\right).
 \end{equation}
-为了生成样本，我们首先绘制初始样本 $\rvx_T$ 根据先验分布， $p_{\mathrm{prior}}$。然后我们对 PF-ODE 进行数值求解 \Cref{eq:prob_ode_sub} 时间向后 $t=T$ 至 $t=0$。这个过程相当于近似积分：
+要生成样本，先从先验分布 $p_{\mathrm{prior}}$ 中抽取初始样本 $\rvx_T$，再对 \Cref{eq:prob_ode_sub} 中的 PF-ODE 做时间上从 $t=T$ 到 $t=0$ 的数值求解。这个过程相当于对下面这个积分做近似：
 \[
 \rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(0) = \rvx_T + \int_T^0 \left[ \mathbf{f}\left(\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(\tau), \tau\right) - \frac{1}{2} g^2(\tau) \mathbf{s}_{\bm{\phi}^\times}\left(\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(\tau), \tau\right) \right] \mathrm{d}\tau.
 \]
-求解该积分会产生最终样本， $\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(0)$。通过这个确定性过程生成的样本分布，表示为 $p_{\bm{\phi}^\times}^{\mathrm{ODE}}(\cdot; 0)$，提供数据分布的近似值，使得 $p_{\bm{\phi}^\times}^{\mathrm{ODE}}(\cdot; 0) \approx p_{\mathrm{data}}$。让 $\Delta t > 0$ 表示离散化步长。标准数值积分方法是欧拉方法，它估计
+解这个积分就得到最终样本 $\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(0)$。由这一确定性过程生成的样本，其分布记作 $p_{\bm{\phi}^\times}^{\mathrm{ODE}}(\cdot; 0)$，它是数据分布的近似，即 $p_{\bm{\phi}^\times}^{\mathrm{ODE}}(\cdot; 0) \approx p_{\mathrm{data}}$。设 $\Delta t > 0$ 为离散化步长。标准的数值积分做法是欧拉方法，即在 $\tau \in [t-\Delta t, t]$ 上用
 \[
 \mathbf{f}(\rvx_\tau, \tau) - \frac{1}{2} g^2(\tau)  
 \mathbf{s}_{\bm{\phi}^\times}(\rvx_\tau, \tau) \approx \mathbf{f}(\rvx_t, t) - \frac{1}{2} g^2(t)  
-\mathbf{s}_{\bm{\phi}^\times}(\rvx_t, t), \quad \tau \in [t-\Delta t, t],
+\mathbf{s}_{\bm{\phi}^\times}(\rvx_t, t)
 \]
-导致以下更新规则：
+来近似被积函数，由此得到如下更新规则：导致以下更新规则：
 \begin{equation}\label{eq:euler-ode}
 \rvx_{t - \Delta t} \leftarrow \rvx_t -
 \left[ \mathbf{f}(\rvx_t, t) - \frac{1}{2} g^2(t)  
@@ -948,33 +867,31 @@ PF-ODE 定义了连续流连接 $p_{\mathrm{prior}}$ 和 $p_{\mathrm{data}}$，�
 \end{equation}
 
 
-这种联系使我们能够通过以下核心洞察来重新构建生成过程：
-\msg{洞察力}{Generation $\Leftrightarrow$ ODE/SDE Solving}{从扩散模型中采样基本上等同于求解相应的概率流 ODE 或反向时间 SDE。}
+这一联系让我们可以换一个角度看待生成过程，由此得到一个核心洞见：
+\msg{洞见}{生成 $\Leftrightarrow$ 求解 ODE/SDE}{从扩散模型采样，本质上等价于求解相应的概率流 ODE 或反向时间 SDE。}
 
-这种等价性为扩散模型的采样速度慢提供了清晰的解释，如问题中提出的~\ref{ques:dm-sampling-slow}。生成过程需要大量计算，因为这些微分方程的数值求解器本质上是迭代的，通常需要许多步骤才能准确地近似解轨迹\footnote{例如，DDPM 和 Score SDE 通常使用 $1,000$ 生成的功能评估。}。然而，PF-ODE 公式也有优势，因为它允许我们利用有关加速数值求解器的大量文献。探索这些技术来加速扩散模型采样是主要关注点 \Cref{ch:solvers}.
+这一等价关系为“扩散模型采样为什么慢”（即问题~\ref{ques:dm-sampling-slow}）提供了一个清楚的解释。生成之所以计算量大，是因为这些微分方程的数值求解器本质上是迭代的，往往要很多步才能准确逼近一条解轨迹\footnote{例如 DDPM 与 Score SDE 生成一个样本通常需要 $1{,}000$ 次函数评估。}。不过，PF-ODE 的表述也带来好处：我们可以借用加速数值求解器领域的大量成果。探索用这些技术加速扩散模型采样，正是 \Cref{ch:solvers} 的主要议题。
 
-\subparagraph{II。使用 PF-ODE.} 进行反演 正如所讨论的，与 SDE 的情况不同，我们可以及时求解相同的 \Cref{eq:prob_ode_sub} 正向（从 $0$ 到 $T$）和反向（从 $T$ 到 $0$）。正向求解时，ODE 流程将数据映射到所有 $t \in [0,T]$ 中的（噪声）潜在表示，这起到了编码器的作用。这一概念使强大的应用程序能够实现可控生成，例如图像翻译和编辑以及~\citep{mokady2023null,su2022dual}。
+\subparagraph{II. 用 PF-ODE 做反演。} 如前所述，与 SDE 不同，同一条 \Cref{eq:prob_ode_sub} 既可以正向（从 $0$ 到 $T$）求解，也可以反向（从 $T$ 到 $0$）求解。正向求解时，ODE 流把数据映射为所有 $t \in [0,T]$ 上的（含噪）隐表示，起的是编码器的作用。这一想法使可控生成有了强有力的工具，如图像翻译、图像编辑等~\citep{mokady2023null,su2022dual}。
 
-\subparagraph{三．通过 PF-ODE.} 进行对数似然评估
-概率流 ODE 还可以用来计算数据样本的似然。
-回想一下 \Cref{eq:instant-change-of-var}，对于 ODE，
-沿轨迹的对数密度由其速度的散度决定
-场。
+\subparagraph{III. 用 PF-ODE 计算对数似然。}
+PF-ODE 还可以用来计算数据样本的似然。
+由 \Cref{eq:instant-change-of-var} 可知，对 ODE 而言，沿一条轨迹的对数密度变化由其速度场的散度决定。
 
-对于学习到的 PF-ODE，定义
+对学到的 PF-ODE，定义
 \[
 \rvv_{\bm{\phi}^\times}(\rvx,t)
 :=
 \rvf(\rvx,t)
 -\frac{1}{2}g^2(t)\rvs_{\bm{\phi}^\times}(\rvx,t).
 \]
-如果$\rvx(t)$按照
+若 $\rvx(t)$ 按
 \[
 \frac{\diff}{\diff t}\rvx(t)
 =
-\rvv_{\bm{\phi}^\times}(\rvx(t),t),
+\rvv_{\bm{\phi}^\times}(\rvx(t),t)
 \]
-那么它的对数密度满足
+演化，则它的对数密度满足
 \[
 \frac{\diff}{\diff t}
 \log p^{\textup{ODE}}_{\bm{\phi}^\times}(\rvx(t);t)
@@ -983,10 +900,9 @@ PF-ODE 定义了连续流连接 $p_{\mathrm{prior}}$ 和 $p_{\mathrm{data}}$，�
 \rvv_{\bm{\phi}^\times}(\rvx(t),t).
 \]
 
-为了计算观测样本 $\rvx_0$ 的似然，我们沿概率流 ODE 积分
+要计算一个观测样本 $\rvx_0$ 的似然，我们把 PF-ODE 从 $t=0$ 正向跑到 $t=T$，将 $\rvx_0$ 映射到一个终点，而在该点上模型密度就是那个可处理的先验。同时可以追踪对数密度的变化，为此定义为了计算观测样本 $\rvx_0$ 的似然，我们沿概率流 ODE 积分
 从 $t=0$ 转发到 $t=T$，将 $\rvx_0$ 映射到
-模型密度是易于处理的先验。我们可以同时追踪
-通过定义对数密度变化
+而在该点上模型密度就是那个可处理的先验。同时可以追踪对数密度的变化，为此定义
 \[
 \delta(t)
 :=
@@ -994,7 +910,7 @@ PF-ODE 定义了连续流连接 $p_{\mathrm{prior}}$ 和 $p_{\mathrm{data}}$，�
 -
 \log p^{\textup{ODE}}_{\bm{\phi}^\times}(\rvx_0;0).
 \]
-因此，可以计算 $\delta(0)=0$ 以及状态和对数密度变化
+于是 $\delta(0)=0$，并且状态与对数密度变化可以一并算出：因此，可以计算 $\delta(0)=0$ 以及状态和对数密度变化
 一起通过
 \begin{align}\label{eq:score-sde-likelihood}
 \frac{\diff}{\diff t}
@@ -1020,8 +936,7 @@ PF-ODE 定义了连续流连接 $p_{\mathrm{prior}}$ 和 $p_{\mathrm{data}}$，�
 \end{bmatrix}.
 \end{align}
 
-集成到$t=T$后，终端密度为
-$p_{\mathrm{prior}}(\rvx(T))$。因此，
+积分到 $t=T$ 后，终端密度为 $p_{\mathrm{prior}}(\rvx(T))$。因此
 \[
 \log
 p^{\textup{ODE}}_{\bm{\phi}^\times}(\rvx_0;0)
@@ -1042,20 +957,19 @@ p^{\textup{ODE}}_{\bm{\phi}^\times}(\rvx_0;0)
 \rvv_{\bm{\phi}^\times}(\rvx(t),t)
 \,\diff t.
 \]
-因此，用于生成和反演的相同 PF-ODE 还提供了
-用于似然评估的连续变量变换公式。
+由此可见，用于生成和反演的同一条 PF-ODE，同时也给出了用于似然评估的连续变量替换公式。因此，
 
 
 
 
 \newpage
 
-\section{两类常用的 SDE}\label{sec:instances}
+\section{SDE 的具体实例}\label{sec:instances}
 
-\citet{song2020score} 按方差随时间的变化，将漂移项 $\rvf(\rvx, t)$ 和扩散系数 $g(t)$ 的选择划分为三类。这里介绍两种常用情形，即\emph{方差爆炸}（VE）SDE 和\emph{方差保持}（VP）SDE。噪声调度可以自行设计，它的选择会显著影响实际效果。
-表~\ref{tb:sde_instances} 总结了这两个SDE 实例。
+\citet{song2020score} 依据演化过程中方差的变化方式，把前向 SDE 中的漂移项 $\rvf(\rvx, t)$ 与扩散项 $g(t)$ 的组合分成三类。这里只关注其中两种常用类型：\emph{方差爆炸}（\underline{V}ariance \underline{E}xplosion，VE）SDE 与\emph{方差保持}（\underline{V}ariance \underline{P}reserving，VP）SDE。噪声调度当然可以自行设计，但不同的设计会显著影响实际表现。
+表~\ref{tb:sde_instances} 汇总了这两种实例。
 \begin{table}[th]
-  \caption{远期SDE摘要}
+  \caption{前向 SDE 汇总}
   \small
   \centering
   \resizebox{\textwidth}{!}{
@@ -1078,144 +992,118 @@ p^{\textup{ODE}}_{\bm{\phi}^\times}(\rvx_0;0)
   \end{tabular}
   }
   \label{tb:sde_instances}
-\end{table}\subsection{VE SDE}
-VE SDE 具有以下组件：
+\end{table}
+
+
+
+
+\subsection{VE SDE}
+VE SDE 由以下几部分组成：
 \begin{itemize}
-    \item \textbfs{漂移项：} 零漂移项 $\mathbf{f}=\bm{0}$。
-    \item \textbfs{扩散系数：} $g(t)=\sqrt{\frac{\diff \sigma^2(t)}{\diff t}}$ 其中函数$\sigma(t)$。
+    \item \textbfs{漂移项：} 漂移项为零，即 $\mathbf{f}=\bm{0}$。
+    \item \textbfs{扩散系数：} $g(t)=\sqrt{\frac{\diff \sigma^2(t)}{\diff t}}$，其中 $\sigma(t)$ 是一个给定的函数。
 \end{itemize}
 前向 SDE 的形式如下：
 \begin{equation}\label{eq:vesde}
     \diff\rvx(t) =  \sqrt{\frac{\diff \sigma^2(t)}{\diff t}} \diff\rvw(t).
 \end{equation} 
-同样，\Cref{subsec:scoresde-perturbation-kernel} 的结果暗示了 VE SDE 的扰动内核，并建议选择适当的先验分布：
+同样，\Cref{subsec:scoresde-perturbation-kernel} 的结果直接给出了 VE SDE 的扰动核，并提示了应当如何选取先验分布：
 \begin{itemize}
-    \item \textbfs{扰动内核：}
+    \item \textbfs{扰动核：}
 \begin{align*}
         p_t(\rvx_t | \rvx_0) &= \mathcal{N}\left(\rvx_t ; \rvx_0, \left(\sigma^2(t) - \sigma^2(0)\right)\rmI\right) 
 \end{align*}
-    \item \textbfs{先验分布：} 假设$\sigma(t)$ 是$t \in [0,T]$ 和$\sigma^2(T) \gg \sigma^2(0)$ 的增函数。先验分布由下式给出：
+    \item \textbfs{先验分布：} 假定 $\sigma(t)$ 在 $t \in [0,T]$ 上单调递增，且 $\sigma^2(T) \gg \sigma^2(0)$。此时先验分布为
     \[
     p_{\mathrm{prior}} := \mathcal{N}(\bm{0}, \sigma^2(T)\rmI).
     \]
 \end{itemize}
 
-VE SDE 的典型实例是 NCSN，其设计如下：
+VE SDE 的典型实例是 NCSN，其设计为
 \[
 \sigma(t):=\sigma_{\textup{min}}\left(\frac{\sigma_{\textup{max}}}{\sigma_{\textup{min}}} \right)^t,\quad \text{for } t\in(0,1],
 \]
-其中 $\sigma_{\textup{min}}$ 和 $\sigma_{\textup{max}}$ 是预先指定的常数。即，方差序列被设计为几何序列。由此，NCSN 被视为 VE SDE 的离散化版本，如 \Cref{subsec:scoresde-motivation} 中所述。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+其中 $\sigma_{\textup{min}}$ 与 $\sigma_{\textup{max}}$ 是预先指定的常数。也就是说，噪声水平被取为一个等比数列。因此，如 \Cref{subsec:scoresde-motivation} 所述，NCSN 可以看作 VE SDE 的离散化版本。
 
 
 
 \subsection{VP SDE}
-令 $\beta\colon [0,T] \rightarrow \mathbb{R}_{\geq 0 }$ 为 $t$ 的非负函数。 VP SDE 由以下组件定义：
+设 $\beta\colon [0,T] \rightarrow \mathbb{R}_{\geq 0 }$ 是 $t$ 的非负函数。VP SDE 由以下几部分组成：
 \begin{itemize}
-    \item \textbfs{漂移 术语：} $\mathbf{f}(\rvx, t) = -\frac{1}{2}\beta(t)\rvx$ 给出的线性漂移。
+    \item \textbfs{漂移项：} 线性漂移 $\mathbf{f}(\rvx, t) = -\frac{1}{2}\beta(t)\rvx$。
     \item \textbfs{扩散系数：} $g(t) = \sqrt{\beta(t)}$。
 \end{itemize}
-因此，前向SDE可表示为：
+于是前向 SDE 可写作：
 \begin{align}\label{eq:forward-linear-sde}
 \diff\rvx(t) = -\frac{1}{2}\beta(t) \rvx(t) \diff t + \sqrt{\beta(t)} \diff\rvw(t).
 \end{align}
 
-使用 \Cref{subsec:scoresde-perturbation-kernel} 的结果，我们可以推导出 VP SDE 的扰动内核并选择适当的先验分布：
+借助 \Cref{subsec:scoresde-perturbation-kernel} 的结果，可以推出 VP SDE 的扰动核，并据此选取合适的先验分布：
 \begin{itemize}
     \item \textbfs{扰动内核：}
     \[
     p_t(\rvx_t|\rvx_0) = \mathcal{N}\left(\rvx_t ; \rvx_0 e^{-\frac{1}{2}\int_{0}^{t} \beta(\tau)\diff \tau}, \rmI - \rmI e^{-\int_{0}^{t} \beta(\tau)\diff \tau}\right).
     \]
-    \item \textbfs{先前分发：} $p_{\mathrm{prior}} := \mathcal{N}(\bm{0}, \rmI)$。
+    \item \textbfs{先验分布：} $p_{\mathrm{prior}} := \mathcal{N}(\bm{0}, \rmI)$。
 \end{itemize}
-我们注意到，由于扰动核是具有已知均值和协方差的高斯函数，因此我们可以应用 \Cref{eq:gaussian-score} 来计算其分数函数。
+注意，由于扰动核是均值与协方差都已知的高斯分布，我们可以直接套用 \Cref{eq:gaussian-score} 算出它的分数函数。
 
-VP SDE 的一个典型示例是 DDPM，其中噪声表 $\beta(t)$ 定义为：
+VP SDE 的典型实例是 DDPM，其噪声调度 $\beta(t)$ 定义为
 \[
 \beta(t) := \beta_{\textup{min}} + t(\beta_{\textup{max}} - \beta_{\textup{min}}), \quad \text{for all } t \in [0,1].
 \]
-这里，$\beta_{\textup{min}}$和$\beta_{\textup{max}}$是预定义的常量。由此，DDPM 可以解释为 VP SDE 的离散化，如 \Cref{subsec:scoresde-motivation} 中所讨论的。
+其中 $\beta_{\textup{min}}$ 与 $\beta_{\textup{max}}$ 是预先给定的常数。因此，如 \Cref{subsec:scoresde-motivation} 所讨论的，DDPM 可以理解为 VP SDE 的离散化。
 
 
 
 
 
 
-\subsection{（选读）扰动核如何 
-$ p_t(\rvx_t|\rvx_0) $ 派生？}\label{subsec:scoresde-perturbation-kernel}
-如果正向 SDE \Cref{eq:sde_forward} 中的漂移项在 $\rvx$ 中是线性的，则采用以下形式
+\subsection{（选读）扰动核 $ p_t(\rvx_t|\rvx_0) $ 是怎么来的？}\label{subsec:scoresde-perturbation-kernel}
+如果前向 SDE \Cref{eq:sde_forward} 中的漂移项关于 $\rvx$ 是线性的，即具有如下形式
 \begin{align*}
     \rvf(\rvx, t) = f(t) \rvx,
 \end{align*}
-对于某些标量值、时间相关函数 $f(t) \in \mathbb{R}$，则 \Cref{eq:sde_forward} 变为线性 SDE：
+其中 $f(t) \in \mathbb{R}$ 是某个只依赖时间、取标量值的函数，那么 \Cref{eq:sde_forward} 就成为一个线性 SDE：
 \[
 \diff\rvx(t) = f(t)\rvx(t) \diff t + g(t) \diff\rvw(t).
 \]
 
-
-即使初始分布 $p_{\mathrm{data}}$ 是非高斯分布，漂移的线性也确保条件过程保持高斯分布。特别是，对于 $t>0$，转换内核接受以下形式：
+即便初始分布 $p_{\mathrm{data}}$ 不是高斯分布，漂移的线性性也能保证条件过程保持高斯。具体地说，对 $t>0$，转移核具有如下形式：即便初始分布 $p_{\mathrm{data}}$ 不是高斯分布，漂移的线性性也能保证条件过程保持高斯。具体地说，对 $t>0$，转移核具有如下形式：
 \[
 p_t( \rvx_t | \rvx_0 ) = \mathcal{N} \left( \rvx_t;  \rvm(t),  P(t) \mathbf{I}_D \right),
 \]
-其中 $\rvx_0 \sim p_{\mathrm{data}}$ 和 $\rvm(t) \in \mathbb{R}^D$、$P(t)\in\mathbb{R}_{\ge 0}$ 表示给定 $\rvx_0$ 的条件均值和（标量）方差，定义为：
+其中 $\rvx_0 \sim p_{\mathrm{data}}$，$\rvm(t) \in \mathbb{R}^D$ 与 $P(t)\in\mathbb{R}_{\ge 0}$ 分别是给定 $\rvx_0$ 时的条件均值与（标量）方差，定义为
 \[
 \rvm(t) = \mathbb{E} \left[\rvx_t | \rvx(0) = \rvx_0\right], \qquad
 P(t) \mathbf{I}_D = \operatorname{Cov} \left[\rvx_t | \rvx(0) = \rvx_0\right].
 \]
 
-这些第一和第二时刻根据以下 ODE 演化~\citep{sarkka2019applied}:
+这两个一、二阶矩按下述 ODE 演化~\citep{sarkka2019applied}：
 \begin{align}\label{eq:mean-var-evolution}
 \begin{aligned}
     \frac{\diff \rvm(t)}{\diff t} &= f(t) \rvm(t), \\
     \frac{\diff P(t)}{\diff t} &= 2f(t) P(t) + g^2(t),
 \end{aligned}
 \end{align}
-前提是初始平均值 $\rvm(0)$ 和方差 $P(0)$ 是有限的。由于两个 ODE 都是线性的，因此它们可以通过积分因子方法获得封闭式解。给定初始条件 $\rvx_0$，均值和方差演变为
+前提是初始均值 $\rvm(0)$ 与方差 $P(0)$ 有限。由于这两个 ODE 都是线性的，可以用积分因子法求出闭式解。给定初始条件 $\rvx_0$，均值与方差按如下方式演化
 \begin{align}\label{eq:mean-var-solution}
     \rvm(t) = \mathcal{E}(0  \to  t) \rvx_0, 
 \qquad 
 P(t) = \int_{0}^{t} \mathcal{E}^{2}(s  \to  t)  g(s)^{2} \diff s,
 \end{align}
-与 $\rvm(0)=\rvx_0$ 和 $P(0)=0$。这里 $\mathcal{E}(s  \to  t)$ 表示指数积分因子
+初始值为 $\rvm(0)=\rvx_0$、$P(0)=0$。这里 $\mathcal{E}(s  \to  t)$ 表示指数积分因子
 \[
 \mathcal{E}(s  \to  t) := \exp \left(\int_{s}^{t} f(u) \diff u\right),
 \]
-捕捉时间漂移的累积效应 $s$ 至 $t$。因此，转移核 $p_t(\rvx_t | \rvx_0)$ 也允许封闭式表达式。我们推迟了条件协方差的论证 $p_t(\rvx_t |\rvx_0)$ 是各向同性的，即 
-$\operatorname{Cov}[\rvx_t | \rvx_0] = P(t) \mathbf I_D$ 下一个 $D$具有独立坐标和扩散的维纳过程 $g(t)\mathbf I_D$，以及推导 \Cref{eq:mean-var-evolution}, 至 \Cref{subsec:rigorous-proof-linear-sde}，依赖于 Itô 微积分。
+它刻画了漂移从时刻 $s$ 到 $t$ 的累积效应。于是，转移核 $p_t(\rvx_t | \rvx_0)$ 也就有了闭式表达。
+
+关于 $p_t(\rvx_t |\rvx_0)$ 的条件协方差为何是各向同性的（即在 $D$ 维、各坐标独立、扩散为 $g(t)\mathbf I_D$ 的维纳过程下 $\operatorname{Cov}[\rvx_t | \rvx_0] = P(t) \mathbf I_D$），以及 \Cref{eq:mean-var-evolution} 的推导，都留到 \Cref{subsec:rigorous-proof-linear-sde}，那里用到的是 Itô 微积分。
 
 
-\exm{VE SDE 的转换内核}{在 VE SDE 的特殊情况下： $\rvf \equiv 0$ 和 $g(t) = \sqrt{\frac{\diff \sigma^2(t)}{\diff t}}$，SDE 解的均值和协方差演变如下。
+\exm{VE SDE 的转移核}{在 VE SDE 这一特殊情形下：$\rvf \equiv 0$，$g(t) = \sqrt{\frac{\diff \sigma^2(t)}{\diff t}}$，SDE 解的均值与协方差演化如下。
 
-\proofparagraph{意思是。}
+\proofparagraph{均值。}
 \[
 \frac{\diff \rvm(t)}{\diff t} = 0, 
 \quad \text{with} \quad \rvm(0) = \rvx_0
@@ -1236,9 +1124,9 @@ p_t(\rvx_t | \rvx_0)=\mathcal{N} \left(\rvx_t;  \rvx_0,  \big(\sigma^2(t)-\sigma
 \]
 }
 
-\exm{VP SDE 的转换内核}{在带有漂移的 VP SDE 情况下 $\rvf(\rvx, t) = -\tfrac{1}{2}\beta(t) \rvx$ 和扩散 $g(t) = \sqrt{\beta(t)}$:
+\exm{VP SDE 的转移核}{在 VP SDE 情形下，漂移 $\rvf(\rvx, t) = -\tfrac{1}{2}\beta(t) \rvx$，扩散 $g(t) = \sqrt{\beta(t)}$：
 
-\proofparagraph{平均值 $\rvm(t)$.}
+\proofparagraph{均值 $\rvm(t)$。}
 \[
 \frac{\diff \rvm}{\diff t}
 = -\frac{1}{2}\beta(t) \rvm(t),
@@ -1248,24 +1136,24 @@ B(t) \coloneqq \int_{0}^{t} \beta(s) \diff s,
 \rvm(t) = e^{-\frac{1}{2}B(t)} \rvx_0.
 \]
 
-\proofparagraph{方差 $P(t)$.} 方差满足
+\proofparagraph{方差 $P(t)$。} 方差满足
 \[
 \frac{\diff P}{\diff t} = -\beta(t) P(t) + \beta(t).
 \]
-应用积分因子 $e^{B(t)}$ 与 $B(t) = \int_0^t \beta(s) \diff s$，我们得到
+以 $e^{B(t)}$（其中 $B(t) = \int_0^t \beta(s) \diff s$）为积分因子，得到
 \[
 \frac{\diff}{\diff t} \left[P(t)e^{B(t)}\right] = \beta(t) e^{B(t)}.
 \]
-两边积分得出
+两边积分，得
 \[
 P(t) = 1 - e^{-B(t)}.
 \]
-因此协方差是各向同性的
+因此协方差是各向同性的：
 \[
 \rmP(t) = P(t) \mathbf I_D = \bigl(1 - e^{-B(t)}\bigr)\mathbf I_D.
 \]
 
-\proofparagraph{最终封闭式转换内核。}
+\proofparagraph{最终的闭式转移核。}
 \[
 p_t(\rvx_t|\rvx_0)
 = \mathcal{N} \left(
@@ -1282,31 +1170,28 @@ B(t) = \int_0^t \beta(s) \diff s.
 \newpage
 
 
-\section{\texorpdfstring{从累积扰动核看分数 SDE}{从累积扰动核看分数 SDE}}
+\section{\texorpdfstring{从累积扰动核直接看}{从累积扰动核直接看}}
 \label{sec:variational-perspective}
 
-DDPM 和 Score SDE 通常是通过指定如何及时在本地添加噪声来引入的：通过离散前向转换
-$p(\rvx_t|\rvx_{t-\Delta t})$ 在DDPM中，或者通过Score SDE中的连续时间SDE。然而，对于训练来说，一个特别有用的对象是
-\emph{累积扰动核}
+通常介绍 DDPM 和 Score SDE 的方式，是指定噪声如何在时间上局部地加入：在 DDPM 中通过离散的前向转移 $p(\rvx_t|\rvx_{t-\Delta t})$，在 Score SDE 中通过连续时间的 SDE。但对训练而言，一个特别好用的对象是\emph{累积扰动核}
 \[
 p_t(\rvx_t|\rvx_0),
 \]
-描述了时间的分布 $t$ 直接以原始数据样本为条件。这正是 DDPM 和连续时间去噪目标中自然出现的形式
-\Cref{eq:ddpm-mean-loss,eq:conti-dsm_loss-real}.
+它直接刻画了以原始数据样本为条件时，时刻 $t$ 的分布。DDPM 与连续时间去噪目标 \Cref{eq:ddpm-mean-loss,eq:conti-dsm_loss-real} 中自然出现的形式，正是这个。
 
-这提出了一个互补的观点：而不是从局部噪声注入开始，然后推导 $p_t(\rvx_t|\rvx_0)$，我们可以直接指定累积扰动核。对于下面考虑的线性高斯过程，允许的累积核确定相应的线性 SDE，反之亦然。这种观点使每个时间的信号和噪声量变得明确，直接与实际训练目标联系起来，并且还将为流匹配的概率路径观点提供一个有用的桥梁。 \Cref{ch:flow-based}.
+由此可以得到一个互补的视角：不必先设定局部噪声注入再推出 $p_t(\rvx_t|\rvx_0)$，而是可以\emph{直接}指定累积扰动核。对下面考虑的线性高斯过程来说，一个可行的累积核唯一确定相应的线性 SDE，反之亦然。这个视角把每个时刻的信号量与噪声量都摆到了明面上，与实际训练目标直接挂钩，并且还将为 \Cref{ch:flow-based} 中流匹配的“概率路径”观点提供一座有用的桥梁。
 
 \begin{figure}[th!]
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/vdm-sde.pdf}
-    \caption{\textbfs{同一仿射前向过程的两个视图。}
-    对于可接受的仿射扩散方案，通过连续时间线性 SDE 进行增量噪声注入，并直接指定累积扰动核 \Cref{eq:forward_kernel} 描述相同的条件分布 $p_t(\rvx_t|\rvx_0)$.
+    \caption{\textbfs{同一个仿射前向过程的两种视角。}
+    对一个可行的仿射扩散调度来说，通过连续时间线性 SDE 逐步注入噪声，与直接指定 \Cref{eq:forward_kernel} 中的累积扰动核，描述的是同一族条件分布 $p_t(\rvx_t|\rvx_0)$。
     \figcredit{由作者创建。}}
     \label{fig:vdm-sde}
 \end{figure}
 
-\paragraph{通用仿射前向过程 $p_t(\rvx_t|\rvx_0)$.}
-我们首先定义累积前向扰动内核
+\paragraph{一般的仿射前向过程 $p_t(\rvx_t|\rvx_0)$。}
+先定义累积前向扰动核
 \begin{equation}\label{eq:forward_kernel}
 p_t(\rvx_t|\rvx_0)
 :=
@@ -1316,14 +1201,13 @@ p_t(\rvx_t|\rvx_0)
 \sigma_t^2\mathbf{I}
 \bigr),
 \end{equation}
-其中 $\rvx_0\sim p_{\mathrm{data}}$, 和 $\alpha_t$ 和 $\sigma_t$ 是非负标量函数 $t\in[0,T]$。在标准前向扩散设置中，我们采用
+其中 $\rvx_0\sim p_{\mathrm{data}}$，$\alpha_t$ 与 $\sigma_t$ 是 $t\in[0,T]$ 的非负标量函数。在标准的前向扩散设置中，取
 \[
 \alpha_0=1,
 \qquad
 \sigma_0=0,
 \]
-以便该过程完全从数据开始，并假设
-$\alpha_t>0$ 和 $\sigma_t>0$ 用于 $t\in(0,T]$ 每当使用相应的比率时。等价地，样本来自 \Cref{eq:forward_kernel} 可以写成
+这样过程正好从数据出发；并且约定，凡要用到相应比值处，都假定 $t\in(0,T]$ 时 $\alpha_t>0$、$\sigma_t>0$。等价地，\Cref{eq:forward_kernel} 中的一个样本可以写成
 \[
 \rvx_t
 =
@@ -1334,18 +1218,20 @@ $\alpha_t>0$ 和 $\sigma_t>0$ 用于 $t\in(0,T]$ 每当使用相应的比率时�
 \bm{\epsilon}\sim\mathcal{N}(\mathbf{0},\mathbf{I}).
 \]
 
-这个简单的形式包括几个熟悉的概率路径：
+这个简单的形式涵盖了几条熟悉的概率路径：
 \begin{itemize}
     \item \textbfs{VE（NCSN）：}
-    $\alpha_t\equiv1$，带有噪声标度 $\sigma_t$ 随时间增加；
-    \item \textbfs{副总裁（DDPM）：}
-    $\alpha_t^2+\sigma_t^2=1$;
+    $\alpha_t\equiv1$，噪声尺度 $\sigma_t$ 随时间增大；
+    \item \textbfs{VP（DDPM）：}
+    $\alpha_t^2+\sigma_t^2=1$；
     \item \textbfs{线性高斯插值：}
-    $\alpha_t=1-t$ 和 $\sigma_t=t$ 开 $t\in[0,1]$，对应于以数据噪声时间约定编写时在流匹配和整流流中使用的熟悉的线性路径。
+    在 $t\in[0,1]$ 上取 $\alpha_t=1-t$、$\sigma_t=t$，这对应流匹配与整流流中那条熟悉的线性路径（按“数据到噪声”的时间约定书写）。
 \end{itemize}
 
-\subsection{与 Score SDE 的连接}
-对于Score SDE，指定累积扰动核通常更直观 $p_t(\rvx_t|\rvx_0)$ 先恢复相应的SDE系数，而不是从漂移项和扩散项开始求解矩的ODE（参见 \Cref{subsec:scoresde-perturbation-kernel}）。对于可接受的仿射调度，相应的前向 SDE 采用线性-in-$\rvx$ 表格中 \Cref{eq:forward-linear-sde}:
+\subsection{与 Score SDE 的联系}
+对 Score SDE 而言，往往更直观的做法是先指定累积扰动核 $p_t(\rvx_t|\rvx_0)$，再反推相应的 SDE 系数；而不是从漂移项与扩散项出发、去解矩的 ODE（见 \Cref{subsec:scoresde-perturbation-kernel}）。
+
+对一个可行的仿射调度，相应的前向 SDE 取 \Cref{eq:forward-linear-sde} 中关于 $\rvx$ 线性的形式：
 \begin{align*}
     \diff \rvx(t)
     =
@@ -1354,27 +1240,26 @@ $\alpha_t>0$ 和 $\sigma_t>0$ 用于 $t\in(0,T]$ 每当使用相应的比率时�
     +
     g(t)\diff\rvw(t),
 \end{align*}
-其中 $f,g\colon[0,T]\rightarrow\mathbb{R}$ 是时间的实值函数。
+其中 $f,g\colon[0,T]\rightarrow\mathbb{R}$ 是取实值的时间函数。
 
-系数 $f(t)$ 和 $g(t)$ 可以从分析中恢复
-$\alpha_t$ 和 $\sigma_t$。重要的是，并非所有选择
-$\alpha_t$ 和 $\sigma_t$ 定义有效扩散：隐含扩散方差 $g^2(t)$ 必须保持非负。同样，在这种线性高斯设置中，信噪比
-$\alpha_t^2/\sigma_t^2$ 不能随时间增加。下面的引理使这种关系变得精确。
+系数 $f(t)$ 与 $g(t)$ 可以由 $\alpha_t$ 和 $\sigma_t$ 解析地反推出来。要紧的是，并非任意选取的 $\alpha_t$ 与 $\sigma_t$ 都能定义一个合法的扩散过程：隐含的扩散方差 $g^2(t)$ 必须保持非负。等价地，在这一线性高斯设定下，信噪比 $\alpha_t^2/\sigma_t^2$ 不能随时间增大。下面的引理把这一关系说清楚。
 
-\lemp{前向扰动内核 $\Leftrightarrow$ 线性 SDE}{forward-sde}{
-假设 $\alpha_0=1$, $\sigma_0=0$，还有 $\alpha_t>0$ 和
-$\sigma_t>0$ 可微分 $t\in(0,T]$。定义
-$\lambda_t:=\log\tfrac{\alpha_t}{\sigma_t}$。给定前向扰动核
+
+
+\lemp{前向扰动核 $\Leftrightarrow$ 线性 SDE}{forward-sde}{
+设 $\alpha_0=1$、$\sigma_0=0$，且 $\alpha_t>0$、$\sigma_t>0$ 在 $t\in(0,T]$ 上可微。令 $\lambda_t:=\log\tfrac{\alpha_t}{\sigma_t}$。
+
+给定前向扰动核
 \[
 \rvx_t=\alpha_t\rvx_0+\sigma_t\beps,
 \qquad
 \beps\sim\mathcal N(\mathbf 0,\rmI),
 \]
-存在对应的线性SDE
+存在相应的线性 SDE
 \[
 \diff \rvx(t)=f(t)\rvx(t)\diff t+g(t)\diff\rvw(t)
 \]
-具有相同的条件内核
+具有相同的条件核
 $p_t(\rvx_t|\rvx_0)
 =\mathcal N(\rvx_t;\alpha_t\rvx_0,\sigma_t^2\rmI)$
 当且仅当系数
@@ -1388,20 +1273,14 @@ g^2(t)
 =-2\sigma_t^2\frac{\diff}{\diff t}\lambda_t
 \end{aligned}
 \end{align}
-满足 $g^2(t)\geq0$ 用于 $t\in(0,T]$。等价地， $\lambda_t$ 必须是非递增的。相反，如果线性 SDE 具有条件核
-$\mathcal N(\rvx_t;\alpha_t\rvx_0,\sigma_t^2\rmI)$ 与
-$\alpha_t>0$ 和 $\sigma_t>0$，则其系数必然满足
-\Cref{eq:kernel-sde-equiv}.
+在 $t\in(0,T]$ 上满足 $g^2(t)\geq0$。等价地说，$\lambda_t$ 必须单调不增。
+
+反之，若某线性 SDE 的条件核为 $\mathcal N(\rvx_t;\alpha_t\rvx_0,\sigma_t^2\rmI)$，其中 $\alpha_t>0$、$\sigma_t>0$，则它的系数必然满足 \Cref{eq:kernel-sde-equiv}。
 }{
-来自 \Cref{subsec:scoresde-perturbation-kernel}，通过匹配均值和协方差 ODE 得出结果
-$\rvm'(t)=f(t)\rvm(t)$ 和
-$\rmP'(t)=2f(t)\rmP(t)+g^2(t)\rmI$
-与 $\rvm(t)=\alpha_t\rvx_0$ 和
-$\rmP(t)=\sigma_t^2\rmI$.
+由 \Cref{subsec:scoresde-perturbation-kernel}，令均值与协方差的 ODE $\rvm'(t)=f(t)\rvm(t)$ 与 $\rmP'(t)=2f(t)\rmP(t)+g^2(t)\rmI$ 分别与 $\rvm(t)=\alpha_t\rvx_0$、$\rmP(t)=\sigma_t^2\rmI$ 相匹配，即得结论。
 }
 
-\rmkb{使终端条件分布独立于 $\rvx_0$ 并且等于规定的高斯先验，我们需要
-$\alpha_T=0$ 和 $\sigma_T^2$ 等于先验方差。自从
+\rmkb{要让终端条件分布不依赖于 $\rvx_0$、并且等于预先给定的高斯先验，需要 $\alpha_T=0$，且 $\sigma_T^2$ 等于先验方差。由于
 \[
 \alpha_t
 =
@@ -1411,7 +1290,7 @@ $\alpha_T=0$ 和 $\sigma_T^2$ 等于先验方差。自从
 \[
 \int_0^T f(u)\diff u=-\infty.
 \]
-因此，漂移引起的收缩必定在接近终止时间时变得奇异；特别是， $f$ 无法保持限制 $[0,T]$。扩散系数与规定方差相关：
+因此，漂移带来的收缩在临近终止时刻必然变得奇异；特别地，$f$ 不可能在 $[0,T]$ 上保持有界。扩散系数与规定的方差之间的关系是：
 \[
 g^2(t)
 =
@@ -1419,39 +1298,33 @@ g^2(t)
 -
 2\frac{\alpha_t'}{\alpha_t}\sigma_t^2.
 \]
-对于通常的定期时间表，其中
-$\sigma_t^2$ 接近有限非零终端方差，
-$(\sigma_t^2)'$ 仍然有界，并且
-$\alpha_t'/\alpha_t\to-\infty$，这也给出了
+对通常的调度，$\sigma_t^2$ 趋于一个有限的非零终端方差，$(\sigma_t^2)'$ 仍然有界，而 $\alpha_t'/\alpha_t\to-\infty$，于是同样有
 \[
 g^2(t)\to\infty
 \qquad\text{as }t\to T.
 \]
-更一般地说，的精确行为 $g(t)$ 取决于所选的时间表。如果 $f$ 和 $g$ 保持有限区间上的界限 $[0,T]$，那么
-$\alpha_T>0$，所以在有限的情况下不可能发生精确的遗忘 $T$。因此，在实践中，人们会选择一个最终时间，在这个时间里，剩余依赖性 $\rvx_0$ 可以忽略不计并且 $p_T\approx p_{\mathrm{prior}}$，或考虑无限时间公式，其中 $\alpha_t\to0$
-渐近。
+更一般地说，$g(t)$ 的具体行为取决于所选的时间调度。如果 $f$ 与 $g$ 在有限区间 $[0,T]$ 上都保持有界，则 $\alpha_T>0$，于是在有限时刻 $T$ 不可能实现“完全遗忘”。因此实践中往往选一个足够大的终端时刻，使对 $\rvx_0$ 的残余依赖可以忽略、且 $p_T\approx p_{\mathrm{prior}}$；或者采用无限时间的形式，让 $\alpha_t\to0$ 渐近成立。
 }
 
 
-根据上述引理，通过带有系数的线性 SDE 指定增量噪声注入 $f(t)$ 和 $g(t)$ 数学上等价于用参数定义扰动核 $\alpha_t$ 和 $\sigma_t$。在扩散模型文献中，这两种观点可以互换使用。因此，我们得出结论：
-\msg{观察}{}{
-对于有效的仿射扩散计划，两种描述是等效的：我们可以指定累积的扰动内核
-$p_t(\rvx_t|\rvx_0)$ 通过 $\alpha_t$ 和 $\sigma_t$，或者通过指定对应的线性SDE $f(t)$ 和 $g(t)$.
+根据上述引理，用线性 SDE 的系数 $f(t)$ 与 $g(t)$ 来指定增量的噪声注入，与用参数 $\alpha_t$ 与 $\sigma_t$ 来定义扰动核，在数学上是等价的。扩散模型文献中这两种观点常被互换使用。由此可得：
+\msg{观察}{两种描述彼此等价}{
+对一个可行的仿射扩散调度来说，两种描述方式等价：我们既可以指定累积扰动核 $p_t(\rvx_t|\rvx_0)$（即给定 $\alpha_t$ 与 $\sigma_t$），也可以指定线性 SDE 的系数 $f(t)$ 与 $g(t)$。文献中这两种写法常被混用，只要它们满足同一个约束即可。
 }
 
 
-\subsection{与基于变分的扩散模型的连接}\label{subsec:connection-vdm}
+\subsection{与基于变分的扩散模型的联系}\label{subsec:connection-vdm}
 我们重新审视 DDPM 的核心恒等式，通过贝叶斯规则导出：
 \begin{align}\label{eq:ddpm-reverse-condition-kernel}
     p(\rvx_{t-\Delta t}|\rvx_t, \rvx) = p(\rvx_t|\rvx_{t-\Delta t}) \cdot \frac{p_{t-\Delta t}(\rvx_{t-\Delta t}|\rvx)}{p_t(\rvx_t|\rvx)},
 \end{align}
-对于任何 $\rvx$ （通常 $\rvx\sim p_{\mathrm{data}}$）。这个反向条件 $ p(\rvx_{t-\Delta t} | \rvx_t, \rvx) $ 是建模的核心，可实现易于处理的训练目标和高效的采样。尽管 DDPM 通常定义增量内核 $p(\rvx_t|\rvx_{t-\Delta t})$ 一、累积转变 $p_t(\rvx_t|\rvx_0)$ 通常提供更具可解释性和实用性的公式，特别是对于先验和损耗设计。
+其中 $\rvx$ 任取（通常 $\rvx\sim p_{\mathrm{data}}$）。这个反向条件 $ p(\rvx_{t-\Delta t} | \rvx_t, \rvx) $ 是建模的核心，它同时带来可处理的训练目标和高效的采样。DDPM 通常定义的是增量核 $p(\rvx_t|\rvx_{t-\Delta t})$，而累积转移 $p_t(\rvx_t|\rvx_0)$ 往往给出更易解释、更实用的公式，在设计与选择先验和损失时尤其如此。
 
-\paragraph{导出转换内核。}
-我们现在将其扩展到连续时间设置。让 $0 \leq t < s \leq T$ 是两个（连续的）时间点。给定扰动核 $p_t(\rvx_t|\rvx_0)$，我们可以计算相反的条件 $p(\rvx_t|\rvx_s, \rvx)$ 对于任何 $\rvx$ 通过申请 \Cref{eq:ddpm-reverse-condition-kernel}\footnote{通过处理，该恒等式自然延伸到连续时间 $s$ 一般时间较早。}，使用前向转移核 $p(\rvx_s|\rvx_t)$ 作为中间体。下面的引理总结了这个推导，扩展了引理~\ref{ddpm-reverse-kernel} 无需假设 $\alpha_t^2 + \sigma_t^2 = 1$.
+\paragraph{导出反向转移核。}
+现在把它推广到连续时间。设 $0 \leq t < s \leq T$ 为两个（不一定相邻的）时刻。给定扰动核 $p_t(\rvx_t|\rvx_0)$，对任意 $\rvx$ 都可以利用 \Cref{eq:ddpm-reverse-condition-kernel}\footnote{经过适当处理，这一恒等式自然可以推广到连续时间，其中 $s$ 一般取更早的时刻。}，并以正向转移核 $p(\rvx_s|\rvx_t)$ 作中介，算出反向条件 $p(\rvx_t|\rvx_s, \rvx)$。下面的引理总结了这一推导，它把引理~\ref{ddpm-reverse-kernel} 推广到不再需要假设 $\alpha_t^2 + \sigma_t^2 = 1$ 的情形。
 
-\lemp{反向条件转换内核}{reverse-kernel}{
-让 $0 \leq t < s \leq T$。反过来 \emph{有条件} 过渡内核是：
+\lemp{反向条件转移核}{reverse-kernel}{
+设 $0 \leq t < s \leq T$。反向\emph{条件}转移核为：
 \begin{equation*}
     p(\rvx_t|\rvx_s, \rvx) = \mathcal{N}\left(\rvx_t; \bm{\mu}(\rvx_s, \rvx; s, t), \sigma^2(s, t) \bfI\right),
 \end{equation*}
@@ -1462,39 +1335,39 @@ $p_t(\rvx_t|\rvx_0)$ 通过 $\alpha_t$ 和 $\sigma_t$，或者通过指定对应
     \sigma^2(s, t) := \sigma^2_{s|t} \frac{\sigma_t^2}{\sigma_s^2}.
 \end{aligned}
 \end{align}
-在这里， $\alpha_{s|t}$ 和 $\sigma_{s|t}$ 定义为：
+其中 $\alpha_{s|t}$ 与 $\sigma_{s|t}$ 定义为
 \begin{equation*}
     \alpha_{s|t} := \frac{\alpha_s}{\alpha_t}, \qquad \sigma^2_{s|t} := \sigma_s^2 - \alpha_{s|t}^2 \sigma_t^2.
 \end{equation*}
 }{
-我们首先计算前向过渡内核：
+先计算前向转移核：
 \begin{equation}\label{eq:zt_given_zs}
     p(\rvx_s|\rvx_t) = \mathcal{N}\left(\rvx_s; \alpha_{s|t} \rvx_t, \sigma^2_{s|t} \bfI\right).
 \end{equation}
-反向转移核遵循贝叶斯规则，并且由于所有涉及的分布都是高斯分布，因此可以通过直接计算得出结果。欲了解更多详情，请参阅附录 A \citep{kingma2021variational}.
+反向转移核由贝叶斯公式给出；由于涉及的分布全是高斯分布，直接计算即可，细节见附录 A~\citep{kingma2021variational}。
 }
 
 
-虽然 $p(\rvx_{t + \Delta t}|\rvx_t)$ 和 $p_t(\rvx_t|\rvx_0)$ 理论上是等价的， $p_t(\rvx_t|\rvx_0)$ 通常扮演更核心的角色。逐步过渡在 \Cref{eq:zt_given_zs} 主要用于获得封闭形式的反向转移核。近期作品~\citep{kingma2021variational} 因此赞成直接指定 $p_t(\rvx_t|\rvx_0)$ 因其清晰性和可解释性。
+尽管 $p(\rvx_{t + \Delta t}|\rvx_t)$ 与 $p_t(\rvx_t|\rvx_0)$ 在理论上等价，$p_t(\rvx_t|\rvx_0)$ 通常扮演更核心的角色。\Cref{eq:zt_given_zs} 中的逐步转移，主要只是用来得到闭式的反向转移核。正因如此，近期的工作~\citep{kingma2021variational} 主张直接指定 $p_t(\rvx_t|\rvx_0)$，理由是它更清晰、也更易解释。
 
 
 
-\paragraph{逆向过程建模、训练和采样。}  
-训练目标（ELBO \Cref{eq:ddpm-elbo}) 以及中介绍的建模框架 \Cref{sec:ddpm} 在我们的通用设置下仍然适用。为了清楚起见，我们采用 $\rvx$-预测公式，表示为 $\rvx_{\bm{\phi}}(\rvx_s, s)$，以下~\citet{kingma2021variational}。然而，等效的 $\beps$-预测视角，表示为 $\bm{\epsilon}_{\bm{\phi}}(\rvx_s, s)$，由于以下关系也有效（如 \Cref{eq:ddpm-clean-noise})
+\paragraph{反向过程的建模、训练与采样。}
+训练目标（ELBO，\Cref{eq:ddpm-elbo}）以及 \Cref{sec:ddpm} 中介绍的建模框架，在我们的通用设定下依然适用。为表述清楚，下面沿用 \citet{kingma2021variational} 的 $\rvx$-预测形式，记作 $\rvx_{\bm{\phi}}(\rvx_s, s)$。不过，等价的 $\beps$-预测形式 $\bm{\epsilon}_{\bm{\phi}}(\rvx_s, s)$ 同样可行，因为如下关系成立（见 \Cref{eq:ddpm-clean-noise}）
 \[
 \rvx_s = \alpha_s \rvx_{\bm{\phi}}(\rvx_s, s) + \sigma_s \bm{\epsilon}_{\bm{\phi}}(\rvx_s, s),\quad \text{for any given } \rvx_s \sim q_s.
 \]
 
-\subparagraph{建模和扩散损失 $\mathcal{L}_{\text{diffusion}}$.}  
-与DDPM类似，条件分布 $p(\rvx_t|\rvx_s, \rvx)$ 在 \Cref{eq:p_backward_mean_var} 激励更换干净信号 $\rvx$ 具有可学习的预测器 $\rvx_{\bm{\phi}}(\rvx_s, s)$，产生以下形式的参数化逆向模型：
+\subparagraph{建模与扩散损失 $\mathcal{L}_{\text{diffusion}}$。}
+与 DDPM 类似，\Cref{eq:p_backward_mean_var} 中的条件分布 $p(\rvx_t|\rvx_s, \rvx)$ 提示我们把干净信号 $\rvx$ 换成一个可学习的预测器 $\rvx_{\bm{\phi}}(\rvx_s, s)$，由此得到如下形式的参数化反向模型：
 \begin{align}\label{eq:general-ddpm-sampling}
     p_{\bm{\phi}}(\rvx_t | \rvx_s) := \mathcal{N}\left(\rvx_t; \bm{\mu}_{\bm{\phi}}(\rvx_s, s, t), \sigma^2(s,t) \mathbf{I}\right),
 \end{align}
-平均值参数化为：
+其中均值参数化为
 \[
     \bm{\mu}_{\bm{\phi}}(\rvx_s, s, t) = \frac{\alpha_{s|t} \sigma_t^2}{\sigma_s^2} \rvx_s + \frac{\alpha_t \sigma_{s|t}^2}{\sigma_s^2} \rvx_{\bm{\phi}}(\rvx_s, s).
 \]
-给定中的前向转移核 \Cref{eq:forward_kernel}，KL 散度 $\mathcal{L}_{\text{diffusion}}(\rvx; \bm{\phi})$ 减少为加权回归损失：
+在 \Cref{eq:forward_kernel} 给出的前向转移核下，KL 散度 $\mathcal{L}_{\text{diffusion}}(\rvx; \bm{\phi})$ 就化为一个加权回归损失：
 \begin{align}
 \begin{aligned}
     \label{eq:snr-kl}
@@ -1503,20 +1376,19 @@ $p_t(\rvx_t|\rvx_0)$ 通过 $\alpha_t$ 和 $\sigma_t$，或者通过指定对应
     &= \frac{1}{2} \big(\text{SNR}(t) - \text{SNR}(s)\big) \left\| \rvx_0 - \rvx_{\bm{\phi}}(\rvx_s, s) \right\|_2^2,
 \end{aligned}
 \end{align}
-其中 $\rvx_s = \alpha_s\rvx_0 + \sigma_s\bm{\epsilon}$，与 $\rvx_0 \sim p_{\mathrm{data}}$, $\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$, 和 $\text{SNR}(s) := \alpha_s^2 / \sigma_s^2$ 表示该时刻的信噪比 $s$.
-
+其中 $\rvx_s = \alpha_s\rvx_0 + \sigma_s\bm{\epsilon}$，$\rvx_0 \sim p_{\mathrm{data}}$，$\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$，$\text{SNR}(s) := \alpha_s^2 / \sigma_s^2$ 为时刻 $s$ 的信噪比。
 
 \rmkb{
-在 \citep{kingma2021variational}，作者研究了连续时间极限 \Cref{eq:snr-kl} 如 $t \to s$，产生：
+在 \citep{kingma2021variational} 中，作者考察了 \Cref{eq:snr-kl} 的连续时间极限 $t \to s$，得到
 \begin{align*}
 \mathcal{L}_{\text{VDM}}^\infty(\rvx_0) 
 = -\frac{1}{2}  \mathbb{E}_{s, \bm{\epsilon} \sim \mathcal{N}(\bm{0}, \bfI)}  \text{SNR}'(s)  \big\| \rvx_0 - \rvx_{\bm{\phi}}(\rvx_s, s) \big\|_2^2.
 \end{align*}
-此设置还引入了可学习的噪声表，虽然它概括了连续数据之外的内容，但此类扩展超出了我们当前讨论的范围。
+这一框架还进一步引出了可学习的噪声调度；它虽然超出了连续时间数据设定的范围，但已不属于当前讨论的题目。
 }
 
-\subparagraph{采样。}  
-采样过程与使用参数化内核的 DDPM 类似 \Cref{eq:general-ddpm-sampling}:
+\subparagraph{采样。}
+采样流程与使用参数化核的 DDPM 相似（\Cref{eq:general-ddpm-sampling}）：
 \begin{align}\label{eq:general-ddpm-sampling-discrete}
     \rvx_t = \underbrace{\frac{\alpha_{s|t} \sigma_t^2}{\sigma_s^2} \rvx_s + \frac{\alpha_t \sigma_{s|t}^2}{\sigma_s^2} \rvx_{\bm{\phi}^\times}(\rvx_s, s)}_{\bm{\mu}_{\bm{\phi}^\times}(\rvx_s, t, s)} + \sigma_{s|t} \frac{\sigma_t}{\sigma_s} \bm{\epsilon}_s,\quad  \bm{\epsilon}_s \sim \mathcal{N}(\bm{0}, \rmI).
 \end{align}
@@ -1526,63 +1398,58 @@ $p_t(\rvx_t|\rvx_0)$ 通过 $\alpha_t$ 和 $\sigma_t$，或者通过指定对应
 \clearpage
 \newpage
 
-\section{（选读）用边缘化与贝叶斯公式理解福克尔-普朗克方程和反向时间 SDE}\label{eq:heuristic-fpe-sde}
-在本节中，我们从概率角度介绍 福克尔-普朗克方程和反向时间 SDE 的结构。通过利用边缘化技巧和贝叶斯规则等基本工具，我们阐明了随机过程的统计公式与其相应的微分方程之间的联系。我们强调，这里提出的“推导”不是数学上严格的证明，而是旨在传达潜在联系的启发式论证。
+\section{（选读）用边缘化与贝叶斯公式理解福克尔—普朗克方程与反向时间 SDE}\label{eq:heuristic-fpe-sde}
+本节从概率的角度来呈现福克尔—普朗克方程与反向时间 SDE 的结构。借助边缘化技巧、贝叶斯公式这类基本工具，我们把随机过程的统计描述与对应的微分方程之间的联系讲清楚。需要强调，这里的“推导”并非数学上严格的证明，而是旨在传达内在联系的启发式论证。
 
-
-\subsection{来自转移核边缘化的 福克尔-普朗克方程}\label{subsec:fpe-reason}
-给定前向转移概率，如下所示 \Cref{eq:transition-forward-f-g}
+\subsection{由转移核的边缘化得到福克尔—普朗克方程}\label{subsec:fpe-reason}
+给定 \Cref{eq:transition-forward-f-g} 中的前向转移概率
 \begin{align*}
     p(\mathbf{x}_{t+\Delta t} | \mathbf{x}_t) = \mathcal{N}\left(\mathbf{x}_{t+\Delta t}; \mathbf{x}_t + \mathbf{f}(\mathbf{x}_t, t)\Delta t, g^2(t)\Delta t \mathbf{I}\right),
 \end{align*}
-和边缘分布
-\begin{align*}
-    p_t(\mathbf{x}_t), \quad p_{t+\Delta t}(\mathbf{x}_{t+\Delta t}),
-\end{align*}
-我们的目标是推导出控制边缘分布随时间演化的 福克尔-普朗克方程 $p_t$.
+以及边缘分布 $p_t(\mathbf{x}_t)$ 与 $p_{t+\Delta t}(\mathbf{x}_{t+\Delta t})$，我们的目标是导出支配边缘分布 $p_t$ 随时间演化的福克尔—普朗克方程。
 
-
-\paragraph{变量更改。}
-根据马尔可夫性质，时刻的边缘分布 $t + \Delta t$ 可以表示为先前状态的积分 $\mathbf{x}_t$ （即 Chapman-Kolmogorov 方程）：
+\paragraph{变量替换。}
+由马尔可夫性质，时刻 $t+\Delta t$ 的边缘分布可以写成对先前状态 $\mathbf{x}_t$ 的积分（即 Chapman--Kolmogorov 方程）：
 \begin{align*}
 p_{t+\Delta t}(\rvx)
 = \int \mathcal N \big(\rvx; \rvy+\rvf(\rvy,t)\Delta t, g^2(t)\Delta t \rmI\big) p_t(\rvy) \diff\rvy.
 \end{align*}
- 我们引入一个新变量
+引入一个新变量
 \[
 \rvu  :=  \rvy+\rvf(\rvy,t)\Delta t,
 \]
-所以高斯分布的中心是 $\rvu$。对于小 $\Delta t$，该映射可逆
+于是高斯的中心就是 $\rvu$。对小的 $\Delta t$，这个映射可逆
 \[
 \rvy  =  \rvu-\rvf(\rvu,t)\Delta t+\mathcal O(\Delta t^2),
 \quad
 \Bigg|\det\frac{\partial \rvy}{\partial \rvu}\Bigg|
  = 1-(\nabla_\rvu \cdot\rvf)(\rvu,t) \Delta t+\mathcal O(\Delta t^2).
 \]
-因此，变量变换公式引导我们：
+于是，套用变量替换公式可得：
 \begin{align*}
     p_{t+\Delta t}(\rvx)
 &= \int \mathcal N\left(\rvx;\rvu,g^2(t)\Delta t\rmI\right) \cdot
 \\\quad\Big[p_t(\rvu)&-\Delta t \rvf(\rvu,t) \cdot \nabla_\rvu p_t(\rvu)
 -\Delta t (\nabla_\rvu \cdot\rvf)(\rvu,t) p_t(\rvu)\Big] \diff\rvu
-+\mathcal O(\Delta t^2),
-\end{align*}\paragraph{泰勒膨胀.}
-对于任意平滑函数 $\phi:\R^D\to\R$ 和尺度 $\sigma>0$，  
-如果 $\rvz\sim\mathcal N(\bm{0},\rmI)$，则以下近似成立  
-（称为\emph{泰勒-高斯平滑公式}）：
++\mathcal O(\Delta t^2).
+\end{align*}
+
+\paragraph{泰勒展开。}
+对任意光滑函数 $\phi://R^D//to//R$ 与尺度 $\sigma>0$，若 $\rvz\sim\mathcal N(\bm{0},\rmI)$，则如下近似成立  
+（称为\emph{泰勒—高斯平滑公式}）：
 
 \[
 \int \mathcal N(\rvx;\rvu,\sigma^2\rmI) \phi(\rvu) \diff\rvu
 =\E \left[\phi(\rvx+\sigma\rvz)\right]
 =\phi(\rvx)+\frac{\sigma^2}{2} \Delta_\rvx\phi(\rvx)+\mathcal O(\sigma^4).
 \]
-这是因为泰勒展开式为： 
+这是因为泰勒展开给出：
 \[
 \phi(\rvx+\sigma\rvz)=\phi(\rvx)+\sigma\nabla_\rvx\phi(\rvx) \cdot \rvz+\frac{\sigma^2}{2}\rvz^\top\nabla_\rvx^2\phi(\rvx)\rvz+\mathcal O(\sigma^3)
 \]
 和 $\E[\rvz]=\bm{0}$、$\E[\rvz\rvz^\top]=\rmI$。
 
-将其与 $\phi=p_t$、$\phi=\rvf \cdot \nabla_\rvu p_t$ 和 $\phi=(\nabla_\rvu \cdot\rvf) p_t$ 一起应用，并使用 $\sigma^2=g^2(t)\Delta t$，我们可以得到
+把这一公式分别用于 $\phi=p_t$、$\phi=\rvf \cdot \nabla_\rvu p_t$ 与 $\phi=(\nabla_\rvu \cdot\rvf) p_t$，并取 $\sigma^2=g^2(t)\Delta t$，可得
 \[
 \begin{aligned}
 &p_{t+\Delta t}(\rvx) - p_t(\rvx)
@@ -1595,38 +1462,37 @@ p_{t+\Delta t}(\rvx)
  + \mathcal O(\Delta t^2).
 \end{aligned}
 \]
-除以 $\Delta t$ 令 $\Delta t\to0$ 即可得到福克尔-普朗克方程。
+两边除以 $\Delta t$ 并令 $\Delta t\to0$，即得福克尔—普朗克方程。
 
-在 \Cref{subsec:rigorous-proof-fpe} 中，我们提出了基于 It\^o 的推导来补充上面的离散时间视图。
-
-
+\Cref{subsec:rigorous-proof-fpe} 给出基于 It\^o 微积分的推导，作为对上述离散时间视角的补充。
 
 
-\subsection{逆时SDE为什么采用这种形式？}\label{subsec:reverse-sde-reason}
-
-反向时间 SDE 的严格推导是技术性的，需要深入研究 福克尔-普朗克方程的性质。然而，反向时间 SDE的形式可以通过贝叶斯定理直观地理解。在这里，我们提出一种启发式推导，以深入了解为什么 \Cref{eq:sde_backward} 会采用其形式，并出现分数函数 \footnote{。此推导受到 \href{https://alexxthiery.github.io/notes/reverse_and_tweedie/reverse_and_tweedie.html}{ 这篇文章 }.} 中的方法的启发。
 
 
-\paragraph{利用贝叶斯法则进行反演。} 
-我们的目标是首先考虑离散时间情况来确定逆时转移内核：
+\subsection{逆时 SDE 为什么采用这种形式？}\label{subsec:reverse-sde-reason}
+
+反向时间 SDE 的严格推导是技术性的，需要深入用到福克尔—普朗克方程的性质。不过，反向时间 SDE 的形式可以通过贝叶斯定理直观地理解。这里给出一段启发式推导，用以说明 \Cref{eq:sde_backward} 为何取这一形式、又为何会冒出分数函数\footnote{该推导受 \href{https://alexxthiery.github.io/notes/reverse_and_tweedie/reverse_and_tweedie.html}{这篇文章} 中的方法启发。}。
+
+
+\paragraph{用贝叶斯公式做反演。}
+我们的目标是先考察离散时间情形，以确定反向时间转移核：
 \[
 p(\rvx_t | \rvx_{t+\Delta t}),
 \]
-然后取$\Delta t \rightarrow 0$得到连续时间公式。
-使用贝叶斯定理，我们表示：
+再令 $\Delta t \rightarrow 0$ 得到连续时间下的公式。由贝叶斯定理，
 \begin{align}\label{eq:reverse-sde-bayes-discrete}
     p(\rvx_t | \rvx_{t+\Delta t}) 
     &= p(\rvx_{t+\Delta t} | \rvx_t) \frac{p_t(\rvx_t)}{p_{t+\Delta t}(\rvx_{t+\Delta t})} \nonumber \\
     &= p(\rvx_{t+\Delta t} | \rvx_t) \exp\left(\log p_t(\rvx_t) - \log p_{t+\Delta t}(\rvx_{t+\Delta t})\right).
 \end{align}
 
-假设前向过渡内核如 \Cref{eq:transition-forward-f-g} 中所示：
+设前向转移核如 \Cref{eq:transition-forward-f-g} 所示：
 \begin{equation*}
 p(\rvx_{t+\Delta t} | \rvx_t) = \mathcal{N}\left(\rvx_{t+\Delta t}; \rvx_t + \rvf(\rvx_t, t)\Delta t, g^2(t)\Delta t \mathbf{I}\right)
 \end{equation*}
 
-\paragraph{泰勒膨胀.} 
-为了处理指数项，我们应用一阶泰勒展开式。关键的见解是围绕点 $(\rvx_t, t)$ 在空间和时间上展开：
+\paragraph{泰勒展开。}
+为处理指数项，我们对它做一阶泰勒展开，关键是在 $t$ 的时间方向上、围绕点 $(\rvx_t, t)$ 在空间与时间上同时展开：
 \begin{align*}
     \log p_{t+\Delta t}(\rvx_{t+\Delta t}) &= \log p_t(\rvx_t) + \nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t) \nonumber \\
     &\quad + \frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t + \mathcal{O}(\|\rvh\|_2^2) 
@@ -1637,38 +1503,34 @@ p(\rvx_{t+\Delta t} | \rvx_t) = \mathcal{N}\left(\rvx_{t+\Delta t}; \rvx_t + \rv
     &\quad - \frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t + \mathcal{O}(\|\rvh\|_2^2) \label{eq:log-difference}
 \end{align}
 
-对于扩散过程，
-$\rvx_{t+\Delta t}-\rvx_t=\mathcal O_p(\sqrt{\Delta t})$，所以
-二阶空间泰勒项通常是有序的
-$\mathcal O_p(\Delta t)$。据此，应进行如下计算
-理解为领先顺序启发式。
+对扩散过程而言，$\rvx_{t+\Delta t}-\rvx_t=\mathcal O_p(\sqrt{\Delta t})$，因此二阶空间泰勒项的量级通常是 $\mathcal O_p(\Delta t)$。正因如此，下面的计算应当理解为只保留主导阶的启发式论证。
 
-\paragraph{代入反向转换。}
-将方程 \Cref{eq:transition-forward-f-g} 和 \Cref{eq:log-difference} 代入 \Cref{eq:reverse-sde-bayes-discrete}：
+\paragraph{代入反向转移核。}
+把 \Cref{eq:transition-forward-f-g} 与 \Cref{eq:log-difference} 代入 \Cref{eq:reverse-sde-bayes-discrete}：
 \begin{align*}
     &p(\rvx_t | \rvx_{t+\Delta t}) \nonumber \\
     = &\frac{1}{(2\pi g^2(t) \Delta t)^{D/2}} \exp\left(-\frac{\|\rvx_{t+\Delta t} - \rvx_t - \rvf(\rvx_t, t) \Delta t\|_2^2}{2 g^2(t) \Delta t}\right) \nonumber \\
     &\qquad \cdot \exp\left(-\nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t) - \frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t +\mathcal{O}(\Delta t)\right). 
 \end{align*}
-\paragraph{代数运算.}
-关键步骤是完成指数的平方。我们有：
+\paragraph{代数运算。}
+关键一步是对指数配方。我们有：
 \begin{align*}
     &-\frac{\|\rvx_{t+\Delta t} - \rvx_t - \rvf(\rvx_t, t) \Delta t\|_2^2}{2 g^2(t) \Delta t} - \nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t) \nonumber \\
     = &-\frac{\left[\|\rvx_{t+\Delta t} - \rvx_t - \rvf(\rvx_t, t) \Delta t\|_2^2 + 2 g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t)\right]}{2 g^2(t) \Delta t} 
 \end{align*}
-让$\boldsymbol{\delta} := \rvx_{t+\Delta t} - \rvx_t$和$\boldsymbol{\mu} := \rvf(\rvx_t, t) \Delta t$。然后：
+记 $\boldsymbol{\delta} := \rvx_{t+\Delta t} - \rvx_t$、$\boldsymbol{\mu} := \rvf(\rvx_t, t) \Delta t$，则
 \begin{align*}
     &\|\boldsymbol{\delta} - \boldsymbol{\mu}\|_2^2 + 2 g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t) \cdot \boldsymbol{\delta} \nonumber \\
     = &\|\boldsymbol{\delta}\|_2^2 - 2\boldsymbol{\delta} \cdot \boldsymbol{\mu} + \|\boldsymbol{\mu}\|_2^2 + 2 g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t) \cdot \boldsymbol{\delta} \nonumber \\
     = &\|\boldsymbol{\delta}\|_2^2 - 2\boldsymbol{\delta} \cdot [\boldsymbol{\mu} - g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)] + \|\boldsymbol{\mu}\|_2^2 \nonumber \\
     = &\|\boldsymbol{\delta} - [\boldsymbol{\mu} - g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)]\|_2^2 - \|g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)\|_2^2 
 \end{align*}
-替换回来：
+代回原变量：
 \begin{align*}
     &\|\boldsymbol{\delta} - [\rvf(\rvx_t, t) \Delta t - g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)]\|_2^2 \nonumber \\
     = &\|\rvx_{t+\Delta t} - \rvx_t - [\rvf(\rvx_t, t) - g^2(t) \nabla_{\rvx} \log p_t(\rvx_t)] \Delta t\|_2^2. 
 \end{align*}
-因此，
+于是
 \begin{align*}
     p(\rvx_t | \rvx_{t+\Delta t}) 
     =~&\frac{1}{(2\pi g^2(t) \Delta t)^{D/2}} \nonumber \\
@@ -1677,42 +1539,42 @@ $\mathcal O_p(\Delta t)$。据此，应进行如下计算
     =~&\mathcal{N}\left(\rvx_t; \rvx_{t+\Delta t} - [\rvf(\rvx_t, t) - g^2(t) \nabla_{\rvx} \log p_t(\rvx_t)] \Delta t, g^2(t) \Delta t \mathbf{I}\right) \nonumber \\
     \quad &\cdot (1 + \mathcal{O}(\Delta t)).
 \end{align*}
-完成平方后的附加项 $\|g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)\|_2^2$ 是 $\mathcal{O}((\Delta t)^2)$，可以吸收到误差项中。类似地，时间导数项 $\frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t$ 为 $\mathcal{O}(\Delta t)$ 并且将在连续极限中消失。
+配方后多出的那一项 $\|g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)\|_2^2$ 是 $\mathcal{O}((\Delta t)^2)$，可以并入误差项。类似地，时间导数项 $\frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t$ 为 $\mathcal{O}(\Delta t)$，在连续极限下同样消失。
 
-\paragraph{取$\Delta t \rightarrow 0$限制。}
-如 $\Delta t \approx 0$，在平滑假设下，以下近似成立：
+\paragraph{取 $\Delta t \rightarrow 0$ 的极限。}
+当 $\Delta t \approx 0$ 时，在光滑性假设下如下近似成立：
 \begin{align*}
     \rvf(\rvx_t, t) &\approx \rvf(\rvx_{t+\Delta t}, t+\Delta t), \\
     g(t) &\approx g(t+\Delta t), \\
     \nabla_{\rvx} \log p_t(\rvx_t) &\approx \nabla_{\rvx} \log p_{t+\Delta t}(\rvx_{t+\Delta t})  = \rvs(\rvx_{t+\Delta t}, t+\Delta t).
 \end{align*}
-使用这些近似值和一些重新排列，我们得到：
+利用这些近似并稍作整理，得到：
 \begin{align*}
     &p(\rvx_t | \rvx_{t+\Delta t}) \\ \approx &\frac{1}{(2\pi g^2(t) \Delta t)^{D/2}}  \exp \Bigg(
             \\ &-\frac{\Big\|\rvx_{t} - \Big(\rvx_{t+\Delta t} - \big[\rvf(\rvx_{t+\Delta t}, t+\Delta t) - g^2({t+\Delta t}) \rvs(\rvx_{t+\Delta t}, t+\Delta t)\big] \Delta t\Big) \Big\|_2^2 }{2 g^2(t+\Delta t) \Delta t} \\
             &\Bigg).
 \end{align*}
-这意味着 $p(\rvx_t | \rvx_{t+\Delta t})$ 大致呈正态分布：
+这说明 $p(\rvx_t | \rvx_{t+\Delta t})$ 近似为高斯分布：
 \begin{align*}
     \text{\textbfs{Mean:}} &  \quad\rvx_{t+\Delta t} - \big[\rvf(\rvx_{t+\Delta t}, t+\Delta t) - g^2(t+\Delta t) \rvs (\rvx_{t+\Delta t}, t+\Delta t)\big] \Delta t, \\
     \text{\textbfs{Covariance:}} & \quad g^2(t+\Delta t) \Delta t \mathbf{I}.
 \end{align*}
-将极限设为 $\Delta t \rightarrow 0$，我们“推导出”\Cref{eq:sde_backward} 中给出的逆时连续 SDE。\clearpage
+令 $\Delta t \rightarrow 0$，我们就“推出”了 \Cref{eq:sde_backward} 所给出的逆时连续 SDE。\clearpage
 \newpage
 
 \section{结束语}
 
 
-本章标志着我们旅程中的关键时刻，将离散时间扩散过程从变分和基于分数的角度统一到一个单一的、优雅的连续时间框架中。我们证明了 DDPM 和 NCSN 都可以理解为具有不同漂移/波动系数的随机微分方程 (SDE) 的离散化。
+本章是全书旅程中的一个关键节点：它把来自变分视角与分数视角的离散时间扩散过程，统一到一个单一而优雅的连续时间框架之中。我们说明了 DDPM 与 NCSN 都可以理解为漂移/扩散系数不同的随机微分方程（SDE）的离散化。
 
-该框架的基石是相应的反向时间 SDE 的存在，它正式定义了逆转噪声损坏的生成过程。至关重要的是，这个反向过程的漂移取决于一个未知量：每个时间点的边缘数据分布的分数函数 $\nabla_{\mathbf{x}}\log{p_{t}(\mathbf{x})}$。这一见解巩固了分数函数在生成建模中的核心作用。
+这一框架的基石，是相应反向时间 SDE 的存在性；正是它形式化地定义了一个逆转噪声污染、用以生成的随机过程。关键在于，这一反向过程的漂移只依赖一个未知量：每一时刻边缘数据分布的分数函数 $\nabla_{\mathbf{x}}\log{p_{t}(\mathbf{x})}$。这一洞见确立了分数函数在生成建模中的核心地位。
 
-此外，我们引入了一个纯粹的确定性对应物，即概率流常微分方程 (PF-ODE)，其解轨迹沿着与 SDE 相同的边缘密度 $\{p_{t}\}$ 演化。这种显着的一致性是由基础的福克尔-普朗克方程保证的。其深刻的含义是，生成的复杂任务基本上等同于求解微分方程。训练简化为学习定义方程向量场的分数函数，而采样则成为数值积分问题。
+此外，我们还引入了一个纯确定性的对应物——概率流常微分方程（PF-ODE），它的解轨迹沿着与 SDE 相同的边缘密度 $\{p_t\}$ 演化。这一值得注意的一致性由底层的福克尔—普朗克方程保证。它深刻的含义是：生成这一复杂任务，本质上等价于求解一个微分方程。训练被化简为学出定义该方程向量场的分数函数，而采样则变成一个数值积分问题。
 
-PF-ODE（一种纯粹的确定性流）的引入为扩散模型的第三个也是最后一个视角提供了一座强大的桥梁。这种学习由速度场控制的确定性变换的概念是最近主要生成模型家族的核心原理。在下一章中，我们将：
+PF-ODE 作为一种纯确定性的流被引入，为扩散模型的第三种、也是最后一种视角提供了一座有力的桥梁。这种“学习由速度场支配的确定性变换”的思想，正是近年几大生成模型家族的核心原理。下一章我们将：
 \begin{enumerate}
-    \item 从归一化流和神经常微分方程中的起源开始探索这种基于流的视角。
-    \item 展示这一观点如何导致现代流匹配框架，该框架直接学习速度场以在分布之间传输样本。
+    \item 从归一化流与神经常微分方程中的源头出发，考察这种基于流的视角；
+    \item 说明这一视角如何导向现代的流匹配框架，它直接学出一个速度场，把样本在分布之间搬运。
 \end{enumerate}
 
-最终，我们将看到如何从这个完全不同的、基于流的起源构建和推广从随机原理导出的确定性 PF-ODE，从而完成我们的扩散建模的统一图景。
+最终我们会看到，那个从随机原理导出的确定性 PF-ODE，如何能从这条全然不同的、基于流的源头被重新构造并加以推广，从而补全我们对扩散建模的统一图景。

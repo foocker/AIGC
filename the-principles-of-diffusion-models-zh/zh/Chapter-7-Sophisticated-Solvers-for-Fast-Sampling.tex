@@ -1,25 +1,24 @@
 \chapter{扩散快速采样的数值求解器}\label{ch:solvers}
 
 
-扩散模型的生成过程（将噪声映射到数据样本）可以通过反时 SDE 或其
-相关的 PF-ODE。此过程本质上很慢，因为它依赖于通过许多小的积分步骤来近似解轨迹的数值求解器（有关简要介绍，请参阅 \Cref{app:de}）。因此，加速推理已成为一个中心研究目标。一般来说，现有的方法分为两类：
+扩散模型的生成过程（把噪声映射为数据样本）可以写成逆时间 SDE 或与之相应的 PF-ODE。这一过程本身很慢，因为它要靠数值求解器用许多细小的积分步去逼近解的轨迹（简要介绍见 \Cref{app:de}）。因此，加速推理已成为一个核心的研究目标。总体而言，现有方法可分为两类：
 \begin{itemize}
-    \item \textbfs{免训练方法：} 本章的重点。这些方法开发了先进的数值求解器，无需额外训练即可提高扩散采样的效率。
-    \item \textbfs{ 基于训练的方法：} 在 \Cref{ch:distillation,ch:fast-scratch} 中进行了介绍。这些技术要么将预先训练的扩散模型蒸馏为快速生成器，要么直接学习 ODE 流映射（解决方案），以便只需要几个采样步骤。
+    \item \textbfs{免训练方法：} 本章的重点。这类方法设计更精巧的数值求解器，无需额外训练就能提升扩散采样的效率。
+    \item \textbfs{基于训练的方法：} 在 \Cref{ch:distillation,ch:fast-scratch} 中介绍。这类技术要么把预训练的扩散模型蒸馏成快速生成器，要么直接学习 ODE 的流映射（即解映射），从而只需少数几个采样步。
 \end{itemize}
-基于 SDE 的采样器（例如，Euler--Maruyama）由于随机性可能会产生更多样的样本，但通常需要更多的步骤~\citep{xu2023restart}。在这里，我们关注基于 ODE 的生成，其原理自然延伸到 SDE 设置。
+基于 SDE 的采样器（例如 Euler--Maruyama）由于带有随机性，可能产生更多样的样本，但一般需要更多步数~\citep{xu2023restart}。这里我们聚焦于基于 ODE 的生成，其原理可以自然地推广到 SDE 情形。
 
 \chapterlearning{
 
-  \item 将扩散采样视为 PF-ODE 的数值积分问题；
+  \item 把扩散采样看作对 PF-ODE 做数值积分的问题；
 
-  \item 区分模型逼近误差和数值离散误差；
+  \item 区分模型逼近误差与数值离散误差；
 
-  \item 了解 DDIM、DEIS、DPM-Solver 和 DPM-Solver\texttt{++} 背后的主要数值思想；
+  \item 理解 DDIM、DEIS、DPM-Solver 以及 DPM-Solver\texttt{++} 背后的主要数值思想；
 
-  \item 将现代扩散采样器与经典数值方法连接起来，包括 Euler、Runge-Kutta (RK)、Adams-Bashforth (AB) 和指数积分器。
+  \item 把现代扩散采样器与经典数值方法对应起来，包括 Euler、Runge--Kutta（RK）、Adams--Bashforth（AB）和指数积分器。
 
-}{ 不熟悉微分方程或数值求解器的读者可以首先参考 \Cref{app:de}。在本章中，请记住一个问题：每个求解器精确积分什么，以及它在数值上近似什么？}
+}{对微分方程或数值求解器不熟悉的读者，可以先参阅 \Cref{app:de}。阅读本章时请始终带着一个问题：每个求解器究竟精确积分了什么，又在数值上近似了什么？}
 
 
 \clearpage
@@ -28,43 +27,23 @@
 \section{序言}\label{sec:prologue-solvers}
 \subsection{快速采样数值积分}
 
-Score SDE 框架~\citep{song2020score} 建立了关键基础：
-连接离散时间扩散模型和基于 ELBO 的公式
-\citep{sohl2015deep,ho2020denoising} 具有连续时间 SDE/ODE
-生成建模。这种联系提供了一种思考采样的清晰方法：
-训练扩散模型后，生成可以被视为解决
-学习了从噪声到数据的微分方程。
+Score SDE 框架~\citep{song2020score} 奠定了一个关键基础：它把离散时间扩散模型和基于 ELBO 的表述~\citep{sohl2015deep,ho2020denoising} 与连续时间的 SDE/ODE 生成建模联系了起来。这一联系给出了一种思考采样的清晰方式：扩散模型训练好之后，生成可以看作求解一条从噪声回到数据的（学到的）微分方程。
 
-实际的困难是速度。一个天真的采样器遵循这个逆时
-具有许多小数值步长的轨迹，通常需要数百或
-数千次神经网络评估。快速采样询问我们是否可以
-使用更少的模型调用来近似相同的生成过程。本章重点介绍 \emph{training-free} 加速：预训练
-扩散模型保持固定，我们设计了更好的数值求解器
-抽样。基于训练的加速方法，例如蒸馏或直接
-几个步骤的训练，稍后会讨论
-\Cref{ch:distillation,ch:fast-scratch}。
+实际的困难在速度。朴素的采样器要沿这条逆时间轨迹走许多细小的数值步，往往需要成百上千次神经网络评估。快速采样要问的是：能否用远少于以往的模型调用，去逼近同一个生成过程？本章聚焦\emph{免训练}加速：预训练的扩散模型保持不动，我们只为采样设计更好的数值求解器。基于训练的加速方法（例如蒸馏，或直接训练少步模型）留待 \Cref{ch:distillation,ch:fast-scratch} 讨论。
 
-因此，本章的主要信息很简单：
-\msgu{Message}{}{一旦训练了扩散模型，免训练快速采样在很大程度上是一个
-数值积分问题.}
+因此，本章的主旨很简单：
+\msgu{Message}{}{扩散模型一旦训练完成，免训练的快速采样在很大程度上就是一个数值积分问题。}
 
-文献中包含许多命名的扩散采样器，它们可以使
-主题看起来比实际情况更加支离破碎。在这一章中，我们首先
-介绍这些方法背后的少量数值思想。
-只有在之后我们才将熟悉的方法名称附加到它们上。这个
-组织明确表示采样器并不是不相关的技巧：它们
-是近似相同 PF-ODE 轨迹的不同方法。
+文献中有许多各有名字的扩散采样器，容易让这一主题显得比实际更零散。本章先介绍这些方法背后为数不多的几个数值思想，之后才把那些熟悉的方法名挂上去。这样的组织方式说明：这些采样器并不是彼此无关的技巧，它们只是逼近同一条 PF-ODE 轨迹的不同方式。
 
-\paragraph{采样求解经验PF-ODE.}
-假设我们有一个预先训练的扩散模型
+\paragraph{把采样看作求解经验 PF-ODE。}
+假设我们有一个预训练的扩散模型
 \[
     \rvs_{\bm{\phi}^\times}(\rvx,t)
     \approx
     \nabla_{\rvx}\log p_t(\rvx),
 \]
-或等效地用其他标准参数化之一编写的模型
-来自 \Cref{sec:equivalent-parametrizations}。经验 PF-ODE 使用此
-学习模型代替真实分数：
+或者等价地，是 \Cref{sec:equivalent-parametrizations} 中其他标准参数化写法下的模型。经验 PF-ODE 用这个学到的模型替代真实分数：
 \[
     \frac{\diff \rvx(t)}{\diff t}
     =
@@ -73,11 +52,9 @@ Score SDE 框架~\citep{song2020score} 建立了关键基础：
     \frac{1}{2}g^2(t)\,
     \rvs_{\bm{\phi}^\times}(\rvx(t),t).
 \]
-从$\rvx(T)\sim p_{\mathrm{prior}}$开始，一代集成了这个
-ODE 从 $t=T$ 向后到 $t=0$。
+从 $\rvx(T)\sim p_{\mathrm{prior}}$ 出发，生成过程把这个 ODE 从 $t=T$ 反向积分到 $t=0$。
 
-对于两次$s>t$，精确的经验更新可以写成积分
-形式为
+对两个时刻 $s>t$，精确的经验更新可以写成如下积分形式
 \begin{align}
 \label{eq:solution-int-score}
 \begin{aligned}
@@ -94,20 +71,13 @@ ODE 从 $t=T$ 向后到 $t=0$。
     \right]\diff \tau .
 \end{aligned}
 \end{align}
-这里，$\widetilde{\bPsi}_{s\to t}$ 表示经验的流映射
-PF-ODE，通过将预言机分数替换为学习模型而获得。
-在本书中，\emph{ 流映射} 指的是经典的 ODE
-\Cref{eq:flow-map-def}中介绍的解决方案图。我们表示
-相应的预言机流映射由$\bPsi_{s\to t}$提供。经验流
-映射旨在近似预言机映射：
+这里 $\widetilde{\bPsi}_{s\to t}$ 表示经验 PF-ODE 的流映射，即把预言量形式的分数换成学到的模型之后得到的流映射。与全书一致，\emph{流映射}指的是 \Cref{eq:flow-map-def} 中介绍的经典 ODE 解映射；相应的预言量流映射记为 $\bPsi_{s\to t}$。经验流映射意在逼近预言量映射：
 \[
     \widetilde{\bPsi}_{s\to t}(\rvx_s)
     \approx
     \bPsi_{s\to t}(\rvx_s).
 \]
-因为\Cref{eq:solution-int-score}中的积分不能通用
-以封闭形式进行评估，数值采样器将
-使用递减网格反转时间间隔
+由于 \Cref{eq:solution-int-score} 中的积分一般无法用闭式表达求出，数值采样器改用一串递减的网格来离散逆时间区间
 \begin{align}
 \label{eq:time-step-def}
     T=t_0>t_1>\cdots>t_M=0,
@@ -120,66 +90,44 @@ PF-ODE，通过将预言机分数替换为学习模型而获得。
 \[
     \tilde{\rvx}_{t_0},\tilde{\rvx}_{t_1},\ldots,\tilde{\rvx}_{t_M},
 \]
-其中 $\tilde{\rvx}_{t_i}$ 近似
-$\widetilde\bPsi_{T\to t_i}(\rvx_T)$。最终迭代
-$\tilde{\rvx}_{t_M}$用作生成的样本。
+其中 $\tilde{\rvx}_{t_i}$ 是 $\widetilde\bPsi_{T\to t_i}(\rvx_T)$ 的近似。最后一次迭代 $\tilde{\rvx}_{t_M}$ 即生成的样本。
 
-因此，本章中的每个免训练求解器都回答相同的问题：
+所以，本章介绍的每一个免训练求解器回答的都是同一个问题：
 \begin{question}
-我们应该如何使用尽可能少的值准确地近似 PF-ODE 积分
-模型评估是否可能？
+如何用尽可能少的模型评估，尽可能准确地近似 PF-ODE 的积分？
 \end{question}
 
-\paragraph{求解器设计中的三种独立选择。}
-一旦\Cref{eq:time-step-def}中的递减时间网格被引入，
-区分经常交织在一起的三个选择是有用的
-扩散采样。
+\paragraph{求解器设计中的三个独立选择。}
+在引入 \Cref{eq:time-step-def} 中的递减时间网格之后，把扩散采样中常常纠缠在一起的三项选择区分开是有益的。
 
 \begin{enumerate}
-    \item \textbfs{预测参数化.}
-    预训练的扩散模型提供了哪些数量：
-    分数 $\rvs_{\bm{\phi}^\times}$，噪声
-    $\beps_{\bm{\phi}^\times}$，干净的数据
-    $\rvx_{\bm{\phi}^\times}$，或速度
-    $\rvv_{\bm{\phi}^\times}$？
+    \item \textbfs{预测参数化。}
+    预训练的扩散模型给出的是哪个量：分数 $\rvs_{\bm{\phi}^\times}$、噪声 $\beps_{\bm{\phi}^\times}$、干净数据 $\rvx_{\bm{\phi}^\times}$，还是速度 $\rvv_{\bm{\phi}^\times}$？
 
     \item \textbfs{时间参数化。}
-    哪个变量用于参数化沿着相同连续轨迹的进度？原始扩散时间 $t$ 是一种选择；其他重新参数化将在稍后有用时引入。
+    用哪个变量来刻画沿同一条连续轨迹的推进程度？原始扩散时间 $t$ 是一种选择；其他重新参数化方式将在有用之处再引入。
 
     \item \textbfs{数值近似。}
-    求解器如何在有限区间内近似未知的模型相关量？它可以仅使用当前评估、在当前步骤中获取附加评估或重用先前步骤中的评估。
+    求解器如何在有限区间上近似那个未知的、依赖模型的量？它可以只用当前的模型评估，也可以在当前步内额外取评估，或复用先前步骤留下的评估。
 \end{enumerate}
-这种分离在整章中都很重要。前两个选择确定呈现给求解器的数值形式，而第三个选择确定求解器如何使用可用的模型评估。
+这一区分贯穿全章都很重要。前两个选择决定了交给求解器的数值形式，第三个选择决定了求解器如何使用已有的模型评估。
 
 
 
 
-\paragraph{求解器如何使用模型评估？}
-组织数值求解器的一种有用方法是询问下一次更新的信息来自哪里。从当前状态开始，求解器可以获取附加信息 \emph{在当前步骤内} 或重复使用来自 \emph{之前的步骤}.
+\paragraph{求解器怎样使用模型评估？}
+整理各类数值求解器的一个有效办法，是问「下一次更新的信息从哪里来」。从当前状态出发，求解器既可能在\emph{当前步内}取得额外信息，也可能复用\emph{先前步骤}的信息。
 
-A \emph{单步法} 仅使用当前状态和同一时间间隔内生成的评估来构造下一个状态。欧拉方法是最简单的示例，仅使用当前速度。高阶龙格-库塔 (RK) 方法可以在完成该步骤之前评估一个或多个中间状态的速度。因此，“单步”并不意味着“一个函数评估”；这意味着不需要先前完成的步骤中的信息。一个 \emph{多步法} 重用之前已完成步骤中的信息。存储的模型评估提供有关动态最近如何变化的信息，允许进行更高阶的更新，而无需在当前步骤中进行多次新的评估。 Adams--Bashforth（AB）家族是一个典型的典型例子。另一个想法是改变跨时间更新的安排方式。我们可以多次初始化状态并重复纠正它们，直到它们与 ODE 一致，而不是严格按顺序计算所有时间点。这种不动点迭代可以允许在不同时间点并行进行模型评估。代表性的经典例子，包括欧拉、RK、AB 和皮卡迭代，在
-\Cref{app:de-solver-examples};它们的结构组织总结为
-\Cref{eq:classic-solvers}.
+\emph{单步法}只用当前状态以及同一时间区间内产生的评估来构造下一个状态。Euler 法是最简单的例子，只用当前速度。高阶 Runge--Kutta（RK）法可能会在完成这一步之前，先在一个或多个中间状态处评估速度。所以「单步」并不等于「一次函数评估」，它的意思是：不需要更早完成的步骤提供信息。\emph{多步法}则复用先前已完成步骤的信息。存下来的模型评估提供了「动力学最近如何变化」的信息，从而能在当前步不做多次新评估的情况下实现更高阶的更新，Adams--Bashforth（AB）族就是典型代表。还有一个不同的思路是改变跨时间更新的调度方式：不必严格按顺序算出所有时间点，而是先在多个时刻初始化状态，再反复修正这些状态，直到它们与 ODE 自洽。这类不动点迭代可以让不同时间点上的模型评估并行进行。Euler、RK、AB 和 Picard 迭代等有代表性的经典例子见 \Cref{app:de-solver-examples}，它们的结构组织概括在 \Cref{eq:classic-solvers} 中。
 
-\paragraph{计算成本和实际性能。}
-数值时间步长不需要对应于单个神经网络评估。 Euler 每一步使用一次评估，而高阶 RK 方法可能需要多次评估。相反，多步方法会重用存储的评估，并且在初始化后，通常可以每一步仅使用一个新的评估来推进。因此，我们通过函数的 \emph{ 数量来衡量采样成本
-评估} (NFE)。如果一种方法使用大约 $m$ 模型评估
-跨过 $M$ 步骤，然后 
+\paragraph{计算开销与实际表现。}
+一个数值时间步不必对应一次神经网络评估。Euler 法每步只用一次评估，而高阶 RK 法可能需要多次。多步法则复用已存下的评估，在初始化之后往往每步只需一次新的评估就能推进。因此我们用\emph{函数评估次数}（NFE）来衡量采样开销。若一种方法在 $M$ 步中大约每步用 $m$ 次模型评估，则
 \[
 \mathrm{NFE}\approx mM.
 \]
-例如，无分类器引导（参见 \Cref{sec:cfg}）需要
-有条件和无条件模型预测，因此大约翻倍
-每个采样步骤的神经网络评估成本。
+例如，无分类器引导（见 \Cref{sec:cfg}）同时需要条件与无条件的模型预测，于是每个采样步的神经网络评估开销大约翻倍。
 
-这个经典的分类法告诉我们 \emph{ 数值计算使用的信息来自哪里}
-以及需要多少模型评估费用。扩散 PF-ODE 提供了额外的
-机会：并非矢量场的每个部分都同样未知。取决于
-在预测参数化上，确定了部分动态
-通过噪声表进行分析，而仅剩余数量需要
-神经网络评估。接下来我们研究如何暴露这种分离
-改变 PF-ODE 的数值形式并激发特定扩散
-积分器。
+这一经典分类告诉我们\emph{数值信息从哪来}，以及要付出多少次模型评估。扩散 PF-ODE 还提供了额外的机会：向量场并非每一部分都同样未知。视预测参数化而定，动力学的一部分由噪声调度解析地确定，只有剩下的那个量才需要神经网络评估。下面我们考察，把这一分离显式暴露出来会怎样改变 PF-ODE 的数值形式，并由此引出专为扩散模型设计的积分器。
 
 
 
@@ -189,39 +137,24 @@ A \emph{单步法} 仅使用当前状态和同一时间间隔内生成的评估�
 \subsection{扩散专用求解器的设计}
 \label{subsec:common_design_solvers}
 
-\Cref{app:de-solver} 中回顾的经典数值方法处理
-通过评估其向量场来计算一般 ODE。扩散 PF-ODE 提供
-附加结构：噪声表通过分析可知，而
-扩散模型预测由神经网络提供。
+\Cref{app:de-solver} 中回顾的经典数值方法，是通过评估向量场来处理一般 ODE 的。扩散 PF-ODE 带有额外的结构：噪声调度是解析已知的，而扩散模型的预测由神经网络给出。
 
-这创造了一个有用的机会。而不是数值近似
-以相同的方式处理动力学的每个部分，求解器可以保留已知的
-依赖于时间表的项仅进行分析并近似
-模型相关的预测。该结构暴露的清晰程度取决于
-预测参数化。
+这就带来一个有用的机会。求解器不必把动力学的每一部分都用同样的方式做数值近似，而是可以把已知的、依赖调度的项保留为解析式，只对依赖模型的那部分预测做近似。这一结构能被多清楚地暴露出来，取决于预测参数化。
 
 
-\paragraph{I。超越分数的参数化。}
-尽管 PF-ODE 可以写成分数形式，但现代实现通常
-使用噪声预测、干净数据预测或速度预测。这些
-参数化在代数上相关，但它们揭示了不同的数值
-结构。还有一个重要的稳定性原因是避免直接分数预测
-许多求解器。如$t\to 0$，真实分数
-$\nabla_{\rvx}\log p_t(\cdot)$ 可以非常迅速地变化，特别是当
-数据分布集中在低维流形附近
-\citep{kim2022soft}。这使得训练有素的神经网络很难
-直接近似分数以在小噪声水平附近保持准确~\footnote{要查看缩放比例，请回忆来自的预言机关系
+\paragraph{I. 分数之外的参数化。}
+尽管 PF-ODE 可以写成分数形式，现代实现通常采用噪声预测、干净数据预测或速度预测。这些参数化在代数上彼此等价，但它们呈现出的数值结构不同。许多求解器避开直接预测分数，还有一个重要的稳定性原因。当 $t\to 0$ 时，真实分数 $\nabla_{\rvx}\log p_t(\cdot)$ 会变化得非常快，尤其是当数据分布集中在低维流形附近时~\citep{kim2022soft}。这就使一个被训练来直接逼近分数的神经网络，很难在噪声水平很小时仍然保持准确~\footnote{要看清这里的缩放关系，回忆 \Cref{eq:predictions-equivalence} 中的预言量关系
 \Cref{eq:predictions-equivalence}：
 \[
     \beps^*(\rvx_t,t)
     =
     -\sigma_t\nabla_{\rvx}\log p_t(\rvx_t),
 \]
-其中$\beps^*(\rvx_t,t)
+其中 $\beps^*(\rvx_t,t)
     =
-    \mathbb{E}[\beps|\rvx_t]$是预言机噪声预测器，扰动核是$ \rvx_t|\rvx_0
+    \mathbb{E}[\beps|\rvx_t]$ 是预言量噪声预测器，扰动核为 $ \rvx_t|\rvx_0
     \sim
-    \mathcal{N}(\rvx_t; \alpha_t\rvx_0,\sigma_t^2\rmI)$。由$L^2$中条件期望的正交性，
+    \mathcal{N}(\rvx_t; \alpha_t\rvx_0,\sigma_t^2\rmI)$。由 $L^2$ 中条件期望的正交性，
 \[
     \mathbb{E}\|\beps\|_2^2
     =
@@ -237,7 +170,7 @@ $\nabla_{\rvx}\log p_t(\cdot)$ 可以非常迅速地变化，特别是当
     =
     D,
 \]
-其中 $D$ 是数据维度。因此，预言机噪声预测器具有统一有界的期望平方范数。相比之下，oracle评分
+其中 $D$ 是数据维度。因此，预言量噪声预测器的期望平方范数有一致的界。相比之下，预言量分数
 \[
     \rvs^*(\rvx_t,t)
     :=
@@ -252,46 +185,35 @@ $\nabla_{\rvx}\log p_t(\cdot)$ 可以非常迅速地变化，特别是当
     \le
     \frac{D}{\sigma_t^2}.
 \]
-因此，直接分数预测可能会变得越来越糟糕，因为
-$\sigma_t$ 变小，因为噪声预测转换为分数
-通过因子 $1/\sigma_t$。这种缩放可以直接分数
-在小噪声水平附近，数值参数化不太有利。}。
+可见随着 $\sigma_t$ 变小，直接预测分数会越来越糟：因为噪声预测要乘以因子 $1/\sigma_t$ 才转成分数，这种缩放使直接以分数为目标的参数化在小噪声水平附近在数值上很不利。}。
 
 
-因此，一种广泛使用的替代方法是预测噪声
-$\beps_{\bm{\phi}^\times}$，或相关目标，例如干净数据预测
-或速度预测。在噪声预测形式中，分数近似为
+因此一种常见的替代做法是改为预测噪声 $\beps_{\bm{\phi}^\times}$，或与之相关的目标，如干净数据预测或速度预测。在噪声预测形式下，分数近似为
 \[
     \rvs_{\bm{\phi}^\times}(\rvx,t)
     =
     -\frac{1}{\sigma_t}\,
     \beps_{\bm{\phi}^\times}(\rvx,t).
 \]
-这些预测参数化在代数上是相关的，但是
-神经网络提供的量只是求解器的一个组成部分
-设计。接下来我们检查相同的 PF-ODE 如何在这些下以数字形式出现
-不同的参数化。
+这些预测参数化在代数上彼此相关，但神经网络给出的那个量只是求解器设计中的一环。下面我们考察同一条 PF-ODE 在这些不同参数化下会呈现怎样的数值形式。
 
 
 
-\paragraph{II。一个 PF-ODE，两种数值形式.}
-一旦选择了预测参数化，就可以使用相同的 PF-ODE
-以两种特别有用的形式呈现给数值求解器。
+\paragraph{II. 同一条 PF-ODE，两种数值形式。}
+预测参数化一旦确定，同一条 PF-ODE 还可以用两种特别好用的形式交给数值求解器。
 
-\subparagraph{直速形式.}
-最直接的体现就是
+\subparagraph{直接速度形式。}
+最直接的写法是
 \begin{equation}
 \label{eq:direct-pfode-form}
 \frac{\diff \rvx(t)}{\diff t}
 =
 \rvv_{\bm{\phi}^\times}(\rvx(t),t).
 \end{equation}
-这里，在 $\rvv$ 预测下，模型直接提供完整的
-经验 PF-ODE 速度 $\rvv_{\bm{\phi}^\times}(\rvx(t),t)$。数值
-因此，积分方法将整个右侧离散为一个整体。\subparagraph{因子半线性形式.}
-分数、噪声和干净数据预测自然会暴露额外的
-依赖于时间表的结构。在每种情况下，PF-ODE 都可以写成
-通用\emph{半线性}形式
+此时若采用 $\rvv$ 预测，模型直接给出完整的经验 PF-ODE 速度 $\rvv_{\bm{\phi}^\times}(\rvx(t),t)$，数值积分方法于是把整个右端作为一个整体来离散。
+
+\subparagraph{因式分解的半线性形式。}
+分数、噪声与干净数据预测都自然地额外暴露出依赖调度的结构。在这三种情形下，PF-ODE 都可以写成如下的通用\emph{半线性}形式
 \begin{equation}
 \label{eq:general-semilinear-pfode}
 \frac{\diff\rvx(t)}{\diff t}
@@ -315,23 +237,9 @@ b(t)
 \rvx_{\bm{\phi}^\times}
 \right\}.
 \end{equation}
-这里，$a(t)$和$b(t)$是由噪声表确定的已知函数，
-而 $\rmN_{\bm{\phi}^\times}$ 表示神经预测\footnote{In
-标准半线性表示法，$b(t)\rmN_{\bm{\phi}^\times}$可吸收
-转化为单个非线性项。我们将这两个因素分开，因为 $b(t)$
-从噪声表中可以分析得知，而
-$\rmN_{\bm{\phi}^\times}$ 需要神经网络评估。这允许
-求解器近似积分内的神经预测，同时保留
-并对已知的进度相关系数进行分析积分。}。术语
-\emph{半线性}指的是这种分解：第一项是线性的
-状态 $\rvx(t)$，而神经项可能非线性地依赖于 $\rvx(t)$。
-这种分离并不唯一，但在数值上特别有用，因为
-已知的线性部分通常可以进行分析处理，只留下神经网络
-贡献以数字形式近似。
+这里 $a(t)$ 与 $b(t)$ 是由噪声调度确定的已知函数，$\rmN_{\bm{\phi}^\times}$ 表示神经网络的预测\footnote{在标准的半线性记号里，$b(t)\rmN_{\bm{\phi}^\times}$ 本来可以并入一个非线性项。我们之所以把两个因子分开写，是因为 $b(t)$ 可由噪声调度解析已知，而 $\rmN_{\bm{\phi}^\times}$ 需要一次神经网络评估。这样求解器就可以只对积分内的神经预测做近似，同时把已知的、与调度相关的系数保留下来做解析积分。}。\emph{半线性}这个名字就指这种分解：第一项关于状态 $\rvx(t)$ 是线性的，而神经项可能非线性地依赖 $\rvx(t)$。这种拆分方式并不唯一，但在数值上特别好用，因为已知的线性部分往往可以解析处理，只剩下神经网络的贡献需要数值近似。
 
-对于三个标准半线性参数化\footnote{如下
-部分，我们在 SDE 系数 $(f(t),g(t))$ 和高斯系数之间切换
-扰动核 $\rvx_t | \rvx_0
+对三种标准的半线性参数化\footnote{在后续各节中，我们会在 SDE 系数 $(f(t),g(t))$ 与高斯扰动核 $\rvx_t | \rvx_0
     \sim
     \mathcal{N}
     \bigl(
@@ -355,8 +263,7 @@ $\rmN_{\bm{\phi}^\times}$ 需要神经网络评估。这允许
     -
     2\frac{\alpha_t'}{\alpha_t}\sigma_t^2.
 \]
-}，$a(t)$、$b(t)$的对应选择，以及
-$\rmN_{\bm{\phi}^\times}$ 列在 \Cref{tb:pf-ode-parameterizations} 中。例如，在噪声预测下，
+}之间来回切换。它们的关系是上述两式；相应的 $a(t)$、$b(t)$ 取法以及 $\rmN_{\bm{\phi}^\times}$ 都列在 \Cref{tb:pf-ode-parameterizations} 中。例如在噪声预测下，
 \begin{equation}
 \label{eq:noise_pf_ode}
 \frac{\diff\rvx(t)}{\diff t}
@@ -370,12 +277,10 @@ f(t)\rvx(t)
 \beps_{\bm{\phi}^\times}(\rvx(t),t)
 }_{\text{nonlinear neural part}}.
 \end{equation}
-乘以神经预测的系数完全可以从
-噪声时间表；第二项中唯一学到的量是
-$\beps_{\bm{\phi}^\times}(\rvx(t),t)$。
+乘在神经预测上的系数完全由噪声调度确定；第二项中唯一由学习得到的量是 $\beps_{\bm{\phi}^\times}(\rvx(t),t)$。
 
 \begin{table}[th!]
-\caption{ 用于分数、噪声和干净数据预测的因子 PF-ODE 形式。}
+\caption{分数预测、噪声预测与干净数据预测下因式分解形式的 PF-ODE。}
 \small
 \centering
 \renewcommand{\arraystretch}{1.35}
@@ -424,10 +329,10 @@ $\rvx_{\bm{\phi}^\times}$ \\
 \label{tb:pf-ode-parameterizations}
 \end{table}
 
-在预言机级别，分数、噪声、干净数据和速度预测是同一 PF-ODE 的完全相同的表示。对于经验模型，当通过同一模型输出的精确代数转换获得不同的预测参数化时，相同的等价性成立（参见
-\Cref{eq:predictions-equivalence}）。在这种情况下，相同的经验 PF-ODE 可以通过分数、噪声、干净数据或速度预测来表达。得到的公式看起来不同，因为它们暴露了不同的数值结构，但它们描述了相同的学习连续动态。然而，如果针对不同的预测目标独立训练单独的网络，则它们的经验 PF-ODE 不需要完全一致。在这种情况下，采样器之间的差异可能反映模型近似和数值离散。
-\paragraph{三．半线性 PF-ODE 的指数积分器。}
-因式分解的半线性形式 \Cref{eq:general-semilinear-pfode} 将分析已知的线性动力学与模型相关的预测分开。对于 $s>t$，定义积分因子
+在预言量层面，分数预测、噪声预测、干净数据预测和速度预测都是同一条 PF-ODE 的完全等价表示。对经验模型而言，只要不同的预测参数化是由同一个模型输出经精确的代数变换得到的，同样的等价关系依然成立（见 \Cref{eq:predictions-equivalence}）。此时同一条经验 PF-ODE 可以用分数、噪声、干净数据或速度预测来写；所得公式看上去不同，是因为它们暴露的数值结构不同，但它们描述的仍是同一个学到的连续动力学。不过，如果针对不同的预测目标各自独立训练一个网络，它们的经验 PF-ODE 就不必完全一致；此时不同采样器之间的差异可能同时反映模型近似误差和数值离散误差。
+
+\paragraph{III. 半线性 PF-ODE 的指数积分器。}
+\Cref{eq:general-semilinear-pfode} 的因式分解半线性形式，把解析已知的线性动力学与依赖模型的预测分开了。对 $s>t$，定义积分因子
 \[
 \mathcal{E}(s\shortrightarrow t)
 :=
@@ -450,7 +355,7 @@ b(\tau)
 \diff\tau .
 \end{equation}
 \end{mdframed}
-我们建议读者参考 \Cref{app:exp-int-factor} 用于一般推导。例如，在噪声预测下，
+一般性的推导见 \Cref{app:exp-int-factor}。例如在噪声预测下，
 $a(t)=f(t)$,
 $b(t)=\tfrac{1}{2}g^2(t)/\sigma_t$, 和
 $\rmN_{\bm{\phi}^\times}=\beps_{\bm{\phi}^\times}$，所以
@@ -472,16 +377,13 @@ $\rmN_{\bm{\phi}^\times}=\beps_{\bm{\phi}^\times}$，所以
 其中
 $\mathcal{E}(s\shortrightarrow t)
 =
-\exp\!\left(\int_s^t f(u)\diff u\right)$。现在，数字机会已经很明显了。积分因子和系数 $b(\tau)$ 由扩散时间表确定；积分内唯一的未知量是沿轨迹评估的神经预测。因此，保持这些已知因素的明确性允许一阶近似仅作用于神经预测，而不是吸收系数加权乘积
-$b(\tau)\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 转化为单个未知残差。
+\exp\!\left(\int_s^t f(u)\diff u\right)$。现在数值上的机会已经很清楚了。积分因子与系数 $b(\tau)$ 都由扩散调度决定；积分内唯一的未知量，就是沿轨迹取值的神经预测。因此把这些已知因子显式保留下来，就可以让一阶近似只作用在神经预测上，而不必把带系数加权的乘积 $b(\tau)\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 整体塞进一个未知残差里。
 
-\paragraph{为什么因式分解指数积分器形式有帮助。}
-要了解这种分离的好处，请将其与从精确经验 PF-ODE 状态向后一步的普通欧拉进行比较 $\rvx_s$ 当时 $s$ 至
-$t<s$。定义 $\Delta s:=s-t>0$ 和
-$\rmN_s:=\rmN_{\bm{\phi}^\times}(\rvx_s,s)$.Plain Euler 将完整的 PF-ODE 速度视为局部常数，
+\paragraph{因式分解的指数积分器形式为什么有帮助。}
+要看这种分离带来的好处，可以把它与「从时刻 $s$ 的精确经验 PF-ODE 状态 $\rvx_s$ 向 $t<s$ 走一步」的普通 Euler 法相比。记 $\Delta s:=s-t>0$，$\rmN_s:=\rmN_{\bm{\phi}^\times}(\rvx_s,s)$。普通 Euler 法把整个 PF-ODE 速度当作局部常数，即在 $\tau\in[t,s]$ 上取
 $a(\tau)\rvx_\tau+
 b(\tau)\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)
-\approx a(s)\rvx_s+b(s)\rmN_s$ 为 $\tau\in[t,s]$，给出
+\approx a(s)\rvx_s+b(s)\rmN_s$，于是得到
 \begin{align}
 \label{eq:euler-step}
 \tilde\rvx_t^{\mathrm{Euler}}
@@ -493,16 +395,7 @@ b(\tau)\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 a(s)\rvx_s+b(s)\rmN_s
 \right].
 \end{align}
-相反，我们可以只固定神经预测，
-$\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)\approx\rmN_s$，同时保留
-已知的时间表依赖性
-\Cref{eq:factored-variation-of-constants}。这给出了
-\emph{一阶因式分解指数积分器更新}\footnote{更新
-\Cref{eq:factored-ei-step} 中的原始状态和时间不是普通欧拉
-变量。在对状态进行积分因子变换之后，每隔一段时间
-其中生成的时间坐标是单调的，相应的时间
-重新参数化，它可以写成普通的显式欧拉步骤。我们使这种连接具体化以利于扩散
-DDIM部分采样。}
+另一种做法是只把神经预测固定住，即取 $\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)\approx\rmN_s$，同时保留 \Cref{eq:factored-variation-of-constants} 中已知的调度依赖。这样得到\emph{一阶因式分解指数积分器更新}\footnote{\Cref{eq:factored-ei-step} 中的更新并不是原始状态与原始时间变量下的普通 Euler 步。若先对状态做积分因子变换，并在变换后的时间坐标单调的区间上相应地重新参数化时间，它就可以写成一个普通的显式 Euler 步。我们会在 DDIM 一节把这一联系对扩散采样讲得更具体。}
 \begin{align}
 \label{eq:factored-ei-step}
 \tilde\rvx_t^{\mathrm{EI}}
@@ -514,20 +407,9 @@ DDIM部分采样。}
 \mathcal E(\tau\shortrightarrow t)b(\tau)\diff\tau
 \right]\rmN_s.
 \end{align}
-两种方法每一步都使用一次神经网络评估。普通欧拉冻结
-完整的 PF-ODE 速度，而因子更新保持已知
-时间表依赖性并仅冻结神经预测。这个因式分解
-重要事项：如果
-$b(\tau)\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)$
-相反，被视为单个残差并保持固定，结果是
-传统指数欧拉。因此，因子更新又保留了一项
-已知量，$b(\tau)$，在积分内；两个更新同时发生
-$b(\tau)$ 在步长上保持恒定。
+两种做法每步都只用一次神经网络评估。普通 Euler 法冻结的是整个 PF-ODE 速度，而因式分解更新保留已知的调度依赖，只冻结神经预测。这一因式分解很关键：如果把 $b(\tau)\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 反而当成单个残差固定住，得到的就是传统的指数 Euler 法。因此，因式分解更新在积分内多保留了一个已知量 $b(\tau)$；当 $b(\tau)$ 在这一步内为常数时，两种更新完全一致。
 
-一个简单的冻结预测示例使这种差异变得具体。假设
-$a(t)\equiv a$、$b(t)\equiv b$ 和
-$\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)\equiv\rmN_s$ 越过台阶。对于
-$a\neq0$，
+一个「冻结预测」的简单例子可以把这一差别讲具体。设在整步内 $a(t)\equiv a$、$b(t)\equiv b$，且 $\rmN_{\bm{\phi}^\times}(\rvx_\tau,\tau)\equiv\rmN_s$。当 $a\neq0$ 时，
 \begin{align*}
 \tilde\rvx_t^{\mathrm{EI}}
 &=
@@ -544,7 +426,7 @@ e^{-a\Delta s}-1
 -
 b\Delta s\,\rmN_s.
 \end{align*}
-扩展分解更新给出
+把因式分解更新展开可得
 \begin{align*}
 \tilde\rvx_t^{\mathrm{EI}}
 =
@@ -559,18 +441,9 @@ ab\,\rmN_s
 +
 \mathcal O((\Delta s)^3).
 \end{align*}
-因此，这两个更新同意小步骤的第一顺序，而分解后的
-更新保留了已知动态的高阶效应。区别
-对于更大的步骤来说可能变得很重要。例如，当 $a>0$ 时，确切的
-乘数 $e^{-a\Delta s}$ 保持正值且收缩
-$\Delta s>0$，而欧拉近似 $1-a\Delta s$ 变为负数
-当 $a\Delta s>1$ 时，并且当 $a\Delta s>2$ 时幅度大于 1。
-因此，普通欧拉可能会扭曲分解形式已经存在的动力学
-进行分析处理。
+可见在步长很小时，两种更新一阶一致；而因式分解更新保留了已知动力学的高阶效应。步长较大时这一差别会变得重要。例如当 $a>0$ 时，精确的乘子 $e^{-a\Delta s}$ 对任意 $\Delta s>0$ 都保持为正且是收缩的；而 Euler 近似 $1-a\Delta s$ 在 $a\Delta s>1$ 时变为负值，在 $a\Delta s>2$ 时其绝对值还大于 1。可见普通 Euler 法会把因式分解形式本已解析处理好的动力学扭曲掉。
 
-在完整的 PF-ODE 中，神经预测通常沿着
-轨迹。从精确值中减去 \Cref{eq:factored-ei-step}
-常数变分公式给出
+在完整的 PF-ODE 中，神经预测一般会沿轨迹变化。用精确的常数变分公式减去 \Cref{eq:factored-ei-step}，得到
 \begin{align}
 \label{eq:ei-local-defect}
 \widetilde\bPsi_{s\to t}(\rvx_s)
@@ -585,27 +458,12 @@ $\Delta s>0$，而欧拉近似 $1-a\Delta s$ 变为负数
 \rmN_s
 \Big]\diff\tau.
 \end{align}
-因此，一旦对已知的与时间表相关的动态进行分析处理，
-剩余的离散化误差由神经网络的变化控制
-沿着轨迹进行预测。这种分离是基本的数值
-几个特定于扩散的求解器将在不同的情况下利用的原理
-方式。\subsection{从数值思想到扩散采样器的路线图}
-本章的其余部分将展示这些数字概念如何在现代中出现
-扩散采样器。我们从 \Cref{sec:revisit-ddim} 中的 DDIM 开始，其中
-根据当前模型预测构造一阶更新。然后我们研究
-\Cref{sec:exponential} 中的 DEIS，它使用之前步骤的预测来
-建立高阶近似。 \Cref{sec:dpm} 中的 DPM-Solver 开发
-使用当前的额外模型评估进行高阶更新
-步骤。 DPM-Solver\texttt{++}在\Cref{sec:dpm++}中开发了两个对应的
-基于干净数据预测的变体：单步变体，
-DPM-Solver\texttt{++}(2S)，它使用当前的附加评估
-步骤，以及多步骤变体 DPM-Solver\texttt{++}(2M)，它重用
-之前步骤的预测。最后，\Cref{sec:picard}介绍
-ParaDiGMS，通过定点一起更新几个时间点
-迭代以实现跨时间的并行计算。
+因此，一旦把已知的、依赖调度的动力学解析处理掉，剩下的离散化误差就只由神经预测沿轨迹的变化程度决定。这种分离是一条基本的数值原理，后面几种专为扩散模型设计的求解器会以不同方式加以利用。
 
-下表提供了将这些扩散采样器与
-\Cref{eq:classic-solvers} 中回顾了经典的数值思想。
+\subsection{从数值思想到扩散采样器的路线图}
+本章余下的部分展示这些数值思想如何出现在现代扩散采样器中。我们从 \Cref{sec:revisit-ddim} 的 DDIM 开始，它利用当前的模型预测构造一阶更新。接着考察 \Cref{sec:exponential} 中的 DEIS，它借助先前步骤的预测构造高阶近似。\Cref{sec:dpm} 中的 DPM-Solver 通过在当前步内额外取模型评估来实现高阶更新。\Cref{sec:dpm++} 中的 DPM-Solver\texttt{++} 基于干净数据预测给出两个相应的变体：单步变体 DPM-Solver\texttt{++}(2S) 在当前步内额外取评估，多步变体 DPM-Solver\texttt{++}(2M) 则复用先前步骤的预测。最后，\Cref{sec:picard} 介绍 ParaDiGMS，它通过不动点迭代同时更新若干个时间点，从而在时间维度上实现并行计算。
+
+下表给出一份路线图，把这些扩散采样器与 \Cref{eq:classic-solvers} 中回顾的经典数值思想对应起来。
 
 \begin{center}
 \small
@@ -619,37 +477,35 @@ ParaDiGMS，通过定点一起更新几个时间点
     @{}
 }
 \toprule
-\textbfs{经典理念} &
-\textbfs{更新是如何构建的} &
-\textbfs{扩散示例} &
-\textbfs{其中} \\
+\textbfs{经典思想} &
+\textbfs{更新如何构造} &
+\textbfs{对应的扩散方法} &
+\textbfs{所在小节} \\
 \midrule
 
-欧拉型一阶更新 &
-使用该步骤开始时的模型预测前进到下一步
-状态。 &
+Euler 型一阶更新 &
+用该步起始处的模型预测推进到下一个状态。 &
 DDIM； DPM-Solver-1 &
 \Cref{sec:revisit-ddim,sec:dpm} \\
 
 \graymidrule
 
-RK型分阶段更新&
-在完成之前在其他中间状态评估模型
-当前步骤。 &
+RK 型分阶段更新 &
+在完成当前步之前，于若干中间状态处评估模型。 &
 高阶 DPM-Solver； DPM-Solver\texttt{++}(2S) &
 \Cref{sec:dpm,sec:dpm++} \\
 
 \graymidrule
 
-AB型多步更新 &
-重用先前步骤中的模型预测来构建下一个更新。 &
+AB 型多步更新 &
+复用先前步骤的模型预测来构造下一次更新。 &
 DEIS； DPM-Solver\texttt{++}(2M) &
 \Cref{sec:exponential,sec:dpm++} \\
 
 \graymidrule
 
-Picard型不动点迭代 &
-一起更新几个时间点并反复细化它们的状态。 &
+Picard 型不动点迭代 &
+同时更新若干个时间点，并反复修正它们的状态。 &
 ParaDiGMS &
 \Cref{sec:picard} \\
 
@@ -657,12 +513,9 @@ ParaDiGMS &
 \end{tabularx}
 \end{center}
 
-这些联系为这些方法提供了高级数字路线图
-下面展开。扩散求解器进一步受益于特定的结构
-PF-ODE，包括不同的预测参数化，分析已知
-与时间表相关的系数和替代时间参数化。
+这些联系为下文展开的各种方法提供了一张高层的数值路线图。此外，扩散求解器还能受益于 PF-ODE 特有的结构，包括不同的预测参数化、解析已知的调度相关系数，以及替代的时间参数化。
 
-为了保持演示的系统性，每个部分都遵循相同的大致结构：我们首先推导扩散求解器并解释它所利用的数值思想，然后将其与相应的经典求解器原理联系起来，最后将其与本章中开发的其他扩散求解器联系起来。该组织明确了共同的数字主干和区分所得方法的特定扩散成分。
+为使叙述有条理，各节大体都遵循同样的框架：先推导该扩散求解器，说明它借用了哪个数值思想；再把它对应到相应的经典求解器原理；最后把它与本章其他扩散求解器联系起来。这种安排既凸显了共同的数值主干，也点明了真正把各类方法区分开来的、扩散模型特有的成分。
 
 
 
@@ -673,13 +526,14 @@ PF-ODE，包括不同的预测参数化，分析已知
 
 \section{\texorpdfstring{DDIM}{DDIM}}\label{sec:revisit-ddim}
 
-\emph{去噪扩散隐式模型} （DDIM）~\citep{song2020denoising}
-是最早、应用最广泛的加速扩散采样方法之一。尽管 DDIM 最初是从概率角度引入的，但其确定性更新也允许通过 PF-ODE 进行特别清晰的解释。因此，我们在本章的通用数值 ODE 求解框架下引入 DDIM，并将其原始变分视角推迟到 \Cref{subsec:ddim}。序言在 \Cref{sec:prologue-solvers} 给我们留下了一个具体的数值问题：一旦通过分析保留了已知的与时间表相关的因素，我们应该如何近似剩余积分内的神经预测？ DDIM 采用最简单的答案： \emph{在步骤开始时使用其值}。我们首先推导所得更新，然后阐明其与经典欧拉积分以及稍后介绍的高阶扩散求解器的关系。
+\emph{去噪扩散隐式模型}（DDIM）~\citep{song2020denoising} 是最早、也用得最广的加速扩散采样方法之一。虽然 DDIM 最初是从概率角度提出的，但它的确定性更新在 PF-ODE 下有一个格外清晰的解释。因此我们在这里把 DDIM 放到本章统一的数值 ODE 求解框架中介绍，而把它原本的变分视角留到 \Cref{subsec:ddim}。
+
+\Cref{sec:prologue-solvers} 的序言给我们留下一个具体的数值问题：既然已知的、依赖调度的因子已经解析保留下来，那么剩下的积分里那个神经预测该如何近似？DDIM 给出的答案最简单：\emph{用该步起始处的值}。下面先推导所得更新，再说明它与经典 Euler 积分、以及后文将介绍的高阶扩散求解器之间的关系。
 
 
 \subsection{DDIM 作为一阶扩散求解器}\label{subsec:ddim-different-para}
 
-考虑从起点开始的一个采样步骤\footnote{在本章中， $\tilde{\rvx}_s$ 表示时间级别的状态 $s$ 用于初始化当前求解器步骤，通常从先前的数值步骤获得。波形符将其与 $\rvx_s$，表示来自精确扩散分布的预言样本，或者 $\rvx_s \sim p_s$ 或者，条件为 $\rvx_0$, $\rvx_s \sim p_s(\,\cdot \mid \rvx_0)$。因此， $\tilde{\rvx}_s$ 不需要根据 $p_s$.} $\tilde\rvx_s$ 当时 $s$ 至 $t<s$。在噪声预测下，
+考虑一个采样步骤：从时刻 $s$ 的起点\footnote{本章中，$\tilde{\rvx}_s$ 表示用于初始化当前求解器步骤的、时间层 $s$ 上的状态，它通常来自上一步数值计算。波浪号用以区别于 $\rvx_s$——后者表示来自精确扩散分布的预言量样本，即 $\rvx_s \sim p_s$，或在给定 $\rvx_0$ 的条件下 $\rvx_s \sim p_s(\,\cdot \mid \rvx_0)$。因此 $\tilde{\rvx}_s$ 的分布不必恰为 $p_s$。} $\tilde\rvx_s$ 走到 $t<s$。在噪声预测下，
 \Cref{eq:variation_of_constants} 给出精确的经验 PF-ODE 流
 \begin{align*}
 \widetilde\bPsi_{s\to t}(\tilde\rvx_s)
@@ -693,14 +547,13 @@ PF-ODE，包括不同的预测参数化，分析已知
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \diff\tau .
 \end{align*}
-通过分析可知与进度相关的因素；积分中唯一未知的量是神经预测
-$\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 沿着未知轨迹评估。从 PF-ODE 的角度来看，确定性 DDIM 使用最简单的一阶近似：它将噪声预测固定在步骤开始时的值，
+其中依赖调度的因子都是解析已知的；积分内唯一的未知量，是沿未知轨迹取值的神经预测 $\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$。从 PF-ODE 的角度看，确定性 DDIM 采用最简单的一阶近似：把噪声预测冻结在该步起始处的值，即
 \[
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \approx
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s),\quad\text{for}\quad \tau\in[t,s],
 \]
- 同时保留积分内已知的与计划相关的因素。这给出了
+同时保留积分内已知的、依赖调度的因子。这样就得到
 \begin{align*}
 \tilde\rvx_t
 =
@@ -716,16 +569,15 @@ $\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 沿着未知轨迹评估。从 PF-ODE
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \end{align*}
 
-使用 $f(t)=\alpha_t'/\alpha_t$，积分因子简化为
-$\mathcal E(s\shortrightarrow t)=\alpha_t/\alpha_s$。剩余的与计划相关的系数也有一个方便的封闭形式：
+利用 $f(t)=\alpha_t'/\alpha_t$，积分因子化简为 $\mathcal E(s\shortrightarrow t)=\alpha_t/\alpha_s$。剩下的那个依赖调度的系数也有方便的闭式表达：
 $\tfrac{1}{2}\tfrac{g^2(\tau)}{\sigma_\tau}
 \mathcal E(\tau\shortrightarrow t)
 =
 \alpha_t
 \tfrac{\diff}{\diff\tau}
-\bigl(\tfrac{\sigma_\tau}{\alpha_\tau}\bigr)$。因此，一旦神经预测在该步骤中保持固定，就可以根据噪声表准确地评估剩余积分。
+\bigl(\tfrac{\sigma_\tau}{\alpha_\tau}\bigr)$。因此，只要神经预测在这一步内保持固定，剩下的积分就能依据噪声调度精确算出。
 
-\proppp{DDIM 作为一阶因子 EI 更新}{ddim-euler}{
+\proppp{DDIM 即一阶因式分解指数积分器更新}{ddim-euler}{
 对于 $s>t$，确定性 DDIM 给出
 \begin{align}
 \label{eq:ddim-euler}
@@ -742,12 +594,10 @@ $\tfrac{1}{2}\tfrac{g^2(\tau)}{\sigma_\tau}
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \end{align}
 }{
-积分得出结果
-$\frac{\diff}{\diff\tau}(\sigma_\tau/\alpha_\tau)$
-来自 $s$ 至 $t$.
+把 $\frac{\diff}{\diff\tau}(\sigma_\tau/\alpha_\tau)$ 从 $s$ 积分到 $t$ 即得。
 }
 
-因此，DDIM 所做的近似非常具体：在整个时间间隔内保留已知的时间表演化，而仅忽略神经预测的变化。在干净数据预测下有类似的推导。精确的经验 PF-ODE 流可以写为
+可见 DDIM 的近似非常明确：在整个时间区间内保留已知的调度演化，只忽略神经预测本身的变化。在干净数据预测下可以作类似的推导。精确的经验 PF-ODE 流可写成
 \begin{align*}
 \widetilde\bPsi_{s\to t}(\tilde\rvx_s)
 =
@@ -762,8 +612,7 @@ $\frac{\diff}{\diff\tau}(\sigma_\tau/\alpha_\tau)$
 \rvx_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \diff\tau.
 \end{align*}
-使用与上面相同的一阶近似，我们认为
-$\rvx_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 固定为当时的值 $s$。然后精确评估剩余的与计划相关的积分，给出
+采用与上面相同的一阶近似，即把 $\rvx_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 冻结在时刻 $s$ 的取值上；再精确算出剩下那个依赖调度的积分，得到
 \[
 \tilde\rvx_t
 =
@@ -777,13 +626,13 @@ $\rvx_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 固定为当时的值 $s$。然后精�
 \right)
 \rvx_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-因此，冻结噪声预测 PF-ODE 中的噪声预测或冻结干净数据 PF-ODE 中的干净数据预测会产生相同的 DDIM 更新。此对应关系稍后将再次出现在 DPM-Solver 和 DPM-Solver 中\texttt{++}，分别根据噪声和干净数据预测公式构建高阶近似。
+可见，在噪声预测形式的 PF-ODE 中冻结噪声预测，与在干净数据预测形式的 PF-ODE 中冻结干净数据预测，得到的 DDIM 更新完全相同。这一对应关系后文还会再现：DPM-Solver 与 DPM-Solver\texttt{++} 正是分别基于噪声预测和干净数据预测的公式来构造高阶近似的。
 
-\paragraph{等效形式和解释。}
-在预言机级别，标准预测目标通过以下方式在点代数上等效 \Cref{eq:predictions-equivalence}。因此，上面从噪声预测导出的确定性DDIM更新可以在起点重写 $s$ 在干净数据或分数预测方面，不改变有限步更新。以下推论收集了这些等价表达式。
+\paragraph{等价形式与解释。}
+在预言量层面，各个标准预测目标按 \Cref{eq:predictions-equivalence} 逐点代数等价。因此，上面由噪声预测导出的确定性 DDIM 更新，可以在起点 $s$ 处改写为干净数据预测或分数预测的形式，而有限步更新保持不变。下面的推论汇总这些等价写法。
 
-\cornp{确定性 DDIM 更新的等效形式}{
-让 $s>t$，并考虑一个状态 $\tilde\rvx_s$ 当时 $s$。 oracle 确定性 DDIM 更新接受等效表达式
+\cornp{确定性 DDIM 更新的等价形式}{
+设 $s>t$，考虑时刻 $s$ 上的状态 $\tilde\rvx_s$。预言量意义下的确定性 DDIM 更新可写成如下等价形式
 \begin{align}
 \begin{aligned}
 \label{eq:ddim-update-all}
@@ -841,7 +690,7 @@ $\rvx_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 固定为当时的值 $s$。然后精�
 \end{align}
 }
 
-最后一个恒等式 \Cref{eq:ddim-update-all} 给出了 DDIM 特别直观的视图。开始于 $\tilde\rvx_s$，DDIM 保持及时推断的干净和噪声估计 $s$ 使用目标调度系数修复并重新组合它们：
+\Cref{eq:ddim-update-all} 中的最后一个恒等式给出了 DDIM 一个格外直观的图景。从 $\tilde\rvx_s$ 出发，DDIM 把在时刻 $s$ 推断出的干净数据估计与噪声估计固定住，再用目标调度系数把二者重新组合：
 \[
 \tilde\rvx_t
 =
@@ -849,35 +698,23 @@ $\rvx_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 固定为当时的值 $s$。然后精�
 +
 \sigma_t\beps^*(\tilde\rvx_s,s).
 \]
-这反映了前向高斯路径的共享噪声耦合，
-$\rvx_\tau=\alpha_\tau\rvx_0+\sigma_\tau\beps$: 以固定对为条件
-$(\rvx_0,\beps)$，从一个时间移动到另一个时间仅更改系数
-$(\alpha_\tau,\sigma_\tau)$。 DDIM 使用步骤开始时可用的干净和噪声估计来应用相同的想法。在条件层面上，其中 $\rvx_0$ 和 $\beps$ 是固定的，这种重组完全遵循相应的共享噪声路径。然而，在边缘水平上， $\rvx^*(\tilde\rvx_s,s)$ 和
-$\beps^*(\tilde\rvx_s,s)$ 后验估计是从
-$\tilde\rvx_s$。因此，有限 DDIM 步骤通常是边缘 PF-ODE 流的近似值，而不是从 $p_t$.\begin{figure}[th!]
+这与前向高斯路径的共享噪声耦合 $\rvx_\tau=\alpha_\tau\rvx_0+\sigma_\tau\beps$ 同构：在给定固定的一对 $(\rvx_0,\beps)$ 的条件下，从一个时刻走到另一个时刻只是改变了系数 $(\alpha_\tau,\sigma_\tau)$。DDIM 用该步起始处可得的干净数据估计和噪声估计，套用同样的思路。在条件层面，即 $\rvx_0$ 与 $\beps$ 都固定时，这种重组完全沿着相应的共享噪声路径进行。但在边缘层面，$\rvx^*(\tilde\rvx_s,s)$ 与 $\beps^*(\tilde\rvx_s,s)$ 只是由 $\tilde\rvx_s$ 推断出的后验估计。因此，有限步的 DDIM 一般只是对边缘 PF-ODE 流的近似，而不是从 $p_t$ 中的精确抽样。
+
+\begin{figure}[th!]
     \centering
     \includegraphics[width=0.86\linewidth]{Images/PartB/Euler.pdf}
     \caption{\textbfs{有限步 DDIM 与经验 PF-ODE 流。}
-    从$\tilde\rvx_s$开始，经验PF-ODE不断演化
-    为 $\widetilde\bPsi_{s\to t}(\tilde\rvx_s)$，而 DDIM 保留
-    整个时间间隔的开始时间神经预测，同时进化
-    分析已知的时间表。他们的差异是一步到位
-    \Cref{eq:ddim-local-defect} 中的离散化错误。
-    \figcredit{由作者创建。}}
+    从 $\tilde\rvx_s$ 出发，经验 PF-ODE 连续演化到 $\widetilde\bPsi_{s\to t}(\tilde\rvx_s)$；而 DDIM 在整个时间区间内始终沿用起始时刻的神经预测，只让已知的调度解析地演化。两者的差异就是 \Cref{eq:ddim-local-defect} 中的单步离散化误差。
+    \figcredit{由作者绘制。}}
     \label{fig:euler}
 \end{figure}
 
 
 
-\paragraph{为什么预测是固定的？}
-在任何固定状态和时间，标准预测参数化为
-通过 \Cref{eq:predictions-equivalence} 进行代数等效。一个
-然而，有限步求解器通过保持
-一个选定的预测在一段时间内固定。这样的冻结近似是
-仅当转换后的预测在参数化更改下才保留
-沿着所得的近似轨迹也保持恒定。
+\paragraph{为什么「固定哪个预测」很重要？}
+在任意固定的状态和时刻上，各个标准预测参数化按 \Cref{eq:predictions-equivalence} 都是代数等价的。然而，有限步求解器还会额外引入一层近似：把选定的那个预测在一整个区间内保持不变。这种「冻结」近似只有在换用别的参数化之后依然成立时，才算得上与参数化无关，也就是说，转换后的那个预测量必须沿所得近似轨迹同样保持恒定。
 
-DDIM 提供了一个特别干净的示例。让
+DDIM 提供了一个格外干净的例子。令
 \[
 \widehat\rvx_0
 :=
@@ -887,13 +724,10 @@ DDIM 提供了一个特别干净的示例。让
 :=
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s),
 \]
-其中，如果模型仅直接预测一个量，则另一个量为
-由\Cref{eq:predictions-equivalence}中的代数转换定义。
-因此，通过构建，
+其中若模型只直接预测其中一个量，另一个就由 \Cref{eq:predictions-equivalence} 中的代数换算定义。于是按构造有
 $\tilde\rvx_s=\alpha_s\widehat\rvx_0+\sigma_s\widehat\beps$。
 
-保持此开始时间清洁/噪声对固定定义了 DDIM 插值
-整个步骤：
+把这个起始时刻的「干净/噪声」对固定下来，就定义了整个步长上的 DDIM 插值：
 \[
 \tilde\rvx_\tau^{\mathrm{DDIM}}
 =
@@ -903,15 +737,9 @@ $\tilde\rvx_s=\alpha_s\widehat\rvx_0+\sigma_s\widehat\beps$。
 \qquad
 \tau\in[t,s].
 \]
-这不需要额外的模型评估：一次
-$(\widehat\rvx_0,\widehat\beps)$ 固定在时间 $s$，时间表
-每个中间体的系数 $(\alpha_\tau,\sigma_\tau)$ 都是已知的
-$\tau$。在 $\tau=s$ 处，表达式恢复起始状态，而在
-$\tau=t$ 它提供了 DDIM 更新。中间值简单描述
-由 DDIM 近似导出的有限步轨迹。
+这不需要任何额外的模型评估：一旦 $(\widehat\rvx_0,\widehat\beps)$ 在时刻 $s$ 固定，对任意中间时刻 $\tau$ 而言调度系数 $(\alpha_\tau,\sigma_\tau)$ 都是已知的。$\tau=s$ 时该式回到起始状态，$\tau=t$ 时它就给出 DDIM 更新；中间的那些取值只是描述了 DDIM 近似所诱导出的有限步轨迹。
 
-噪声和干净数据预测的特殊作用现在是立竿见影的。沿
-这个轨迹，
+噪声预测与干净数据预测的特殊地位到这里就一目了然了。沿这条轨迹有
 \[
 \frac{
 \tilde\rvx_\tau^{\mathrm{DDIM}}
@@ -933,22 +761,13 @@ $\tau=t$ 它提供了 DDIM 更新。中间值简单描述
 =
 \widehat\beps.
 \]
-因此，代数转换后的干净和噪声预测保持不变
-沿着 DDIM 轨迹一起。因此，持有
-$\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
-\approx\beps_{\bm{\phi}^\times}(\tilde\rvx_s,s)$ 或持有
-$\rvx_{\bm{\phi}^\times}(\rvx_\tau,\tau)
-\approx\rvx_{\bm{\phi}^\times}(\tilde\rvx_s,s)$ 导致相同的 DDIM
-更新。从这个意义上说，$\widehat\rvx_0$和$\widehat\beps$是两个固定的
-DDIM 共享噪声路径的组成部分，同时
-$(\alpha_\tau,\sigma_\tau)$ 提供已知的时间相关权重。
+可见沿 DDIM 轨迹，经代数换算得到的干净数据预测与噪声预测是同时保持不变的。因此，保持 $\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
+\approx\beps_{\bm{\phi}^\times}(\tilde\rvx_s,s)$ 与保持 $\rvx_{\bm{\phi}^\times}(\rvx_\tau,\tau)
+\approx\rvx_{\bm{\phi}^\times}(\tilde\rvx_s,s)$ 会给出同一个 DDIM 更新。从这个意义上说，$\widehat\rvx_0$ 与 $\widehat\beps$ 是 DDIM 共享噪声路径上的两个固定成分，而 $(\alpha_\tau,\sigma_\tau)$ 提供已知的、随时间变化的权重。
 
+不过分数与速度的表现就不同了。DDIM 固定的是推断出的「干净/噪声」对 $(\widehat\rvx_0,\widehat\beps)$，而由这一对换算出的分数和速度一般会随时刻变化。
 
-然而，分数和速度的表现不同。 DDIM 保留推断的
-干净/噪声对 $(\widehat\rvx_0,\widehat\beps)$ 已修复，但分数和
-从这对获得的速度通常随时间变化。
-
-例如，转换固定（在时间 $s$) 噪声估计以在中间时间对预测进行评分 $\tau$ 给出
+例如，把在时刻 $s$ 固定下来的噪声估计换算成中间时刻 $\tau$ 的分数预测，得到
 \[
 \rvs(\tilde\rvx_\tau^{\mathrm{DDIM}},\tau)
 =
@@ -957,7 +776,7 @@ $(\alpha_\tau,\sigma_\tau)$ 提供已知的时间相关权重。
 \frac{\sigma_s}{\sigma_\tau}
 \rvs_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-因此，即使 $\widehat\beps$ 是固定的，其对应的分数一般随 $\tau$ 通过因子 $1/\sigma_\tau$。直接强加
+可见即使 $\widehat\beps$ 固定，其对应的分数一般仍会通过因子 $1/\sigma_\tau$ 随 $\tau$ 变化。若直接强行要求
 \[
 \rvs_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \approx
@@ -965,7 +784,7 @@ $(\alpha_\tau,\sigma_\tau)$ 提供已知的时间相关权重。
 \qquad
 \tau\in[t,s],
 \]
-因此进行不同的有限步近似，通常会产生不同的一阶因式分解求解器。类似地，固定的清洁/噪声对会引起速度
+那就是另一种不同的有限步近似，通常会得到另一个一阶因式分解求解器。类似地，固定的「干净/噪声」对诱导出的速度为
 \[
 \frac{\diff}{\diff\tau}
 \tilde\rvx_\tau^{\mathrm{DDIM}}
@@ -974,14 +793,12 @@ $(\alpha_\tau,\sigma_\tau)$ 提供已知的时间相关权重。
 +
 \sigma_\tau'\widehat\beps.
 \]
-该速度通常随 $\tau$ 因为时间表衍生品
-$\alpha_\tau'$ 和 $\sigma_\tau'$ 改变。相反，保持原始速度预测固定，
-$\rvv_{\bm{\phi}^\times}(\rvx_\tau,\tau)
+该速度一般会随 $\tau$ 变化，因为调度导数 $\alpha_\tau'$ 与 $\sigma_\tau'$ 在变。反之，若把原始的速度预测固定住，即取 $\rvv_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \approx
-\rvv_{\bm{\phi}^\times}(\tilde\rvx_s,s)$，给出原始扩散时间内的普通欧拉；它与 DDIM 的关系在 \Cref{subsec:ddim-classical-euler}.
+\rvv_{\bm{\phi}^\times}(\tilde\rvx_s,s)$，得到的就是原始扩散时间下的普通 Euler 法；它与 DDIM 的关系见 \Cref{subsec:ddim-classical-euler}。
 
 \rmkb{
-预测参数化在点代数上是等价的，但有限步冻结不需要与时间相关的转换进行交换。 DDIM 保持一致的启动时间清洁/噪声对固定；相应的分数和完整速度通常会随着步骤的变化而变化。因此，直接冻结原始分数或速度定义了不同的一阶方法。速度情况被量化为 \Cref{subsec:ddim-classical-euler}.
+各预测参数化在逐点上代数等价，但「有限步冻结」这一操作未必能与含时的换算交换次序。DDIM 固定的是一个自洽的起始时刻「干净/噪声」对；相应的分数与完整速度则会随步内时间变化。因此，直接去冻结原始的分数或速度，定义出来的是另一种一阶方法。速度那一情形在 \Cref{subsec:ddim-classical-euler} 中做了定量比较。
 }
 
 
@@ -990,18 +807,18 @@ $\rvv_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \label{subsec:ddim-classical-euler}
 
 
-上面的讨论表明，DDIM 是一阶方法，但它与经典欧拉方法的关系需要小心。一旦已知的扩散方案与学习的预测分离，就会出现不同的一阶方案，具体取决于 \emph{在有限步长内保持固定的内容}。我们比较三种单评估结构：
+上面的讨论说明 DDIM 是一阶方法，但它与经典 Euler 法的关系需要斟酌。一旦把已知的扩散调度与学到的预测分开，就会出现若干不同的一阶格式，区别在于\emph{在有限步内固定了什么}。我们比较三种「每步只用一次评估」的构造：
 \begin{enumerate}
-    \item \emph{普通欧拉}，保持完整 PF-ODE 速度固定；
-    \item \emph{指数欧拉}，以解析方式处理已知的线性传播，但保持剩余的系数加权残差固定；
-    \item \emph{DDIM}，它保持启动时间清洁/噪声估计固定，同时在已知扩散计划下保留其有限步演化。
+    \item \emph{普通 Euler}：把完整的 PF-ODE 速度固定住；
+    \item \emph{指数 Euler}：把已知的线性传播解析处理，但把剩下的系数加权残差固定住；
+    \item \emph{DDIM}：把起始时刻的干净数据估计与噪声估计固定住，同时让它们在已知扩散调度下作有限步演化。
 \end{enumerate}
-从同一 DDIM 更新的两个等效视图中最容易看出这些区别。干净/噪声形式使其与普通欧拉的区别变得透明，而因子半线性形式则阐明了其与指数欧拉的关系。然后，我们识别剩余的离散化误差，并展示 DDIM 本身在按计划对齐坐标更改后可以被视为欧拉方法的精确含义。
+从同一个 DDIM 更新的两种等价写法出发，最容易看清这些区别：干净/噪声写法让它与普通 Euler 的差别一目了然，而因式分解的半线性写法则说明了它与指数 Euler 的关系。随后我们指出剩余的离散化误差，并说明在什么确切意义上，DDIM 本身经过一次与调度对齐的坐标变换后可以看作 Euler 法。
 
 
-\paragraph{DDIM 与普通欧拉。}
-DDIM 和普通 Euler 使用相同的开始时间模型信息，但在有限步长上的传播方式不同。 Plain Euler 局部近似完整的 PF-ODE 速度，而 DDIM 保留已知扩散方案的有限步演化，同时保持模型预测固定。因此，为了顺利进行时间表，两个更新同意第一顺序，并且通常顺序条款有所不同 $\mathcal O((\Delta s)^2)$。我们在下面明确说明这种差异。考虑一下时间倒退一步 $s$ 至 $t<s$，与
-$\Delta s:=s-t>0$，并假设开始时间清洁和噪声预测在代数上是一致的：
+\paragraph{DDIM 与普通 Euler。}
+DDIM 与普通 Euler 用的是同一份起始时刻的模型信息，但在一个有限步内传播它的方式不同。普通 Euler 把完整的 PF-ODE 速度作局部近似；DDIM 则固定模型预测，而保留已知扩散调度的有限步演化。因此对光滑调度而言，两种更新一阶一致，一般相差 $\mathcal O((\Delta s)^2)$ 量级的项。下面把这个差别写清楚。考虑从时刻 $s$ 向 $t<s$ 倒退的一步，记
+$\Delta s:=s-t>0$，并假设起始时刻的干净数据预测与噪声预测在代数上自洽：
 \[
 \tilde\rvx_s
 =
@@ -1011,7 +828,7 @@ $\Delta s:=s-t>0$，并假设开始时间清洁和噪声预测在代数上是一
 \sigma_s
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-此时对应的经验 PF-ODE 速度 $s$ 是
+时刻 $s$ 对应的经验 PF-ODE 速度为
 \[
 \rvv_{\bm{\phi}^\times}(\tilde\rvx_s,s)
 =
@@ -1021,7 +838,7 @@ $\Delta s:=s-t>0$，并假设开始时间清洁和噪声预测在代数上是一
 \sigma_s'
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-普通欧拉将这个完整速度保持在步骤上固定， $\tau\in[t,s]$，并给出：
+普通 Euler 在整步内（$\tau\in[t,s]$）把这个完整速度固定住，给出
 \[
 \tilde\rvx_t^{\mathrm{Euler}}
 =
@@ -1030,7 +847,7 @@ $\Delta s:=s-t>0$，并假设开始时间清洁和噪声预测在代数上是一
 \Delta s\,
 \rvv_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-相比之下，DDIM 在开始时间保持清洁/噪声预测对固定，同时从 $(\alpha_s,\sigma_s)$ 至 $(\alpha_t,\sigma_t)$:
+相比之下，DDIM 把起始时刻的「干净/噪声」预测对固定住，同时让已知的调度系数从 $(\alpha_s,\sigma_s)$ 演化到 $(\alpha_t,\sigma_t)$：
 \[
 \tilde\rvx_t^{\mathrm{DDIM}}
 =
@@ -1058,7 +875,7 @@ $\Delta s:=s-t>0$，并假设开始时间清洁和噪声预测在代数上是一
 \right]
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \end{align*}
-为了顺利进行日程，
+对光滑调度有
 \[
 \alpha_t-\alpha_s+\Delta s\,\alpha_s'
 =
@@ -1088,23 +905,21 @@ $\Delta s:=s-t>0$，并假设开始时间清洁和噪声预测在代数上是一
 +
 \mathcal O((\Delta s)^3).
 \end{align*}
-因此，DDIM 和普通欧拉同意一阶，但通常在有限步长上有所不同。普通欧拉取代了有限的时间表变化
-$(\alpha_t-\alpha_s,\sigma_t-\sigma_s)$ 通过局部线性化，而 DDIM 在分析上保留了有限调度演化。接下来是一个有用的特殊情况。如果两者都 $\alpha_\tau$ 和
-$\sigma_\tau$ 是 \emph{仿射 $\tau$ 结束 $[t,s]$}，那么
+可见 DDIM 与普通 Euler 一阶一致，但在有限步上一般仍有差别：普通 Euler 用局部线性化代替了有限的调度变化 $(\alpha_t-\alpha_s,\sigma_t-\sigma_s)$，而 DDIM 解析地保留了有限的调度演化。由此立刻得到一个有用的特例：若 $\alpha_\tau$ 与 $\sigma_\tau$ 在 $[t,s]$ 上都是 $\tau$ 的\emph{仿射}函数，则
 \[
 \alpha_t-\alpha_s=-\Delta s\,\alpha_s',
 \qquad
 \sigma_t-\sigma_s=-\Delta s\,\sigma_s',
 \]
-所以 DDIM 和普通欧拉完全一致。例如，这包括时间表（另见中的讨论 \Cref{subsec:concept-why-v-affine}) 
+于是 DDIM 与普通 Euler 完全一致。例如下列调度就属于这种情况（另见 \Cref{subsec:concept-why-v-affine} 中的讨论）：
 \[(\alpha_t,\sigma_t)=(1,t)\quad \text{and}\quad (\alpha_t,\sigma_t)=(1-t,t) .
 \]
-因此，两种方法之间的有限步区别是由原始扩散时间中已知时间表的非线性驱动的。
+因此，两种方法在有限步上的区别来自已知调度在原始扩散时间下的非线性。
 
 
 
-\paragraph{DDIM 与指数欧拉。}
-上面的比较使用干净/噪声表示来显示 DDIM 在原始扩散时间方面与普通欧拉有何不同。现在我们回到序言中的半线性表示，以区分 DDIM 和传统的指数欧拉。区别很简单：两种方法在分析上都保留了已知的线性演化，但它们在剩余积分内固定了不同的量。在噪声预测下，因式分解 PF-ODE
+\paragraph{DDIM 与指数 Euler。}
+上面的比较借助「干净/噪声」写法，说明了 DDIM 在原始扩散时间下与普通 Euler 的差别。现在我们回到序言中的半线性写法，把 DDIM 与传统指数 Euler 区分开。区别很简单：两种方法都解析地保留了已知的线性演化，但它们在剩余积分里固定的量不同。在噪声预测下，\Cref{eq:general-semilinear-pfode} 中因式分解形式的 PF-ODE 取
 \Cref{eq:general-semilinear-pfode} 有
 \[
 a(\tau)=f(\tau),
@@ -1115,12 +930,12 @@ b(\tau)=\frac{g^2(\tau)}{2\sigma_\tau},
 =
 \beps_{\bm{\phi}^\times}.
 \]
-其精确的常数变分公式包含模型相关项
+其精确的常数变分公式含有依赖模型的项
 \[
 b(\tau)\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau).
 \]
 
-传统指数欧拉将此系数加权量视为单个残差，并将整个残差固定在步骤开始时：
+传统指数 Euler 把这个带系数加权的量整体当作一个残差，并在该步起始处把整个残差固定住：
 \[
 b(\tau)\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \approx
@@ -1141,8 +956,7 @@ b(s)
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
 
-DDIM 使用序言中强调的更精细的分解。自从
-$b(\tau)$ 从扩散表可知，它保留在积分内；只有神经预测保持固定：
+DDIM 用的是序言中强调的更精细的因式分解。既然 $b(\tau)$ 可由扩散调度已知，就让它留在积分内，只把神经预测固定住：
 \[
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \approx
@@ -1162,7 +976,7 @@ $b(\tau)$ 从扩散表可知，它保留在积分内；只有神经预测保持�
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
 
-因此两次更新之间的有限步差完全来自已知系数 $b(\tau)$:
+于是两种更新在有限步上的差别完全来自已知系数 $b(\tau)$：
 \[
 \tilde\rvx_t^{\mathrm{DDIM}}
 -
@@ -1176,7 +990,7 @@ $b(\tau)$ 从扩散表可知，它保留在积分内；只有神经预测保持�
 \right]
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-用于平滑 $b$,
+对光滑的 $b$，
 \[
 \tilde\rvx_t^{\mathrm{DDIM}}
 -
@@ -1188,8 +1002,7 @@ b'(s)
 +
 \mathcal O((\Delta s)^3).
 \]
-因此，DDIM 和传统指数欧拉同意一阶。唯一的区别是指数欧拉冻结 $b(\tau)$ 在 $b(s)$ 与神经预测一起，而DDIM保留了已知的变化
-$b(\tau)$。因此，每当 $b(\tau)$ 在步长上是常数，包括常数-$b$ Prologue 示例中使用的设置。与前面的普通欧拉比较一起，三个一阶规则的不同之处仅在于在对上进行常数近似之前保留了多少已知结构 $\tau\in[t,s]$:
+可见 DDIM 与传统指数 Euler 一阶一致。唯一的区别在于：指数 Euler 把 $b(\tau)$ 连同神经预测一起冻结在 $b(s)$，而 DDIM 保留了 $b(\tau)$ 的已知变化。因此，只要 $b(\tau)$ 在这一步内为常数（包括序言例子中 $b$ 为常数的设定），两种更新完全重合。结合上面与普通 Euler 的比较可以看出，这三个一阶格式的区别只在于：在把 $\tau\in[t,s]$ 上的被积函数取为常数之前，各自保留了多少已知结构
 \[
 \begin{array}{rcl}
 \text{Plain Euler}
@@ -1214,12 +1027,12 @@ b(s)\widehat\beps,
 其中
 $\widehat\beps
 :=
-\beps_{\bm{\phi}^\times}(\tilde\rvx_s,s)$。所有三个在步骤开始时都使用相同的单个神经网络评估。普通欧拉近似于完整速度；指数欧拉首先保留已知的线性传播； DDIM 还保留已知系数 $b(\tau)$ 仅近似神经预测。这一层次结构关注的是哪些分析已知的术语被保留，而不是一步错误的通用排序。其主要数值结果是 DDIM 中的剩余近似值可以完全与神经预测的变化隔离，如下所示。
+\beps_{\bm{\phi}^\times}(\tilde\rvx_s,s)$。三者在该步起始处用的是同一次神经网络评估。普通 Euler 近似的是完整速度；指数 Euler 先保留已知的线性传播；DDIM 还进一步保留已知系数 $b(\tau)$，只对神经预测作近似。这一层次划分关心的是「哪些解析已知的项被保留下来」，而不是对单步误差给出一个普适排序。它在数值上的主要后果是：DDIM 中剩下的近似只与神经预测的变化有关，可以完全隔离出来，下面就来展示这一点。
 
 
 
-\paragraph{每种方法仍然会出现什么错误？}
-上面的比较描述了三个数字更新之间的差异。现在，我们将每次更新与精确的经验 PF-ODE 流程进行比较。对于此局部误差分析，假设该步骤从精确的经验状态开始 $\rvx_s$ 当时 $s$。对于普通欧拉，精确的经验流可以写成直接速度形式：
+\paragraph{各方法还剩下什么误差？}
+上面比较的是三种数值更新彼此之间的差别。现在改为把每种更新与精确的经验 PF-ODE 流作比较。为做这一局部误差分析，假设该步从时刻 $s$ 的精确经验状态 $\rvx_s$ 出发。对普通 Euler 而言，精确的经验流可以写成直接速度形式
 \[
 \widetilde\bPsi_{s\to t}(\rvx_s)
 =
@@ -1229,7 +1042,7 @@ $\widehat\beps
 \rvv_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \diff\tau.
 \]
-由于普通欧拉将完整速度固定在其开始时间值，因此其精确的一步缺陷为
+由于普通 Euler 把完整速度固定在其起始时刻的取值上，它的精确单步缺陷为
 \begin{align*}
 \widetilde\bPsi_{s\to t}(\rvx_s)
 -
@@ -1244,8 +1057,7 @@ $\widehat\beps
 \diff\tau.
 \end{align*}
 
-对于指数欧拉，已知的线性传播已经被解析处理，但是系数加权残差
-$b(\tau)\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 保持固定。因此
+对指数 Euler，已知的线性传播已由解析处理，但带系数加权的残差 $b(\tau)\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 被固定住。因此
 \begin{align*}
 \widetilde\bPsi_{s\to t}(\rvx_s)
 -
@@ -1263,7 +1075,7 @@ b(s)
 \diff\tau.
 \end{align*}
 
-最后，DDIM保留了已知的线性传播和已知的系数 $b(\tau)$，并且仅保留固定的神经预测：
+最后，DDIM 保留了已知的线性传播与已知的系数 $b(\tau)$，只把神经预测固定住：
 \begin{align}
 \label{eq:ddim-local-defect}
 \widetilde\bPsi_{s\to t}(\rvx_s)
@@ -1280,7 +1092,7 @@ b(s)
 \diff\tau.
 \end{align}
 
-这些恒等式揭示了每个一阶方案的相关平滑概念。如果相应的量沿着精确的经验轨迹缓慢变化，则一步近似是准确的。更准确地说，与 $\Delta s:=s-t$，标准平滑度给出
+这些恒等式揭示了各个一阶格式所对应的光滑性要求：只要相应的那个量沿精确经验轨迹变化缓慢，单步近似就是准确的。更准确地说，记 $\Delta s:=s-t$，按标准的光滑性估计有
 \begin{align*}
 \left\|
 \widetilde\bPsi_{s\to t}(\rvx_s)
@@ -1331,34 +1143,16 @@ b(\tau)
 \tfrac{\diff}{\diff\tau}
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \right\|.
-\end{align*}在通常的平滑性和稳定性假设下，这三种方法都是
-\emph{全局一阶}，每个只需要一次神经网络评估
-步骤。此外，每种方法在其所持有的数量时都是精确的
-固定实际上沿着精确的经验轨迹是恒定的：完整的
-普通欧拉的 PF-ODE 速度，系数加权残差
-$b(\tau)\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 为指数欧拉，以及
-噪声预测
-$\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 适用于 DDIM。
+\end{align*}
+在通常的光滑性与稳定性假设下，这三种方法都是\emph{全局一阶}的，而且每步都只需一次神经网络评估。此外，每种方法在其所固定的量恰好沿精确经验轨迹为常数时都是精确的：普通 Euler 对应完整的 PF-ODE 速度，指数 Euler 对应带系数加权的残差 $b(\tau)\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$，DDIM 对应噪声预测 $\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$。
 
-因此，这三种方法之间不存在通用的错误排序：
-当其保持固定的数量在整个时间内缓慢变化时，每个都是最准确的
-步骤。 DDIM 特别适合神经预测的情况
-变化缓慢，但已知的扩散时间表变化明显，因为它
-分析上保留后者。因此，利用更已知的结构可以
-减少离散化误差，但不保证每次误差都较小
-单独的步骤。
+因此，这三种方法之间并不存在一个普适的误差排序：哪一种在某一步最准，取决于它固定住的那个量在这一步内变化得有多慢。DDIM 特别适合这样的情形——神经预测变化缓慢、而已知的扩散调度变化明显，因为它把后者解析地保留了下来。可见，多利用一些已知结构可以减小离散化误差，但并不能保证每一步的误差都更小。
+
+这里讨论的误差都是相对经验 PF-ODE 而言的；经验 PF-ODE 与预言量 PF-ODE 之间的模型失配，则是另一个独立的误差来源。
 
 
-这里讨论的误差是相对于
-经验PF-ODE；经验和预言 PF-ODE 之间的模型不匹配是
-一个单独的错误源。
-
-
-\paragraph{A DDIM的精确欧拉解释.}
-尽管 DDIM 和普通欧拉同意一阶，但它们通常给出
-原始状态$\rvx$的不同有限步更新和扩散时间
-$t$。然而，在经过了精确的欧拉解释之后
-状态和时间坐标的日程调整变化。
+\paragraph{DDIM 的精确 Euler 解释。}
+尽管 DDIM 与普通 Euler 一阶一致，但在原始状态 $\rvx$ 与扩散时间 $t$ 下，它们给出的有限步更新一般不同。不过，只要对状态和时间坐标做一次与调度对齐的变换，DDIM 就能得到一个精确的 Euler 解释。
 
 在噪声预测下，定义
 \begin{equation*}
@@ -1370,14 +1164,9 @@ $t$。然而，在经过了精确的欧拉解释之后
 :=
 \frac{\sigma_t}{\alpha_t}.
 \end{equation*}
-这两种转变发挥着互补作用。国家正常化
-$\rvx_t\mapsto\rvx_t/\alpha_t$ 分解出已知的信号缩放
-$\alpha_t$，而新时钟
-$\rho_t=\sigma_t/\alpha_t$ 通过噪声信号比来衡量进度
-而不是原始的扩散时间。
+这两种变换各司其职：状态归一化 $\rvx_t\mapsto\rvx_t/\alpha_t$ 把已知的信号缩放 $\alpha_t$ 提取出来；而新的「时钟」$\rho_t=\sigma_t/\alpha_t$ 用噪声信号比而非原始扩散时间来度量推进程度。
 
-要首先在条件级别看到这一点，请考虑一个固定对
-高斯扰动路径中的 $(\rvx_0,\beps)$
+先在条件层面看这件事。考虑高斯扰动路径中固定的一对 $(\rvx_0,\beps)$：
 \[
 \rvx_t
 =
@@ -1385,8 +1174,7 @@ $\rho_t=\sigma_t/\alpha_t$ 通过噪声信号比来衡量进度
 \qquad
 \beps\sim\mathcal N(\mathbf 0,\mathbf I).
 \]
-这里，$\beps$ 是固定潜在噪声实现，而不是神经预测。
-变换后的状态满足
+这里 $\beps$ 是一个固定取定的隐噪声实现，而不是神经预测。变换后的状态满足
 \[
 \rvy_t
 =
@@ -1394,18 +1182,15 @@ $\rho_t=\sigma_t/\alpha_t$ 通过噪声信号比来衡量进度
 =
 \rvx_0+\rho_t\beps.
 \]
-因此，沿着这条特定的条件路径，
+于是沿这条特定的条件路径有
 \[
 \frac{\diff\rvy}{\diff\rho}
 =
 \beps.
 \]
-因此，对于固定的 $(\rvx_0,\beps)$，已知的时间表依赖性变为仿射
-在变换后的坐标 $\rho$ 中。
+可见对固定的 $(\rvx_0,\beps)$ 而言，已知的调度依赖在变换后的坐标 $\rho$ 下变成仿射的。
 
-相应的经验PF-ODE具有相同的坐标结构，但是
-固定的潜在噪声 $\beps$ 被学习到的、与状态相关的噪声所取代
-噪声预测。使用\Cref{eq:noise_pf_ode}，
+相应的经验 PF-ODE 具有同样的坐标结构，只是那个固定的隐噪声 $\beps$ 换成了学到的、依赖状态的噪声预测。利用 \Cref{eq:noise_pf_ode}，
 \[
 \frac{\diff\rvx_t}{\diff t}
 =
@@ -1418,7 +1203,7 @@ $\rho_t=\sigma_t/\alpha_t$ 通过噪声信号比来衡量进度
 \right)
 \beps_{\bm{\phi}^\times}(\rvx_t,t),
 \]
-我们得到
+可得
 \begin{align}
 \frac{\diff\rvy_t}{\diff t}
 =
@@ -1432,9 +1217,7 @@ $\rho_t=\sigma_t/\alpha_t$ 通过噪声信号比来衡量进度
 \beps_{\bm{\phi}^\times}(\rvx_t,t).
 \label{eq:ddim-coordinate-ode-t}
 \end{align}
-因此，在 $\alpha_t>0$ 和 $\rho_t$ 严格单调的任何区间上，
-我们可以使用 $\rho$ 作为时间坐标。编写$t=t(\rho)$并定义
-变换后的神经场
+因此，在 $\alpha_t>0$ 且 $\rho_t$ 严格单调的任何区间上，都可以改用 $\rho$ 作时间坐标。记 $t=t(\rho)$，并定义变换后的神经场
 \[
 \bar{\beps}_{\bm{\phi}^\times}(\rvy,\rho)
 :=
@@ -1444,16 +1227,14 @@ $\rho_t=\sigma_t/\alpha_t$ 通过噪声信号比来衡量进度
 t(\rho)
 \bigr),
 \]
-经验 PF-ODE 变为
+则经验 PF-ODE 化为
 \begin{equation}
 \label{eq:ddim-coordinate-ode-rho}
 \frac{\diff\rvy}{\diff\rho}
 =
 \bar{\beps}_{\bm{\phi}^\times}(\rvy,\rho).
 \end{equation}
-因此，模型的空间和时间依赖性仍然存在；
-它简单地表示为变换后的变量 $(\rvy,\rho)$。显式欧拉应用于 \Cref{eq:ddim-coordinate-ode-rho}
-$\rho_s$ 到 $\rho_t$ 给出
+可见模型对空间和时间的依赖依然存在，只是改用了变换后的变量 $(\rvy,\rho)$ 来表达。对 \Cref{eq:ddim-coordinate-ode-rho} 从 $\rho_s$ 到 $\rho_t$ 应用显式 Euler 法，得到
 \[
 \tilde\rvy_t
 =
@@ -1462,14 +1243,13 @@ $\rho_s$ 到 $\rho_t$ 给出
 (\rho_t-\rho_s)
 \bar{\beps}_{\bm{\phi}^\times}(\tilde\rvy_s,\rho_s).
 \]
-自从
+由于
 \[
 \bar{\beps}_{\bm{\phi}^\times}(\tilde\rvy_s,\rho_s)
 =
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s),
 \]
-替代
-$\rvy=\rvx/\alpha$ 和 $\rho=\sigma/\alpha$ 产量
+再代回 $\rvy=\rvx/\alpha$ 与 $\rho=\sigma/\alpha$，即得
 \[
 \tilde\rvx_t
 =
@@ -1485,40 +1265,26 @@ $\rvy=\rvx/\alpha$ 和 $\rho=\sigma/\alpha$ 产量
 \]
 这正是确定性 DDIM 更新。
 
-\msgu{坐标选择是数值方法的一部分}{}{
-状态和时间坐标的可逆变化给出了等价的
-相同连续 ODE 解的表示。有限步
-然而，离散化通常对于该表示并不是不变的：
-“改变坐标然后应用欧拉”不需要等于
-“应用欧拉，然后改变坐标”。
+\msgu{坐标选择本身就是数值方法的一部分}{}{
+状态与时间坐标的可逆变换给出的是同一个连续 ODE 解的等价表示。然而，有限步离散化一般并不具备这种表示不变性：「先换坐标再套 Euler」未必等于「先套 Euler 再换坐标」。
 
 
-数值意义在于合适的坐标系可以吸收
-离散化之前动力学的分析已知部分。在DDIM中，
-$\rvx/\alpha$ 删除了已知的信号缩放和
-$\rho=\sigma/\alpha$吸收相应的时间表相关时间
-缩放，留下变换后的神经场
-$\bar{\beps}_{\bm{\phi}^\times}(\rvy,\rho)$ 的数量近似为
-欧拉。因此，DDIM 通常与 $(\rvx,t)$ 中的普通欧拉不同，而它是
-在时间表对齐坐标中精确显式的欧拉
-$(\rvy,\rho)$。
+其在数值上的意义是：一个合适的坐标系可以在离散化之前，就把动力学中解析已知的部分吸收掉。在 DDIM 中，$\rvx/\alpha$ 消去了已知的信号缩放，$\rho=\sigma/\alpha$ 吸收了相应的、依赖调度的时间缩放，从而把变换后的神经场 $\bar{\beps}_{\bm{\phi}^\times}(\rvy,\rho)$ 留作 Euler 法要近似的对象。因此 DDIM 在 $(\rvx,t)$ 坐标下一般不等于普通 Euler，但在与调度对齐的坐标 $(\rvy,\rho)$ 下它恰好就是显式 Euler。
 }
 
-对偶结构在干净数据预测下成立。通过 $\sigma_t$ 对状态进行标准化并使用 $\alpha_t/\sigma_t$ 作为时间坐标给出 
+在干净数据预测下存在对偶的构造。用 $\sigma_t$ 对状态归一化、并取 $\alpha_t/\sigma_t$ 作时间坐标，可得
 \[
 \frac{\diff}{\diff t} \left( \frac{\rvx_t}{\sigma_t} \right) = \frac{\diff}{\diff t} \left( \frac{\alpha_t}{\sigma_t} \right) \rvx_{\bm{\phi}^\times}(\rvx_t,t), 
 \] 
-因此，DDIM 的干净数据形式在其相应的调度对齐坐标中同样是显式的欧拉。
+可见 DDIM 的干净数据形式在其相应的调度对齐坐标下同样是显式 Euler。
 
-此\emph{状态--时间坐标变换视点}也预览了角色
-高阶扩散求解器中的坐标选择。 DPM-Solver，已开发
-稍后在 \Cref{sec:dpm} 中，使用半对数 SNR
+这种\emph{状态—时间坐标变换的视角}也预示了坐标选择在高阶扩散求解器中的作用。后文 \Cref{sec:dpm} 中的 DPM-Solver 采用对数半信噪比
 \[
 \lambda_t
 :=
 \log\frac{\alpha_t}{\sigma_t},
 \]
-这与 DDIM 的欧拉时钟直接相关：
+它与 DDIM 的 Euler 时钟直接相关：
 \[
 \rho_t
 =
@@ -1548,28 +1314,18 @@ e^{-\lambda}
 (\hat\rvx_\lambda,\lambda)
 \diff\lambda,
 \]
-使用稍后介绍的常用 $\lambda$ 参数化模型符号
-\Cref{sec:dpm}。
+这里用了稍后在 \Cref{sec:dpm} 中才引入的 $\lambda$ 参数化模型记号。
 
-首先，保持神经预测固定，同时保留已知的
-变量权重的变化给出了相同的有限步更新，所以
-DPM-Solver-1 正是 DDIM。然而，除了一阶之外，坐标
-状态时间相关的神经预测被近似成为一部分
-的数值方法。 DPM-Solver 使用 $\lambda$ 因为它产生
-具有方便的高阶展开式的指数加权积分。
+若把神经预测固定住、同时保留已知的变量权重变化，得到的有限步更新完全一样，所以 DPM-Solver-1 就是 DDIM。不过一旦超过一阶，状态与时间坐标以及「神经预测如何被近似」就成了数值方法本身的一部分。DPM-Solver 之所以采用 $\lambda$，是因为它把积分写成指数加权形式后，能方便地做高阶展开。
 
 
 
 \subsection{（选读）DDIM 最初的变分解释}\label{subsec:ddim}
 
-上面的 PF-ODE 视角将确定性 DDIM 解释为数值
-求解器。然而，从历史上看，DDIM 是从变分法引入的
-DDPM 的观点。它的起始问题是不同的：
-\emph{去噪目标是否唯一确定噪声状态
-不同时间必须耦合？}
+上面的 PF-ODE 视角把确定性 DDIM 解释成一个数值求解器。但从历史上看，DDIM 是从 DDPM 的变分视角引入的，它一开始追问的是另一个问题：\emph{去噪目标是否唯一确定了不同时刻的噪声状态之间必须如何耦合？}
 
-\paragraph{重新审视 DDPM 的变分视图。}
-回想一下，DDPM 引入了一种固定的马尔可夫推理过程，其一次性扰动边缘采用高斯形式
+\paragraph{重看 DDPM 的变分视角。}
+回忆 DDPM 引入了一个固定的马尔可夫推理过程，其单步扰动边缘为高斯形式
 \[
 p_t(\rvx_t|\rvx_0)
 =
@@ -1580,9 +1336,7 @@ p_t(\rvx_t|\rvx_0)
 \sigma_t^2\rmI
 \bigr).
 \]
-相应的变分推导涉及易于处理的条件，例如
-$p(\rvx_t|\rvx_s,\rvx_0)$ 用于 $t<s$，而用于生成的学习反向模型不能直接以未知的干净样本为条件
-$\rvx_0$ 而是依赖于扩散模型预测。 DDIM 背后的关键观察涉及去噪目标。我们记得噪声预测 DDPM 损失可以写为
+相应的变分推导要用到一些可处理的条件分布，例如 $t<s$ 时的 $p(\rvx_t|\rvx_s,\rvx_0)$；而用于生成的学习到的反向模型无法直接以未知的干净样本 $\rvx_0$ 为条件，只能依赖扩散模型的预测。DDIM 的关键观察与去噪目标有关。回忆噪声预测形式的 DDPM 损失可以写成
 \[
 \E_t
 \E_{\rvx_0,\beps}
@@ -1597,16 +1351,13 @@ $\rvx_0$ 而是依赖于扩散模型预测。 DDIM 背后的关键观察涉及�
 \right\|_2^2
 \right],
 \]
-这取决于通过一次性边缘的推理过程
-$p_t(\rvx_t|\rvx_0)$，而不是通过全关节耦合
-$\rvx_1,\ldots,\rvx_T$ 条件为 $\rvx_0$.
+它只通过单步扰动边缘 $p_t(\rvx_t|\rvx_0)$ 依赖推理过程，而不依赖以 $\rvx_0$ 为条件的整体联合耦合 $\rvx_1,\ldots,\rvx_T$。
 
 
-\paragraph{原始 DDIM 动机。}
-DDIM 背后的核心观察是去噪训练目标并不能唯一确定不同时间的噪声状态如何耦合。对于固定的干净样本 $\rvx_0$，通常的去噪替代项由一次性扰动边缘确定
-$p_t(\rvx_t|\rvx_0)$，而不同时间的许多不同联合过程可以共享完全相同的边缘。 DDIM 利用了这种自由度：它保留了训练期间使用的扰动边缘，同时改变了不同噪声级别之间的耦合。具体来说，对于任意 $t<s$，考虑条件转换
+\paragraph{DDIM 最初的动机。}
+DDIM 的核心观察是：去噪训练目标并不能唯一确定不同时刻的噪声状态之间如何耦合。对固定的干净样本 $\rvx_0$，通常采用的那个去噪替代目标只由单步扰动边缘 $p_t(\rvx_t|\rvx_0)$ 确定，而不同时刻上许多不同的联合过程可以共享完全相同的边缘。DDIM 正是利用了这份自由度：它保留训练时所用的扰动边缘，只改变不同噪声水平之间的耦合。具体地说，对任意 $t<s$，考虑条件转移
 ${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$。我们要求它是
-\emph{一步略微一致}:
+\emph{单步一致}性，即
 \begin{mdframed}
 \begin{align}
 \label{eq:ddim-reverse-kernel-def}
@@ -1618,10 +1369,7 @@ ${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$。我们要求它是
 p_t(\rvx_t|\rvx_0).
 \end{align}
 \end{mdframed}
-换句话说，如果
-$\rvx_s\sim p_s(\cdot|\rvx_0)$，然后应用所选的转换一次会产生
-$\rvx_t\sim p_t(\cdot|\rvx_0)$。因此，即使之间的依赖性，每个噪声水平的边缘分布也被保留。
-$\rvx_s$ 和 $\rvx_t$ 可能会改变。由原始马尔可夫 DDPM 前向过程引起的贝叶斯逆后验是这种转变的一种有效选择，\footnote{对于马尔可夫前向过程，
+换句话说，若 $\rvx_s\sim p_s(\cdot|\rvx_0)$，施加所选转移一次就得到 $\rvx_t\sim p_t(\cdot|\rvx_0)$。因此每个噪声水平上的边缘分布都被保留，即使 $\rvx_s$ 与 $\rvx_t$ 之间的依赖关系可以改变。由原始马尔可夫 DDPM 前向过程导出的贝叶斯反向后验，就是这类转移的一个合法选择，\footnote{对马尔可夫前向过程
 $\rvx_0\to\rvx_t\to\rvx_s$ 与 $t<s$，条件后验
 $p(\rvx_t|\rvx_s,\rvx_0)$ 满足
 \[
@@ -1632,7 +1380,7 @@ p(\rvx_t|\rvx_s,\rvx_0)
 \,p_s(\rvx_s|\rvx_0)
 \diff\rvx_s
 \]
-根据全概率定律。}
+由全概率公式。}
 但它不是由边缘唯一决定的。相反，DDIM 允许其他边缘一致耦合，包括在广泛分离的噪声水平之间直接转换。这是相同训练的降噪器可以在跳过中间时间的较粗采样网格上重复使用的概率原因。
 
 \paragraph{离散时间 DDIM 的推导。}
@@ -1649,8 +1397,7 @@ p_t(\rvx_t|\rvx_0)
 \qquad
 \rvx_0\sim p_{\mathrm{data}}.
 \]
-目标是为任何 $t<s$，条件转换
-${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$ 满足边缘一致性条件 \Cref{eq:ddim-reverse-kernel-def}，不需要它与原始马尔可夫前向过程相关的贝叶斯后验一致。自然的选择是高斯族
+我们的目标是：对任意 $t<s$，让条件转移 ${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$ 满足边缘一致性条件 \Cref{eq:ddim-reverse-kernel-def}，而不要求它与原始马尔可夫前向过程给出的贝叶斯后验一致。一个自然的选择是如下高斯族
 \begin{align}
 \label{eq:ddim-reverse-kernel-param}
 {\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}
@@ -1662,10 +1409,9 @@ a_{t,s}\rvx_0+b_{t,s}\rvx_s,\,
 c_{t,s}^2\mathbf{I}
 \bigr),
 \end{align}
-其中 $(a_{t,s},b_{t,s},c_{t,s})$ 确定 $s$ 时刻的状态，
-干净的样本和新注入的噪声相结合。
+其中 $(a_{t,s},b_{t,s},c_{t,s})$ 决定了时刻 $s$ 的状态、干净样本与新注入噪声如何组合。
 
-为了强加边缘一致性，首先绘制
+为施加边缘一致性，先抽取
 \[
 \rvx_s
 =
@@ -1673,8 +1419,7 @@ c_{t,s}^2\mathbf{I}
 \qquad
 \beps'\sim\mathcal{N}(\mathbf{0},\mathbf{I}),
 \]
-然后从中绘制$\rvx_t$
-\Cref{eq:ddim-reverse-kernel-param}。等价地，
+再按 \Cref{eq:ddim-reverse-kernel-param} 从该转移中抽取 $\rvx_t$。等价地，
 \begin{align}
 \label{eq:ddim-derivation}
 \begin{aligned}
@@ -1707,9 +1452,7 @@ b_{t,s}^2\sigma_s^2+c_{t,s}^2
 \beps'',
 \end{aligned}
 \end{align}
-其中 $\beps$ 和 $\beps'$ 是独立的标准高斯变量，并且
-$\beps''$ 是代表其归一化线性的标准高斯
-组合。
+其中 $\beps$ 与 $\beps'$ 是相互独立的标准高斯变量，$\beps''$ 则是它们归一化线性组合后的标准高斯变量。
 
 为了使所得边缘等于规定的扰动边缘 $\rvx_t
 \sim
@@ -1731,12 +1474,7 @@ a_{t,s}+b_{t,s}\alpha_s,
 b_{t,s}^2\sigma_s^2+c_{t,s}^2.
 \end{align*}
 
-重要的一点是，这只是对这三个因素的两个限制。
-系数$(a_{t,s},b_{t,s},c_{t,s})$。因此，规定的边缘
-\emph{not} 确定 $s$ 和 $t$ 之间的唯一转换。我们可以选择
-$c_{t,s}$ 作为自由参数，具有
-$0\leq c_{t,s}\leq\sigma_t$，并求解剩余系数。
-选择非负分支给出
+关键之处在于，这只给三个系数 $(a_{t,s},b_{t,s},c_{t,s})$ 留下了两个约束。因此，规定的边缘分布\emph{并不能}唯一确定 $s$ 与 $t$ 之间的转移。可以把 $c_{t,s}$ 取作自由参数，$0\leq c_{t,s}\leq\sigma_t$，再解出剩下的两个系数。取非负分支即得
 \begin{align}
 \label{eq:ddim-coefficients}
 b_{t,s}
@@ -1751,10 +1489,9 @@ a_{t,s}
 =
 \alpha_t-\alpha_s b_{t,s}.
 \end{align}
-$b_{t,s}$ 的非负选择给出了标准 DDIM 耦合。
+$b_{t,s}$ 取非负值，就得到标准的 DDIM 耦合。
 
-将 \Cref{eq:ddim-coefficients} 代入
-\Cref{eq:ddim-reverse-kernel-param} 产量
+把 \Cref{eq:ddim-coefficients} 代入 \Cref{eq:ddim-reverse-kernel-param}，得到
 \begin{align}
 \label{eq:ddim-reverse-kernel-result}
 {\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}
@@ -1777,31 +1514,28 @@ c_{t,s}^2\mathbf{I}
 \right).
 \end{align}
 
-该表达式使耦合自由度变得明确。术语
-$\rvx_s-\alpha_s\rvx_0$ 是已经存在于
+这个表达式把耦合的自由度显露得很清楚。其中 $\rvx_s-\alpha_s\rvx_0$ 这一项，正是已经存在于
 $\rvx_s$，而$c_{t,s}$控制\emph{new}高斯噪声的大小
 在从 $s$ 到 $t$ 的过渡中引入。因此变化 $c_{t,s}$
 改变两个噪声电平之间的耦合，同时保持相同的噪声电平
 目标边缘 $p_t(\rvx_t|\rvx_0)$。
 
 \rmkb{
-所选的过渡
+这里选定的转移
 ${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$
-通常与与相关的贝叶斯后验不同
-原始马尔可夫前向过程。该后验由一个恢复
-$c_{t,s}$的特殊选择，如下所述。其他选择定义
-不同的边缘一致耦合，包括确定性 DDIM
-耦合时获得$c_{t,s}=0$。
+一般并不等于原始马尔可夫前向过程所对应的贝叶斯后验。
+后者只需取 $c_{t,s}$ 的一个特殊取值即可还原，见下文。
+其余取值则给出不同的边缘一致耦合，
+其中包括 $c_{t,s}=0$ 时得到的确定性 DDIM 耦合。
 }
 
 
 \paragraph{DDIM 采样器（步骤 $s\to t$）.}
-边缘一致核
-${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$中
-\Cref{eq:ddim-reverse-kernel-result} 仍处于未知清洁状态
-样品$\rvx_0$。在生成过程中，DDIM 将 $\rvx_0$ 替换为 干净数据
-从预先训练的扩散模型获得的估计。下
-$\beps$-预测，我们定义
+\Cref{eq:ddim-reverse-kernel-result} 中的边缘一致核
+${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$
+仍然含有未知的干净样本 $\rvx_0$。而在生成过程中，
+DDIM 把 $\rvx_0$ 替换为用预训练扩散模型得到的干净数据估计。
+在 $\beps$-预测下，我们定义
 \[
 \rvx_{\bm{\phi}^\times}(\rvx_s,s)
 :=
@@ -1813,7 +1547,7 @@ $\beps$-预测，我们定义
 \alpha_s
 },
 \]
-并使用插件转换
+并采用「代入估计值」的转移
 \[
 p_{\bm{\phi}^\times}(\rvx_t|\rvx_s)
 :=
@@ -1825,8 +1559,8 @@ p_{\bm{\phi}^\times}(\rvx_t|\rvx_s)
 \rvx_{\bm{\phi}^\times}(\rvx_s,s)
 \bigr)}.
 \]
-将此估计值代入
-\Cref{eq:ddim-reverse-kernel-result} 产量
+把这一估计值代入
+\Cref{eq:ddim-reverse-kernel-result}，得到
 \begin{mdframed}
 \[
 \rvx_t
@@ -1845,11 +1579,10 @@ c_{t,s}\beps_t,
 \beps_t\sim\mathcal{N}(\mathbf{0},\mathbf{I}).
 \]
 \end{mdframed}
-因此，模型预测确定了估计的清洁/噪声内容
-从$s$携带到$t$，而自由系数
-$c_{t,s}\in[0,\sigma_t]$控制\emph{new}高斯噪声的大小
-在该步骤中注入。为了解释这个自由度，与
-原始马尔可夫前向过程。对于 $t<s$，定义
+因此，模型的预测决定了从 $s$ 带到 $t$ 的干净数据与噪声成分，
+而自由系数 $c_{t,s}\in[0,\sigma_t]$ 则决定该步注入的\emph{新}
+高斯噪声有多大。为了说明这一自由度的含义，
+我们回头看原始马尔可夫前向过程。对于 $t<s$，定义
 \[
 \alpha_{s|t}
 :=
@@ -1880,26 +1613,25 @@ p(\rvx_s|\rvx_t)
 \frac{\sigma_t^2}{\sigma_s^2}
 \sigma_{s|t}^2\mathbf I.
 \]
-这将 DDPM 后验标识为
-上面的边缘一致族并使 $c_{t,s}$ 的角色变得明确：
+这就把 DDPM 后验认定为上述边缘一致族中的一个特例，
+同时让 $c_{t,s}$ 的作用变得清楚：
 
 \begin{itemize}
-\item \textbfs{DDPM 步骤（后方差）.}
-选择
+\item \textbfs{DDPM 步骤（后验方差）.}
+此时选取
 \[
 c_{t,s}
 =
 \frac{\sigma_t}{\sigma_s}\sigma_{s|t}
 \]
-匹配原始马尔可夫前向过程的后验方差。
-与非负分支一起
-\Cref{eq:ddim-coefficients}，条件内核
-${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$ 则与
-该过程的贝叶斯后验 $p(\rvx_t|\rvx_s,\rvx_0)$。
+即与原始马尔可夫前向过程的后验方差相匹配。
+再结合 \Cref{eq:ddim-coefficients} 中的非负分支，
+条件核 ${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$
+就恰好与该过程的贝叶斯后验 $p(\rvx_t|\rvx_s,\rvx_0)$ 一致。
 
-\item \textbfs{确定性 DDIM ($\eta=0$).}
-在另一个极端，设置 $c_{t,s}=0$ 会删除所有新注入的
-噪声。实际更新变成
+\item \textbfs{确定性 DDIM（$\eta=0$）.}
+走到另一个极端，取 $c_{t,s}=0$ 就完全去掉了新注入的噪声。
+此时实际更新化为
 \[
 \rvx_t
 =
@@ -1915,19 +1647,17 @@ ${\color{orange}\pi(\rvx_t|\rvx_s,\rvx_0)}$ 则与
 这正是之前从
 PF-常微分方程。
 
-在条件层面，其共享噪声解释尤其重要
-简单：如果
-$\rvx_s=\alpha_s\rvx_0+\sigma_s\beps$，然后是确定性转变
-给出
+在条件层面，「共享噪声」这一解释变得格外简单：
+若 $\rvx_s=\alpha_s\rvx_0+\sigma_s\beps$，那么确定性转移给出
 \[
 \rvx_t
 =
 \alpha_t\rvx_0+\sigma_t\beps.
 \]
-因此，不会引入新的噪声；携带同一对 $(\rvx_0,\beps)$
-跨步骤，而只有已知的进度系数发生变化。
+可见这时不会引入任何新噪声；同一对 $(\rvx_0,\beps)$
+被逐步携带下去，发生变化的只是已知的进度系数。
 
-\item \textbfs{插补.}
+\item \textbfs{插值.}
 更一般地，定义
 \begin{align}
 \label{eq:eta-ddim}
@@ -1939,26 +1669,26 @@ c_{t,s}
 \qquad
 \eta\in[0,1].
 \end{align}
-参数 $\eta$ 连续控制随机性
-转换：$\eta=0$ 给出确定性 DDIM，而 $\eta=1$ 匹配
-相应 DDPM 马尔可夫转移的后验方差。
+参数 $\eta$ 连续地控制转移的随机程度：
+$\eta=0$ 给出确定性 DDIM，$\eta=1$ 则与相应 DDPM
+马尔可夫转移的后验方差相匹配。
 \end{itemize}
 
-因此，DDIM 系列将两种固定方式不同的成分分开：
-扰动边缘保持不变，而之间的耦合
-可以通过 $c_{t,s}$ 改变连续的噪声级别。确定性DDIM
-对应于保留整个步骤中现有的共享噪声，而
-DDPM 后验选择注入了额外的随机性
-由原始马尔可夫前向过程规定。
+由此可见，DDIM 系列把两件本可以分别固定的东西分开了：
+扰动的边缘分布保持不变，而相邻噪声水平之间的耦合
+则由 $c_{t,s}$ 连续地调节。确定性 DDIM
+相当于把已有的共享噪声一路保留到下一步，
+而 DDPM 后验这一选择则额外注入了随机性，
+其大小由原始马尔可夫前向过程规定。
 
-\paragraph{连接到条件流匹配。}
-上面的确定性 DDIM 构造也提供了简单的连接
-到 \Cref{sec:flow-matching-framework} 中的条件流匹配 (CFM)。关键是区分两个对象
-与相同的条件高斯路径相关：其 \emph{ 有限时间
-映射}及其\emph{瞬时速度}。 DDIM 与前者相关，
-而 CFM 是由后者构建的。
+\paragraph{与条件流匹配的联系。}
+上面关于确定性 DDIM 的构造还给出了一条通向
+\Cref{sec:flow-matching-framework} 中条件流匹配（CFM）的简单线索。
+关键在于区分与同一条条件高斯路径相关的两个对象：
+它的\emph{有限时间映射}与它的\emph{瞬时速度}。
+DDIM 用的是前者，而 CFM 是由后者构建起来的。
 
-以干净样本 $\rvx_0$ 为条件并考虑共享噪声路径
+以干净样本 $\rvx_0$ 为条件，考虑共享噪声路径
 \[
 \rvx_\tau
 =
@@ -1966,14 +1696,13 @@ DDPM 后验选择注入了额外的随机性
 +
 \sigma_\tau\beps.
 \]
-对于固定的 $(\rvx_0,\beps)$，这是一条精确的条件轨迹
-高斯扰动边缘
-$p_\tau(\rvx_\tau|\rvx_0)$。
+对固定的 $(\rvx_0,\beps)$，这恰好是高斯扰动边缘
+$p_\tau(\rvx_\tau|\rvx_0)$ 的一条精确条件轨迹。
 
-\textbfs{有限时间视图：条件 DDIM 映射。}
-假设轨迹位于 $\rvx_s$ 当时 $s$。既然同
-$\beps$ 保留，将其从
-$\rvx_s=\alpha_s\rvx_0+\sigma_s\beps$ 给出精确的条件图
+\textbfs{有限时间视角：条件 DDIM 映射。}
+设某条轨迹在时刻 $s$ 位于 $\rvx_s$。由于同一个
+$\beps$ 被保留下来，从 $\rvx_s=\alpha_s\rvx_0+\sigma_s\beps$
+出发就得到精确的条件映射
 \[
 \bPsi_{s\to t}(\rvx_s|\rvx_0)
 =
@@ -1985,12 +1714,15 @@ $\rvx_s=\alpha_s\rvx_0+\sigma_s\beps$ 给出精确的条件图
 \alpha_s\frac{\sigma_t}{\sigma_s}
 \right)\rvx_0.
 \]
-这张映射是准确的 \emph{条件为 $\rvx_0$}。它还不是实用的 DDIM 采样器，因为 $\rvx_0$ 生成期间未知。更换
-$\rvx_0$ 通过其启动时间模型预测精确给出上面导出的确定性 DDIM 更新。
+这个映射是准确的，但前提是\emph{以 $\rvx_0$ 为条件}。
+它还不是可用的 DDIM 采样器，因为生成时 $\rvx_0$ 是未知的。
+把 $\rvx_0$ 换成它在当前时刻的模型预测，就恰好得到
+上面导出的那一步确定性 DDIM 更新。
 
-\textbfs{无穷小时间视图：CFM 条件速度。}
-我们可以询问其瞬时方向，而不是询问条件路径在有限间隔内向何处移动。差异化
-$\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 给出
+\textbfs{无穷小时间视角：CFM 的条件速度。}
+与其追问条件路径在一个有限区间内会走到哪里，
+不如追问它的瞬时方向。对
+$\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 求导，得到
 \[
 \frac{\diff\rvx_t}{\diff t}
 =
@@ -2002,7 +1734,7 @@ $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 给出
 =
 \frac{\rvx-\alpha_t\rvx_0}{\sigma_t},
 \]
-相同的速度可以写为当前状态的函数：
+同一个速度也可以写成当前状态的函数：
 \[
 \rvv_t^*(\rvx|\rvx_0)
 =
@@ -2014,7 +1746,9 @@ $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 给出
 \alpha_t\frac{\sigma_t'}{\sigma_t}
 \right)\rvx_0.
 \]
-这是与条件流匹配中的高斯概率路径相关的条件速度。然后，CFM 通过对后验不确定性进行平均，将该条件速度与边缘动态联系起来 $\rvx_0$ 当前状态：
+这就是条件流匹配中与高斯概率路径相关联的条件速度。
+CFM 随后对 $\rvx_0$ 的后验不确定性取平均，把这个条件速度
+与给定当前状态下的边缘动态联系起来：
 \begin{align*}
 \rvv^*(\rvx,t)
 &:=
@@ -2038,7 +1772,7 @@ $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 给出
 +
 \sigma_t'\beps^*(\rvx,t),
 \end{align*}
-这里用到了关系式
+其中用到如下关系式
 \[
 \rvx^*(\rvx,t)
 =
@@ -2050,13 +1784,19 @@ $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 给出
 +
 \sigma_t\beps^*(\rvx,t).
 \]
-由此产生的 $\rvv^*(\rvx,t)$ 正是预言机边缘 PF-ODE 速度。
+由此得到的 $\rvv^*(\rvx,t)$ 正是预言量形式的边缘 PF-ODE 速度。
 
-\msgu{DDIM 和 CFM}{}{
-相同的条件高斯路径给出两种视图：DDIM在替换未知数后使用其有限时间映射 $\rvx_0$ 通过模型预测，而CFM使用其瞬时条件速度。后者的后验平均给出了边缘 PF-ODE 速度。
+\msgu{DDIM 与 CFM}{}{
+同一条条件高斯路径可以给出两种视角：DDIM 把未知的 $\rvx_0$
+换成模型预测之后，用的是它的有限时间映射；
+CFM 用的则是它的瞬时条件速度。后者的后验平均
+恰好给出边缘 PF-ODE 速度。
 }
 
-此连接在条件路径及其瞬时速度级别上是精确的。确实如此 \emph{没有} 意味着有限的 DDIM 步骤是精确的边缘 PF-ODE 流：DDIM 保持在步骤开始时推断的预测固定，而精确的边缘 PF-ODE 速度随着状态的演化而不断变化。
+这一联系在条件路径及其瞬时速度的层面上是精确成立的。
+但这\emph{并不}说明有限步长的 DDIM 就等于精确的边缘 PF-ODE 流：
+DDIM 把该步起始处推断出的预测固定住不动，而精确的
+边缘 PF-ODE 速度则随状态的演化不断变化。
 
 
 \clearpage
@@ -2072,8 +1812,10 @@ $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 给出
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \diff\tau,
 \]
-所有与计划相关的因素已知；沿轨迹唯一未知的量是神经预测
-$\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$。 DDIM 通过在步骤开始时固定该预测来进行最简单的一阶近似，
+其中所有与调度相关的因子都是已知的；沿轨迹唯一未知的量
+就是神经网络的预测 $\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$。
+DDIM 所做的，是在该步起始处把这个预测固定住，从而给出
+最简单的一阶近似：
 \[
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \approx
@@ -2081,42 +1823,40 @@ $\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$。 DDIM 通过在步骤开始时固�
 \qquad
 \tau\in[t,s].
 \]
-当神经预测沿轨迹发生明显变化时，这种近似可能会在较大步长上变得不准确。DEIS~\citep{zhang2022fast} 改进了这个想法，无需引入
-当前步骤中的其他模型评估。灵感源自古典
-多步骤方法，例如 Adams--Bashforth
-（参见 \Cref{app:de-solver-examples}），它重用了之前的模型预测
-已完成 \emph{anchors} 的步骤并拟合可推断的多项式
-他们最近的变化进入下一步。然后用多项式代替
-积分内的未知神经预测，而已知
-与日程相关的体重
+当神经预测沿轨迹变化明显时，步长一大，这种近似就可能失准。
+DEIS~\citep{zhang2022fast} 改进了这一思路，且无需在当前步
+额外增加任何模型评估。它的灵感来自 Adams--Bashforth 这类
+经典多步法（参见 \Cref{app:de-solver-examples}）：复用先前
+已完成步（即 \emph{锚点}）上的模型预测，拟合出一个多项式来
+刻画它们近期的变化，再据此外推到下一步。随后用这个多项式
+替换积分中未知的神经预测，而把已知的、与调度相关的权重
 $\tfrac{g^2(\tau)}{2\sigma_\tau}
 \mathcal E(\tau\shortrightarrow t)$
-被保留分析。因此，DEIS 扩展了常数近似
-DDIM 为高阶多步多项式近似。
+解析地保留在积分里。因此，DEIS 把 DDIM 的常数近似
+推广成了高阶的多步多项式近似。
 
-因此，从经典数值的角度来看，DEIS 是
-Adams--因式分解内的 Bashforth 型多步法
-指数积分器框架：之前的神经评估提供了
-高阶信息，而已知的扩散动力学被保留在
-加权积分。
+因此，从经典数值分析的角度看，DEIS 就是在因式分解
+指数积分器的框架内使用 Adams--Bashforth 型多步法：
+先前的神经评估提供高阶信息，而已知的扩散动力学
+则解析地保留在加权积分之中。
 
-我们首先回顾一下用于构建这个的多项式外推法
-\Cref{subsec:poly-extrapolation} 中的近似值，然后导出结果
-\Cref{subsec:deis-lagrange} 中的 DEIS 更新。最后，
-\Cref{sec:ddim-deis} 表明常数、零度情况恢复了 DDIM。
+我们先在 \Cref{subsec:poly-extrapolation} 中回顾构造这一近似
+所用的多项式外推法，然后在 \Cref{subsec:deis-lagrange} 中
+推出 DEIS 的更新式。最后，\Cref{sec:ddim-deis} 将说明
+零次的常数情形恰好还原为 DDIM。
 
 \subsection{背景：多项式外推}
 \label{subsec:poly-extrapolation}
 
-在推导 DEIS 之前，我们先简单回顾一下它使用的多项式构造
-重用以前的模型评估。想法很简单：首先安装一个
-通过几个已知值计算多项式，然后评估该多项式
-超出最近的锚点来预测数量将如何继续
-改变。因此，多项式是已知锚点处的 \emph{interpolant}
-并在下一个求解器步骤中充当 \emph{extrapolant}。
+在推导 DEIS 之前，先简要回顾它所依赖的多项式构造，
+其用途是复用先前的模型评估。想法本身很简单：先让一个
+多项式穿过若干个已知取值，再把该多项式外推到最近锚点
+之外，用来预测这个量接下来会如何变化。于是，这个多项式
+在已知锚点上是\emph{插值多项式}，而在下一个求解器步中
+则充当\emph{外推多项式}。
 
 \paragraph{从锚点到多项式外推。}
-假设在 $n{+}1$ 不同时间已知一个随时间变化的量，
+设某个随时间变化的量在 $n{+}1$ 个不同时刻的取值已知：
 \[
 (\tau_0,\rmY_0),\;
 (\tau_1,\rmY_1),\;
@@ -2125,10 +1865,10 @@ Adams--因式分解内的 Bashforth 型多步法
 \qquad
 \tau_0<\tau_1<\cdots<\tau_n,
 \]
-其中每个 $\rmY_j$ 可以是向量值。我们想建造
-最简单的平滑曲线，与这些观测值完全匹配，然后可以
-继续超出最近的锚点。唯一的次数多项式为
-大多数通过所有锚点的 $n$ 是 \emph{ 拉格朗日插值 }
+其中每个 $\rmY_j$ 都可以是向量。我们希望构造一条最简单的
+光滑曲线，使其与这些观测值完全吻合，并能继续延伸到
+最近的锚点之外。通过全部锚点、次数不超过 $n$ 的多项式
+是唯一的，即所谓的\emph{拉格朗日插值多项式}
 \[
 P_n(\tau)
 =
@@ -2142,9 +1882,8 @@ P_n(\tau)
 \prod_{\substack{k=0\\k\neq j}}^{n}
 \frac{\tau-\tau_k}{\tau_j-\tau_k}.
 \]
-$\ell_j$的构造很简单：每一个因素都让它一次性消失
-其他锚点的值，而分母将其值归一化为 $1$
-$\tau_j$。因此，
+$\ell_j$ 的构造很直观：分子中的每个因子都使它在其余
+锚点处取零，分母则把它在 $\tau_j$ 处的取值归一化为 $1$。因此
 \[
 \ell_j(\tau_k)=\delta_{jk},
 \]
@@ -2158,25 +1897,25 @@ j=0,\ldots,n.
 \[
 \sum_{j=0}^{n}\ell_j(\tau)=1.
 \]
-因此，$P_n(\tau)$ 是观察到的时间相关线性组合
-锚点：在每个锚点时间它准确地再现相应的值，
-而在锚点之间或之外，多项式将它们组合起来描述
-它们的变化表明了当地的趋势。在 DEIS 中，我们将使用相同的
-曲线超出最近的锚点，将插值变成
-\emph{extrapolant} 用于下一步求解器。
+于是，$P_n(\tau)$ 就是各锚点观测值的线性组合：
+它在每个锚点时刻精确重现相应的观测值，
+而在锚点之间或之外，多项式便把这些取值组合起来，
+以刻画其变化所显示的局部趋势。在 DEIS 中，我们会把
+同一条曲线延伸到最近的锚点之外，使插值多项式变成
+供下一步求解器使用的\emph{外推多项式}。
 
 最低阶的情况说明了结构：
 
 \exm{}{
-\noindent\textbfs{$n=0$ （恒定）。}
-通过一个锚点，多项式只需保持最新值固定：
+\noindent\textbfs{$n=0$（常数）。}
+只过一个锚点时，多项式只需把最新的取值固定不变：
 \[
 P_0(\tau)=\rmY_0.
 \]
 
 \medskip
-\noindent\textbfs{$n=1$ （线性）。}
-有两个锚点，多项式是连接它们的直线：
+\noindent\textbfs{$n=1$（线性）。}
+有两个锚点时，多项式就是连接这两点的直线：
 \[
 P_1(\tau)
 =
@@ -2186,8 +1925,8 @@ P_1(\tau)
 \]
 
 \medskip
-\noindent\textbfs{$n=2$ （二次）。}
-使用三个锚点，插值变为
+\noindent\textbfs{$n=2$（二次）。}
+用三个锚点时，插值多项式变成
 \[
 P_2(\tau)
 =
@@ -2197,43 +1936,55 @@ P_2(\tau)
 +
 \ell_2(\tau)\rmY_2,
 \]
-它还可以捕获观测值中的局部曲率。
+这样还能刻画出观测值中的局部曲率。
 }
 
-在 DEIS 中，锚点将是之前完成的采样步骤的神经预测。该多项式与那些存储的预测完全匹配，然后在下一个反向时间间隔内推断到最新的锚点之外。
+在 DEIS 中，锚点就是此前已完成的采样步上的神经预测。
+该多项式与这些存下的预测完全吻合，随后在下一个
+反向时间区间内被外推到最新锚点之外。
 
 
 
 \subsection{DEIS：PF-ODE 积分的拉格朗日多项式逼近}
 \label{subsec:deis-lagrange}
 
-让 $n \ge 0$ 为所选多项式次数。在步骤 $i$，DEIS逼近未知图
-$\tau \mapsto \beps_{\bphi^\times}(\rvx_\tau,\tau)$ 在下一个反向时间间隔内 $[t_i,t_{i-1}]$ 使用学位-$n$ 根据过去的模型输出构造的拉格朗日多项式。然后将该多项式代入指数积分器更新（\Cref{eq:variation_of_constants}) 获取 $\tilde{\rvx}_{t_i}$。直觉是，DEIS 没有像 DDIM 那样保持神经预测不变，而是使用其最近的历史记录来捕获它如何随时间变化。
+令 $n \ge 0$ 为所选的多项式次数。在第 $i$ 步，DEIS 在下一个
+反向时间区间 $[t_i,t_{i-1}]$ 上，用一个由过去的模型输出
+构造的 $n$ 次拉格朗日多项式来逼近未知映射
+$\tau \mapsto \beps_{\bphi^\times}(\rvx_\tau,\tau)$。
+再把该多项式代入指数积分器的更新式
+（\Cref{eq:variation_of_constants}），即得 $\tilde{\rvx}_{t_i}$。
+其内在想法是：DEIS 不像 DDIM 那样把神经预测保持不变，
+而是借助它最近的历史来刻画它如何随时间变化。
 
 \begin{figure}[th!]
     \centering
     \includegraphics[width=0.85\linewidth]{Images/PartC/DEIS.pdf}
-    \caption{\textbfs{DEIS 作为多步骤方法的图示。} 过去的三个锚点位于
-$t_2,t_3,t_4$，DEIS 通过模型输出构建二次曲线，并通过以下步骤进行推断
-$t_4$ 至 $t_5$。然后将外推多项式与已知的扩散相关权重进行积分，捕获 DDIM 使用的常数近似忽略的神经预测的变化。
-\figcredit{由作者创建。}}
+    \caption{\textbfs{DEIS 作为多步法的图示。} 在 $t_2,t_3,t_4$ 处
+有三个过去的锚点，DEIS 用这些模型输出构造一条二次曲线，
+并将其从 $t_4$ 外推到 $t_5$。随后把这个外推多项式与
+已知的、与扩散相关的权重一起积分，从而把 DDIM 的常数近似
+所忽略的神经预测变化也考虑进来。
+\figcredit{由作者绘制。}}
     \label{fig:deis_lagrange}
 \end{figure}
 
-学位-$n$ 更新需求 $n{+}1$ 锚。当它们可用时（\emph{足够的历史记录}, $i \ge n{+}1$），我们使用完整度-$n$
-方案。在最初的步骤中（\emph{历史记录不足}, $i \le n$)，我们使用最高可行度， $i{-}1$，并随着更多锚点可用而增加它。我们下面分别处理这两种情况。
+$n$ 次更新需要 $n{+}1$ 个锚点。当这些锚点齐备时
+（即\emph{历史足够长}，$i \ge n{+}1$），我们便使用完整的 $n$ 次
+方案。在最初的若干步中（\emph{历史不足}，$i \le n$），
+我们改用当前可行的最高次数 $i{-}1$，并随锚点增多逐步提高它。
+下面分别讨论这两种情形。
 
 
-\paragraph{案例一： $i = n+1,\dots,M$ （足够的历史记录）。}
-有了足够的历史记录，DEIS 会重用最后一个 $n{+}1$ 模型评估作为锚点，
+\paragraph{情形一：$i = n+1,\dots,M$（历史足够）。}
+历史足够时，DEIS 会把最近 $n{+}1$ 次模型评估当作锚点，
 \[
 (\tau_j,\rmY_j) := \bigl(t_{i-1-j}, \bm{\epsilon}_{\bm{\phi}^\times}(\tilde{\rvx}_{t_{i-1-j}},t_{i-1-j})\bigr),
 \quad j=0,\dots,n.
 \]
-查看
+把
 $\tau\mapsto\bm{\epsilon}_{\bm{\phi}^\times}(\rvx_\tau,\tau)$
-作为沿轨迹的平滑函数，我们构造度数-$n$
-拉格朗日多项式
+视为沿轨迹变化的光滑函数，我们构造 $n$ 次拉格朗日多项式
 \[
 P_n(\tau)
 = 
@@ -2242,7 +1993,7 @@ P_n(\tau)
 \frac{\tau - t_{i-1-k}}{\,t_{i-1-j} - t_{i-1-k}\,}\Bigr]}_{=:~\ell_j^{(i)}(\tau)}
 \bm{\epsilon}_{\bm{\phi}^\times}\bigl(\tilde{\mathbf x}_{t_{i-1-j}}, t_{i-1-j}\bigr)
 \]
-通过构造满足 $P_n(\tau_j)=\rmY_j$ 对于每个锚点：
+按构造，它在每个锚点处满足 $P_n(\tau_j)=\rmY_j$：
 \[
 P_n\bigl(\tau_j\bigr)
 = \rmY_j =
@@ -2258,17 +2009,16 @@ P_n\bigl(\tau_j\bigr)
 1,&m=j,\\
 0,&m\neq j.
 \end{cases}
-\]然后将多项式外推到最新锚点之外
-$t_{i-1}$ 新步骤：
+\]
+接着把多项式外推到最新锚点 $t_{i-1}$ 之外，用于新的一步：
 \[
 \bm{\epsilon}_{\bm{\phi}^\times}(\rvx_\tau,\tau) \approx
 P_n(\tau)=\sum_{j=0}^{n}\ell_j^{(i)}(\tau) 
 \bm{\epsilon}_{\bm{\phi}^\times}\bigl(\tilde{\rvx}_{t_{i-1-j}}, t_{i-1-j}\bigr), 
 \quad \tau \in [t_i,t_{i-1}].
 \]
-然后我们将 $P_n(\tau)$ 替换为
-$\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 中
-指数--积分器公式（\Cref{eq:variation_of_constants}）：
+然后把指数积分器公式（\Cref{eq:variation_of_constants}）中的
+$\beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)$ 换成 $P_n(\tau)$：
 \begin{align*}
 \int_{t_{i-1}}^{t_i}
 \frac{g^2(\tau)}{2\sigma_\tau}
@@ -2297,13 +2047,12 @@ C_{i,j}
 \mathcal{E}(\tau\to t_i)
 \ell_j^{(i)}(\tau)\diff\tau
 \]
-仅取决于噪声时间表和所选时间网格，因此可以
-被预先计算。对于承认合适的反导数的时间表，这些
-系数以封闭形式提供；否则可以对其进行评估
-数值上达到高精度。
+只依赖于噪声调度和所选的时间网格，因此可以预先算好。
+若调度存在合适的原函数，这些系数可以写成闭式；
+否则也可以用数值方法把它们算到很高的精度。
 
-将线性部分与
-$\mathcal{E}(t_{i-1}\to t_i)$ 提供 \emph{AB-DEIS-$n$} 更新
+把线性部分单独提出（系数为
+$\mathcal{E}(t_{i-1}\to t_i)$），即得 \emph{AB-DEIS-$n$} 更新
 \[
 \tilde\rvx_{t_i}
 =
@@ -2314,18 +2063,16 @@ C_{i,j}
 \beps_{\bm{\phi}^\times}
 (\tilde\rvx_{t_{i-1-j}},t_{i-1-j}).
 \]
-对于下面的局部截断语句，让 $h$ 表示一个特征
-局部步长并假设相邻步长比率保持有界。下
-沿经验模型预测的标准平滑度假设
-与计划相关的权重的轨迹和规律性，全历史
-度-$n$ 施工有正式订单$n+1$，有一步局部缺陷
-$\mathcal O(h^{n+2})$。
+为陈述下面的局部截断误差，记 $h$ 为一个特征局部步长，
+并假定相邻步长之比保持有界。在关于经验模型预测
+沿轨迹的平滑性、以及与调度相关的权重的正则性的标准假设下，
+使用完整历史的 $n$ 次构造具有 $n+1$ 阶精度，
+其单步局部误差为 $\mathcal O(h^{n+2})$。
 
 
-\paragraph{案例二：$i=1,\dots,n$（历史记录不足）.}
-在初始步骤中，仅 $i$ 过去的模型评估可用。
-因此，我们使用所有可用的锚并将多项式次数设置为
-$i{-}1$：
+\paragraph{情形二：$i=1,\dots,n$（历史不足）。}
+在最初的步骤中，只有 $i$ 次过去的模型评估可用。
+因此我们使用全部可用的锚点，并把多项式次数取为 $i{-}1$：
 \[
 P_{i-1}(\tau)
 =
@@ -2333,26 +2080,25 @@ P_{i-1}(\tau)
 \ell_j^{(i)}(\tau) 
 \bm{\epsilon}_{\bm{\phi}^\times}\bigl(\tilde{\mathbf x}_{t_{i-1-j}},  t_{i-1-j}\bigr),
 \]
-其中 $\ell_j^{(i)}$ 是在时刻节点上建立的次数 $i{-}1$ 的拉格朗日基
-$\{t_{i-1}, t_{i-2},\ldots,t_{0}\}$。这匹配所有可用的锚点并且
-一旦 $i\ge n{+}1$ 就转换为完整历史公式。
+其中 $\ell_j^{(i)}$ 是在节点
+$\{t_{i-1}, t_{i-2},\ldots,t_{0}\}$ 上构造的 $i{-}1$ 次拉格朗日基函数。
+这样能与所有可用的锚点吻合，而一旦 $i\ge n{+}1$，
+它就自然过渡为使用完整历史的公式。
 
-这是多步骤方法的标准热启动情况。第一个
-步骤使用常数近似，第二个使用线性外推，
-第三个使用二次外推法，依此类推，直到目标度数
-$n$ 上市。
+这是多步法的标准启动方式。第一步用常数近似，
+第二步用线性外推，第三步用二次外推，如此递推，
+直到可用的次数达到目标次数 $n$。
 
 
 \exm{拉格朗日多项式的特例}{
-\noindent \textbfs{度$0$（一锚）：}
+\noindent \textbfs{$0$ 次（一个锚点）：}
 \[
 P_0(\tau) = \bm{\epsilon}_{\bm{\phi}^\times}(\tilde\rvx_{t_{i-1}}, t_{i-1}).
 \]
-这使得神经预测固定在其起始步骤值，正如
-一阶 DDIM 近似。
+这就把神经预测固定在其起始步的取值上，正是一阶 DDIM 的近似做法。
 
 \medskip
-\noindent \textbfs{Degree $1$（两个锚点）：} 拉格朗日多项式是通过两个预先指定的锚点的线性映射。
+\noindent \textbfs{$1$ 次（两个锚点）：} 拉格朗日多项式就是过这两个给定锚点的线性映射。
 \[
 P_1(\tau)
 = 
@@ -2362,20 +2108,19 @@ P_1(\tau)
 \underbrace{\frac{\tau - t_{i-1}}{t_{i-2} - t_{i-1}}}_{\displaystyle \ell_{i-2}(\tau)}
 \,\bm{\epsilon}_{\bm{\phi}^\times}(\tilde\rvx_{t_{i-2}}, t_{i-2}).
 \]
-这里 $\ell_{i-1}(\tau)$ 和 $\ell_{i-2}(\tau)$ 是拉格朗日基重。
+其中 $\ell_{i-1}(\tau)$ 和 $\ell_{i-2}(\tau)$ 是拉格朗日基函数。
 它们满足插值条件：\newline
 $P_1(t_{i-1})=\bm{\epsilon}_{\bm{\phi}^\times}(\tilde\rvx_{t_{i-1}}, t_{i-1})$，\newline
 $P_1(t_{i-2})=\bm{\epsilon}_{\bm{\phi}^\times}(\tilde\rvx_{t_{i-2}}, t_{i-2})$，
 与
-$\ell_{i-1}(\tau)+\ell_{i-2}(\tau)=1$。 
+且两个基函数之和 $\ell_{i-1}(\tau)+\ell_{i-2}(\tau)=1$。
 }
 
-\paragraph{ AB-DEIS-$n$ 更新摘要。}
-结合足够历史记录和热启动案例可以得出
-\emph{AB-DEIS-$n$} update\footnote{“AB”指的是 Adams--Bashforth
-多步原理，此处应用于指数积分器
-公式~\citep{hochbruck2010exponential}.} 这里，$n$ 是目标
-多项式次数，使用最多 $n{+}1$ 过去的评估：
+\paragraph{AB-DEIS-$n$ 更新汇总。}
+把「历史足够」和「启动阶段」两种情形合在一起，
+就得到 \emph{AB-DEIS-$n$} 更新\footnote{「AB」指 Adams--Bashforth
+多步原理，这里用在了指数积分器公式上~\citep{hochbruck2010exponential}。}
+其中 $n$ 是目标多项式次数，最多用到 $n{+}1$ 次过去的评估：
 \begin{mdframed}
 \begin{align*}
 \tilde\rvx_{t_i}
@@ -2392,12 +2137,25 @@ C_{i,j}
 \end{align*}
 \end{mdframed}
 
-当 $i\ge n{+}1$ （足够的历史记录）， $\min\{n,\,i-1\}=n$，以及完整的历史学位-$n$ 步骤存在单步局部截断错误
-$\mathcal O(h^{n+2})$ 在上面的假设下，对应的是order方法 $n+1$。热启动期间（$i\le n$)，学位为 $i-1$，所以一步局部截断误差为 $\mathcal O(h^{i+1})$，对应的步骤是正式的命令 $i$。因此，顺序从 $1$ 第一步并达到满订单 $n+1$ 一次 $n+1$ 可以使用锚。与标准多步骤方法一样，低阶热启动步骤本身并不建立全局顺序 -$(n+1)$ 保证；这种保证还需要稳定性和足够准确的起始值。非常大 $n$ 可能会降低数值行为，因为高度外推对锚点间距、存储模型预测中的错误以及稳定性考虑变得越来越敏感。因此，在实践中优选相对小的多项式次数。正如我们将在下一小节中看到的，特殊情况 $n{=}0$ 精确简化为确定性 DDIM，即一阶因式分解指数积分器更新。
+当 $i\ge n{+}1$ 时（历史足够），$\min\{n,\,i-1\}=n$，
+使用完整历史的 $n$ 次步骤在上述假设下单步局部截断误差为
+$\mathcal O(h^{n+2})$，即方法为 $n+1$ 阶。启动阶段
+（$i\le n$）的次数为 $i-1$，故单步局部截断误差为
+$\mathcal O(h^{i+1})$，对应 $i$ 阶方法。于是阶数从第一步的 $1$ 阶
+开始，等到 $n+1$ 个锚点可用时便达到完整的 $n+1$ 阶。
+与标准多步法一样，低阶的启动步骤本身并不构成全局
+$(n+1)$ 阶的保证；这一保证还需要稳定性以及足够准确的起始值。
+若 $n$ 取得很大，数值表现可能会退化：高阶外推对锚点间距、
+所存模型预测中的误差以及稳定性方面的考虑都会越来越敏感。
+因此实际使用中宜取较小的多项式次数。正如接下来一小节所示，
+$n{=}0$ 这一特例会精确简化为确定性 DDIM，
+也就是一阶的因式分解指数积分器更新。
 \subsection{DDIM = AB-DEIS-0}
 \label{sec:ddim-deis}
 
-与 DDIM 的连接在某种程度上变得立即 $n=0$。在这种情况下，拉格朗日多项式是常数，因此 DEIS 在整个下一步中仅使用最新的模型预测。相应的系数简化为
+取 $n=0$ 时，与 DDIM 的联系几乎是一目了然的。此时拉格朗日
+多项式为常数，DEIS 在整个下一步中只使用最新的那次模型预测。
+相应的系数简化为
 \[
 C_{i0} = \frac{1}{2} \int_{t_{i-1}}^{t_{i}} \frac{g^2(\tau)}{\sigma_\tau} \mathcal{E}(\tau \shortrightarrow t_i)   \mathrm{d}\tau.
 \]
@@ -2407,20 +2165,26 @@ C_{i0} = \frac{1}{2} \int_{t_{i-1}}^{t_{i}} \frac{g^2(\tau)}{\sigma_\tau} \mathc
   &=e^{\int_{t_{i-1}}^{t_{i}}f(u)\diff u} \tilde\rvx_{t_{i-1}} + \Big( \int_{t_{i-1}}^{t_{i}} \frac{g^2(\tau)}{2\sigma_\tau} e^{\int_{\tau}^{t_{i}}f(u)\diff u}   \mathrm{d}\tau
 \Big) \bm{\epsilon}_{\bm{\phi}^\times}(\tilde\rvx_{t_{i-1}}, t_{i-1}).  
 \end{align}
-这与确定性 DDIM 使用的一阶分解近似完全相同：神经预测固定在
-$t_{i-1}$，而已知的积分因子和调度相关系数保留在积分内并在整个步骤中传播。因此，AB-DEIS-0 和 DDIM 不仅仅是一阶等效；他们给出相同的有限步更新。
+这与确定性 DDIM 所用的一阶因式分解近似完全相同：神经预测
+被固定在 $t_{i-1}$，而已知的积分因子和与调度相关的系数
+保留在积分之内并沿整步传播。因此，AB-DEIS-0 与 DDIM
+不只是一阶意义上的等价；二者给出的是同一套有限步更新。
 
 \proppnp{DDIM = AB-DEIS-0}{ddim-deis}{\Cref{eq:deis-0} 与 DDIM 更新相同 \Cref{eq:ddim-euler}.}
 
-这也阐明了 DEIS 在求解器层次结构中的作用。我们注意到索引``$0$'' 指的是 \emph{多项式次数}，不是数字顺序：AB-DEIS-0 仍然是一阶方法。更高阶的 DEIS 对已知的扩散动力学保持相同的分析处理，但通过从额外的过去模型评估中进行多项式外推来取代这种恒定的预测。因此，DDIM 是 DEIS 多步构造自然延伸的零度基本情况。稍后，在\Cref{subsec:dpm-solver++-multi}，我们会遇到另一条路线
-多步扩散求解器；即 DPM-Solver\texttt{++}(2M)。一切从本地开始
-对数 SNR 时间中的数据预测进行泰勒展开并循环使用之前的数据
-通过后向有限差分模型评估来估计所需的
-衍生品。尽管它的表示和推导与
-DEIS，两种方法都使用过去的模型评估来捕获
-神经预测，无需引入额外的步内阶段。我们返回
-到 \Cref{subsec:dpm-deis} 中的这种连接，我们在其中比较两者
-结构更加明确。
+这也说明了 DEIS 在求解器体系中的位置。注意下标「$0$」指的是
+\emph{多项式次数}，而不是方法的阶数：AB-DEIS-0 仍然是
+一阶方法。更高阶的 DEIS 对已知的扩散动力学保持同样的解析处理，
+只是把这种常数预测换成由更多过去模型评估作出的多项式外推。
+于是，DDIM 便成了 DEIS 多步构造自然延伸时所取的零次基本情形。
+稍后在 \Cref{subsec:dpm-solver++-multi} 中，我们会遇到另一条
+多步扩散求解器的路线，即 DPM-Solver\texttt{++}(2M)。
+它的出发点是：在对数 SNR 时间中对数据预测做局部泰勒展开，
+并循环复用先前的模型评估，用后向有限差分来估计所需的各阶导数。
+尽管它在表示与推导上都与 DEIS 不同，两种方法同样都是
+借过去的模型评估来刻画神经预测，而无需引入额外的步内阶段。
+我们会在 \Cref{subsec:dpm-deis} 中回到这一联系，
+并把两者的结构对比得更清楚。
     
 \clearpage
 \newpage
@@ -2429,29 +2193,26 @@ DEIS，两种方法都使用过去的模型评估来捕获
 
 \section{\texorpdfstring{DPM-Solver}{DPM-Solver}}\label{sec:dpm}
 
-DPM-Solver~\citep{lu2022dpm} 为经验问题开发高阶求解器
-PF-ODE 通过利用与中出现的相同的扩散特定结构
-我们对 DDIM 的讨论。中心目标是使用以下方法获得准确的样本
-神经网络评估比一阶采样器少得多。原来的
-DPM-Solver 专注于噪声预测并构建第一、第二和
-三阶单步求解器；后来的扩展，包括
-DPM-Solver\texttt{++}~\citep{lu2022dpm2} 和
-DPM-Solver-v3~\citep{zheng2023dpm}，进一步开发该系列。
+DPM-Solver~\citep{lu2022dpm} 为经验 PF-ODE 给出了高阶求解器，
+其做法是利用我们在讨论 DDIM 时已经见到的扩散特有结构。
+其核心目标是：用远少于（一阶采样器所需的）神经网络评估次数
+得到准确样本。最初的 DPM-Solver 着眼于噪声预测，
+构造了一阶、二阶和三阶的单步求解器；此后的扩展，
+包括 DPM-Solver\texttt{++}~\citep{lu2022dpm2} 和
+DPM-Solver-v3~\citep{zheng2023dpm}，进一步完善了这一族方法。
 
-\paragraph{DPM-Solver的高级思想.}
-\Cref{sec:revisit-ddim} 中的 DDIM 讨论表明，在
-$\beps$-预测，通过保留可以得到一阶更新
-在保持神经预测的同时分析已知的扩散时间表
-固定在每个步骤上，
+\paragraph{DPM-Solver 的核心思想。}
+\Cref{sec:revisit-ddim} 中关于 DDIM 的讨论表明，在
+$\beps$-预测下，只要把已知的扩散调度解析地保留下来、
+同时把神经预测在每一步上固定不动，就能得到一阶更新：
 \[
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \approx
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-DPM-Solver~\citep{lu2022dpm} 自然地建立在这个想法之上：而不是
-将神经预测视为常数，它寻求高阶
-预测如何沿着轨迹变化的近似值。与DEIS一样，
-它从 PF-ODE 的半线性 $\beps$ 预测形式开始，
+DPM-Solver~\citep{lu2022dpm} 自然地在这个想法上继续推进：
+它不把神经预测当作常数，而是要得到预测沿轨迹变化的高阶近似。
+与 DEIS 一样，它从 PF-ODE 的半线性 $\beps$-预测形式出发，
 \begin{align}
 \label{eq:noise-alpha-sigma}
 \frac{\diff \rvx_t}{\diff t}
@@ -2466,39 +2227,43 @@ DPM-Solver~\citep{lu2022dpm} 自然地建立在这个想法之上：而不是
 \right)
 \beps_{\bphi^\times}(\rvx_t,t),
 \end{align}
-及其在序言中引入的常数变体表示法。
-其关键的附加成分是通过以下方式重新参数化时间
-\emph{半对数信噪比}，遵循对数SNR
-VDM~\citep{kingma2021variational}的参数化，
+并沿用序言中引入的常数变分记号。
+其关键的额外一步是把时间改用\emph{半对数信噪比}重新参数化，
+这一参数化沿用了对数 SNR 版的
+VDM~\citep{kingma2021variational}：
 \begin{align}
 \label{eq:lambda}
 \lambda_t
 :=
 \log\frac{\alpha_t}{\sigma_t}.
 \end{align}
-该坐标与 DDIM 的调度对齐时钟直接相关
-$\rho_t=\sigma_t/\alpha_t$（围绕\Cref{eq:ddim-coordinate-ode-t}讨论）到$\rho_t=e^{-\lambda_t}$，并将
-将剩余的模型相关项转化为特别方便的指数形式
-加权积分。神经预测的局部泰勒近似
-然后可以对 $\lambda$ 进行分析集成，提供系统路线
-从一阶 DDIM 更新到高阶扩散求解器。
+该坐标与 DDIM 的「调度对齐时钟」直接相关：
+$\rho_t=\sigma_t/\alpha_t$（见 \Cref{eq:ddim-coordinate-ode-t} 附近的讨论）
+满足 $\rho_t=e^{-\lambda_t}$，从而把其余与模型相关的项变成
+特别方便的指数加权积分形式。于是，对神经预测所作的
+局部泰勒近似可以就 $\lambda$ 解析地积出来，这就给出一条
+从一阶 DDIM 更新通往高阶扩散求解器的系统路径。
 
 
 \subsection{DPM-Solver 的思路：用对数信噪比重参数化时间}
 \label{subsec:dpm-method}   
 
-我们现在使 \Cref{eq:lambda} 中的对数 SNR 重新参数化变得精确且
-推导相应的 PF-ODE 表示。
+下面把 \Cref{eq:lambda} 中的对数 SNR 重参数化写得更精确，
+并推出相应的 PF-ODE 表示。
 
-\paragraph{将变量更改为 PF-ODE 中的对数 SNR。}
-假设 $\alpha_t>0$, $\sigma_t>0$，以及 log-SNR 坐标
-$\lambda_t$ 在 \Cref{eq:lambda} 在感兴趣的区间上严格单调。然后它承认一个反函数 $t_\lambda(\cdot)$ 满意
+\paragraph{把 PF-ODE 的变量换为对数 SNR。}
+设 $\alpha_t>0$、$\sigma_t>0$，且 \Cref{eq:lambda} 中的对数 SNR 坐标
+$\lambda_t$ 在感兴趣的区间上严格单调。于是它有反函数
+$t_\lambda(\cdot)$，满足
 \[
 t=t_\lambda(\lambda(t)).
 \]
-对于包含以下内容的时间表 $\sigma_0=0$，一个有 $\lambda_t\to+\infty$ 如
-$t\to0$，因此涉及端点的公式 $t=0$ 是通过相应的限制或通过小正端子时间来实现的数值实现。然后我们在中表达状态、时间表和神经预测
-$\lambda$-坐标。一顶帽子（$\hat{\cdot}$) 连同 $\lambda$ 表示在此重新参数化的时间坐标中查看相应的数量。更准确地说，定义
+对满足 $\sigma_0=0$ 的调度，当 $t\to0$ 时 $\lambda_t\to+\infty$，
+因此涉及端点 $t=0$ 的公式或者按相应的极限理解，
+或者在数值实现中用小正数作为端点的子时刻来处理。
+接下来我们把状态、调度和神经预测都用 $\lambda$ 坐标表示。
+带上帽子（$\hat{\cdot}$）并附以 $\lambda$ 的记号，表示相应
+的量是在这一重新参数化后的时间坐标里看到的。更具体地说，定义
 \begin{align}
 \begin{aligned}
 \label{eq:change-of-var-x-epsilon}
@@ -2534,7 +2299,7 @@ t_\lambda(\lambda)
 t_\lambda(\lambda)
 \bigr).
 \]
-自
+由
 \[
 \frac{\diff\lambda_t}{\diff t}
 =
@@ -2579,10 +2344,12 @@ PF-ODE \Cref{eq:noise-alpha-sigma} 可以写成
 \end{align}
 \end{mdframed}
 
-应用相同的指数积分器（常数变体）技术 \Cref{eq:diffusion_ode_lambda_eps} 给出以下精确解。
+对 \Cref{eq:diffusion_ode_lambda_eps} 套用同样的指数积分器（常数变分）技巧，
+即得下面的精确解。
 
 \proppp{指数加权精确解}{exp-wgt-exact-sol}{
-给定初始值 $\rvx_s$ 当时 $s>0$，精确的经验 PF-ODE 解 $\widetilde\bPsi_{s\to t}(\rvx_s)$ 当时 $t\in(0,s]$ 可以重新表示为
+给定时刻 $s>0$ 处的初值 $\rvx_s$，经验 PF-ODE 的精确解
+$\widetilde\bPsi_{s\to t}(\rvx_s)$ 在 $t\in(0,s]$ 上可以改写为
 \begin{equation}
 \label{eq:analytic_solution}
 \widetilde\bPsi_{s\to t}(\rvx_s)
@@ -2596,9 +2363,9 @@ e^{-\lambda}
 (\hat\rvx_\lambda,\lambda)
 \diff\lambda.
 \end{equation}
-当端点满足 $\sigma_0=0$，案例 $t=0$ 通过相应的限制来理解。
+若端点处 $\sigma_0=0$，则 $t=0$ 的情形按相应的极限理解。
 }{
-来自 \Cref{eq:diffusion_ode_lambda_eps}，与线性项相关的积分因子满足
+由 \Cref{eq:diffusion_ode_lambda_eps}，与线性项对应的积分因子满足
 \[
 \exp\left(
 \int_{\lambda_s}^{\lambda_t}
@@ -2608,7 +2375,7 @@ e^{-\lambda}
 =
 \frac{\alpha_t}{\alpha_s}.
 \]
-因此，常数变分公式给出
+于是，常数变分公式给出
 \begin{align*}
 \widetilde\bPsi_{s\to t}(\rvx_s)
 &=
@@ -2631,41 +2398,51 @@ e^{-\lambda}
 (\hat\rvx_\lambda,\lambda)
 \diff\lambda,
 \end{align*}
-最后一个等式来自
-$\sigma_\lambda/\alpha_\lambda=e^{-\lambda}$.
+最后一步用到了 $\sigma_\lambda/\alpha_\lambda=e^{-\lambda}$。
 }
 
-关键的数字结果现在已经很明确了。在 $\lambda$-时间，精确解中唯一与模型相关的量出现在里面
+到这里，数值上的关键之处已经很清楚。在 $\lambda$ 时间下，
+精确解中唯一与模型相关的量只出现在这个积分里：
 \[
 \int_{\lambda_s}^{\lambda_t}
 e^{-\lambda}
 \hat{\bm{\epsilon}}_{\bm{\phi}^\times}
 (\hat\rvx_\lambda,\lambda)\diff\lambda.
 \]
-当模型输出由泰勒多项式局部近似时
-$\lambda$，生成的指数加权多项式项可以以封闭形式积分，产生显式的高阶更新系数。因此，正如序言的分解观点一样，已知的时间表依赖性在分析上被保留，而近似集中在神经预测上。
+若把模型输出在 $\lambda$ 附近用泰勒多项式作局部近似，
+所得的指数加权多项式项就可以积成闭式，从而给出显式的高阶更新系数。
+于是，正如序言中「分解」的视角所强调的：已知的调度依赖被解析地保留下来，
+近似只集中在神经预测这一处。
 
 \paragraph{为什么要重新参数化时间？}
-对于严格单调 $\lambda(t)$，变量的局部一阶变化给出
+当 $\lambda(t)$ 严格单调时，变量的一阶局部变化满足
 \[
 |\Delta t|
 \approx
 \frac{|\Delta\lambda|}{|\lambda'(t)|}.
 \]
-因此，如果数值网格使用固定步长 $|\Delta\lambda|$，诱导步骤 $t$ 较小，其中 $|\lambda'(t)|$ 更大（即，其中 $\lambda$ 变化迅速 $t$)，以及更大的位置
-$|\lambda'(t)|$ 较小。重新参数化本身不会改变 PF-ODE 求解路径；它只改变相同路径的参数化方式：
+因此，若数值网格在 $\lambda$ 上取固定步长 $|\Delta\lambda|$，
+那么在 $|\lambda'(t)|$ 较大之处（即 $\lambda$ 随 $t$ 变化较快之处），
+对应的 $t$ 步长就小；而在 $|\lambda'(t)|$ 较小之处，$t$ 步长就大。
+重新参数化本身并不改变 PF-ODE 所解的路径，
+它改变的只是同一条路径的参数化方式：
 \[
 \frac{\diff \hat\rvx_\lambda}{\diff \lambda}
 =
 \frac{1}{\lambda'(t)}
 \frac{\diff \rvx_t}{\diff t}.
 \]
-在 $|\lambda'(t)|$ 较大的区间，同样的时间步长对应更大的 $\lambda$ 变化。$\lambda(t)$ 直接衡量信号与噪声的相对强弱。固定的 $\Delta\lambda$ 对应 $\alpha_t/\sigma_t$ 乘以一个固定倍数，也等价于对数信噪比增加一个固定量。同一个 $\Delta t$ 在不同时间段可能对应很不一样的噪声变化。因此，在 $\lambda$ 上均匀放置求解节点，可以重新分配轨迹各段的步长。这些节点在原时间 $t$ 上的间距取决于噪声调度。下面用两个例子说明。
+在 $|\lambda'(t)|$ 较大的区间，同样长的时间步对应的 $\lambda$ 变化更大。
+$\lambda(t)$ 直接衡量信号与噪声的相对强弱。固定 $\Delta\lambda$
+意味着 $\alpha_t/\sigma_t$ 乘以一个固定倍数，等价于对数信噪比
+增加一个固定的量。而同样的 $\Delta t$ 在不同时段所对应的噪声变化
+可能差别很大。因此，把求解节点均匀地铺在 $\lambda$ 上，
+就等于重新分配了轨迹各段的步长；这些节点映射回原时间 $t$ 时的间距，
+则取决于噪声调度。下面用两个例子说明。
 
 \begin{itemize}
 \item \textbfs{$(\alpha_t,\sigma_t)=(1-t,t)$.}
-这对应于流匹配中常用的线性插值。
-然后
+这对应于流匹配中常用的线性插值。此时
 \[
 \lambda(t)
 =
@@ -2675,20 +2452,18 @@ $|\lambda'(t)|$ 较小。重新参数化本身不会改变 PF-ODE 求解路径�
 =
 -\frac{1}{t(1-t)},
 \]
-所以在本地
+于是局部地有
 \[
 |\Delta t|
 \approx
 |\Delta\lambda|\,t(1-t).
 \]
-因此，$\lambda$ 中的均匀网格会在 $t$ 附近引起非常小的步长
-端点 $t\to0$ 和 $t\to1$，以及围绕中间的较大步骤
-轨迹。
+因此在 $\lambda$ 上取均匀网格，会让 $t$ 的步长在两个端点
+$t\to0$ 和 $t\to1$ 附近变得很小，而在轨迹中段变大。
 
 \item \textbfs{$(\alpha_t,\sigma_t)=(1,t)$.}
-这对应于EDM参数化~\citep{karras2022elucidating}
-当自变量$t$直接作为噪声水平时
-$\sigma_t$。然后
+当自变量 $t$ 直接取作噪声水平 $\sigma_t$ 时，
+这对应于 EDM 参数化~\citep{karras2022elucidating}。此时
 \[
 \lambda(t)
 =
@@ -2704,28 +2479,26 @@ $\sigma_t$。然后
 \approx
 |\Delta\lambda|\,t.
 \]
-事实上，$\lambda$ 中的均匀间距意味着
+事实上，$\lambda$ 上等距就意味着
 \[
 t=e^{-\lambda},
 \]
-因此相应的噪声水平是几何间隔的。因此，网格
-包含小噪声水平（高信噪比）下更精细的绝对间距和更粗的绝对间距
-大噪声水平（低信噪比）下的绝对间距。
+所以相应的噪声水平按几何级数分布。因此，这套网格在
+小噪声水平（高信噪比）处给出更细的绝对间距，而在
+大噪声水平（低信噪比）处给出更粗的绝对间距。
 \end{itemize}
 
 
 
 \subsection{利用泰勒展开估计积分}\label{subsec:dpm-method-2} 
-DEIS 和 DPM-Solver 利用相同的分解原理，但获得
-以不同的方式获取高阶信息。 DEIS 重复使用来自
-之前完成的步骤来推断下一个的神经预测
-间隔。 DPM-Solver 在 log-SNR 坐标 $\lambda$ 中工作，并且
-使用神经预测的局部泰勒展开，以及所需的
-从额外评估中获得的高阶信息
-当前步骤。我们现在导出这个单步构造。
+DEIS 与 DPM-Solver 依据同一个分解原理，但获取高阶信息的方式不同。
+DEIS 复用此前已完成各步的模型输出来外推下一步区间内的神经预测；
+DPM-Solver 则在 log-SNR 坐标 $\lambda$ 中工作，改用神经预测的
+局部泰勒展开，所需的高阶信息来自当前步内的额外评估。
+下面推导这一单步构造。
 
-从 \Cref{eq:analytic_solution} 开始，精确的经验 PF-ODE 流程已初始化
-当前数值状态 $\tilde\rvx_s$ 为
+从 \Cref{eq:analytic_solution} 出发，把当前数值状态 $\tilde\rvx_s$
+作为初值，精确的经验 PF-ODE 流为
 \begin{equation}
 \label{eqn:analytic_solution_each_step}
 \widetilde\bPsi_{s\to t}(\tilde\rvx_s)
@@ -2739,12 +2512,10 @@ e^{-\lambda}
 (\hat\rvx_\lambda,\lambda)
 \diff\lambda,
 \end{equation}
-其中
-$\hat\rvx_{\lambda_s}=\tilde\rvx_s$ 和
-$\hat\rvx_\lambda$ 表示相应的精确经验 PF-ODE
-当前步骤的轨迹。因此，已知后
-与时间表相关的因素已被分析处理，其余的
-数值问题是近似
+其中 $\hat\rvx_{\lambda_s}=\tilde\rvx_s$，而 $\hat\rvx_\lambda$
+表示当前步上相应的精确经验 PF-ODE 轨迹。可见一旦
+把与调度相关的因子解析地处理好，剩下的数值问题就只是
+在加权积分内逼近
 \[
 \lambda
 \longmapsto
@@ -2753,7 +2524,7 @@ $\hat\rvx_\lambda$ 表示相应的精确经验 PF-ODE
 \]
 在加权积分内。
 
-对于 $n\geq1$，我们扩展了关于 $\lambda_s$ 的神经预测：
+对 $n\geq1$，我们把神经预测在 $\lambda_s$ 处展开：
 \begin{equation*}
 \hat{\bm{\epsilon}}_{\bm{\phi}^\times}
 (\hat\rvx_\lambda,\lambda)
@@ -2774,8 +2545,7 @@ $\hat\rvx_\lambda$ 表示相应的精确经验 PF-ODE
 \hat{\bm{\epsilon}}_{\bm{\phi}^\times}
 (\hat\rvx_\lambda,\lambda)
 \]
-表示沿经验 PF-ODE 的 $k$-th \emph{ 总导数
-轨迹}。特别是，
+表示沿经验 PF-ODE 轨迹的 $k$ 阶\emph{全导数}。特别地，
 \[
 \frac{\diff}{\diff\lambda}
 \hat{\bm{\epsilon}}_{\bm{\phi}^\times}
@@ -2790,11 +2560,11 @@ J_{\rvx}
 (\hat\rvx_\lambda,\lambda)
 \frac{\diff\hat\rvx_\lambda}{\diff\lambda},
 \]
-因此导数包括对 $\lambda$ 的显式依赖和
-通过不断发展的状态的依赖。
+可见这一导数既包含对 $\lambda$ 的显式依赖，也包含
+通过不断演化的状态而产生的依赖。
 
-将泰勒展开式代入
-\Cref{eqn:analytic_solution_each_step} 给出
+把泰勒展开式代入
+\Cref{eqn:analytic_solution_each_step}，得到
 \begin{mdframed}
 \begin{equation}
 \label{eq:k-th-expansion}
@@ -2822,12 +2592,12 @@ e^{-\lambda}
 \frac{(\lambda-\lambda_s)^k}{k!}
 \diff\lambda.
 \]
-系数 ${\color{orange}C_k}$ 仅取决于对数 SNR 间隔，并且可以进行分析评估。
+系数 ${\color{orange}C_k}$ 只取决于对数 SNR 的区间长度，可以解析地算出。
 \end{mdframed}
 
-如果所需的轨迹导数可用，则删除
-$\mathcal O(h^{n+1})$ 余数将给出相应的形式
-$n$第-次订单更新。 DPM-Solver 通过从附加模型评估中逼近这些导数来避免显式区分神经网络，如下一小节所述。
+若所需的轨迹导数已知，丢掉 $\mathcal O(h^{n+1})$ 这一余项，
+就得到相应形式的 $n$ 阶更新。DPM-Solver 并不对神经网络做显式求导，
+而是用额外的模型评估来逼近这些导数，下一小节将说明这一点。
 
 \exm{DPM-Solver-1}{
 对于 $n=1$，精确的经验流程满足
@@ -2842,7 +2612,7 @@ $n$第-次订单更新。 DPM-Solver 通过从附加模型评估中逼近这些�
 +
 \mathcal O(h^2).
 \]
-放弃 $\mathcal O(h^2)$ 余数定义 DPM-Solver-1：
+丢掉 $\mathcal O(h^2)$ 余项即定义出 DPM-Solver-1：
 \begin{align}
 \label{eq:dpm-1}
 \tilde\rvx_t^{\mathrm{DPM\text{-}Solver\text{-}1}}
@@ -2853,27 +2623,35 @@ $n$第-次订单更新。 DPM-Solver 通过从附加模型评估中逼近这些�
 \left(e^h-1\right)
 \bm{\epsilon}_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \end{align}
-这个有限步更新正是确定性DDIM更新，如图所示 \Cref{subsec:ddim=dpm-solver-1}.
+这一有限步更新正是确定性 DDIM 更新，如 \Cref{subsec:ddim=dpm-solver-1} 所示。
 }
 
-DPM-Solver-$n$ 与 $n \geq 2$ 需要评估 $k^{\text{th}}$-导数 {\color{cyan}$\hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}(\hat\rvx_\lambda, \lambda)$} 用于 $k \leq n-1$。然而，在实践中直接计算高阶导数的计算成本很高。 \citet{lu2022dpm} 还提出了这些导数的有效近似方法，这将在下一小节中详细介绍。
+$n \geq 2$ 的 DPM-Solver-$n$ 需要对所有 $k \leq n-1$ 评估
+$k$ 阶导数 {\color{cyan}$\hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}(\hat\rvx_\lambda, \lambda)$}。
+然而在实际中直接计算高阶导数的代价很高。
+\citet{lu2022dpm} 还给出了这些导数的有效近似方法，
+下一小节将详细介绍。
 
  
 \subsection{DPM-Solver-$n$ 的实现}\label{subsec:dpm-n-method}
 
-\paragraph{DPM-Solver-$n$ 与 $n \geq 2$.}
-在实践中，实现高阶 DPM-Solver-$n$ 包含以下内容：
+\paragraph{$n \geq 2$ 的 DPM-Solver-$n$。}
+实际实现高阶 DPM-Solver-$n$ 主要包括两件事：
 \begin{itemize}
-    \item 预计算系数 ${\color{orange}C_k}$;
-    \item 近似 $k^{\text{th}}$ 衍生品 {\color{cyan}$\hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}(\hat\rvx_\lambda,\lambda)$} 用于 $k \leq n-1$ 规避精确高阶导数的昂贵计算——ODE文献中充分研究的一个挑战~\citep{hochbruck2005explicit,luan2021efficient}。一种常见的策略是有限差分近似。
+    \item 预先算出系数 ${\color{orange}C_k}$；
+    \item 对 $k \leq n-1$ 逼近 $k$ 阶导数
+    {\color{cyan}$\hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}(\hat\rvx_\lambda,\lambda)$}，
+    以避免直接计算精确高阶导数的高昂代价——这是 ODE 文献中
+    研究得相当充分的一个难题~\citep{hochbruck2005explicit,luan2021efficient}。
+    常用的一种策略是有限差分近似。
 \end{itemize}
 
-我们现在详细阐述前两点。
+下面把这两点展开说明。
 
 
-\subparagraph{预计算 ${\color{orange}C_k}$.}
-让 $s$ 和 $t$ 分别表示开始时间和结束时间，定义
-$h:=\lambda_t-\lambda_s$。精确经验 PF-ODE 流的泰勒展开式为
+\subparagraph{预先计算 ${\color{orange}C_k}$.}
+记 $s$ 和 $t$ 分别为起始与结束时刻，并令
+$h:=\lambda_t-\lambda_s$。精确经验 PF-ODE 流的泰勒展开为
 \begin{equation}
 \label{eq:analytic_expansion}
 \widetilde\bPsi_{s\to t}(\rvx_s)
@@ -2901,7 +2679,7 @@ h^m
 \qquad
 \varphi_m(0):=\frac{1}{m!}.
 \]
-对于前三种情况，
+前三种情形为
 \begin{align*}
 \varphi_1(h)
 &=
@@ -2917,7 +2695,7 @@ h^m
 \end{align*}
 
 \exm{具有精确导数的三阶展开式}{
-对于 $n=3$, \Cref{eq:analytic_expansion} 变成
+取 $n=3$ 时，\Cref{eq:analytic_expansion} 变为
 \begin{equation}
 \label{eq:example-dpm-solver-3-exact}
 \begin{aligned}
@@ -2951,9 +2729,12 @@ e^h-\frac{h^2}{2}-h-1
 
 
 
-\subparagraph{近似值 {\color{cyan}$\hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}(\hat\rvx_\lambda,\lambda)$} 用于 $k \leq n-1$.}
-对于 $n \geq 2$，遵循单步 ODE 求解器的标准方法~\citep{atkinson2009numerical}, \citet{lu2022dpm} 在当前步骤中使用附加模型评估来近似高阶导数。我们举例说明这个想法 $n=2$.让 $\gamma\in(0,1]$ 指定 log-SNR 间隔中的阶段点
-$[\lambda_s,\lambda_t]$。给定 $\tilde\rvx_s$ 处的估计值 $s$，定义
+\subparagraph{对 $k \leq n-1$ 逼近 {\color{cyan}$\hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}(\hat\rvx_\lambda,\lambda)$}.}
+对 $n \geq 2$，\citet{lu2022dpm} 沿用单步 ODE 求解器的标准做法
+~\citep{atkinson2009numerical}，在当前步内用额外的模型评估
+来逼近高阶导数。下面以 $n=2$ 为例说明这一思路。
+设 $\gamma\in(0,1]$ 指定 log-SNR 区间 $[\lambda_s,\lambda_t]$ 中的
+一个中间点。给定 $s$ 处的估计值 $\tilde\rvx_s$，定义
 \[
 s^{\mathrm{mid}}
 =
@@ -2961,9 +2742,8 @@ t_\lambda\left(\lambda_s+\gamma h\right),
 \qquad
 h:=\lambda_t-\lambda_s.
 \]
-对于 $\gamma\in(0,1)$ 这是一个内点，而 $\gamma=1$ 对应
-到端点 $t$。我们首先使用 DPM-Solver-1 步骤来预测
-这个阶段：
+当 $\gamma\in(0,1)$ 时这是一个内点，而 $\gamma=1$ 则对应端点 $t$。
+我们先用一步 DPM-Solver-1 把这个中间点处的状态预测出来：
 \[
 \rvx^{\mathrm{mid}}
 =
@@ -2973,9 +2753,8 @@ h:=\lambda_t-\lambda_s.
 \left(e^{\gamma h}-1\right)
 \bm{\epsilon}_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-起始点和阶段点的模型预测之间的差异
-然后提供一阶全导数的有限差分近似
-沿着轨迹：
+起始点与中间点两处模型预测之差，便给出沿轨迹的
+一阶全导数的有限差分近似：
 \[
 \hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(1)}
 (\hat\rvx_{\lambda_s},\lambda_s)
@@ -2990,7 +2769,7 @@ h:=\lambda_t-\lambda_s.
 \gamma h
 }.
 \]
-将此近似值代入二阶展开式可得
+把这一近似代入二阶展开式，得到
 \begin{align}
 \label{eq:dpm-solver-2-app}
 \begin{aligned}
@@ -3016,21 +2795,20 @@ h:=\lambda_t-\lambda_s.
 \mathcal O(h^3).
 \end{aligned}
 \end{align}
-因此，删除 $\mathcal O(h^3)$ 余数会产生二阶
-单步更新。
+于是，丢掉 $\mathcal O(h^3)$ 余项，就得到二阶单步更新。
 
-对于中点选择 $\gamma=\tfrac12$，DPM-Solver-2 承认更简单
-\Cref{alg:dpm-solver-2} 中的两级形式。此次更新不同于
-\Cref{eq:dpm-solver-2-app} 仅由 $\mathcal O(h^3)$ 提供，因此具有
-相同的二阶精度。
+取中点 $\gamma=\tfrac12$ 时，DPM-Solver-2 有一种更简洁的两阶段形式，
+见 \Cref{alg:dpm-solver-2}。该更新与
+\Cref{eq:dpm-solver-2-app} 只相差 $\mathcal O(h^3)$，
+因此二者具有相同的二阶精度。
 \begin{algorithm}[H]
     \centering
-    \caption{DPM-Solver-2（带$\gamma=\tfrac12$）.}
+    \caption{DPM-Solver-2（取 $\gamma=\tfrac12$）.}
     \label{alg:dpm-solver-2}
     \begin{algorithmic}[1]
-    \Require 初始值$\rvx_T$，时间步$\{t_i\}_{i=0}^M$，模型${\bm{\epsilon}}_{\bm{\phi}^\times}$
+    \Require 初始值 $\rvx_T$，时间步 $\{t_i\}_{i=0}^M$，模型 ${\bm{\epsilon}}_{\bm{\phi}^\times}$
         \State $\tilde\rvx_{t_0}\gets\rvx_T$
-        \For{$i\gets 1$ 至 $M$}
+        \For{$i\gets 1$ \textbf{to} $M$}
         \State $h_i \gets \lambda_{t_i}-\lambda_{t_{i-1}}$
         \State $s_i^{\mathrm{mid}}
         \gets
@@ -3063,9 +2841,8 @@ h:=\lambda_t-\lambda_s.
 \end{algorithm}
 
 \rmkb{
-上述有限差分近似为 \emph{total} $\lambda$ 导数
-沿着经验 PF-ODE 轨迹的神经预测。低于标准
-平滑度假设，
+上面的有限差分逼近的是神经预测沿经验 PF-ODE 轨迹
+关于 $\lambda$ 的\emph{全}导数。在标准的平滑性假设下，
 \[
 \frac{
 \bm{\epsilon}_{\bm{\phi}^\times}
@@ -3082,25 +2859,28 @@ h:=\lambda_t-\lambda_s.
 +
 \mathcal O(h).
 \]
-这里，中间状态本身是通过一阶
-DPM-Solver-1 步骤，其阶段误差为 $\mathcal O(h^2)$；光滑度下
-的模型，这不会改变 $\mathcal O(h)$ 的精度
-差商。
+这里，中间状态本身是由一阶的 DPM-Solver-1 步骤得到的，
+其阶段误差为 $\mathcal O(h^2)$；在模型光滑的前提下，
+这并不影响差商所具有的 $\mathcal O(h)$ 精度。
 
-在 \Cref{eq:dpm-solver-2-app} 中，该导数近似乘以
+在 \Cref{eq:dpm-solver-2-app} 中，这一导数近似要乘以
 \[
 e^h-h-1=\mathcal O(h^2),
 \]
-所以它的诱发误差是$\mathcal O(h^3)$。因此，得到的方法是
-对于任何固定的 $\gamma\in(0,1]$ 来说，二阶精度。
+因此它引入的误差为 $\mathcal O(h^3)$。于是，对任意固定的
+$\gamma\in(0,1]$，所得方法都是二阶精度。
 
-这个单步法要调用模型两次。第一次在步首 $(\tilde\rvx_s,s)$ 求值，第二次在预测的中间阶段 $(\rvx^{\mathrm{mid}},s^{\mathrm{mid}})$ 求值。方法在形式上保持二阶精度，$\gamma$ 的取值会改变中间阶段的位置和误差常数。取 $\gamma=\tfrac12$ 时，第二次求值落在对数信噪比区间的中点，这就是常用的 DPM-Solver-2 中点法。
+这个单步法要调用模型两次：第一次在步首 $(\tilde\rvx_s,s)$ 求值，
+第二次在预测出的中间点 $(\rvx^{\mathrm{mid}},s^{\mathrm{mid}})$ 求值。
+方法在形式上始终保持二阶精度，而 $\gamma$ 的取值只会改变
+中间点的位置与误差常数。当 $\gamma=\tfrac12$ 时，第二次求值
+落在对数信噪比区间的中点，这就是常用的 DPM-Solver-2 中点法。
 }
 
-\paragraph{实现细节：采样时间步长的选择。}
-由于 DPM-Solver 在 log-SNR 时间内构造其局部高阶近似
-$\lambda$，自然的选择是将数值节点统一放置在
-$\lambda$。对于有限的终止时间 $t_M>0$，这给出
+\paragraph{实现细节：采样时间步的选取。}
+由于 DPM-Solver 是在 log-SNR 时间 $\lambda$ 上构造局部高阶近似的，
+一个自然的选择就是把数值节点等距地放在 $\lambda$ 上。
+对有限的终止时刻 $t_M>0$，这给出
 \[
 \lambda_{t_i}
 =
@@ -3113,52 +2893,48 @@ $\lambda$。对于有限的终止时间 $t_M>0$，这给出
 \qquad
 i=0,\ldots,M.
 \]
-如果是 $\sigma_0=0$，则 $\lambda_0=+\infty$，因此在实践中，人们会使用
-有限终端 log-SNR 对应于一个小的正时间，其中
-由相应的限制或最终去噪步骤处理的端点。虽然推导是在$\lambda$空间中进行的，但是预训练的
-型号和时间表 $(\alpha_t,\sigma_t)$ 通常由以下参数化
-原始扩散时间$t$。在采样过程中，每个选定的 log-SNR 节点是
-因此映射回通过
+若 $\sigma_0=0$，则 $\lambda_0=+\infty$，因此实际做法是取一个
+与较小正时刻相对应的有限终止 log-SNR，端点则由相应的极限
+或最后的去噪步骤来处理。尽管推导是在 $\lambda$ 空间中进行的，
+但预训练的模型与调度 $(\alpha_t,\sigma_t)$ 通常以原始扩散时间
+$t$ 为参数。因此在采样过程中，每个选定的 log-SNR 节点都要
+通过如下关系映射回 $t$：
 \[
 t_i=t_\lambda(\lambda_{t_i})
 \]
-每当评估模型或需要进度系数时；
-例如，参见 \Cref{alg:dpm-solver-2}。因此，$\lambda$ 用作
-数值积分坐标，同时采样器继续评估
-原始预训练的扩散模型在其相应的时间标签。
+凡是需要评估模型或需要进度系数的地方都如此处理，
+例如参见 \Cref{alg:dpm-solver-2}。于是 $\lambda$ 只充当
+数值积分的坐标，而采样器始终是在各自对应的时间标签上
+调用原始预训练的扩散模型。
 
 
 
 \subsection{DDIM $=$ DPM-Solver-1}
 \label{subsec:ddim=dpm-solver-1}
 
-一阶 DPM-Solver精确地恢复 DDIM。两种方法都从一个
-相同噪声预测 PF-ODE 的精确积分表示，并使
-一步中的相同近似：
+一阶 DPM-Solver 精确地还原了 DDIM。两者都从噪声预测形式
+PF-ODE 的同一个精确积分表示出发，并在一步之内作同样的近似：
 \[
 \beps_{\bm{\phi}^\times}(\rvx_\tau,\tau)
 \approx
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
-然后对剩余的与时间表相关的项进行分析积分。
-DDIM 直接以派生的时间表对齐形式应用此构造
-较早，而 DPM-Solver 首先使用 log-SNR 重写积分
-坐标
+然后对其余与调度相关的项作解析积分。区别只在于：
+DDIM 直接采用前面导出的、与调度对齐的形式，
+而 DPM-Solver 先用 log-SNR 坐标重写积分
 \[
 \lambda_t
 =
 \log\frac{\alpha_t}{\sigma_t}.
 \]
-首先，数字时钟的这种变化不会改变常数
-模型预测的近似值。因此，两个推导
-产生完全相同的有限步更新。
+由于被近似成常数的模型预测并不受这一坐标变换影响，
+两种推导给出的是完全相同的有限步更新。
 
 \proppp{DDIM 是 DPM-Solver-1}{ddim-dpm}{
-对于固定扩散时间表 $(\alpha_t,\sigma_t)$，确定性 DDIM
-\Cref{eq:ddim-euler} 中的更新与 DPM-Solver-1 更新相同
-\Cref{eq:dpm-1}。
+对固定的扩散调度 $(\alpha_t,\sigma_t)$，\Cref{eq:ddim-euler} 中
+确定性 DDIM 的更新与 \Cref{eq:dpm-1} 中的 DPM-Solver-1 更新相同。
 }{
-根据$\lambda$的定义，
+由 $\lambda$ 的定义，
 \[
 \frac{\sigma_s}{\alpha_s}
 =
@@ -3168,13 +2944,13 @@ e^{-\lambda_s},
 =
 e^{-\lambda_t}.
 \]
-让
+令
 \[
 h
 =
 \lambda_t-\lambda_s.
 \]
-然后
+则
 \[
 e^h
 =
@@ -3197,7 +2973,7 @@ e^h
 \frac{\sigma_s}{\alpha_s}
 \right).
 \]
-将此恒等式代入 DPM-Solver-1 更新中可得到
+把这一恒等式代入 DPM-Solver-1 的更新式，得到
 \[
 \tilde\rvx_t
 =
@@ -3211,41 +2987,38 @@ e^h
 \right)
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s),
 \]
-这正是确定性 DDIM 更新
+这正是确定性 DDIM 的更新式
 \Cref{eq:ddim-euler}。
 }
 
-因此，DPM-Solver-1 和 DDIM 是同一一阶的两个导数
-有限步更新。 log-SNR 坐标变得比第一个更重要
-order：高阶 DPM-Solver使用它来近似噪声预测的方式
-沿轨迹变化，而不是将该预测视为恒定
-整个步骤。
+可见 DPM-Solver-1 与 DDIM 是对同一个一阶有限步更新的两种推导。
+log-SNR 坐标的价值要到更高阶才真正显现：高阶 DPM-Solver
+正是利用它来逼近噪声预测沿轨迹的变化方式，
+而不再把该预测在整步内视为常数。
 
 
-\subsection{ DPM-Solver与龙格库塔型求解器的关系}
+\subsection{DPM-Solver 与 Runge--Kutta 型求解器的关系}
 \label{subsec:dpm-rk}
 
-DPM-Solver-1 正是 DDIM 更新
-(\Cref{subsec:ddim=dpm-solver-1})，所以它的一阶行为已经是
-明白了。更高阶的问题是 DPM-Solver 如何改进这一点
-一次评估更新。
+DPM-Solver-1 就是 DDIM 更新
+（\Cref{subsec:ddim=dpm-solver-1}），因此它的一阶行为已经清楚。
+更高阶的问题在于：DPM-Solver 是如何用一次评估的更新把它改进的。
 
-连接到龙格-库塔 (RK) 方法。欧拉仅使用向量
-字段在步骤的开始，而 RK 方法获得额外的
-通过 \emph{stages} 的信息，即状态和时间的评估
-在当前步骤中生成；参见 \Cref{app:de-solver-examples}。
-高阶 DPM-Solver遵循相同的原则：而不是持有一个
-神经预测在整个步骤中固定，他们引入了额外的
-步内模型评估以捕获其变化。特定扩散
-不同之处在于保留了已知的与时间表相关的因素
-分析上，而分阶段近似仅适用于学习到的
-预测。\paragraph{DPM-Solver-2 与普通中点 RK2.}
-我们首先将 DPM-Solver-2 与直接应用于的经典中点 RK2 进行比较
-对数 SNR 时间内的完整噪声预测 PF-ODE
-\Cref{eq:diffusion_ode_lambda_eps}。为了简洁起见，表示其完整
-右侧为 $\rmF(\hat\rvx_\lambda,\lambda)$。
+与 Runge--Kutta（RK）方法的联系。Euler 法只用到向量场
+在步首处的取值，而 RK 方法则借助\emph{阶段}（stage）
+获得额外信息，即在本步之内生成的状态与时间点上的评估；
+参见 \Cref{app:de-solver-examples}。高阶 DPM-Solver 遵循同样的原则：
+它不把神经预测在整步内固定住，而是引入额外的步内模型评估
+来刻画其变化。扩散情形下的特殊之处在于：与调度相关的已知因子
+被解析地保留下来，而分阶段近似只施加于学到的那个预测上。
 
-对于中点选择 $\gamma=\tfrac12$，令
+\paragraph{DPM-Solver-2 与普通中点 RK2.}
+先来比较 DPM-Solver-2 与经典中点 RK2：后者直接作用在
+对数 SNR 时间下的完整噪声预测 PF-ODE
+\Cref{eq:diffusion_ode_lambda_eps} 上。为书写简洁，
+记该方程的整个右端为 $\rmF(\hat\rvx_\lambda,\lambda)$。
+
+取中点 $\gamma=\tfrac12$，并令
 \[
 \lambda_{\mathrm{mid}}
 :=
@@ -3261,7 +3034,7 @@ DPM-Solver-1 正是 DDIM 更新
 :=
 \sigma_{s^{\mathrm{mid}}},
 \]
-并缩写
+以及简记
 \[
 \hat\beps_s
 :=
@@ -3270,7 +3043,7 @@ DPM-Solver-1 正是 DDIM 更新
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s).
 \]
 
-经典中点 RK2 给出
+经典中点 RK2 给出的是
 \[
 \rvx_{\mathrm{mid}}^{\mathrm{RK}}
 =
@@ -3279,7 +3052,7 @@ DPM-Solver-1 正是 DDIM 更新
 \frac{h}{2}
 \rmF(\tilde\rvx_s,\lambda_s),
 \]
-随后
+随后再作
 \[
 \tilde\rvx_t^{\mathrm{RK2}}
 =
@@ -3292,12 +3065,11 @@ h\,
 \lambda_{\mathrm{mid}}
 \right).
 \]
-因此，普通 RK2 将其两级结构应用于完整的 PF-ODE
-速度，包括已知的依赖于时间表的项和神经
-预测。
+可见普通 RK2 是把它的两级结构施加在完整的 PF-ODE 速度上，
+其中既有与调度相关的已知项，也有神经网络的预测。
 
-相比之下，\Cref{alg:dpm-solver-2} 中的中点 DPM-Solver-2 首先构建
-舞台
+相比之下，\Cref{alg:dpm-solver-2} 中的中点 DPM-Solver-2
+先构造阶段点
 \[
 \rvx_{\mathrm{mid}}^{\mathrm{DPM2}}
 =
@@ -3309,7 +3081,7 @@ e^{h/2}-1
 \right)
 \hat\beps_s.
 \]
-将相应的中点预测表示为
+记相应的中点预测为
 \[
 \hat\beps_{\mathrm{mid}}^{\mathrm{DPM2}}
 :=
@@ -3319,7 +3091,7 @@ e^{h/2}-1
 \lambda_{\mathrm{mid}}
 \right),
 \]
-完整更新是
+完整的更新则为
 \[
 \tilde\rvx_t^{\mathrm{DPM2}}
 =
@@ -3332,15 +3104,13 @@ e^h-1
 \hat\beps_{\mathrm{mid}}^{\mathrm{DPM2}}.
 \]
 
-结构上的差异是直接的。普通中点 RK2 离散化
-完整的 PF-ODE 速度，而 DPM-Solver-2 保留已知的
-分析扩散依赖演化并使用其两个模型评估
-仅用于近似噪声预测的变化。
+结构上的差异一目了然。普通中点 RK2 是对完整的 PF-ODE
+速度作离散，而 DPM-Solver-2 把已知的扩散依赖解析地演化下去，
+它的两次模型评估只用来逼近噪声预测的变化。
 
-在标准平滑假设下，两者都是二阶方法
-$\lambda$ 时间中的相同经验 PF-ODE。它们的中间状态一般是
-$\mathcal O(h^2)$ 有所不同，因此其完整的一步更新
-满足
+在标准的光滑性假设下，两者对 $\lambda$ 时间中同一条经验 PF-ODE
+都是二阶方法。它们的中间状态一般相差 $\mathcal O(h^2)$，
+因此两者的一步更新满足
 \[
 \tilde\rvx_t^{\mathrm{DPM2}}
 -
@@ -3348,15 +3118,14 @@ $\mathcal O(h^2)$ 有所不同，因此其完整的一步更新
 =
 \mathcal O(h^3).
 \]
-因此，DPM-Solver-2 遵循与经典相同的两阶段中点原理
-RK2，同时在应用之前利用已知的扩散结构
-数值近似。
+可见 DPM-Solver-2 遵循的正是与经典 RK2 相同的两阶段中点原理，
+只是它在做数值近似之前先利用了已知的扩散结构。
 
 \paragraph{DPM-Solver-2 与指数中点 RK2.}
-更仔细的比较使半线性分解保持在
-\Cref{eq:diffusion_ode_lambda_eps} 显式并对待其已知线性部分
-分析地。对应\emph{指数中点RK2}构造
-首先采用指数欧拉阶段到中点：
+再作更细致的比较时，要把 \Cref{eq:diffusion_ode_lambda_eps}
+中的半线性分解显式保留下来，并对其已知的线性部分作解析处理。
+对应的构造称为\emph{指数中点 RK2}，它先用指数 Euler 的阶段
+推进到中点：
 \[
 \rvx_{\mathrm{mid}}^{\mathrm{ExpRK}}
 =
@@ -3369,7 +3138,7 @@ RK2，同时在应用之前利用已知的扩散结构
 \right]
 \hat\beps_s.
 \]
-评估后
+再计算
 \[
 \hat\beps_{\mathrm{mid}}^{\mathrm{ExpRK}}
 :=
@@ -3379,7 +3148,7 @@ RK2，同时在应用之前利用已知的扩散结构
 \lambda_{\mathrm{mid}}
 \right),
 \]
-完整的指数中点更新为
+完整的指数中点更新则为
 \[
 \tilde\rvx_t^{\mathrm{ExpRK2}}
 =
@@ -3392,18 +3161,18 @@ RK2，同时在应用之前利用已知的扩散结构
 \right]
 \hat\beps_{\mathrm{mid}}^{\mathrm{ExpRK}}.
 \]
-当线性系数一定时，这些积分系数减小
-到显式指数中点 RK2 的常用 $\varphi_1$ 系数。
+当线性系数保持不变时，这些积分系数就退化为
+显式指数中点 RK2 中常见的 $\varphi_1$ 系数。
 
-DPM-Solver-2 使用相同的中点分级原理，但利用了更精细的
-噪声预测因子分解
+DPM-Solver-2 沿用同样的中点分阶段原理，但它利用了
+更细一层的噪声预测分解
 \[
 -\sigma_\lambda
 \hat\beps_{\bm{\phi}^\times}(\hat\rvx_\lambda,\lambda).
 \]
-由于 $\sigma_\lambda$ 也可以从扩散表中得知，
-DPM-Solver-2 将其保留在积分中，并且仅对神经网络进行分级
-预测。因此，它的中点系数和全步系数为
+由于 $\sigma_\lambda$ 同样可以从扩散调度中读出，
+DPM-Solver-2 把它也保留在积分里，只对神经网络的预测分阶段。
+因此，它的中点系数与整步系数分别为
 \[
 \alpha_{\mathrm{mid}}
 \int_{\lambda_s}^{\lambda_{\mathrm{mid}}}
@@ -3419,10 +3188,9 @@ DPM-Solver-2 将其保留在积分中，并且仅对神经网络进行分级
 \sigma_t
 \left(e^h-1\right),
 \]
-分别恢复\Cref{alg:dpm-solver-2}中的更新。
+恰好还原出 \Cref{alg:dpm-solver-2} 中的更新。
 
-因此，这三种结构的不同之处在于 RK 的近似值
-阶段：
+可见这三种格式的区别就在于 RK 阶段究竟近似了什么：
 \[
 \begin{array}{rl}
 \text{\textbfs{Plain RK2:} }
@@ -3446,7 +3214,7 @@ DPM-Solver-2 将其保留在积分中，并且仅对神经网络进行分级
 \end{array}
 \]
 
-指数 RK 和 DPM 中点阶段的不同之处在于
+指数 RK 与 DPM-Solver 两种中点阶段之差为
 \[
 \rvx_{\mathrm{mid}}^{\mathrm{DPM2}}
 -
@@ -3463,8 +3231,7 @@ DPM-Solver-2 将其保留在积分中，并且仅对神经网络进行分级
 =
 \mathcal O(h^2).
 \]
-对于完整的步骤，泰勒展开式为
-$\lambda_{\mathrm{mid}}$ 给出
+对整步而言，在 $\lambda_{\mathrm{mid}}$ 处的泰勒展开给出
 \[
 \int_{\lambda_s}^{\lambda_t}
 \frac{\sigma_\lambda-\sigma_{\mathrm{mid}}}{\alpha_\lambda}
@@ -3472,7 +3239,7 @@ $\lambda_{\mathrm{mid}}$ 给出
 =
 \mathcal O(h^3),
 \]
-而神经预测的平滑度给出
+而神经预测的光滑性则给出
 \[
 \hat\beps_{\mathrm{mid}}^{\mathrm{DPM2}}
 -
@@ -3488,26 +3255,25 @@ $\lambda_{\mathrm{mid}}$ 给出
 =
 \mathcal O(h^3).
 \]
-因此，DPM-Solver-2 和指数中点 RK2 通过二阶一致，
-但 DPM-Solver-2 保留了一个额外的分析已知量，
-$\sigma_\lambda$，加权积分里面。\rmkb{
-上面的讨论涉及噪声预测公式，其中
-DPM-Solver 已导出。如果预训练模型使用另一个预测
-参数化，其输出可以逐点转换为噪声预测
-在每个阶段通过\Cref{eq:predictions-equivalence}。就像 \Cref{subsec:ddim-classical-euler} 中的 DDIM 案例一样，这不应该是
-与直接将经典 RK 方法应用于原始预测相混淆
-field：逐点转换和有限步离散化是分开的
-操作。
+因此，DPM-Solver-2 与指数中点 RK2 都达到二阶一致，
+但 DPM-Solver-2 把另一个已知量 $\sigma_\lambda$
+也解析地留在了加权积分之内。\rmkb{
+上述讨论都基于噪声预测形式，DPM-Solver 正是在这一形式下推导的。
+若预训练模型采用的是别的预测参数化，可以在每个阶段通过
+\Cref{eq:predictions-equivalence} 把它的输出逐点换算成噪声预测。
+与 \Cref{subsec:ddim-classical-euler} 中的 DDIM 情形一样，
+这里不可与「把经典 RK 方法直接施加于原始预测场」混为一谈：
+逐点换算和有限步离散化是两件相互独立的事。
 }
 
-\msgu{DPM-Solver和龙格--库塔方法}{}{
-DPM-Solver 结合了 Runge--Kutta 的步内分级原理
-对已知扩散动力学进行分析处理的方法。
-DPM-Solver-1 正是 DDIM，而高阶 DPM-Solvers 使用额外的
-步内评估以捕获神经预测的变化。
-与经典 RK 方法的联系是结构性的，而不是等式的
-有限步公式：DPM-Solver 保留了已知的扩散相关
-在近似学习的预测之前分析权重。
+\msgu{DPM-Solver 与 Runge--Kutta 方法}{}{
+DPM-Solver 把 Runge--Kutta 的步内分阶段原理与
+对已知扩散动力学的解析处理结合了起来。
+DPM-Solver-1 正是 DDIM，更高阶的 DPM-Solver 则借助
+额外的步内评估来刻画神经预测的变化。
+它与经典 RK 方法的联系是结构上的，而不是说二者的
+有限步公式相等：DPM-Solver 在近似学到的预测之前，
+先把已知的、与扩散相关的权重解析地保留住了。
 }
 
 
@@ -3519,29 +3285,25 @@ DPM-Solver-1 正是 DDIM，而高阶 DPM-Solvers 使用额外的
 
 \subsection{从 DPM-Solver 到 DPM-Solver\texttt{++}：加速引导采样}
 
-DPM-Solver\texttt{++}~\citep{lu2022dpm2} 的开发是为了改进
-强指导下的高阶抽样。在这个制度下，有两个实际的
-出现困难。首先，大制导尺度可以放大模型输出
-及其导数，缩小高阶求解器的收敛区域
-并且需要更小的数值步长。其次，引导预测可以
-将最终解决方案驱动到训练数据表示的范围之外，
-导致中讨论的训练-测试不匹配
-\Cref{ch:guidance}。
+DPM-Solver\texttt{++}~\citep{lu2022dpm2} 的提出，是为了改进
+强引导条件下的高阶采样。在这种情形下，会出现两个实际困难。
+其一，较大的引导尺度会放大模型输出及其导数，
+缩小高阶求解器的收敛区域，从而不得不采用更小的数值步长。
+其二，带引导的预测可能把最终解推到训练数据所表示的范围之外，
+造成 \Cref{ch:guidance} 中讨论过的训练—测试不匹配。
 
-DPM-Solver\texttt{++} 通过两种互补的方式解决这些问题。它
-使用数据预测重新表述扩散 ODE，其中数据空间
-可以应用动态阈值等校正，并且它开发了
-多步变体，重用以前的模型评估以获得更小的
-固定 NFE 预算下的有效步长。我们首先推导出
-数据预测公式，然后介绍其单步和多步
-二阶求解器。
+DPM-Solver\texttt{++} 用两种互补的方式解决这些问题。
+它改用数据预测来重写扩散 ODE，这样就可以在数据空间里
+施加动态阈值之类的校正；它还发展出多步变体，
+复用先前的模型评估，从而在固定的 NFE 预算下获得更小的有效步长。
+我们先推出数据预测形式，再介绍它的单步与多步二阶求解器。
 
 
 \subsection{DPM-Solver\texttt{++} 的方法}
 
-DPM-Solver\texttt{++} 保持对数 SNR 坐标 $\lambda$ 引入
-DPM-Solver，而是通过数据预测来表达经验 PF-ODE
-比噪声预测。回想一下 \Cref{eq:predictions-equivalence} 中的内容
+DPM-Solver\texttt{++} 保留了 DPM-Solver 引入的对数 SNR 坐标
+$\lambda$，但改用数据预测而不再是噪声预测来表达经验 PF-ODE。
+回想 \Cref{eq:predictions-equivalence} 中的关系
 \[
 \beps_{\bm{\phi}^\times}(\rvx_t,t)
 =
@@ -3551,8 +3313,8 @@ DPM-Solver，而是通过数据预测来表达经验 PF-ODE
 \sigma_t
 }.
 \]
-将此关系代入噪声预测精确解中
-\Cref{eq:analytic_solution} 给出等效的数据预测形式
+把这一关系代入噪声预测形式的精确解
+\Cref{eq:analytic_solution}，即得等价的数据预测形式
 \begin{equation}
 \label{eq:dpmpp-data-exact}
 \widetilde\bPsi_{s\to t}(\rvx_s)
@@ -3566,8 +3328,8 @@ e^\lambda
 (\hat\rvx_\lambda,\lambda)
 \diff\lambda,
 \end{equation}
-其中，在 \Cref{eq:change-of-var-x-epsilon} 之后，我们定义
-$\lambda$-参数化数据预测字段
+其中，仿照 \Cref{eq:change-of-var-x-epsilon} 之后的写法，
+定义 $\lambda$ 参数化的数据预测场
 \[
 \hat{\rvx}_{\bm{\phi}^\times}
 (\rvx,\lambda)
@@ -3578,7 +3340,7 @@ $\lambda$-参数化数据预测字段
 t_\lambda(\lambda)
 \bigr).
 \]
-因此，沿着经验 PF-ODE 轨迹，
+于是，沿经验 PF-ODE 的轨迹有
 \[
 \hat{\rvx}_{\bm{\phi}^\times}
 (\hat\rvx_\lambda,\lambda)
@@ -3588,38 +3350,37 @@ t_\lambda(\lambda)
 \rvx_{t_\lambda(\lambda)},
 t_\lambda(\lambda)
 \bigr).
-\]因此，该结构与 DPM-Solver 完全对偶：已知
-依赖于时间表的演化是通过分析处理的，而唯一的
-剩余积分内的模型相关量现在是数据
-预测。 DPM-Solver\texttt{++} 开发了两个二阶实现
-这个确切的形式：
+\]
+于是，这一结构与 DPM-Solver 完全对偶：已知的、与调度相关的
+演化都是解析处理的，而积分中唯一剩下的与模型相关的量
+换成了数据预测。DPM-Solver\texttt{++} 针对这一确切形式
+给出了两个二阶实现：
 
 \begin{itemize}
-    \item \textbfs{单步求解器、DPM-Solver\texttt{++}(2S).}
-    在中间阶段使用额外的模型评估
-    当前步骤，类似于 DPM-Solver-2 的分阶段构建。
+    \item \textbfs{单步求解器，DPM-Solver\texttt{++}(2S).}
+    在当前步的中间点再做一次模型评估，
+    与 DPM-Solver-2 的分阶段构造相似。
 
-    \item \textbfs{多步求解器、DPM-Solver\texttt{++}(2M).}
-    重用前两个已完成步骤的数据预测。之后
-    热启动，每一步只需要评估一个新模型。
+    \item \textbfs{多步求解器，DPM-Solver\texttt{++}(2M).}
+    复用前两个已完成步的数据预测。启动阶段过后，
+    每一步只需再做一次新的模型评估。
 \end{itemize}
 
 \rmkb{
-如果没有阈值处理，将模型输出转换为数据预测是一个
-相同经验 PF-ODE 的逐点代数重新表达。数值
-尽管如此，方法仍然可以改变，因为有限步近似现在是
-应用于数据预测而不是噪声预测。如果
-使用阈值，它是对模型输出的额外修改
-并且应该与下面的数字顺序分析分开看待。
+若不加阈值处理，把模型输出换算成数据预测只是对同一条
+经验 PF-ODE 作逐点的代数改写。尽管如此，数值方法仍会随之改变，
+因为有限步近似现在施加在数据预测上，而不再是噪声预测。
+若使用阈值处理，那是对模型输出的额外改动，
+应当与下面的阶数分析分开来看。
 }
 
 \subsection{DPM-Solver\texttt{++} 的单步法：泰勒展开}
 \label{subsec:dpm-solver++-single}
 
-按照 \Cref{subsec:dpm-method-2} 中的 DPM-Solver构建，
-DPM-Solver\texttt{++} 沿着经验近似数据预测
-通过对数 SNR 时间内局部泰勒展开的轨迹。对于 $k\geq0$，表示
-其沿经验 PF-ODE 轨迹的 $k$ 全导数为
+沿用 \Cref{subsec:dpm-method-2} 中 DPM-Solver 的构造方式，
+DPM-Solver\texttt{++} 在对数 SNR 时间中用局部泰勒展开
+来近似数据预测沿轨迹的演化。对 $k\geq0$，记其沿经验 PF-ODE
+轨迹的 $k$ 阶全导数为
 \[
 \hat{\rvx}_{\bm{\phi}^\times}^{(k)}
 (\hat\rvx_\lambda,\lambda)
@@ -3629,10 +3390,11 @@ DPM-Solver\texttt{++} 沿着经验近似数据预测
 (\hat\rvx_\lambda,\lambda).
 \]
 
-对于从 $t_{i-1}$ 到 $t_i$ 的一步，设 $h_i
+对从 $t_{i-1}$ 到 $t_i$ 的一步，设
+$h_i
 :=
 \lambda_{t_i}-\lambda_{t_{i-1}}
->0$。关于 $\lambda_{t_{i-1}}$ 的泰勒展开给出
+>0$。在 $\lambda_{t_{i-1}}$ 处的泰勒展开给出
 \[
 \hat{\rvx}_{\bm{\phi}^\times}
 (\hat\rvx_\lambda,\lambda)
@@ -3654,7 +3416,7 @@ k!
 (\lambda-\lambda_{t_{i-1}})^n
 \bigr).
 \]
-将此扩展代入 \Cref{eq:dpmpp-data-exact} 得到
+把这一展开代入 \Cref{eq:dpmpp-data-exact}，得到
 \begin{align}
 \label{eq:dpmpp-taylor-expansion}
 \widetilde\bPsi_{t_{i-1}\to t_i}
@@ -3675,7 +3437,7 @@ h_i^{k+1}
 +
 \mathcal O(h_i^{n+1}),
 \end{align}
-其中 $\varphi_m$ 在 \Cref{eq:analytic_expansion} 中定义。这里我们使用了
+其中 $\varphi_m$ 的定义见 \Cref{eq:analytic_expansion}。这里用到了
 \[
 \int_{\lambda_{t_{i-1}}}^{\lambda_{t_i}}
 e^\lambda
@@ -3690,10 +3452,10 @@ e^{\lambda_{t_i}}
 h_i^{k+1}
 \varphi_{k+1}(-h_i),
 \]
-与...一起
+以及关系式
 $\sigma_{t_i}e^{\lambda_{t_i}}=\alpha_{t_i}$。
 
-对于 $n=1$，删除 $\mathcal O(h_i^2)$ 余数给出
+取 $n=1$ 并丢掉 $\mathcal O(h_i^2)$ 余项，得到
 \[
 \tilde\rvx_{t_i}
 =
@@ -3713,8 +3475,8 @@ $\sigma_{t_i}e^{\lambda_{t_i}}=\alpha_{t_i}$。
 \]
 这正是数据预测形式的确定性 DDIM 更新。
 
-对于 $n=2$，一阶全导数使用附加函数来近似
-步内阶段。对于中点选择，定义
+取 $n=2$ 时，一阶全导数要用步内的一个附加阶段来近似。
+取中点，定义
 \[
 s_i^{\mathrm{mid}}
 :=
@@ -3723,7 +3485,7 @@ t_\lambda
 \lambda_{t_{i-1}}+\frac{h_i}{2}
 \right).
 \]
-一阶 DPM-Solver\texttt{++} 步骤预测中点状态
+用一步一阶 DPM-Solver\texttt{++} 预测出中点状态
 \[
 \rvu_i
 =
@@ -3740,15 +3502,15 @@ t_\lambda
 \right)
 \rmD_{i-1},
 \]
-我们评估
+随后计算
 \[
 \rmD_i^{\mathrm{mid}}
 :=
 \rvx_{\bm{\phi}^\times}
 (\rvu_i,s_i^{\mathrm{mid}}).
 \]
-然后，中点 DPM-Solver\texttt{++}(2S) 更新特别采用
-简单的形式
+于是，中点形式的 DPM-Solver\texttt{++}(2S) 更新具有
+格外简洁的形式
 \[
 \tilde\rvx_{t_i}
 =
@@ -3761,29 +3523,33 @@ t_\lambda
 \right)
 \rmD_i^{\mathrm{mid}}.
 \]
-与中点 DPM-Solver-2 一样，这种简化的两阶段更新不同于
-直接二阶泰勒/有限差分构造仅通过
-$\mathcal O(h_i^3)$ 因此保留了二阶精度。
+与中点 DPM-Solver-2 一样，这一简化的两阶段更新与直接按
+二阶泰勒展开／有限差分得到的构造只相差 $\mathcal O(h_i^3)$，
+因此仍保持二阶精度。
 
-这会产生单步 DPM-Solver\texttt{++} 施工。当 $n=1$，它精确地简化为数据预测形式的确定性 DDIM 更新。当 $n=2$，近似第一个总数 $\lambda$-使用额外的步内模型评估的导数给出
-\emph{DPM-Solver\texttt{++}(2S)}，DPM-Solver-2 的数据预测对应项 \Cref{alg:dpm-solver-2}。其中点实现总结为 \Cref{alg:dpmpp-2s-mid}.
+这就构成了单步的 DPM-Solver\texttt{++} 构造。$n=1$ 时它精确简化为
+数据预测形式的确定性 DDIM 更新；$n=2$ 时，用一步之内的额外
+模型评估来近似关于 $\lambda$ 的一阶全导数，就得到
+\emph{DPM-Solver\texttt{++}(2S)}，即 \Cref{alg:dpm-solver-2} 中
+DPM-Solver-2 的数据预测对应版本。其中点实现汇总于
+\Cref{alg:dpmpp-2s-mid}。
 \begin{algorithm}[H]
     \centering
-    \caption{DPM-Solver\texttt{++}（2S）：中点特殊情况。}
+    \caption{DPM-Solver\texttt{++}(2S)：中点特例。}
     \label{alg:dpmpp-2s-mid}
     \begin{algorithmic}[1]
     \Require 初始值 $\rvx_T$，时间步长 $\{t_i\}_{i=0}^M$，数据预测模型 $\rvx_{\bphi^\times}$
 
     \State $\tilde\rvx_{t_0}\gets\rvx_T$
-    \State $\lambda_{t_i}\gets\log(\alpha_{t_i}/\sigma_{t_i})$
-    用于 $i=0,\ldots,M$
+    \State $\lambda_{t_i}\gets\log(\alpha_{t_i}/\sigma_{t_i})$，
+    对 $i=0,\ldots,M$
     \State
     $\rmD_0
     \gets
     \rvx_{\bphi^\times}(\tilde\rvx_{t_0},t_0)$
-    \Comment{缓存启动预测}
+    \Comment{存下启动时的预测}
 
-    \For{$i\gets1$ \textbf{至} $M$}
+    \For{$i\gets1$ \textbf{to} $M$}
         \State
         $h_i
         \gets
@@ -3808,14 +3574,14 @@ $\mathcal O(h_i^3)$ 因此保留了二阶精度。
         1-e^{-h_i/2}
         \right)
         \rmD_{i-1}$
-        \Comment{预测中点阶段}
+        \Comment{预测中点阶段的状态}
 
         \State
         $\rmD_i^{\mathrm{mid}}
         \gets
         \rvx_{\bphi^\times}
         (\rvu_i,s_i^{\mathrm{mid}})$
-        \Comment{在中点评估}
+        \Comment{在中点处求值}
 
         \State
         $\tilde\rvx_{t_i}
@@ -3835,7 +3601,7 @@ $\mathcal O(h_i^3)$ 因此保留了二阶精度。
             \gets
             \rvx_{\bphi^\times}
             (\tilde\rvx_{t_i},t_i)$
-            \Comment{下一步的缓存}
+            \Comment{留给下一步使用}
         \EndIf
     \EndFor
 
@@ -3847,8 +3613,17 @@ $\mathcal O(h_i^3)$ 因此保留了二阶精度。
 \subsection{DPM-Solver\texttt{++} 的多步法：复用历史预测}
 \label{subsec:dpm-solver++-multi}
 
-DPM-Solver\texttt{++}（2S）通过引入额外的模型评估获得二阶信息 \emph{在当前步骤内}。 DPM-Solver\texttt{++}(2M) 采用不同的路线：它重用之前已完成步骤的模型预测来估计相同的局部变化。初始化后，每个步骤仅需要一次新模型评估，从而在相同的 NFE 预算下允许更多、因此更小的数值步骤。这在强指导下特别有用，因为大的步长会降低数值稳定性。这个想法很简单。回想一下，二阶展开式
-\Cref{eq:dpmpp-taylor-expansion} 需要当前数据预测及其相对于的一阶全导数 $\lambda$。单步方法使用新的步内阶段来估计该导数；相反，多步方法根据模型预测的最近历史记录来估计它。对于第一步，没有可用的历史记录，因此我们使用一阶数据预测更新进行初始化
+DPM-Solver\texttt{++}(2S) 是在\emph{当前步之内}引入额外的模型评估
+来取得二阶信息的。DPM-Solver\texttt{++}(2M) 走的是另一条路：
+它复用此前已完成各步的模型预测来估计同一份局部变化。
+这样一来，除启动阶段外，每步只需一次新的模型评估，
+因而在相同的 NFE 预算下可以安排更多、也就是更小的数值步。
+这在强引导下尤其有用，因为步长一大，数值稳定性就会变差。
+思路本身很简单。回忆二阶展开式
+\Cref{eq:dpmpp-taylor-expansion} 需要当前的数据预测以及它
+关于 $\lambda$ 的一阶全导数。单步法用一个新的步内阶段来估计
+这个导数；多步法则改为根据模型预测最近的历史来估计它。
+第一步时还没有历史可用，因此先用一阶数据预测更新作初始化
 \[
 \tilde\rvx_{t_1}
 =
@@ -3866,7 +3641,8 @@ DPM-Solver\texttt{++}（2S）通过引入额外的模型评估获得二阶信息
 \rvx_{\bm{\phi}^\times}
 (\tilde\rvx_{t_0},t_0).
 \]
-这正是数据预测形式的确定性 DDIM 更新。一旦两个完成的步骤预测可用，对于 $i\geq2$ 定义
+这正是数据预测形式的确定性 DDIM 更新。一旦已有两步完成的预测，
+对 $i\geq2$ 定义
 \[
 \rmD_{i-1}
 :=
@@ -3878,8 +3654,7 @@ DPM-Solver\texttt{++}（2S）通过引入额外的模型评估获得二阶信息
 \rvx_{\bm{\phi}^\times}
 (\tilde\rvx_{t_{i-2}},t_{i-2}).
 \]
-保留前两项
-\Cref{eq:dpmpp-taylor-expansion} 给出
+在 \Cref{eq:dpmpp-taylor-expansion} 中保留前两项，得到
 \begin{align*}
 \widetilde\bPsi_{t_{i-1}\to t_i}
 (\tilde\rvx_{t_{i-1}})
@@ -3906,9 +3681,9 @@ h_i-1+e^{-h_i}
 +
 \mathcal O(h_i^3).
 \end{align*}
-因此，二阶更新所需的唯一额外数量是第一个总计 $\lambda$-数据预测的导数。不是在新的中间阶段评估模型，
-DPM-Solver\texttt{++}(2M) 根据之前的结果估计此导数
-已完成的步骤：
+可见二阶更新所需多出来的量，只有数据预测关于 $\lambda$
+的一阶全导数。DPM-Solver\texttt{++}(2M) 并不在新取的中间点上
+再评估一次模型，而是用此前已完成的各步来估计这个导数：
 \[
 \hat{\rvx}_{\bm{\phi}^\times}^{(1)}
 \bigl(
@@ -3922,9 +3697,9 @@ DPM-Solver\texttt{++}(2M) 根据之前的结果估计此导数
 h_{i-1}
 }.
 \]
-在标准平滑度假设下，这种后向差分存在误差
-$\mathcal O(h_{i-1})$。将其代入二阶展开式并
-收集两个预测项给出
+在标准的平滑性假设下，该后向差分的误差为
+$\mathcal O(h_{i-1})$。把它代入二阶展开式，
+再把两个预测项合并，得到
 \[
 \tilde\rvx_{t_i}^{\mathrm{poly}}
 =
@@ -3956,13 +3731,13 @@ h-1+e^{-h}
 1-e^{-h}
 }.
 \]
-当连续步长比率保持有界时，此加权多步更新
-具有一步局部缺陷 $\mathcal O(h_i^3)$。
+当相邻步长之比保持有界时，这一加权多步更新的
+单步局部误差为 $\mathcal O(h_i^3)$。
 
-\paragraph{实用DPM-Solver\texttt{++}(2M)更新.}
-上面的表达式已经是一个有效的二阶多步构造。
-DPM-Solver\texttt{++}(2M) 使用稍微简单的系数，保留
-相同的顺序。自从
+\paragraph{实用的 DPM-Solver\texttt{++}(2M) 更新。}
+上面的表达式本身已经是有效的二阶多步构造。
+DPM-Solver\texttt{++}(2M) 改用稍简单一些的系数，
+同时保持相同的阶数。由于
 \[
 \beta(h)
 =
@@ -3978,7 +3753,7 @@ r_i
 :=
 \frac{h_i}{h_{i-1}}
 \]
-并将 $\rmD_i^{\mathrm{poly}}$ 替换为
+并把 $\rmD_i^{\mathrm{poly}}$ 换成
 \[
 \rmD_i^{\mathrm{sim}}
 :=
@@ -3989,7 +3764,7 @@ r_i
 \rmD_{i-1}-\rmD_{i-2}
 \right).
 \]
-等价地，
+等价地可写作
 \[
 \rmD_i^{\mathrm{sim}}
 =
@@ -3999,11 +3774,11 @@ r_i
 -
 \frac{r_i}{2}\rmD_{i-2}.
 \]
-解释很简单：两个最新的模型预测
-告诉我们数据预测变化的局部方向，以及
-$\rmD_i^{\mathrm{sim}}$ 将该趋势推断到当前步骤。
+这一做法的解释很直观：最近两次模型预测给出了
+数据预测变化的局部方向，而 $\rmD_i^{\mathrm{sim}}$
+把这个趋势外推到当前步。
 
-在相同的平滑度和有界步长比假设下，
+在同样的光滑性与步长比有界假设下，
 \[
 \rmD_i^{\mathrm{poly}}
 -
@@ -4020,9 +3795,9 @@ $\rmD_i^{\mathrm{sim}}$ 将该趋势推断到当前步骤。
 =
 \mathcal O(h_i),
 \]
-这种简化仅通过以下方式更改状态更新
-$\mathcal O(h_i^3)$。因此，它保留了二阶精度，给出
-实用DPM-Solver\texttt{++}(2M)更新
+这一简化给状态更新带来的改动只有 $\mathcal O(h_i^3)$。
+因此它保持了二阶精度，并给出实用的
+DPM-Solver\texttt{++}(2M) 更新
 \begin{mdframed}
 \[
 \tilde\rvx_{t_i}
@@ -4038,19 +3813,18 @@ $\mathcal O(h_i^3)$。因此，它保留了二阶精度，给出
 \]
 \end{mdframed}
 
-计算完 $\tilde\rvx_{t_i}$ 后，模型在新的
-状态，
+算出 $\tilde\rvx_{t_i}$ 之后，再在新状态上调用模型，
 \[
 \rmD_i
 =
 \rvx_{\bm{\phi}^\times}
 (\tilde\rvx_{t_i},t_i),
 \]
-并且该预测被缓存以供下一步使用。因此，在热启动后，
-每个 DPM-Solver\texttt{++}(2M) 步骤仅需要一次新模型评估。
+这一预测随后被存下来供下一步使用。因此在启动阶段之后，
+每个 DPM-Solver\texttt{++}(2M) 步只需一次新的模型评估。
 
 \rmkb{
-对于统一的 log-SNR 步骤，$r_i=1$，所以
+若各步在 log-SNR 上等距，则 $r_i=1$，于是
 \[
 \rmD_i^{\mathrm{sim}}
 =
@@ -4058,18 +3832,16 @@ $\mathcal O(h_i^3)$。因此，它保留了二阶精度，给出
 -
 \frac{1}{2}\rmD_{i-2}.
 \]
-系数 $(\frac32,-\frac12)$ 是熟悉的 AB2 外推法
-\emph{模型预测}的权重。完整的
-DPM-Solver\texttt{++}(2M) 更新仍然不是简单的 AB2：已知
-扩散依赖性因子
-$\alpha_{t_i}(1-e^{-h_i})$ 被保留分析。
+系数 $(\frac32,-\frac12)$ 正是熟悉的 AB2 外推
+在\emph{模型预测}上的权重。但完整的
+DPM-Solver\texttt{++}(2M) 更新并不等同于简单的 AB2：
+已知的扩散依赖因子 $\alpha_{t_i}(1-e^{-h_i})$ 是解析保留的。
 }
 
-完整的热启动和两步程序总结于
-\Cref{alg:dpmpp-2m}。与的主要区别
-DPM-Solver\texttt{++}(2S) 是二阶信息的来源：
-2S 从当前步骤内的附加阶段获取它，而 2M
-从之前完成的步骤中回收模型评估。
+完整的启动与两步流程汇总于 \Cref{alg:dpmpp-2m}。
+它与 DPM-Solver\texttt{++}(2S) 的主要区别在于二阶信息的来源：
+2S 取自当前步内的附加阶段，2M 则从之前已完成各步中
+回收模型评估。
 
 
 \begin{algorithm}[H]
@@ -4077,21 +3849,21 @@ DPM-Solver\texttt{++}(2S) 是二阶信息的来源：
     \caption{DPM-Solver\texttt{++}(2M).}
     \label{alg:dpmpp-2m}
     \begin{algorithmic}[1]
-    \Require 初始值$\rvx_T$，时间步长$\{t_i\}_{i=0}^M$，
+    \Require 初始值 $\rvx_T$，时间步长 $\{t_i\}_{i=0}^M$，
     数据预测模型 $\rvx_{\bphi^\times}$
 
     \State $\tilde\rvx_{t_0}\gets\rvx_T$
-    \State $\lambda_{t_i}\gets\log(\alpha_{t_i}/\sigma_{t_i})$
-    适用于$i=0,\ldots,M$
+    \State $\lambda_{t_i}\gets\log(\alpha_{t_i}/\sigma_{t_i})$，
+    对 $i=0,\ldots,M$
     \State
     $\rmD_0
     \gets
     \rvx_{\bphi^\times}
     (\tilde\rvx_{t_0},t_0)$
-    \Comment{缓存启动预测}
+    \Comment{存下启动时的预测}
 
     \Statex
-    \noindent\textbfs{案例一、热启动（$i=1$）}
+    \noindent\textbfs{情形一：启动步（$i=1$）}
 
     \State
     $h_1
@@ -4109,7 +3881,7 @@ DPM-Solver\texttt{++}(2S) 是二阶信息的来源：
     1-e^{-h_1}
     \right)
     \rmD_0$
-    数据预测中的\Comment{DDIM}
+    \Comment{数据预测形式的 DDIM}
 
     \If{$M>1$}
         \State
@@ -4117,11 +3889,12 @@ DPM-Solver\texttt{++}(2S) 是二阶信息的来源：
         \gets
         \rvx_{\bphi^\times}
         (\tilde\rvx_{t_1},t_1)$
-        \Comment{多步更新缓存}
-    \EndIf\Statex
-    \noindent\textbfs{案例二。两步多步更新（$i\geq2$）}
+        \Comment{供后续多步更新使用}
+    \EndIf
+    \Statex
+    \noindent\textbfs{情形二：两步多步更新（$i\geq2$）}
 
-    \For{$i\gets2$ \textbf{至} $M$}
+    \For{$i\gets2$ \textbf{to} $M$}
         \State
         $h_i
         \gets
@@ -4131,7 +3904,7 @@ DPM-Solver\texttt{++}(2S) 是二阶信息的来源：
         $r_i
         \gets
         h_i/h_{i-1}$
-        \Comment{步长比}
+        \Comment{相邻步长之比}
 
         \State
         $\rmD_i^{\mathrm{sim}}
@@ -4162,7 +3935,7 @@ DPM-Solver\texttt{++}(2S) 是二阶信息的来源：
             \gets
             \rvx_{\bphi^\times}
             (\tilde\rvx_{t_i},t_i)$
-            \Comment{one新型号来电；下一步缓存}
+            \Comment{调用一次新模型；存下供下一步用}
         \EndIf
     \EndFor
 
@@ -4173,17 +3946,15 @@ DPM-Solver\texttt{++}(2S) 是二阶信息的来源：
 \subsection{DPM-Solver\texttt{++}(2M) 与 DEIS 的关系}
 \label{subsec:dpm-deis}
 
-DPM-Solver\texttt{++}(2M) 和 DEIS 使用相同的基本多步思想：
-重用之前完成的步骤中的模型预测来近似
-神经预测在下一个时间间隔内发生变化，同时保持已知的
-依赖于扩散的权重分析。区别在于表示
-应用了这个想法。 DEIS 是早期使用噪声预测制定的
-在原始扩散时间内，而 DPM-Solver\texttt{++}(2M) 使用数据
-以对数 SNR 时间进行预测。
+DPM-Solver\texttt{++}(2M) 与 DEIS 用的是同一种基本的多步思路：
+复用此前已完成各步中的模型预测，来近似神经预测在下一个
+时间区间内的变化，同时把已知的、与扩散相关的权重
+解析地保留下来。二者的差别只在于这一想法是在什么表示下施加的。
+DEIS 是最早的版本，在原始扩散时间下用噪声预测写出；
+DPM-Solver\texttt{++}(2M) 则在对数 SNR 时间下使用数据预测。
 
-为了直接暴露连接，我们可以应用 DEIS 多项式
-精确数据预测积分的外推原理
-DPM-Solver\texttt{++}。回想一下
+为了把这一联系直接显出来，我们可以把 DEIS 的多项式外推原理
+施加到 DPM-Solver\texttt{++} 的精确数据预测积分上。回忆
 \[
 \widetilde\bPsi_{t_{i-1}\to t_i}
 (\tilde\rvx_{t_{i-1}})
@@ -4198,9 +3969,8 @@ e^\lambda
 (\hat\rvx_\lambda,\lambda)
 \diff\lambda.
 \]
-已知重量 $e^\lambda$ 已进行分析处理。唯一的
-因此，必须在步骤中近似的数量是数据
-预测
+已知权重 $e^\lambda$ 是解析处理的。因此在这一步中唯一需要
+近似的量就是数据预测
 \[
 \lambda
 \longmapsto
@@ -4208,9 +3978,9 @@ e^\lambda
 (\hat\rvx_\lambda,\lambda).
 \]
 
-使用两个最近缓存的预测
-$\rmD_{i-2}$ 和 $\rmD_{i-1}$，最简单的非常数近似是
-通过这两个锚点的唯一仿射多项式。在拉格朗日形式中，
+用最近缓存的两个预测 $\rmD_{i-2}$ 和 $\rmD_{i-1}$，
+最简单的非常数近似就是过这两个锚点的唯一仿射多项式。
+写成拉格朗日形式即
 \[
 P_1(\lambda)
 =
@@ -4228,8 +3998,7 @@ h_{i-1}
 }
 \rmD_{i-2}.
 \]
-相同的多项式可以围绕最近的更透明地编写
-锚定为
+同一个多项式若以最近的那个锚点为基点写出，则更清楚一些：
 \[
 P_1(\lambda)
 =
@@ -4244,13 +4013,11 @@ h_{i-1}
 \rmD_{i-1}-\rmD_{i-2}
 \right).
 \]
-第一个表达式是拉格朗日形式，第二个表达式是
-\emph{same} 仿射多项式的后向牛顿形式。因此，拉格朗日
-插值和后向差分不是数值上的不同
-这里的近似值；它们只是同一事物的两种表示
-双锚点外推法。
+第一个表达式是拉格朗日形式，第二个则是同一个仿射多项式的
+后向牛顿形式。可见在这里，拉格朗日插值与后向差分并不是
+两种不同的数值近似，而只是同一个双锚点外推的两种写法。
 
-在 DPM-Solver\texttt{++} 积分内应用此外推法可得出
+把这一外推代入 DPM-Solver\texttt{++} 的积分，得到
 \[
 \tilde\rvx_{t_i}^{\mathrm{poly}}
 =
@@ -4263,8 +4030,7 @@ e^\lambda
 P_1(\lambda)
 \diff\lambda.
 \]
-由于重量 $e^\lambda$ 已知，因此所需的两个矩可以为
-准确评估：
+由于权重 $e^\lambda$ 已知，所需的两个积分矩可以精确算出：
 \[
 \sigma_{t_i}
 \int_{\lambda_{t_{i-1}}}^{\lambda_{t_i}}
@@ -4290,7 +4056,7 @@ e^\lambda
 h_i-1+e^{-h_i}
 \right).
 \]
-代入这些系数得出
+把这些系数代入，得到
 \begin{align*}
 \tilde\rvx_{t_i}^{\mathrm{poly}}
 =
@@ -4314,7 +4080,7 @@ h_i-1+e^{-h_i}
 h_{i-1}
 }.
 \end{align*}
-等价地，
+等价地可写作
 \[
 \tilde\rvx_{t_i}^{\mathrm{poly}}
 =
@@ -4327,15 +4093,15 @@ h_{i-1}
 \right)
 \rmD_i^{\mathrm{poly}},
 \]
-其中 $\rmD_i^{\mathrm{poly}}$ 定义于
+其中 $\rmD_i^{\mathrm{poly}}$ 的定义见
 \Cref{subsec:dpm-solver++-multi}。
 
-这显示了与 DEIS 的精确连接。实用系数前
-简化后，DPM-Solver\texttt{++} 二阶多步更新为
-正是通过应用一级 DEIS 外推法得到的结果
-数据预测/对数 SNR 积分的原理。从这个意义上说，它是
-AB-DEIS-1 的数据预测/日志 SNR 类似物。实用的 DPM-Solver\texttt{++}(2M) 更新进一步简化了这一过程
-使用前序展开式的系数
+这就把与 DEIS 的联系精确地显示出来了。在采用实用系数作简化之前，
+DPM-Solver\texttt{++} 的二阶多步更新正是把一阶 DEIS 外推原理
+施加到数据预测／对数 SNR 积分上所得到的结果。在这个意义上，
+它就是 AB-DEIS-1 在数据预测／对数 SNR 表示下的对应版本。
+实用的 DPM-Solver\texttt{++}(2M) 更新则进一步利用上一阶展开
+来化简系数
 \[
 \beta(h_i)
 =
@@ -4343,7 +4109,7 @@ AB-DEIS-1 的数据预测/日志 SNR 类似物。实用的 DPM-Solver\texttt{++}
 +
 \mathcal O(h_i^2),
 \]
-这给出了
+于是有
 \[
 \frac{\beta(h_i)}{h_{i-1}}
 =
@@ -4353,15 +4119,14 @@ AB-DEIS-1 的数据预测/日志 SNR 类似物。实用的 DPM-Solver\texttt{++}
 \frac{h_i^2}{h_{i-1}}
 \right).
 \]
-因此，DPM-Solver\texttt{++}(2M) 取代
-$\beta(h_i)/h_{i-1}$ 通过$h_i/(2h_{i-1})$ 进行有效预测。
-自从
+因此，DPM-Solver\texttt{++}(2M) 把有效预测中的
+$\beta(h_i)/h_{i-1}$ 换成了 $h_i/(2h_{i-1})$。由于
 \[
 \rmD_{i-1}-\rmD_{i-2}
 =
 \mathcal O(h_{i-1}),
 \]
-这改变了有效预测
+这就使有效预测改变
 \[
 \mathcal O\left(
 \frac{h_i^2}{h_{i-1}}
@@ -4370,48 +4135,39 @@ $\beta(h_i)/h_{i-1}$ 通过$h_i/(2h_{i-1})$ 进行有效预测。
 =
 \mathcal O(h_i^2).
 \]
-状态更新中有效预测相乘的系数为
-$\alpha_{t_i}(1-e^{-h_i})=\mathcal O(h_i)$，所以由此产生的变化
-状态更新仅为$\mathcal O(h_i^3)$。因此，
-DPM-Solver\texttt{++}(2M) 和一次加权多项式更新为
-通常不同的有限步公式，但它们通过第二个一致
-订单。
+而状态更新中与有效预测相乘的系数是
+$\alpha_{t_i}(1-e^{-h_i})=\mathcal O(h_i)$，所以状态更新受到的影响
+只有 $\mathcal O(h_i^3)$。可见 DPM-Solver\texttt{++}(2M) 与那个
+加权多项式更新通常是两套不同的有限步公式，
+但二者都是二阶一致。
 
-这也凸显了为什么与 DEIS 的连接特定于
-DPM-Solver\texttt{++}(2M)：2M获取其附加二阶信息
-通过推断先前完成的步骤预测，而
-DPM-Solver\texttt{++}(2S) 从新的中间阶段获得它
-当前步骤。
+这也说明了为什么与 DEIS 的联系只针对 DPM-Solver\texttt{++}(2M)：
+2M 的二阶附加信息来自对先前已完成各步预测的外推，
+而 DPM-Solver\texttt{++}(2S) 的二阶信息则来自当前步内新取的中间阶段。
 
-完整的 DPM-Solver\texttt{++}(2M) 程序，包括其一阶
-热启动和每一步后缓存一个新数据预测是
-总结于\Cref{alg:dpmpp-2m}。
+DPM-Solver\texttt{++}(2M) 的完整流程——包括一阶的启动步，
+以及每一步之后存下一个新的数据预测——汇总于 \Cref{alg:dpmpp-2m}。
 
 
 \subsection{结束语}
-虽然我们的主要讨论集中在 DPM-Solver 和
-DPM-Solver\texttt{++}，将它们简单地放置在更广泛的范围中是有用的
-上下文。 DPM-Solver 源自噪声预测公式，而
-DPM-Solver\texttt{++} 使用数据预测重新构建求解器，其中
-在强大的 CFG 下可以表现得更有利。 DPM-Solver-v3~\citep{zheng2023dpm}
-通过引入更通用的模型表示进一步深化了这一想法
-其系数是使用预先计算的模型统计数据来选择的，以减少
-局部离散化误差。从这个意义上说，它使表征本身
-数值求解器设计的一部分。
+我们的讨论虽以 DPM-Solver 与 DPM-Solver\texttt{++} 为主，
+但把它们放进更大的图景中也很有益。DPM-Solver 源自噪声预测形式，
+DPM-Solver\texttt{++} 则改用数据预测来重构求解器——在较强的 CFG
+引导下，后一种形式往往表现更有利。DPM-Solver-v3~\citep{zheng2023dpm}
+把这一想法再推进一步，引入了一族更一般的模型表示，
+其系数借助预先算出的模型统计量来选取，以减小局部离散化误差。
+从这个意义上说，它把「表示」本身也变成了数值求解器设计的一部分。
 
-另一个相关方向是预测器-校正器框架。在分数中
-SDE 框架（参见 \Cref{ch:score-sde}），\emph{predictor} 推进了
-使用逆时动力学的数值步长进行采样，同时
-\emph{校正器}，通常是相同噪声水平下的朗之万型更新，
-使用分数进一步细化样本（参见 \Cref{sec:SMLD}）。这个
-预测-然后-优化模式也有一个经典的数值模拟。对于
-例如，Heun 方法首先用 Euler 预测端点，然后改进
-使用平均斜率进行数值更新。方法如
-UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
-专门用于扩散采样。我们不在这里追求这些扩展，
-但它们说明了本章同样更广泛的主题：有效
-扩散求解器将经典数值思想与特定结构相结合
-到扩散 PF-ODE。
+另一个相关方向是预测器—校正器框架。在分数 SDE 框架中
+（参见 \Cref{ch:score-sde}），\emph{预测器}用一个数值步按
+反向时间的动力学推进样本，而\emph{校正器}通常是在同一噪声水平上
+做一次朗之万型更新，利用分数进一步修正样本（参见 \Cref{sec:SMLD}）。
+这种「先预测、再修正」的模式在经典数值方法中也有对应物。例如
+Heun 方法先用 Euler 步预测出端点，再用平均斜率改进这一数值更新。
+UniPC~\citep{zhao2023unipc} 等方法则把预测器—校正器结构专门
+发展用于扩散采样。本书不再深入这些扩展，但它们恰好说明了
+贯穿本章的同一个主题：高效的扩散求解器总是把经典的数值思想
+与扩散 PF-ODE 的特定结构结合起来。
 
 
 
@@ -4446,7 +4202,7 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
   }
 
   
-  \subcaptionbox{生成过程中通过时间步长估计进行顺序采样。\label{fig:chaingraph}}
+  \subcaptionbox{生成过程中按时间步顺序采样。\label{fig:chaingraph}}
       [.485\textwidth][c]{
         \begin{adjustbox}{max width=\linewidth,center}
           \begin{tikzpicture}[->,thick,font=\small, x=1.4cm, y=1.4cm]
@@ -4464,7 +4220,7 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
       }
   \hfill
   
-  \subcaptionbox{具有跳过依赖性的 Picard 迭代。\label{fig:connectedgraph}}
+  \subcaptionbox{带跳跃依赖的 Picard 迭代。\label{fig:connectedgraph}}
       [.485\textwidth][c]{
         \begin{adjustbox}{max width=\linewidth,center}
           \begin{tikzpicture}[->,thick,font=\small, x=1.4cm, y=1.4cm]
@@ -4490,9 +4246,11 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
       }
 
   \vspace{-0.4em}
-  \caption{\textbfs{两个计算图的比较。}
-左：传统的时间步进 ODE 求解，其中解在时间上顺序传播。右图：Picard 迭代，它通过使用前一次迭代的结果同时更新所有时间节点来实现并行计算，从而避免了时间步进的严格顺序性质。
-\figcredit{改编自 \citet{shih2023parallel}.}
+  \caption{\textbfs{两种计算图的对比。}
+左：传统的时间步进 ODE 求解，解沿时间顺序向前传播。
+右：Picard 迭代，它借助上一次迭代的结果同时更新所有时间节点，
+从而实现并行计算，避开了时间步进所固有的严格顺序性。
+\figcredit{改编自 \citet{shih2023parallel}。}
 }
 \end{figure}
 
@@ -4500,11 +4258,13 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
 
 \subsection{从逐步推进到时间并行求解器}
 
-在前面的部分中，我们重点介绍了时间步进方法，该方法通过从先前时间演变来估计轨迹 $T$ 朝向任意 $t\in[0,T]$。让 
+前面几节介绍的都是时间步进方法：从先前时刻的状态出发，
+把轨迹从 $T$ 一步步推进到任意 $t\in[0,T]$。记
 \[
 \rvv_{\bphi^\times}(\rvx,t):=\rvf(\rvx, t) - \frac{1}{2}g^2(t) \rvs_{\bphi^\times}(\rvx,t)
 \]
-表示来自预训练扩散模型的经验 PF-ODE 漂移。确切的演变自 $T$ 到任何中间时间 $t$ 是：
+为预训练扩散模型给出的经验 PF-ODE 漂移。从 $T$ 精确演化到
+任一中间时刻 $t$ 的表达式为：
 \begin{equation}\label{eq:picard_T_to_t}
     \widetilde\bPsi_{T\to t}\big(\rvx(T)\big)
     =
@@ -4512,7 +4272,10 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
     + \int_{T}^{t}\rvv_{\bphi^\times}\big(\rvx(\tau),\tau\big)\diff\tau,
     \quad \rvx(T)\sim p_{\mathrm{prior}}.
 \end{equation}
-时间步长方案使用基于过去时间步长的离散更新来近似该积分。在本节中，我们转向 \emph{时间并行} 方法，示例为 \emph{ParaDiGMS}，它建立在经典皮卡迭代的基础上，以实现跨时间的并行集成。 ParaDiGMS 背后的关键思想是 \emph{交换计算资源以加快模拟速度}.
+时间步进方案用基于先前时间步的离散更新来近似这个积分。
+本节转向\emph{时间并行}方法，其代表是 \emph{ParaDiGMS}：
+它建立在经典的 Picard 迭代之上，从而在时间维度上并行地完成积分。
+ParaDiGMS 的核心想法是\emph{用更多的计算资源换取更快的模拟}。
 
 
 
@@ -4520,12 +4283,14 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
 \subsection{ParaDiGMS 方法论}
 
 
-\paragraph{用皮卡迭代求轨迹的不动点。}
-修复逆时采样的初始状态，
+\paragraph{用 Picard 迭代求轨迹的不动点。}
+先把反向时间采样的初始状态固定下来，
 \[
 \rvx_T\sim p_{\mathrm{prior}}.
 \]
-中的积分表达式 \Cref{eq:picard_T_to_t} 可以被视为一张映射，它采用整个候选轨迹并生成更新的轨迹。形式上，给定任何路径 $\{\rvy(\tau)\}_{\tau\in[0,T]}$，定义
+\Cref{eq:picard_T_to_t} 中的积分表达式可以看成一个映射：
+它以一整条候选轨迹为输入，输出一条更新后的轨迹。
+形式上，对任意路径 $\{\rvy(\tau)\}_{\tau\in[0,T]}$，定义
 \[
 (\mathcal{L}[\rvy(\cdot)])(t)
 =
@@ -4536,8 +4301,10 @@ UniPC~\citep{zhao2023unipc} 开发预测器-校正器结构
 \qquad
 t\in[0,T].
 \]
-也就是说， $\mathcal{L}$ 保持初始状态 $\rvx_T$ 使用沿候选路径评估的速度修复并更新轨迹的其余部分。解轨迹 $\rvx^*(\cdot)$ 经验 PF-ODE 的
-$\rvx^*(T)=\rvx_T$ 正是这个映射的\emph{不动点}：
+也就是说，$\mathcal{L}$ 把初始状态 $\rvx_T$ 固定住，
+而用沿候选路径评估出的速度来更新轨迹的其余部分。
+经验 PF-ODE 的精确解轨迹 $\rvx^*(\cdot)$（满足
+$\rvx^*(T)=\rvx_T$）正是这个映射的\emph{不动点}：
 \[
 \rvx^*(t)
 =
@@ -4548,9 +4315,10 @@ $\rvx^*(T)=\rvx_T$ 正是这个映射的\emph{不动点}：
 \int_T^t
 \rvv_{\bphi^\times}\big(\rvx^*(\tau),\tau\big)\diff\tau.
 \]
-因此，我们可以搜索与该积分方程一致的整个轨迹，而不是严格地一步一步地构造轨迹。从最初的猜测开始 $\rvx^{(0)}(\cdot)$ 满意
-$\rvx^{(0)}(T)=\rvx_T$，例如常量路径
-$\rvx^{(0)}(t)\equiv\rvx_T$，皮卡迭代重复应用此图：
+因此，我们不必严格地一步步构造轨迹，而可以直接去搜索
+与这个积分方程相符的整条轨迹。从满足 $\rvx^{(0)}(T)=\rvx_T$ 的
+初始猜测 $\rvx^{(0)}(\cdot)$ 出发（例如取常数路径
+$\rvx^{(0)}(t)\equiv\rvx_T$），Picard 迭代反复施加这一映射：
 \begin{align}\label{eq:picard_iter_T_to_t}
 \rvx^{(k+1)}(t)
 =
@@ -4562,27 +4330,32 @@ $\rvx^{(0)}(t)\equiv\rvx_T$，皮卡迭代重复应用此图：
 \rvv_{\bphi^\times}
 \big(\rvx^{(k)}(\tau),\tau\big)\diff\tau,
 \end{align}
-与 $k=0,1,2,\ldots$。每次迭代都会评估沿先前轨迹的速度，并使用这些评估来更新所有时间点的轨迹。
+其中 $k=0,1,2,\ldots$。每一次迭代都沿上一条轨迹评估速度，
+再用这些评估同时更新所有时间点上的轨迹。
 
-\paragraph{上的离散 Picard $T$ 至 $0$ 网格。}
-转动 \Cref{eq:picard_iter_T_to_t} 在实际算法中，我们在 $[0,T]$ 通过选择步数 $M$, 设置
+\paragraph{$T$ 到 $0$ 的网格上的离散 Picard 迭代。}
+为把 \Cref{eq:picard_iter_T_to_t} 变成实际可用的算法，
+我们在 $[0,T]$ 上取步数 $M$，令
 $\Delta t := T/M$，并定义
 \[
 t_j := T - j \Delta t,
 \quad j=0,1,\ldots,M,
 \]
-所以 $t_0=T$ 和 $t_M=0$。将采样迭代表示为
+因此 $t_0=T$，$t_M=0$。把第 $k$ 次迭代的采样值记为
 \[
 \rvx^{(k)}_j := \rvx^{(k)}(t_j).
 \]
-因为网格在时间上反向运行，所以积分 $T$ 至 $t_j$ 具有负方向。通过分区上的左端点来近似它 $\{[t_{i+1},t_i]\}_{i=0}^{j-1}$ 给出
+由于网格沿时间反向排列，从 $T$ 到 $t_j$ 的积分方向为负。
+用各子区间 $\{[t_{i+1},t_i]\}_{i=0}^{j-1}$ 上的左端点来近似它，
+得到
 \[
 \int_{T}^{t_j}\rvv_{\bphi^\times}(\rvx^{(k)}(\tau), \tau) \diff\tau
  \approx 
 - \Delta t \sum_{i=0}^{j-1} \rvv_{\bphi^\times}\big(\rvx^{(k)}_{i}, t_i\big),
 \]
-由于每个小积分超过 $[t_{i+1},t_i]$ 等于
-$- \int_{t_i}^{t_{i+1}} \cdot\diff\tau$。将此近似值代入 \Cref{eq:picard_iter_T_to_t} 产生离散 Picard 更新
+这是因为在每个 $[t_{i+1},t_i]$ 上的小积分等于
+$- \int_{t_i}^{t_{i+1}} \cdot\diff\tau$。把这一近似代入
+\Cref{eq:picard_iter_T_to_t}，即得离散 Picard 更新
 \begin{equation}\label{eq:discrete_picard_decreasing}
 \rvx^{(k+1)}_j
 =
@@ -4593,14 +4366,15 @@ $- \int_{t_i}^{t_{i+1}} \cdot\diff\tau$。将此近似值代入 \Cref{eq:picard_
 \sum_{i=0}^{j-1}
 \rvv_{\bphi^\times}
 \big(\rvx^{(k)}_i,t_i\big)
-}_{\substack{\text{cumulative sum}\\\text{of drifts}}},
+}_{\substack{\text{漂移的}\\\text{累积和}}},
 \qquad
 j=1,\ldots,M.
 \end{equation}
-该方案简单且并行友好：每次漂移评估
-$\rvv_{\bphi^\times} \big(\rvx^{(k)}_i,t_i\big)$ 仅取决于同一时间节点的前一次迭代 $t_i$，所以所有 $i=0,\dots,j - 1$
-可以跨网格独立计算评估。然后通过串行或并行执行的累积和来恢复积分
-\emph{前缀和（扫描/滑动窗口）}.
+这一方案简单，而且很适合并行：每一次漂移评估
+$\rvv_{\bphi^\times} \big(\rvx^{(k)}_i,t_i\big)$ 只依赖同一时间节点
+$t_i$ 上一次迭代的取值，因此所有 $i=0,\dots,j-1$ 都可以在网格上
+独立地并行计算。积分本身则通过一次累积和来还原，也就是
+\emph{前缀和}（扫描／滑动窗口），既可串行也可并行实现。
 
 
 \paragraph{滑动窗口和并行评估。}
@@ -4609,21 +4383,21 @@ $\rvv_{\bphi^\times} \big(\rvx^{(k)}_i,t_i\big)$ 仅取决于同一时间节点�
     \begin{minipage}[t]{0.30\textwidth}
         \centering
         \includegraphics[width=\linewidth]{Images/PartC/paradigm-1.pdf}
-        \caption{计算漂移 $\rvx^{(k)}_{\ell:\ell+p}$ 在大小的批处理窗口上 $p=4$，并联}
+        \caption{在长度为 $p=4$ 的批处理窗口上并行计算漂移 $\rvx^{(k)}_{\ell:\ell+p}$}
         \label{fig:picard_1}
     \end{minipage}
     \hspace{0.03\textwidth} 
     \begin{minipage}[t]{0.30\textwidth}
         \centering
         \includegraphics[width=\linewidth]{Images/PartC/paradigm-2.pdf}
-        \caption{将值更新为 $\rvx^{(k+1)}_{\ell:\ell+p}$ 使用窗口中点的累积漂移}
+        \caption{用窗口内累积的漂移把取值更新为 $\rvx^{(k+1)}_{\ell:\ell+p}$}
         \label{fig:picard_2}
     \end{minipage}
     \hspace{0.03\textwidth} 
     \begin{minipage}[t]{0.30\textwidth}
         \centering
         \includegraphics[width=\linewidth]{Images/PartC/paradigm-3.pdf}
-        \caption{根据错误确定窗口向前滑动多远 $\lVert \rvx^{(k+1)}_i - \rvx^{(k)}_i \rVert^2$.}
+        \caption{依据误差 $\lVert \rvx^{(k+1)}_i - \rvx^{(k)}_i \rVert^2$ 决定窗口向前滑动多远。}
         \label{fig:picard_3}
     \end{minipage}
     
@@ -4632,17 +4406,22 @@ $\rvv_{\bphi^\times} \big(\rvx^{(k)}_i,t_i\big)$ 仅取决于同一时间节点�
 \end{figure}
 
 
-离散 Picard 更新 \Cref{eq:discrete_picard_decreasing} 表示每个 $\rvx^{(k+1)}_j$ 作为固定初始值 $\rvx_T$ 减去漂移的累积和。为了限制内存并利用并行硬件，可以方便地将相同的想法局部应用到短的滑动索引块上。固定窗口长度 $p$ 和左索引 $\ell$;然后窗口覆盖
-$j=\ell,\ldots,\ell+p$ 与 $t_\ell>t_{\ell+1}>\cdots>t_{\ell+p}$。迭代期间 $k$:
+离散 Picard 更新 \Cref{eq:discrete_picard_decreasing} 把每个
+$\rvx^{(k+1)}_j$ 写成固定初始值 $\rvx_T$ 减去漂移的累积和。
+为了控制内存占用并充分利用并行硬件，比较方便的做法是把同一想法
+局部地施加在较短的滑动索引块上。固定窗口长度 $p$ 与左端索引 $\ell$，
+窗口即覆盖 $j=\ell,\ldots,\ell+p$，对应
+$t_\ell>t_{\ell+1}>\cdots>t_{\ell+p}$。在第 $k$ 次迭代中：
 
-\subparagraph{步骤 1. 窗口上的并行漂移评估。}
-并行计算并仅使用先前的迭代，
+\subparagraph{第 1 步：窗口上的并行漂移评估。}
+只使用上一次迭代的结果并行计算
 \[
 \rvv_{\bphi^\times} \big(\rvx^{(k)}_{\ell+i}, t_{\ell+i}\big),
 \quad i=0,1,\ldots,p-1.
 \]
-这些是 $p$ 从左边缘前进所需的局部增量
-$t_\ell$ 窗外。\subparagraph{步骤 2. 左锚定累积更新。}
+这些就是从窗口左边缘 $t_\ell$ 出发、向前推进所需的 $p$ 个局部增量。
+
+\subparagraph{第 2 步：左端锚定的累积更新。}
 通过锚定在 $j=\ell$ 并累积子区间的漂移来形成窗口更新：
 \begin{equation}\label{eq:window_update}
 \rvx^{(k+1)}_{\ell+j+1}
@@ -4652,84 +4431,83 @@ $t_\ell$ 窗外。\subparagraph{步骤 2. 左锚定累积更新。}
 \rvv_{\bphi^\times} \big(\rvx^{(k)}_{\ell+i}, t_{\ell+i}\big),
 \quad j=0,1,\ldots,p-1.
 \end{equation}
-这是本地的、窗口化的对应项
-\Cref{eq:discrete_picard_decreasing}，当前左边界值
-$\rvx^{(k)}_\ell$ 用作窗口的锚点。减号
-反映了时间递减的方向。内部和是前缀和
-加窗漂移，因此可以有效地生成所有部分和
-并行硬件。
+这就是 \Cref{eq:discrete_picard_decreasing} 在窗口上的局部对应式，
+其中以窗口当前的左端取值 $\rvx^{(k)}_\ell$ 作为锚点。
+这里的负号反映了时间递减的方向。式中的和是窗口内漂移的
+前缀和，因此在并行硬件上可以高效地一次算出所有部分和。
 
-\subparagraph{步骤 3. 进度控制和窗口前进。}
-在当前窗口上形成左锚定累积更新（Step~2），
-我们现在决定将该窗口滑动多远。我们测量局部收敛
-通过逐点皮卡变化
+\subparagraph{第 3 步：进度控制与窗口前移。}
+在当前窗口上完成左端锚定的累积更新（第 2 步）之后，
+我们要决定这个窗口向前滑动多远。局部收敛情况用
+逐点的 Picard 变化量来度量：
 \[
 \mathtt{error}_j
 :=
 \big\|\rvx^{(k+1)}_{\ell+j}-\rvx^{(k)}_{\ell+j}\big\|^2,
 \quad j=1,\ldots,p-1,
 \]
-并将其与规定的公差 $\mathtt{tol}_{\ell+j}$ 进行比较。也就是说，$\mathtt{error}_j$ 测量节点 $\ell+j$ 的迭代在最后一次 Picard 期间发生了多少变化
-更新。如果这个数字很小，则表明两者之间存在局部一致性
-逐次逼近，从而实现定点的局部收敛
-在该节点进行迭代。如果很大，说明该节点还没有稳定下来，需要
-更多皮卡平滑。
+再把它与事先给定的容差 $\mathtt{tol}_{\ell+j}$ 比较。也就是说，
+$\mathtt{error}_j$ 度量的是节点 $\ell+j$ 上的迭代值在最近一次
+Picard 更新中改变了多少。若该值很小，说明相邻两次近似在该处
+已经局部吻合，Picard 迭代在该节点处已局部收敛到不动点；
+若该值很大，则说明该节点尚未稳定下来，还需要更多次 Picard 平滑。
 
 
-\emph{stride} 被选为窗口中失败的第一个索引
-测试（如果没有失败，则使用全窗口长度 $p$）：
+\emph{步幅}（stride）取窗口中第一个未通过检验的索引；
+若全部通过，则取整个窗口长度 $p$：
 \[
 \mathtt{stride}
 :=
 \min\Big(\,\{\,j\ge 1:\ \mathtt{error}_j>\mathtt{tol}_{\ell+j}\,\}\ \cup\ \{p\}\Big).
 \]
-然后我们通过设置$\ell \leftarrow \ell+\mathtt{stride}$来滑动窗口。  换句话说：我们接受从左边缘到（但不包括）的所有节点
-第一个尚未收敛的；如果所有节点都收敛，我们接受
-整个窗口。然后我们将窗口滑动到许多已接受的节点，
-$\ell \leftarrow \ell+\mathtt{stride}$，然后继续。这提前了
-最大窗口长度$p$，从不跳过任何未满足其要求的节点
-宽容。如果滑动会超出网格末端 $M$，我们将窗口截断为
-$p \leftarrow \min\{p,\,M-\ell\}$ 并继续。
+随后令 $\ell \leftarrow \ell+\mathtt{stride}$ 来滑动窗口。换句话说：
+从窗口左端一直到第一个尚未收敛的节点之前，全部予以接受；
+若所有节点都已收敛，则接受整个窗口。然后把窗口推进已接受的
+这么多节点，即 $\ell \leftarrow \ell+\mathtt{stride}$，再继续。
+这样每次最多只前进 $p$ 个节点，并且绝不会跳过任何尚未满足容差的节点。
+若推进后会越过网格末端 $M$，就把窗口截短为
+$p \leftarrow \min\{p,\,M-\ell\}$ 后继续。
 
 
 
-当窗口向前移动时，它会发现新的时间节点
-还没有值。要在那里开始 Picard 迭代，我们只需复制该值
-从窗口的左边界开始，并将其用作初始猜测。这个
-“不断外推”是便宜且稳定的，并且将被稍后纠正
-更新。如果需要，可以用更准确的猜测来代替它，例如线性
-或根据过去的点进行多项式外推。
+窗口向前推移时，会露出一些尚无取值的新时间节点。
+要在这些节点上启动 Picard 迭代，只需把窗口左端的取值复制过去，
+作为初始猜测。这种「常数外推」代价很小、也比较稳定，
+后续更新会把它逐步纠正过来。若有需要，也可以换成更准确的猜测，
+例如按过去的若干节点作线性或多项式外推。
 
-至此，ParaDiGMS 的流程就完成了。我们总结了 \Cref{alg:paradigms} 中的算法。
+至此，ParaDiGMS 的流程就完整了。整个算法汇总于 \Cref{alg:paradigms}。
 
 \begin{algorithm}[t]
   \caption{带滑动窗口的 ParaDiGMS}
   \label{alg:paradigms}
   \begin{algorithmic}[1]
-    \Require 漂移 $\rvv_{\bphi^\times}(\rvx,t)$; $\{t_j\}_{j=0}^{M}$;窗口长度 $p$; $\{\mathtt{tol}_j\}_{j=1}^{M}$
-    \Ensure 近似轨迹 $\{\rvx^{(k)}_j\}_{j=0}^{M}$ 与 $\rvx^{(k)}_M$ 在 $t=0$
+    \Require 漂移 $\rvv_{\bphi^\times}(\rvx,t)$；$\{t_j\}_{j=0}^{M}$；窗口长度 $p$；$\{\mathtt{tol}_j\}_{j=1}^{M}$
+    \Ensure 近似轨迹 $\{\rvx^{(k)}_j\}_{j=0}^{M}$，以及在 $t=0$ 处的 $\rvx^{(k)}_M$
     \State $k \gets 0$, $\ell \gets 0$ 
-    \State 样品 $\rvx^{(0)}_0 \sim p_{\mathrm{prior}}$;设置 $\rvx^{(0)}_j \gets \rvx^{(0)}_0$ 用于 $j=1,\ldots,\min(p,M)$  \Statex \Comment{常数外推}
+    \State 抽取 $\rvx^{(0)}_0 \sim p_{\mathrm{prior}}$；并令 $\rvx^{(0)}_j \gets \rvx^{(0)}_0$，$j=1,\ldots,\min(p,M)$
+    \Statex \Comment{常数外推}
     \While{$\ell < M$}
       \State $J \gets \min(p,  M-\ell)$   \Comment{当前窗口长度}
-      \State \textbfs{第 1 步：并行} 
-      \State 对于 $i=0,\ldots,J-1$: $g_i \gets \rvv_{\bphi^\times} \big(\rvx^{(k)}_{\ell+i},\, t_{\ell+i}\big)$ 
-      \Statex \Comment{与先前迭代的偏差（皮卡冻结）}
-      \State 计算前缀和 $S_j \gets \sum_{i=0}^{j} g_i$ 用于 $j=0,\ldots,J-1$ 
-      \Statex \Comment{扫描窗口漂移}
-      \State \textbfs{步骤 2：累积更新} 
-      \State 对于 $j=0,\ldots,J-1$: $\displaystyle \rvx^{(k+1)}_{\ell+j+1} \gets \rvx^{(k)}_{\ell} - \Delta t\, S_j$ 
-      \Statex \Comment{左锚定更新；参见\ \Cref{eq:window_update}}
-      \State \textbfs{步骤 3：进度控制和窗口前进} 
-      \State 对于 $j=1,\ldots,J-1$: $\mathtt{error}_j \gets \big\|\rvx^{(k+1)}_{\ell+j}-\rvx^{(k)}_{\ell+j}\big\|^2$ \Statex \Comment{逐点皮卡变化}
+      \State \textbfs{第 1 步：并行评估}
+      \State 对 $i=0,\ldots,J-1$：$g_i \gets \rvv_{\bphi^\times} \big(\rvx^{(k)}_{\ell+i},\, t_{\ell+i}\big)$
+      \Statex \Comment{冻结在先前迭代上作 Picard 评估}
+      \State 计算前缀和 $S_j \gets \sum_{i=0}^{j} g_i$，$j=0,\ldots,J-1$
+      \Statex \Comment{对窗口内漂移作扫描求和}
+      \State \textbfs{第 2 步：累积更新}
+      \State 对 $j=0,\ldots,J-1$：$\displaystyle \rvx^{(k+1)}_{\ell+j+1} \gets \rvx^{(k)}_{\ell} - \Delta t\, S_j$
+      \Statex \Comment{左端锚定更新；参见 \Cref{eq:window_update}}
+      \State \textbfs{第 3 步：进度控制与窗口前移}
+      \State 对 $j=1,\ldots,J-1$：$\mathtt{error}_j \gets \big\|\rvx^{(k+1)}_{\ell+j}-\rvx^{(k)}_{\ell+j}\big\|^2$
+      \Statex \Comment{逐点 Picard 变化量}
       \State $\displaystyle \mathtt{stride} \gets \min \Big(\,\{\,j\in\{1,\ldots,J-1\}:~\mathtt{error}_j>\mathtt{tol}_{\ell+j}\,\}\ \cup\ \{J\}\Big)$
-      \State \textbfs{初始化新节点} 
-        \State 对于 $r=1,\ldots,\min\{\mathtt{stride},\,M-\ell-J\}$:
+      \State \textbfs{初始化新节点}
+        \State 对 $r=1,\ldots,\min\{\mathtt{stride},\,M-\ell-J\}$：
         $\rvx^{(k+1)}_{\ell+J+r}
         \gets
-        \rvx^{(k+1)}_{\ell+J}$ 
-      \Statex \Comment{不断外推到新公开的指数}
-      \State $\ell \gets \ell + \mathtt{stride}$;\quad $k \gets k+1$
+        \rvx^{(k+1)}_{\ell+J}$
+      \Statex \Comment{用常数外推填充新露出的索引}
+      \State $\ell \gets \ell + \mathtt{stride}$；\quad $k \gets k+1$
     \EndWhile
     \State \Return $\{\rvx^{(k)}_j\}_{j=0}^{M}$
   \end{algorithmic}
@@ -4740,12 +4518,21 @@ $p \leftarrow \min\{p,\,M-\ell\}$ 并继续。
 
 \subsection{与时间步进求解器的关系}
 
-\paragraph{滑动窗口尺寸的选择。}
-要了解窗口大小的作用，首先考虑最小的选择 $p=1$。在这种情况下，不存在时间并行性，并且该方法简化为其顺序基础更新。对于左端点离散化 \Cref{eq:window_update}，这只是一个简单的欧拉步骤。更一般地说，ParaDiGMS 指定了如何并行化不同时间点的计算，而每个步骤使用的数值更新可以单独选择。例如，Euler 更新可以替换为 DDIM 或 DPM-Solver，给出 ParaDDIM 或 ParaDPMSolver。增加 $p$ 然后将更多时间点暴露给并行计算，而不改变底层时间网格或总步数 $M$。皮卡迭代反复修正这些状态，使其与所选的基本求解器保持一致，并由规定的局部容差控制收敛。
+\paragraph{滑动窗口尺寸如何选取。}
+要理解窗口大小的作用，先看最小的选择 $p=1$。此时完全没有
+时间上的并行，方法退化为它对应的顺序基础更新；对左端点离散化
+\Cref{eq:window_update} 来说，这不过是一个简单的 Euler 步。
+更一般地，ParaDiGMS 规定的是如何把不同时间点上的计算并行化，
+而每一步所用的数值更新可以另行选择。例如把 Euler 更新换成
+DDIM 或 DPM-Solver，就得到 ParaDDIM 或 ParaDPMSolver。
+增大 $p$ 只是把更多时间点交给并行计算，底层的网格和总步数 $M$
+都不变。Picard 迭代反复修正这些状态，使其与所选的基础求解器
+保持一致，收敛则由给定的局部容差控制。
 
-\paragraph{与高阶求解器（例如 DPM）的兼容性。}
-Picard 框架决定了如何并行更新和评估不同时间点的状态，而用于近似每个步骤的数值规则可以单独选择。例如，而不是左端点规则
-\Cref{eq:window_update}，我们可以使用梯形法则：
+\paragraph{与高阶求解器（如 DPM-Solver）的兼容性。}
+Picard 框架决定的是如何并行地更新与评估不同时间点上的状态，
+而近似每一步所用的数值规则可以另行选择。例如，除了左端点规则
+\Cref{eq:window_update}，也可以改用梯形法则：
 \begin{align*}
 \rvx^{(k+1)}_{\ell+j+1}
 =
@@ -4764,68 +4551,57 @@ Picard 框架决定了如何并行更新和评估不同时间点的状态，而�
 \big(\rvx^{(k)}_{\ell+j+1},t_{\ell+j+1}\big)
 \Bigg],
 \end{align*}
-其中 $j=0,\ldots,p-1$。对于 $j=0$，这是熟悉的一步梯形更新，使用两个
-端点漂移。对于较大的$j$，同样的规则累加梯形
-跨过窗口的贡献。由于所有漂移都是使用
-之前的皮卡迭代，它们仍然可以并行计算，而
-内部贡献可以通过前缀和来累积。
+其中 $j=0,\ldots,p-1$。当 $j=0$ 时，这就是熟悉的一步梯形更新，
+用到两端的漂移。$j$ 较大时，同一规则把梯形公式在整个窗口上的
+贡献累加起来。由于所有漂移都取自上一轮 Picard 迭代，
+它们仍可并行计算，而窗口内部的各项贡献可以用前缀和累积。
 
-更一般地，ParaDiGMS 可以使用现有的顺序采样器，例如
-DDIM 或 DPM-Solver 作为其基础离散化。在这种情况下，皮卡
-更新是根据相应的基求解器增量构造的，而不是
-与上面的梯形公式相比。精确的形式取决于
-选择的求解器，因为高阶方法可能使用中间阶段或
-之前的模型评估。
+更一般地，ParaDiGMS 可以把现有的顺序采样器（例如 DDIM 或
+DPM-Solver）直接用作它的基础离散化。此时 Picard 更新按相应的
+基础求解器增量来构造，而不再采用上面的梯形公式。具体形式取决于
+所选求解器，因为高阶方法可能用到中间阶段或先前的模型评估。
 
-对于基于给定顺序求解器的 ParaDiGMS 构造，精确
-定点收敛恢复相应的顺序离散
-轨迹。在有限停止容差的情况下，最终结果还包含
-除了离散化之外的剩余不动点迭代误差
-基本求解器的误差。
+在基于某个顺序求解器构造的 ParaDiGMS 中，若不动点迭代精确收敛，
+得到的就是相应的顺序离散轨迹。而容差有限、迭代提前停止时，
+最终结果除了基础求解器的离散化误差之外，还会额外带上一份
+残余的不动点迭代误差。
 
 \newpage
 \section{结束语}\label{sec:ch9_cr}
 
-本章遇到了最重要的实际限制之一
-扩散模型：其缓慢的迭代采样过程。我们已经探索过
-无需训练的方法，通过更好的设计来加速生成
-经验 PF-ODE 的数值求解器：
+本章面对的是扩散模型最重要的实际瓶颈之一：其缓慢的迭代采样过程。
+我们考察了一类无需训练的方法，即通过更好地设计经验 PF-ODE 的
+数值求解器来加快生成：
 \begin{enumerate}
-    \item 我们从 DDIM 开始，一阶因子指数积分器
-    更新，以分析方式保留已知的扩散时间表，同时
-    保持神经预测固定。
-    \item 然后我们研究了DEIS，它把这个想法扩展到了高阶
-    通过重用过去的模型评估来推断如何进行多步更新
-    神经预测发生变化。
-    \item 最后，我们研究了 DPM-Solver 系列，它介绍了
-    log-SNR 时间坐标并构造高阶更新
-    步内模型评估。 DPM-Solver\texttt{++}进一步发展
-    数据预测公式中的单步和多步变体。
+    \item 我们从 DDIM 开始，它是一阶的因式分解指数积分器更新：
+    把已知的扩散调度解析地保留下来，同时把神经预测固定住。
+    \item 接着考察 DEIS，它把这一想法推广到高阶多步更新，
+    靠复用过去的模型评估来外推神经预测的变化。
+    \item 最后考察 DPM-Solver 系列，它引入了 log-SNR 时间坐标，
+    并用步内的模型评估构造高阶更新。DPM-Solver\texttt{++}
+    则在数据预测形式下进一步给出了单步与多步两个变体。
 \end{enumerate}
 
-这些方法共同说明了一个共同原则：利用分析方法
-已知的扩散结构并集中数值近似
-学习模型预测。他们的预测和时间不同
-参数化，以及是否从其中获得高阶信息
-步骤内阶段或上一步历史记录。 ParaDiGMS 提供了补充
-通过定点跨时间重新组织计算来确定方向
-迭代和并行评估。这种求解器的开发可以减少
-采样成本从数百或数千个模型评估减少到仅数十个
-许多实用的设置。然而，这些免训练方法从根本上来说仍然是迭代的：它们
-数值上近似连续的生成轨迹，即使部分
-计算可以并行化。这就提出了一个自然的问题：
-\emph{ 能否通过一步或者几步就实现高质量生成？}
+这些方法共同体现了一条原则：把已知的扩散结构用解析方法处理掉，
+而把数值近似集中到学到的模型预测上。它们在所用预测、时间
+参数化方式，以及高阶信息是取自步内阶段还是取自先前步骤的历史
+这几个方面各有不同。ParaDiGMS 则补充了另一个方向：通过不动点迭代
+与并行评估，从时间维度上重新组织计算。这类求解器的进展可以把
+采样代价从数百甚至数千次模型评估降到只需数十次，在许多实际场景中
+已经足够。然而，这些无需训练的方法本质上仍是迭代式的：
+它们以数值方式逼近那条连续生成轨迹，即便部分计算可以并行化。
+这就自然地引出下一个问题：
+\emph{能否用一步或几步就得到高质量的生成？}
 
-本专着的最后一部分~D通过以下方式探讨了这个问题
-基于训练的加速。在\Cref{ch:distillation}中，我们研究
-基于蒸馏的方法，快速 \textit{student} 生成器学习
-重现缓慢的预训练 \textit{teacher} 的行为。在
-\Cref{ch:fast-scratch}，我们转向直接学习几步的方法
-由 ODE 流从头开始定义的生成器。
+本书最后一部分（第~D 部分）讨论的正是这个问题，走的是基于训练的
+加速路线。在 \Cref{ch:distillation} 中，我们研究基于蒸馏的方法：
+让快速的 \textit{学生} 生成器学会复现缓慢的、预训练好的
+\textit{教师}行为。在 \Cref{ch:fast-scratch} 中，我们转向另一类方法，
+即直接从头学习由 ODE 流定义的少步生成器。
 
-这种从设计更好的数值求解器到直接学习
-生成解图的快速逼近旨在结合质量
-具有一步或几步生成速度的扩散模型。
+从设计更好的数值求解器，到直接学习生成解映射的快速逼近，
+这一转变的目标是把扩散模型的质量与一步或几步生成的
+速度结合起来。
 
 
 \clearpage

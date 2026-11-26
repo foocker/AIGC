@@ -4,97 +4,84 @@
     \textit{数学是一门给不同事物赋予相同名称的艺术。
 }}{亨利·庞加莱}
 
-本章把变分、分数和流三种视角放进同一框架。三种方法的出发点各不相同，但都先用前向扰动过程规定边缘分布的演化路径，再学习构造反向生成过程所需的局部量。根据 \Cref{ch:variational,ch:score-based,ch:score-sde,ch:flow-based}，可以把这套做法概括为：先规定前向边缘分布路径，再学习含时向量场，使简单先验分布沿同一路径反向演化为数据分布。
+本章给出一个系统的视角，把变分、分数与流这三种观点放进同一幅连贯的图景之中。这些方法的出发点各不相同，却都归结到现代扩散模型背后同一个核心机制：先定义一个前向扰动过程，由它刻画一条边缘分布的演化路径；再学习构造反向生成动力学所需的各类局部量，使生成过程沿这条路径逆向行进。结合 \Cref{ch:variational,ch:score-based,ch:score-sde,ch:flow-based}，可以看到一个共同的套路：先规定一条前向边缘分布路径，再学习一个含时向量场，让简单的先验分布沿着这条路径被输运成数据分布。
 
-三种视角都用到 \Cref{sec:conditional-trick} 的条件化方法。它把难以计算的边缘训练目标转化为可计算的条件目标，使训练更稳定、更高效。
+贯穿三种视角的一个关键要素，是 \Cref{sec:conditional-trick} 中引入的条件化技巧：它把难以计算的边缘目标转化为可处理的条件目标，从而使训练既稳定又高效。
 
-在 \Cref{sec:elucidating} 中，我们系统地分析了训练目标，确定了其基本组成部分，并阐明了如何在变分、基于分数和基于流的观点中制定损失函数。
-
-
-\Cref{sec:equivalent-parametrizations} 表明任何 $\rvx_t = \alpha_t \rvx_0 + \sigma_t \beps$ 形式的仿射前向噪声注入都可以等效地转换为标准线性调度 $\rvx_t = (1 - t)\rvx_0 + t\beps$。此外，噪声预测、干净数据预测、分数预测和速度预测等常见参数化在梯度层面上是可以互换的。因此，噪声调度器和参数化的选择都遵循相同的建模原则。
+在 \Cref{sec:elucidating} 中，我们系统地剖析训练目标，辨明其基本构成，并说明在变分、分数与流三种观点下损失函数分别是如何写出的。
 
 
+\Cref{sec:equivalent-parametrizations} 表明，任何形如 $\rvx_t = \alpha_t \rvx_0 + \sigma_t \beps$ 的仿射前向加噪，都可以等价地转换为标准的线性调度 $\rvx_t = (1 - t)\rvx_0 + t\beps$。此外，噪声预测、干净数据预测、分数预测与速度预测这些常见参数化，在梯度层面是可以互相转换的。因此，无论是选择噪声调度器，还是选择参数化方式，遵循的都是同一条建模原则。
 
-最后，\Cref{sec:comparison-connection} 将讨论集中起来并确定了控制规则：福克尔-普朗克方程。无论是被视为变分方案（离散时间去噪）、基于分数的方法（SDE 公式）还是基于流的方法（ODE 公式），每种方法都会构造一个其边缘遵循相同密度演化的生成器。因此，福克尔-普朗克方程成为所有三种观点都遵守的通用约束，仅在参数化和训练目标方面存在差异。\chapterlearning{
-  \item 认识到变分、基于分数和基于流程的训练背后的共同的条件化原理：可以通过易于处理的条件目标来学习难以处理的边缘目标；
-  \item 了解四种常见的预测类型——干净数据、噪声、分数和速度——并在前向调度非退化时在其预言机预测之间进行转换；
-  \item 解开扩散训练中的主要设计选择：前向噪声调度、预测目标、时间采样分布和时间加权，并了解哪些变化是数学重新参数化，哪些变化仍然会影响实际优化；
-  \item 区分“等效”的不同概念：表示相同的预言机信息，在加权或加性常数方面具有等效的总体目标，跟踪相同的边缘密度路径，并且与实际训练或采样算法表现相同；
-  \item 了解不同的仿射概率路径如何通过时间重新参数化和空间重新缩放相关联，同时跟踪这些变换保留和不保留的内容；
-  \item 了解连续性和 福克尔-普朗克方程如何提供连接扩散模型的变分、确定性 ODE 和随机 SDE 描述的密度级原理。
+
+
+最后，\Cref{sec:comparison-connection} 把前面的讨论汇到一起，并指出其中起支配作用的规律：福克尔—普朗克方程。无论被看作变分方案（离散时间去噪）、分数方法（SDE 表述）还是流方法（ODE 表述），每种方法所构造的生成过程，其边缘分布都遵循同一个密度演化方程。于是福克尔—普朗克方程成为三种观点共同遵守的普遍约束，差异只体现在参数化方式与训练目标上。\chapterlearning{
+  \item 认识变分、分数与流三类训练背后共同的条件化原理：难以计算的边缘目标，可以通过可处理的条件目标来学习；
+  \item 理解四种常见的预测类型——干净数据、噪声、分数与速度——并学会在前向调度非退化时于相应的预言量预测之间互相转换；
+  \item 厘清扩散训练中的主要设计选择：前向噪声调度、预测目标、时间采样分布与时间加权，并辨别哪些改动只是数学上的重新参数化，哪些会实际影响优化；
+  \item 区分“等价”的几种不同含义：表示相同的预言量信息；总体目标在相差一个加权或附加常数下相等；追踪同一条边缘密度路径；以及作为实际的训练或采样算法表现一致；
+  \item 理解不同的仿射概率路径如何通过时间重参数化与空间重缩放相互关联，并留意这些变换保留了什么、又没有保留什么；
+  \item 理解连续方程与福克尔—普朗克方程如何提供密度层面的原理，把扩散模型的变分描述、确定性 ODE 描述与随机 SDE 描述联系起来。
 }{
-本章是本书的概念基石。对于第一遍，聚焦
-根据条件作用原理，四种预测之间的关系
-类型，以及连接这三个的连续性/福克-普朗克视图
-观点。中心课程是不要记住每个转换公式，
-但要问正在使用什么等价概念以及该等价是什么
-实际上保留了。权重、时间表的详细分析
-然后可以重新审视参数化选择，以理解数学上的原因
-等效的公式在实践中仍然可能表现不同。
+本章是全书的概念基石。第一遍阅读时，请把注意力放在三处：条件化原理、四种预测类型之间的关系，以及把三种视角连起来的连续性／福克尔—普朗克观点。核心要义不是记住每一个转换公式，而是问清：这里用的是哪一种“等价”概念，这种等价究竟保留了什么。至于加权、调度与参数化选择的详细分析，可以之后再回过头来看，以理解为什么在数学上等价的写法，在实际中仍可能表现不同。
 }
 
 \newpage
 
 \section{条件技巧：扩散模型的秘密武器}\label{sec:conditional-trick}
-到目前为止，我们已经从三个看似不同的起源探索了扩散模型：变分、基于分数和基于流的视角。每个最初都是由不同的目标激励并导致其自己的训练目标（具有固定的 $t$）：
+至此，我们已经从三个看似毫不相干的源头考察了扩散模型：变分视角、分数视角与流视角。它们最初由不同的目标所驱动，各自导出了自己的训练目标（在固定的 $t$ 下）：
 \begin{itemize}
-    \item \textbfs{变分视图：} 学习参数化密度 $p_{\bm{\phi}}(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)$，通过最小化来近似预言反向转换 $p(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)$：
+    \item \textbfs{变分视角：} 学习参数化密度 $p_{\bm{\phi}}(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)$，通过最小化下式来逼近真实的（预言）反向转移 $p(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)$：
     \[
     \mathcal{J}_{\text{KL}}(\bm{\phi}) := \mathbb{E}_{p_t(\mathbf{x}_t)}\left[
         \mathcal{D}_{\mathrm{KL}}\big(p(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t) \| p_{\bm{\phi}}(\mathbf{x}_{t-\Delta t}|\mathbf{x}_t)\big)
     \right];
     \]
-    \item \textbfs{基于分数的视图：} 通过以下方式学习分数模型 $\rvs_{\bm{\phi}}(\rvx_t, t)$ 来近似边缘分数 $\nabla_{\rvx} \log p_t(\rvx_t)$：
+    \item \textbfs{分数视角：} 通过下式学习分数模型 $\rvs_{\bm{\phi}}(\rvx_t, t)$ 以逼近边缘分数 $\nabla_{\rvx} \log p_t(\rvx_t)$：
     \[
     \mathcal{J}_{\text{SM}}(\bm{\phi}) := \mathbb{E}_{p_t(\rvx_t)}\left[
        \left\| \rvs_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx} \log p_t(\rvx_t) \right\|_2^2
     \right];
     \]
-    \item \textbfs{基于流的视图：} 通过最小化以下项来学习速度模型 $\rvv_{\bm{\phi}}(\rvx_t, t)$ 以匹配预言机速度 $\rvv_t(\rvx_t)$（例如，由 \Cref{eq:marginal-oracle-velocity} 定义）：
+    \item \textbfs{流视角：} 通过最小化下式来学习速度模型 $\rvv_{\bm{\phi}}(\rvx_t, t)$，使其匹配真实的（预言）速度 $\rvv_t(\rvx_t)$（例如 \Cref{eq:marginal-oracle-velocity} 所定义的）：
     \[
     \mathcal{J}_{\text{FM}}(\bm{\phi}) := \mathbb{E}_{p_t(\rvx_t)} \left[
         \left\| \rvv_{\bm{\phi}}(\rvx_t, t) - \rvv_t(\rvx_t) \right\|_2^2
     \right].
     \]
-\end{itemize}乍一看，这些目标似乎非常棘手，因为它们都需要访问一般情况下根本不可知的预言量。但令人兴奋的转折来了：每种方法都独立地对这个问题得出了同样优雅的解决方案：\emph{ 对数据 $\rvx_0$} 进行调节。这项技术将每个棘手的训练目标转化为易于处理的目标。
+\end{itemize}
+乍看之下，这些目标都显得无从下手，因为它们都需要用到一些在一般情况下根本无法得知的真实（预言）量。而令人兴奋的转折就在这里：三种方法各自独立地得出了同一个漂亮的解法——\emph{以数据 $\rvx_0$ 为条件}。这一技巧把每一个棘手的训练目标都变成了可处理的目标。
 
 
 
-这种优雅的“调节技术”将目标重写为期望
-在已知的高斯条件 $p_t(\rvx_t | \rvx_0)$ 上，产生
-易于处理的条件目标和训练目标
-梯度等价于它们的边缘对应物：
+这个漂亮的“条件化技巧”把目标改写为关于已知高斯条件分布 $p_t(\rvx_t | \rvx_0)$ 的期望，从而得到可处理的条件目标；这些条件目标的训练梯度与其边缘版本是等价的：
 \begin{itemize}
-    \item \textbfs{变体视图} (\Cref{eq:kl-matching})\textbfs{:}
+    \item \textbfs{变分视角}（\Cref{eq:kl-matching}）\textbfs{：}
     \[
     \mathcal{J}_{\text{KL}}(\bm{\phi}) = \underbrace{\mathbb{E}_{\rvx_0} \mathbb{E}_{p_t(\rvx_t|\rvx_0)} \left[
         \mathcal{D}_{\mathrm{KL}}\big(p(\rvx_{t-\Delta t}|\rvx_t, \rvx_0) \| p_{\bm{\phi}}(\rvx_{t-\Delta t}|\rvx_t)\big)
     \right]}_{\mathcal{J}_{\text{CKL}}(\bm{\phi})} + C;
     \]    
-    \item \textbfs{基于分数的视图} (\Cref{eq:score-matching})\textbfs{:}
+    \item \textbfs{分数视角}（\Cref{eq:score-matching}）\textbfs{：}
     \[
     \mathcal{J}_{\text{SM}}(\bm{\phi}) = \underbrace{\mathbb{E}_{\rvx_0} \mathbb{E}_{p_t(\rvx_t|\rvx_0)} \left[
         \left\| \rvs_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx_t} \log p_t(\rvx_t | \rvx_0) \right\|_2^2
     \right]}_{\mathcal{J}_{\text{DSM}}(\bm{\phi})} + C;
     \]
-    \item \textbfs{基于流的视图} (\Cref{eq:fm-cfm})\textbfs{:}
+    \item \textbfs{流视角}（\Cref{eq:fm-cfm}）\textbfs{：}
     \[
     \mathcal{J}_{\text{FM}}(\bm{\phi}) = \underbrace{\mathbb{E}_{\rvx_0} \mathbb{E}_{p_t(\rvx_t|\rvx_0)} \left[
         \left\| \rvv_{\bm{\phi}}(\rvx_t, t) - \rvv_t(\rvx_t | \rvx_0) \right\|^2
     \right]}_{\mathcal{J}_{\text{CFM}}(\bm{\phi})} + C.
     \]
 \end{itemize}
-为了建立统一的视图，我们接下来系统地重新审视条件 KL、分数和速度目标。至关重要的是，这些目标不仅易于处理，而且在不断垂直移动之前也等同于其原始形式。 
-有条件的版本（$\mathcal{J}_{\text{CKL}}$，
-$\mathcal{J}_{\text{DSM}}$、$\mathcal{J}_{\text{CFM}}$）不同于
-原件（$\mathcal{J}_{\text{KL}}$、$\mathcal{J}_{\text{SM}}$、
-$\mathcal{J}_{\text{FM}}$）仅由一个独立于的常数
-模型参数。因此，每个条件目标都有相同的
-最小化器作为同一模型类中的原始对应物。
+为建立统一的视角，下面系统地重新审视条件的 KL、分数与速度目标。关键在于：这些目标不仅可处理，而且与原始形式只相差一个整体的常数平移。
+条件版本（$\mathcal{J}_{\text{CKL}}$、
+$\mathcal{J}_{\text{DSM}}$、$\mathcal{J}_{\text{CFM}}$）与
+原始版本（$\mathcal{J}_{\text{KL}}$、$\mathcal{J}_{\text{SM}}$、
+$\mathcal{J}_{\text{FM}}$）之间只差一个与模型参数无关的常数。因此，在同一个模型类中，每个条件目标的最小化器与它对应的原始目标完全相同。
 
-要了解这些最小化器理想地恢复什么，假设模型具有表现力
-足以代表准确的预言。尽管目标不同，但都
-三个视角共享相同的概念模式：
+要想知道这些最小化器在理想情形下能还原出什么，可以假设模型的表达能力足以精确表示真实的预言量。此时，尽管三者目标不同，却共享同一个概念模式：
 \[
 \underbrace{\text{marginal oracle}}_{\text{generally intractable}}
 =
@@ -103,9 +90,7 @@ $\mathcal{J}_{\text{FM}}$）仅由一个独立于的常数
 \underbrace{\text{conditional oracle}}_{\text{tractable given }\rvx_0}
 \right].
 \]
-也就是说，对干净样本 $\rvx_0$ 进行调节给出了一个易于处理的目标，
-并对可能的干净样本取这些条件目标的平均值
-与 $\rvx_t$ 一致恢复所需的边缘预言。具体来说，
+也就是说，以干净样本 $\rvx_0$ 为条件可以得到一个可处理的目标；再在所有与 $\rvx_t$ 相容的干净样本上对这些条件目标取平均，就还原出了所需的边缘预言量。具体地，
 
 \begin{mdframed}
     \begin{align}\label{eq:three-minimizer-oracle}
@@ -120,14 +105,12 @@ $\mathcal{J}_{\text{FM}}$）仅由一个独立于的常数
 对于变分观点，第一个恒等式来自边缘化
 $\rvx_0$ 上的条件反向转换，并且 KL 目标最小化
 通过由此产生的边缘反向转变。对于分数和速度匹配，
-平方误差目标是最小二乘回归，其总体
-最小化器是相应的条件期望。这些恒等式
-描述不受限制的人口预言；需要受限的神经模型
-不能准确代表他们。下面是具有有限数量数据点的场景的具体示例。
+平方误差目标属于最小二乘回归，其总体
+最小化器正是相应的条件期望。需要说明的是，这些恒等式刻画的是无约束的总体预言量；受容量限制的神经网络模型未必能精确表示它们。下面给出一个数据点有限的场景的具体例子。
 
 
-\exm{ 有限数据集上的闭式 Oracle 目标}{
-为了使 \Cref{eq:three-minimizer-oracle} 更具体，假设数据分布是经验测量
+\exm{有限数据集上的闭式预言目标}{
+为使 \Cref{eq:three-minimizer-oracle} 更具体，设数据分布取经验测度
 \[
 \hat p_0=\frac{1}{N}\sum_{i=1}^N \delta_{\rvx_0^{(i)}},
 \]
@@ -135,7 +118,7 @@ $\rvx_0$ 上的条件反向转换，并且 KL 目标最小化
 \[
 \rvx_0 \sim p(\cdot|\rvx_t)
 \]
-意味着我们在给定噪声观测 $\rvx_t$ 的情况下对干净样本的后验分布进行平均。同样，对于任何数量 $\rvh(\rvx_0)$，
+表示在给定含噪观测 $\rvx_t$ 的条件下，对干净样本的后验分布取平均。等价地，对任意函数量 $\rvh(\rvx_0)$，有
 \[
 \mathbb{E}_{\rvx_0 \sim p(\cdot|\rvx_t)}[\rvh(\rvx_0)]
 =
@@ -155,13 +138,13 @@ p_t(\rvx_t|\rvx_0^{(i)})
 =
 \mathcal{N}\left(\rvx_t;\alpha_t \rvx_0^{(i)}, \sigma_t^2 \rmI\right),
 \]
-因此，这个条件似然可以显式写出。然而，在群体层面，后验 $p(\rvx_0|\rvx_t)$ 仍然需要对完整数据分布 $p_{\text{data}}$ 进行平均。
+可见条件似然本身是显式的。但在总体层面，后验 $p(\rvx_0|\rvx_t)$ 仍然要对整个数据分布 $p_{\text{data}}$ 求平均。
 
-如果我们现在用经验测量代替 $p_{\text{data}}$
+若把 $p_{\text{data}}$ 换成经验测度
 \[
 \hat p_0=\frac{1}{N}\sum_{i=1}^N \delta_{\rvx_0^{(i)}},
 \]
-那么后验 $p(\rvx_0|\rvx_t)$ 仅在训练样例上得到支持，其在 $\rvx_0^{(i)}$ 处的质量为
+那么后验 $p(\rvx_0|\rvx_t)$ 就只支撑在训练样本上，其在 $\rvx_0^{(i)}$ 处的概率质量为
 \[
 p(\rvx_0=\rvx_0^{(i)}|\rvx_t)
 =
@@ -171,16 +154,16 @@ p(\rvx_0=\rvx_0^{(i)}|\rvx_t)
 \qquad
 \sum_{i=1}^N w_i(\rvx_t,t)=1.
 \]
-因此，上面的后验期望减少到有限和
+于是上面的后验期望化为有限求和
 \[
 \mathbb{E}_{\rvx_0 \sim p(\cdot|\rvx_t)}[\rvh(\rvx_0)]
 =
 \sum_{i=1}^N w_i(\rvx_t,t)\rvh(\rvx_0^{(i)}).
 \]
-因此，在有限数据集的情况下，\Cref{eq:three-minimizer-oracle} 中的抽象后验平均变成训练集上的具体加权平均，权重为 $w_i(\rvx_t,t)$。我们现在明确这三种情况。
+由此可见，在有限数据集的情形下，\Cref{eq:three-minimizer-oracle} 中抽象的后验平均就变成了训练集上以 $w_i(\rvx_t,t)$ 为权重的具体加权平均。下面把这三种情形分别写清楚。
 
-\paragraph{变化视图.}
-预言机反向转换变为
+\paragraph{变分视角。}
+真实的（预言）反向转移变为
 \[
 p^*(\rvx_{t-\Delta t}|\rvx_t)
 =
@@ -192,10 +175,10 @@ p(\rvx_{t-\Delta t}|\rvx_t,\rvx_0^{(i)}).
 \[
 p(\rvx_{t-\Delta t}|\rvx_t,\rvx_0^{(i)})
 \]
-本身在高斯扩散下可以以闭形式获得；事实上，它是高斯分布，如引理~\ref{ddpm-reverse-kernel} 所示。因此，真正的反向转移核只是显式高斯桥的后验加权混合。
+在高斯扩散下本身就有闭式表达；事实上如引理~\ref{ddpm-reverse-kernel} 所示，它就是高斯分布。因此，真实的反向核不过是若干显式高斯桥按后验权重做的混合。
 
-\paragraph{基于分数的视图.}
-同样，预言机分数变为
+\paragraph{分数视角。}
+类似地，真实的（预言）分数变为
 \[
 \mathbf{s}^*(\rvx_t,t)
 =
@@ -203,7 +186,7 @@ p(\rvx_{t-\Delta t}|\rvx_t,\rvx_0^{(i)})
 w_i(\rvx_t,t) 
 \nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0^{(i)}).
 \]
-条件分数是明确的：
+条件分数是显式的：
 \[
 \nabla_{\rvx_t}\log p_t(\rvx_t|\rvx_0^{(i)})
 =
@@ -218,10 +201,10 @@ w_i(\rvx_t,t)
 \rvx_t-\alpha_t\sum_{i=1}^N w_i(\rvx_t,t) \rvx_0^{(i)}
 \right).
 \]
-因此，噪声样本的边缘分数指向训练样本的后验加权平均值。
+也就是说，含噪样本处的边缘分数指向训练样本的后验加权平均。
 
-\paragraph{基于流的视图.}
-流匹配也会出现同样的现象：
+\paragraph{流视角。}
+流匹配中出现的是同一现象：
 \[
 \mathbf{v}^*(\rvx_t,t)
 =
@@ -229,7 +212,7 @@ w_i(\rvx_t,t)
 w_i(\rvx_t,t) 
 \mathbf{v}_t(\rvx_t|\rvx_0^{(i)}).
 \]
-同样，构建块是明确的。相应的条件速度场具有闭形式：
+同样，这里的构件也是显式的，相应的条件速度场具有闭式表达：
 \[
 \mathbf{v}_t(\rvx_t|\rvx_0^{(i)})
 =
@@ -237,42 +220,41 @@ w_i(\rvx_t,t)
 +
 \frac{{\sigma}'_t}{\sigma_t}\bigl(\rvx_t-\alpha_t\rvx_0^{(i)}\bigr).
 \]
-因此，预言机速度也是数据集上的显式后验加权平均值。
+于是真实（预言）速度同样是数据集上显式的后验加权平均。
 
-总而言之，这些公式表明，在有限数据集上，所有三个预言机目标都简化为封闭形式条件量的显式后验加权平均值。
+综上可见，在有限数据集上，三种预言目标都化简为同一个形式：把具有闭式表达的条件量按后验权重求加权平均。
 
-\paragraph{关于记忆的备注。} 上面的公式描述了由经验分布$\hat p_0$而不是由未知总体分布$p_{\mathrm{data}}$引起的精确预言目标。如果模型在每个噪声水平上都完美地学习了这些经验目标，并且反向过程的计算没有错误，那么生成将准确地再现经验分布 $\hat p_0$。由于 $\hat p_0$ 仅将概率分配给训练示例，因此生成的样本将从训练集本身中抽取。从这个理想化的意义上来说，完美契合经验神谕就等于记忆。然而，经过实际训练的扩散模型不需要精确地实现这个预言：它是通过有限的模型容量和有限的优化来学习的，并且其生成的分布进一步受到模型近似和数值采样误差的影响。因此，有限数据集计算将记忆建立为精确的经验解，但并不意味着每个实际训练的模型都必须记住其训练集。
+\paragraph{关于记忆的备注。} 上面给出的公式描述的是以经验分布 $\hat p_0$ 为基准的精确预言量目标，而不是以未知的总体分布 $p_{\mathrm{data}}$ 为基准。如果模型在每个噪声水平上都精确地学到了这些经验目标，并且反向过程的计算也没有误差，那么生成过程就会精确地复现经验分布 $\hat p_0$。由于 $\hat p_0$ 只把概率质量放在训练样本上，此时生成的样本只能从训练集本身中抽取。在这个理想化的意义上，对经验预言量的完美拟合就等价于记忆。不过，真实训练出来的扩散模型并不需要精确实现这一预言量：它只能借助有限的模型容量与有限的优化步数去学习，并且其生成的分布还会进一步受到模型近似误差与数值采样误差的影响。因此，在有限数据集上做推导，只是确立了一个精确的经验解，并不意味着每个实际训练出来的模型都必然记住了自己的训练集。
 
 }
 
-常见的条件重新表述并非巧合：通过使训练变得易于处理，它揭示了深刻的统一。变分扩散、基于分数的 SDE 和流匹配只是同一原理的不同方面。三种视角，一种洞察，优雅地连接在一起。我们将在本章的其余部分继续探索它们的等价性。
+这种共同的条件式改写绝非巧合：它在让训练变得可处理的同时，也揭示出一种深刻的统一。变分扩散、基于分数的 SDE 与流匹配，不过是同一原理的不同侧面。三种视角，一个洞见，由此优雅地联系在一起。本章余下的部分将继续探讨它们的等价性。
 
 \newpage
 \clearpage
 
-\section{理解扩散模型训练损失的路线图
-}\label{sec:elucidating}
+\section{理解扩散模型训练损失的路线图}\label{sec:elucidating}
 
-本节构建了扩散模型中训练损失的系统视图。  
-在 \Cref{subsec:four-predictions} 中，我们将标准的三个目标扩展到更广泛的四个参数化集，展示了它们是如何从不同的建模角度产生的。  
-然后，在 \Cref{subsec:summary-disentagle} 中，我们将这些结果蒸馏成一个通用框架，该框架解开了扩散目标的结构，为 \Cref{sec:equivalent-parametrizations} 中的等效结果奠定了基础。
+本节给出一个关于扩散模型训练损失的系统视角。
+在 \Cref{subsec:four-predictions} 中，我们把标准的三个目标推广到四种参数化，并说明它们各自是如何从不同的建模视角导出的。
+随后在 \Cref{subsec:summary-disentagle} 中，我们把这些结果提炼成一个通用框架，用它拆解扩散目标的结构，为 \Cref{sec:equivalent-parametrizations} 中的等价性结论打下基础。
 
 
 
 
 \subsection{扩散模型中的四种常见参数化}\label{subsec:four-predictions}
-在本节中，我们考虑前向扰动核
+本节始终考虑如下前向扰动核
 \[
 p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf{x}_0, \sigma_t^2 \mathbf{I} \right),
 \]
-其中 $\mathbf{x}_0 \sim p_{\mathrm{data}}$，如 \Cref{eq:forward_kernel} 中所定义，除非另有说明。
+其中 $\mathbf{x}_0 \sim p_{\mathrm{data}}$，与 \Cref{eq:forward_kernel} 中的定义一致（除非另有说明）。
 
 
 
-让$\omega: [0, T] \to \mathbb{R}_{>0}$表示正时间加权函数。  
-四个标准参数化（噪声 $\bm{\epsilon}_{\bm{\phi}}$、干净 $\rvx_{\bm{\phi}}$、分数 $\rvs_{\bm{\phi}}$ 和速度 $\rvv_{\bm{\phi}}$）及其各自的最小化器 $\bm{\epsilon}^*$、$\rvx^*$、$\rvs^*$ 和 $\rvv^*$，为了清晰起见并便于进一步讨论，总结如下。
+记 $\omega: [0, T] \to \mathbb{R}_{>0}$ 为一个正的时间加权函数。
+为清晰起见、也便于后文讨论，下面把四种标准参数化（噪声 $\bm{\epsilon}_{\bm{\phi}}$、干净数据 $\rvx_{\bm{\phi}}$、分数 $\rvs_{\bm{\phi}}$ 与速度 $\rvv_{\bm{\phi}}$）以及它们各自的最小化器 $\bm{\epsilon}^*$、$\rvx^*$、$\rvs^*$、$\rvv^*$ 一并总结。
 
-\paragraph{变分视图.} 基于 DDPM 中的 KL 散度（参见 \Cref{subsec:ddpm-prediction,subsec:connection-vdm}），这种方法简化为预测产生 $\mathbf{x}_t$ 的预期噪声或 $\mathbf{x}_t$ 受到扰动的预期干净信号。
+\paragraph{变分视角。} 基于 DDPM 中的 KL 散度（参见 \Cref{subsec:ddpm-prediction,subsec:connection-vdm}），这一方法可归结为：预测生成 $\mathbf{x}_t$ 时注入的期望噪声，或者 $\mathbf{x}_t$ 所对应的期望干净信号。
 \begin{enumerate}
     \item \textbfs{$\beps$-预测（噪声预测）} \citep{ho2020denoising}：
     \begin{equation}\label{eq:noise-def}
@@ -282,7 +264,7 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
     \[
         \mathcal{L}_{\text{noise}}(\bm{\phi}) := \mathbb{E}_t \left[\omega(t) \mathbb{E}_{\mathbf{x}_0, \bm{\epsilon}} \left\| \bm{\epsilon}_{\bm{\phi}}(\mathbf{x}_t,t) - \bm{\epsilon} \right\|_2^2 \right].
     \]
-    这里，$\beps^*$ 表示为获得给定 $\rvx_t$ 而注入的平均噪声。
+    这里的 $\beps^*$ 指为了得到给定的 $\rvx_t$ 而注入的平均噪声。
 
     \item \textbfs{$\rvx$-预测（干净预测）} \citep{kingma2021variational,karras2022elucidating,song2023consistency}：
     \begin{equation}\label{eq:clean-def}
@@ -292,8 +274,10 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
     \[
         \mathcal{L}_{\text{clean}}(\bm{\phi}) := \mathbb{E}_t \left[\omega(t) \mathbb{E}_{\mathbf{x}_0, \bm{\epsilon}} \left\| \mathbf{x}_{\bm{\phi}}(\mathbf{x}_t,t) - \mathbf{x}_0 \right\|_2^2 \right].
     \]
-    这里，$\rvx^*$ 表示在给定噪声观测值 $\rvx_t$ 的情况下，所有合理的干净猜测的平均值。
-\end{enumerate}\paragraph{分数视角。} 预测噪声级别 $t$ 的分数函数，该函数指向平均方向，将 $\mathbf{x}_t$ 降噪回所有可能生成它的干净样本：
+    这里的 $\rvx^*$ 指在给定含噪观测 $\rvx_t$ 的条件下，所有合理干净样本猜测的平均值。
+\end{enumerate}
+
+\paragraph{分数视角。} 预测噪声水平 $t$ 处的分数函数：它指向平均意义上的去噪方向，把 $\mathbf{x}_t$ 拉回那些可能生成它的干净样本：
 \begin{enumerate}
     \item[3.] \textbfs{分数预测} \citep{song2019generative,song2020score}：
     \begin{equation}\label{eq:score-def}
@@ -307,7 +291,7 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
 \end{enumerate}
 
 
-\paragraph{Flow-Based View.} 预测数据通过 $\mathbf{x}_t$ 演变时的瞬时平均速度：
+\paragraph{流视角。} 预测数据经过 $\mathbf{x}_t$ 处时的瞬时平均速度：
 \begin{enumerate}
     \item[4.] \textbfs{$\rvv$-预测（速度预测）} \citep{lipman2022flow,liu2022rectified,salimans2021progressive,albergo2023stochastic}：
     \begin{equation}\label{eq:velocity-def}
@@ -319,11 +303,11 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
     \]
     其中条件速度为 $\rvv_t(\rvx_t|\rvx_0,\bm{\epsilon}) = \alpha_t' \mathbf{x}_0 + \sigma_t' \bm{\epsilon}$。
 
-这里，$\rvv^*$表示通过观测点$\rvx_t$的平均速度矢量。
+这里的 $\rvv^*$ 表示经过观测点 $\rvx_t$ 的平均速度向量。
 \end{enumerate}
 
 
-基于 \Cref{eq:three-minimizer-oracle} 的见解，所有四种预测类型最终旨在以给定观察到的 $\mathbf{x}_t$ 的平均噪声、干净数据、分数或速度的形式近似条件期望。
+基于 \Cref{eq:three-minimizer-oracle} 的洞见，四种预测类型最终都是在给定观测 $\mathbf{x}_t$ 的条件下，去逼近某一种条件期望——平均噪声、干净数据、分数或速度。
 
 
 
@@ -334,7 +318,7 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
 
 
 \subsection{解开扩散模型的训练目标}\label{subsec:summary-disentagle}
-如\Cref{subsec:four-predictions}所示，四种预测类型的目标函数通常共享以下用于扩散模型训练的模板形式：
+如 \Cref{subsec:four-predictions} 所示，四种预测类型的目标函数通常共享下面这个扩散模型训练的模板形式：
 
 
 
@@ -349,31 +333,33 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
 
 
 
-在这里，为了提高训练效率并优化扩散模型学习流程，几个关键的设计选择至关重要~\citep{karras2022elucidating,lu2024simplifying}：
+其中，有几个关键的设计选项对提升训练效率、改进扩散模型的学习流程至关重要~\citep{karras2022elucidating,lu2024simplifying}：
 \begin{enumerate}
-    \item[(A)] $\eqnmarkbox[Pink]{para}{\rvx_t}$通过$\alpha_t$和$\sigma_t$的前向过程中的噪声时间表；
-    \item[(B)] $\eqnmarkbox[Plum]{target}{\mathrm{NN}_{\bm{\phi}}}$ 的预测类型及其相关回归目标 $\eqnmarkbox[Plum]{target}{(A_t \rvx_0 + B_t \bm{\epsilon}) }$；
-    \item[(C)] 时间计权功能 $\eqnmarkbox[OliveGreen]{wgt}{\omega(\cdot)} \colon [0,T] \to \mathbb{R}_{\geq 0}$；
-    \item[(D)] 时间分布$\eqnmarkbox[NavyBlue]{tsample}{p_{\text{time}}}$。
+    \item[(A)] 由 $\alpha_t$ 和 $\sigma_t$ 决定的、用于生成 $\eqnmarkbox[Pink]{para}{\rvx_t}$ 的前向过程噪声调度；
+    \item[(B)] $\eqnmarkbox[Plum]{target}{\mathrm{NN}_{\bm{\phi}}}$ 的预测类型及其对应的回归目标 $\eqnmarkbox[Plum]{target}{(A_t \rvx_0 + B_t \bm{\epsilon}) }$；
+    \item[(C)] 时间加权函数 $\eqnmarkbox[OliveGreen]{wgt}{\omega(\cdot)} \colon [0,T] \to \mathbb{R}_{\geq 0}$；
+    \item[(D)] 时间采样分布 $\eqnmarkbox[NavyBlue]{tsample}{p_{\text{time}}}$。
 \end{enumerate}
 
-我们在这里详细阐述这四个组成部分，作为以下各节讨论的路线图。
+下面逐一展开这四个组成部分，并以此作为后文各节的路线图。
 
-\paragraph{(A) 噪声表 $\alpha_t$ 和 $\sigma_t$.}
-用户可以灵活地选择适合其应用的时间表，\Cref{tb:interpolant_instances} 中总结了常见示例。重要的是，正如我们将在 \Cref{eq:fm-general-affine-formula,eq:any-to-trig} 中演示的那样，所有 $\mathbf{x}_t = \alpha_t \mathbf{x}_0 + \sigma_t \bm{\epsilon}$ 形式的仿射流在数学上都是等效的。具体来说，任何此类插值都可以通过适当的时间重新参数化和空间重新缩放转换为规范线性计划（$\alpha_t = 1 - t$，$\sigma_t = t$）或三角计划（$\alpha_t = \cos t$，$\sigma_t = \sin t$）。\paragraph{(B) 参数化$\mathrm{NN}_{\bm{\phi}}$和训练目标$A_t \rvx_0 + B_t \bm{\epsilon}$.}
+\paragraph{(A) 噪声调度 $\alpha_t$ 与 $\sigma_t$。}
+用户可以按自己的应用灵活选择调度，常见例子汇总在 \Cref{tb:interpolant_instances} 中。要点在于：正如 \Cref{eq:fm-general-affine-formula,eq:any-to-trig} 将要展示的，所有形如 $\mathbf{x}_t = \alpha_t \mathbf{x}_0 + \sigma_t \bm{\epsilon}$ 的仿射流在数学上都是等价的。具体地说，任何这样的插值都可以通过适当的时间重参数化与空间重缩放，转化为规范的线性调度（$\alpha_t = 1 - t$，$\sigma_t = t$）或三角调度（$\alpha_t = \cos t$，$\sigma_t = \sin t$）。
+
+\paragraph{(B) 参数化 $\mathrm{NN}_{\bm{\phi}}$ 与训练目标 $A_t \rvx_0 + B_t \bm{\epsilon}$。}
 \begin{table}[th!]
-  \caption{不同参数化之间关系的总结。
-所有四种参数化在数学上都是等效的，并且可以通过简单的代数变换相互转换。
+  \caption{不同参数化之间关系的汇总。
+四种参数化在数学上彼此等价，都可以通过简单的代数变换互相转换。
 }
   \small
   \centering
   \resizebox{0.43\textwidth}{!}{
   \begin{tabular}{ccc}
      \toprule
-      回归目标 = & \multicolumn{2}{c}{$A_t\rvx_0 + B_t \bm{\epsilon}$} \\
+      回归目标 & \multicolumn{2}{c}{$A_t\rvx_0 + B_t \bm{\epsilon}$} \\
               & $A_t$ & $B_t$ \\
        \midrule
-    洁净 & $1 $ & $0$ \\
+    干净数据 & $1 $ & $0$ \\
       噪声 & $0$ & $1$\\
     条件分数 & $0 $ & -$\frac{1}{\sigma_t}$ \\
      条件速度 & $\alpha_t' $ & $\sigma_t'$ \\
@@ -382,53 +368,45 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
   }
   \label{tb:A_t-B_t-parametrizations}
 \end{table}
-在扩散训练中通常有两种选择：
-\emph{什么数量网络直接预测}和\emph{哪个数量
-在训练loss}中进行比较。干净的数据、噪声、分数和速度可以
-用于任一目的。
+在扩散训练中，有两个常常被放在一起考虑的选择：\emph{网络直接预测的是哪个量}，以及\emph{训练损失中拿哪个量来做比较}。干净数据、噪声、分数与速度这四种量，都可以用于其中任一目的。
 
-\subparagraph{匹配预测和损失.}
-\Cref{eq:general-dm-loss-D} 中使用的常见选择是训练
-直接使用与其输出相同的预测类型的网络。每个预测
-然后 type 有一个相应的条件训练目标，其形式为
+\subparagraph{预测与损失相匹配。}
+\Cref{eq:general-dm-loss-D} 采用的是常见做法：让网络直接以它所输出的那种预测类型为训练目标。此时每种预测类型都对应一个形如
 \[
 \text{Regression Target}
 =
 A_t\rvx_0+B_t\beps,
 \]
-其中 $A_t$ 和 $B_t$ 取决于预测类型和前向调度
-$(\alpha_t,\sigma_t)$。这些目标总结为
+的条件训练目标，其中 $A_t$ 与 $B_t$ 取决于预测类型与前向调度
+$(\alpha_t,\sigma_t)$。这些目标汇总于
 \Cref{tb:A_t-B_t-parametrizations}。
 
-例如，将 $\rvx$ 预测网络与干净目标进行比较
-$\rvx_0$，而 $\rvv$ 预测网络与条件网络进行比较
-速度
+例如，$\rvx$ 预测网络是与干净数据目标
+$\rvx_0$ 作比较，而 $\rvv$ 预测网络则与条件速度
 \[
 \rvv_t
 =
 \alpha_t'\rvx_0+\sigma_t'\beps.
 \]
-如后面的 \Cref{eq:predictions-equivalence} 所示，四种预测类型
-对相同的预言机信息进行编码，并且可以相互转换。
+作比较。正如后文 \Cref{eq:predictions-equivalence} 所示，四种预测类型
+编码的是相同的预言量信息，并且可以相互转换。
 
-\subparagraph{预测一个数量并评估另一个数量的损失。}
-网络输出和损失中使用的数量也可以选择
-分别。首先使用以下关系转换网络预测
-\Cref{eq:predictions-equivalence}，然后根据
-转换后的预测类型中对应的目标。
+\subparagraph{预测一个量、而在另一个量上计算损失。}
+网络的输出与损失中使用的量也可以分别选取。做法是先用
+\Cref{eq:predictions-equivalence} 中的关系把网络预测转换过去，再针对转换后预测类型所对应的目标计算损失。
 
-例如，根据规范时间表
+例如，在规范调度
 \[
 \rvx_t=(1-t)\rvx_0+t\beps,
 \]
-假设网络直接预测干净的数据
-$\rvx_{\bm{\phi}}(\rvx_t,t)$。将此预测转换为速度给出
+下，设网络直接预测干净数据
+$\rvx_{\bm{\phi}}(\rvx_t,t)$。把这一预测转换为速度，得
 \[
 \rvv_{\bm{\phi}}(\rvx_t,t)
 =
 \frac{\rvx_t-\rvx_{\bm{\phi}}(\rvx_t,t)}{t},
 \]
-而条件速度目标满足
+而条件速度目标为
 \[
 \rvv_t
 =
@@ -445,21 +423,11 @@ $\rvx_{\bm{\phi}}(\rvx_t,t)$。将此预测转换为速度给出
 \rvx_{\bm{\phi}}(\rvx_t,t)-\rvx_0
 \right\|_2^2.
 \]
-因此，在网络输出固定为干净预测的情况下，评估速度
-损失完全相当于应用一个额外的与时间相关的权重
-干净预测损失。广义仿射的对应关系
-时间表和其他预测类型稍后总结
-\Cref{eq:s-e-x-v-equi}。改变网络直接预测的数量会产生额外的影响
-效果。尽管神谕的预测在代数上是可转换的，
-然后训练有限神经网络来表示不同的函数，其中
-不同的输出尺度和参数梯度。网络的选择
-因此，预测可以与模型架构和优化相互作用，
-而损失的选择也控制着预测的相对权重
-噪声水平上的误差。
+因此，在网络的输出固定为干净数据预测的前提下，计算速度损失完全等价于给干净数据预测损失额外乘上一个与时间相关的权重。一般仿射调度以及其他预测类型的对应关系，稍后汇总在 \Cref{eq:s-e-x-v-equi} 中。
 
-为了清楚起见，\Cref{eq:general-dm-loss-D} 使用匹配的预测和损失
-除非另有说明。
+改变网络直接预测的量还会带来另一层影响。虽然预言量预测在代数上可以互相转换，但此时有限容量的神经网络要表示的是另一个函数，其输出尺度与参数梯度都随之不同。因此，网络预测目标的选择会与模型结构和优化过程相互作用；而损失的选择还控制着不同噪声水平上预测误差的相对权重。
 
+为表述清晰起见，除非另有说明，\Cref{eq:general-dm-loss-D} 都采用预测与损失相匹配的设定。
 
 
 
@@ -679,9 +647,9 @@ $\rvx_{\bm{\phi}}(\rvx_t,t)$。将此预测转换为速度给出
 
 
 
-\paragraph{(C) 时间分布 $p_{\text{time}}(t)$.}
-接下来我们考虑如何在 $t$ 期间对时间以及噪声水平进行采样
-训练。为了方便起见，定义固定时间回归损失
+
+\paragraph{(C) 时间分布 $p_{\text{time}}(t)$。}
+接下来考虑训练中时间 $t$（也就是噪声水平）是如何采样的。为方便起见，先定义固定时刻下的回归损失
 \[
 \mathcal{L}_t(\bm{\phi})
 :=
@@ -696,7 +664,7 @@ $\rvx_{\bm{\phi}}(\rvx_t,t)$。将此预测转换为速度给出
 \qquad
 \rvx_t=\alpha_t\rvx_0+\sigma_t\beps.
 \]
-那么 \Cref{eq:general-dm-loss-D} 可以紧凑地写为
+于是 \Cref{eq:general-dm-loss-D} 可以紧凑地写成
 \[
 \mathcal{L}(\bm{\phi})
 =
@@ -705,13 +673,10 @@ $\rvx_{\bm{\phi}}(\rvx_t,t)$。将此预测转换为速度给出
 \omega(t)\mathcal{L}_t(\bm{\phi})
 \right].
 \]
-因此，如果不进行校正，采样也会更频繁一些
-给予他们更多的目标权重。在确切预期的水平
-损失，只有产品 $p_{\text{time}}(t)\omega(t)$ 重要。
+由此可以看出，如果不做任何修正，某些时刻被采得更频繁，也就等于在目标中获得了更大的权重。在精确的期望损失层面，真正起作用的只是乘积 $p_{\text{time}}(t)\omega(t)$。
 
-非均匀采样的另一种用途是 \emph{ 重要性采样}。
-假设上述目标是固定的，但我们从提案中抽取时间
-$q_{\text{time}}(t)$。然后
+非均匀采样还有一种用法，即 \emph{重要性采样}。设上述目标保持不变，但改为从提议分布
+$q_{\text{time}}(t)$ 中抽取时间，则有
 \[
 \mathcal{L}(\bm{\phi})
 =
@@ -721,81 +686,53 @@ $q_{\text{time}}(t)$。然后
 \omega(t)\mathcal{L}_t(\bm{\phi})
 \right],
 \]
-在任何地方提供 $q_{\text{time}}(t)>0$
-$p_{\text{time}}(t)\omega(t)>0$。
-通过此修正，更改 $q_{\text{time}}$ 使目标
-不变，仅更改其蒙特卡罗估计量，例如其方差。
+只要在所有满足 $p_{\text{time}}(t)\omega(t)>0$ 的地方都有 $q_{\text{time}}(t)>0$ 即可。有了这一修正，改变 $q_{\text{time}}$ 并不会改变目标本身，只会改变它的蒙特卡罗估计量——例如估计的方差。
 
-因此，关键区别是：
+因此，关键区别在于：
 \begin{center}
 \small
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{@{}r@{\;\;$\Longrightarrow$\;\;}l@{}}
-改变目标中的$p_{\text{time}}$
+改变目标中的 $p_{\text{time}}$
 &
-权重不同，目标不同
+权重不同，目标也不同
 \\
-更改 $q_{\text{time}}$ $+$ 重要性修正
+改变 $q_{\text{time}}$ $+$ 重要性修正
 &
-相同的目标，不同的估计器
+目标相同，估计器不同
 \end{tabular}
 \end{center}
 
-因此，我们在概念上将时间采样和损失加权分开。
-均匀时间采样使得这种区别不那么明显，因为它的密度
-仅贡献一个常数因子，而对于非均匀采样，必须
-指定抽样分布是定义目标还是仅仅定义目标
-用作重要性抽样建议。
+因此，我们在概念上把“时间采样”与“损失加权”区分开来。均匀时间采样会让这一区别不那么显眼，因为它的密度只贡献一个常数因子；而在非均匀采样时，则必须说明清楚：这个采样分布究竟是在定义目标，还是仅仅充当重要性采样的提议分布。
 
-这两种用途都出现在扩散模型训练中。 ScoreFlow 明确使用
-重要性抽样以减少固定似然加权的方差
-目标~\citep{song2021maximum}。 VDM 和随后的分析类似地表明
-当目标固定在噪声级坐标中时，噪声
-时间表可以充当重要性抽样分布
-~\citep{kingma2021variational,kingma2023understanding}。
-相比之下，EDM~\citep{karras2022elucidating} 指定了非均匀
-噪声水平上的训练分布和单独的损失权重，其
-组合决定了有效的训练重量。\paragraph{(D) 时间计权功能 $\omega(t)$.}
-对于固定的$p_{\text{time}}$，加权函数$\omega(t)$决定
-不同时间对训练目标的相对贡献。
-与上一段一起，随时间变化的有效权重为
-因此 $p_{\text{time}}(t)\omega(t)$。
+这两种用法在扩散模型训练中都出现过。ScoreFlow 明确用重要性采样来降低一个固定的似然加权目标的方差~\citep{song2021maximum}。VDM 及后续分析同样表明，当目标在噪声水平坐标下固定时，噪声调度可以充当重要性采样分布~\citep{kingma2021variational,kingma2023understanding}。EDM~\citep{karras2022elucidating} 则相反：它既指定了一个非均匀的噪声水平训练分布，又单独指定了一个损失加权，两者的组合共同决定了实际生效的训练权重。
 
-一个简单的基线是使用 $\omega(t)\equiv1$ 进行均匀时间采样，如
-标准简化 $\beps$ 预测和 FM/RF 物镜
-~\citep{ho2020denoising,lipman2022flow,liu2022rectified}。
-其他权重强调不同的噪声状况，也可以携带
-似然或变分解释。例如，对于分数匹配
-目标，似然权重 $\omega(t)=g^2(t)$ 产生上限
-在适当的规律性条件下的负对数似然
-~\citep{song2021maximum}。更一般地说，依赖于 SNR 的权重提供了
-跨噪声级别重新分配训练重点的常用方法
-~\citep{kingma2021variational,kingma2023understanding}。
+\paragraph{(D) 时间加权函数 $\omega(t)$。}
+当 $p_{\text{time}}$ 固定时，加权函数 $\omega(t)$ 决定
+不同时刻对训练目标的相对贡献。
+结合上一段的讨论可知，随时间变化的有效权重
+正是 $p_{\text{time}}(t)\omega(t)$。
 
-\subparagraph{单调加权和带有增强视图的ELBO。}
-描述扰动程度的一个有用方法是通过
-\emph{log信噪比}（log-SNR）
+一个简单的基线是均匀时间采样加 $\omega(t)\equiv1$，例如标准的简化 $\beps$ 预测与 FM/RF 目标~\citep{ho2020denoising,lipman2022flow,liu2022rectified}。其他加权方式则侧重不同的噪声区间，也可能带有似然或变分上的解释。例如对分数匹配目标，取似然加权 $\omega(t)=g^2(t)$，在适当的正则条件下可得到负对数似然的一个上界~\citep{song2021maximum}。更一般地，基于信噪比的加权提供了一种常用手段，用来在不同噪声水平之间重新分配训练重点~\citep{kingma2021variational,kingma2023understanding}。
+
+\subparagraph{单调加权与“数据增强”视角下的 ELBO。}
+刻画扰动程度的一个有用手段是
+\emph{对数信噪比}（log-SNR）
 \[
 \Lambda_t
 :=
 \log\frac{\alpha_t^2}{\sigma_t^2}.
 \]
-我们使用 $\Lambda$ 来表示完整的对数 SNR，以区别于
+这里用 $\Lambda$ 表示完整的对数 SNR，以区别于
 半对数 SNR 坐标
-$\lambda_t=\log(\alpha_t/\sigma_t)=\tfrac12\Lambda_t$
-稍后用于\Cref{ch:solvers}。
-由于 $\Lambda_t$ 随着前向过程变得更加嘈杂而减小，之后
-用常见的预测参数化来表达损失，让
-$w(\Lambda)$ 表示分配给每个对数 SNR 级别的有效权重。
+$\lambda_t=\log(\alpha_t/\sigma_t)=\tfrac12\Lambda_t$——后者将在 \Cref{ch:solvers} 中使用。
+由于 $\Lambda_t$ 随着前向过程越来越嘈杂而减小，下面把损失用常见的预测参数化写出，并以
+$w(\Lambda)$ 表示分配给各个对数 SNR 水平的有效权重。
 
-\citet{kingma2023understanding} 的一个有用结果是，如果
-$w(\Lambda)$ 在 $\Lambda$ 中不增加（相当于，它的重量不增加）
-不会随着前向过程变得更加嘈杂而减少），那么加权
-扩散目标可以重写，最多可达与模型无关的项
-参数，作为高斯扰动数据上的平均负 ELBO
+\citet{kingma2023understanding} 给出的一个有用结论是：若
+$w(\Lambda)$ 关于 $\Lambda$ 不增（等价地说，其权重不会随前向过程变得更嘈杂而减小），则加权扩散目标可以改写成高斯扰动数据上的平均负 ELBO，至多相差一个与模型参数无关的项
 \footnote{
-要了解为什么单调性很重要，请定义剩余的变分成本：
-噪声水平 $t$ 起为
+要看清单调性为何重要，先定义从噪声水平 $t$ 起的剩余变分代价：
 \[
 L(t;\rvx_0)
 :=
@@ -806,11 +743,7 @@ p(\rvx_{[t,T]}|\rvx_0)
 p_{\bm{\phi}}(\rvx_{[t,T]})
 \right),
 \]
-其中 $\rvx_{[t,T]}:=\{\rvx_s\}_{s\in[t,T]}$ 表示剩余的
-连续的扩散路径。这是连续时间对应的
-\Cref{eq:ddpm-elbo} 中的负 ELBO，从扰动水平 $t$ 开始；
-更准确地说，它等于扰动样本的预期负 ELBO
-$\rvx_t$，直至独立于 $\bm{\phi}$ 的条款。
+其中 $\rvx_{[t,T]}:=\{\rvx_s\}_{s\in[t,T]}$ 表示剩余的那段连续扩散路径。这是 \Cref{eq:ddpm-elbo} 中负 ELBO 的连续时间版本，起点为扰动水平 $t$；更准确地说，它等于扰动样本 $\rvx_t$ 的期望负 ELBO，至多相差与 $\bm{\phi}$ 无关的项。
 
 对于 $\beps$ 预测，\citet{kingma2023understanding} 表明
 \[
@@ -839,23 +772,14 @@ L(t;\rvx_0)\diff t
 C,
 \]
 其中 $C$ 独立于 $\bm{\phi}$。
-如果 $w(\Lambda)$ 在 $\Lambda$ 中不增加，则
-$\frac{\diff}{\diff t}w(\Lambda_t)\geq0$ 因为 $\Lambda_t$ 随
-$t$。因此，归一化后，上述各项形成非负权重
-在不同高斯噪声水平下的 ELBO 上，这给出了
-ELBO 高斯增强解释。
+若 $w(\Lambda)$ 关于 $\Lambda$ 不增，则因 $\Lambda_t$ 随
+$t$ 递减而有 $\frac{\diff}{\diff t}w(\Lambda_t)\geq0$。于是归一化之后，上式各项给出的是不同高斯噪声水平下 ELBO 的非负权重组合，从而得到 ELBO 的高斯数据增强解释。
 }。
 
-因此，单调加权有一个具体的概率解释：
-不仅仅是强调某些噪声水平而不是其他噪声水平，它可以
-被视为对高斯损坏版本的变分训练进行平均
-不同扰动强度的数据。\paragraph{结论.}
-就我们的目的而言，主要的教训是许多明显的设计选择
-扩散训练可以通过它们如何重塑
-对目标中的噪声水平进行有效加权。这个权重
-反过来又影响实践中的优化景观，以及
-特殊情况，例如单调加权、变分加权
-损失的解释。
+因此，单调加权有一个明确的概率解释：它不只是“多强调某些噪声水平、少强调另一些”，而是等价于在不同扰动强度的高斯扰动数据上，对各自的变分训练做平均。
+
+\paragraph{小结。}
+就本书的目的而言，要点在于：扩散训练中许多看似不同的设计选择，都可以从“它们如何重塑目标中对噪声水平的有效加权”这一角度来理解。而这个加权又会影响实际优化问题的景观，并在某些特殊情形（如单调加权）下导出损失函数的变分解释。
 
 
 
@@ -870,64 +794,63 @@ ELBO 高斯增强解释。
 
 
 \section{扩散模型中的等价}\label{sec:equivalent-parametrizations}
-扩散模型的许多公式看起来不同，因为它们使用
-不同的预测类型、训练目标、噪声表或
-连续时间动力学。在本节中，我们将阐明准确的含义
-这些公式在精确的理论水平上是等效的，以及如何
-对于实践中学习的模型，他们的行为仍然可能有所不同。
+扩散模型的许多公式看起来各不相同，因为它们使用了
+不同的预测类型、训练目标、噪声调度或
+连续时间动力学。本节要厘清的是：这些公式在精确的理论层面上究竟
+在什么意义下等价，以及对于实际训练出来的模型，它们的行为为何仍可能不同。
 
-在精确或预言级别，将出现几种等价概念：
+在精确层面（即预言量层面），会出现几种不同的等价概念：
 \begin{itemize}
-    \item \textbfs{预测.}
-    考虑到噪声观测值 $\rvx_t$ 和远期时间表、干净数据，
-    噪声、分数和速度预言机包含相同的信息，并且可以
-    通过代数方式相互转换。
-    
-    \item \textbfs{训练目标.}
-    以不同预测类型编写的平方误差目标可能会有所不同
-    正向时间相关因素，同时共享相同的逐点预言
-    最小化器。这些因素决定了噪声水平的差异程度
-    训练时称重。
-    
-    \item \textbfs{仿射正向过程.}
-    在粒子级别，仿射前向过程
+    \item \textbfs{预测。}
+    给定含噪观测 $\rvx_t$ 与前向调度，干净数据、
+    噪声、分数与速度这四种预言量所包含的信息完全相同，
+    并且可以通过代数运算相互转换。
+
+    \item \textbfs{训练目标。}
+    用不同预测类型写出的平方误差目标，可能相差一个
+    与时间相关的前因子，但它们的逐点预言
+    最小化器是相同的。这些因子决定了训练时
+    不同噪声水平被加权的程度。
+
+    \item \textbfs{仿射前向过程。}
+    在粒子层面，仿射前向过程
     \[
     \rvx_t=\alpha_t\rvx_0+\sigma_t\beps
     \]
-    可以通过状态重新缩放和规范仿射形式相关
-    对应的规范坐标。当这个坐标演化时
-    与时间单调地，该关系还定义了时间重新参数化。
-    
-    \item \textbfs{边缘密度路径.}
-    在密度水平上，不同的确定性和随机动力学可以
-    产生相同的边缘路径 $\{p_t\}_{t\in[0,T]}$。他们的样本
-    轨迹可能会有所不同，而 $p_t$ 的演变则受
-    相应的连续性或福克尔-普朗克方程。
+    可以通过状态重缩放，与规范仿射形式以及
+    对应的规范坐标相互关联。当该坐标随时间单调演化时，
+    这一关系还同时定义了时间重参数化。
+
+    \item \textbfs{边缘密度路径。}
+    在密度层面，不同的确定性动力学与随机动力学可以
+    产生同一条边缘路径 $\{p_t\}_{t\in[0,T]}$。它们的样本
+    轨迹可能大不相同，而 $p_t$ 的演化都由
+    相应的连续性方程或福克尔—普朗克方程支配。
 \end{itemize}
-我们开发了从预测到采样的这些联系。
-\Cref{subsec:four-equiv-para} 首先讲述四种常见的预言机预测
+下面依次展开这些联系，从预测一直到采样。
+\Cref{subsec:four-equiv-para} 先讲四种常见的预言量预测
 类型及其训练损失。
-\Cref{subsec:pf-ode-different-para} 然后展示了这些预测如何导致
-同一预言的不同表达PF——ODE。
-接下来，\Cref{subsec:all-flows-are-equiv} 将仿射概率路径与
-规范线性和三角函数形式。
-最后，\Cref{subsec:concept-why-v-affine} 开发了额外的直觉
-规范的线性计划和速度预测，包括它们的
+\Cref{subsec:pf-ode-different-para} 随后说明这些预测如何导出
+对同一个预言量的不同表述——PF-ODE。
+接下来，\Cref{subsec:all-flows-are-equiv} 把仿射概率路径与
+规范的线性形式和三角形式联系起来。
+最后，\Cref{subsec:concept-why-v-affine} 给出关于
+规范线性调度与速度预测的进一步直觉，包括它们
 对训练和数值积分的影响。
 
-这些精确的关系提供了通用的数学基础，而实际的选择仍然有意义。有限神经网络可能会以不同的方式近似等效的预言量，并且损失权重、优化、模型架构和数值积分可能会导致不同的训练和采样行为。
+这些精确的关系提供了通用的数学基础，而实际中的选择仍然是有意义的：有限容量的神经网络对等价的预言量会有不同的近似，损失加权、优化过程、模型结构与数值积分也都可能导致不同的训练与采样表现。
 
 
 
 
-\subsection{四种预测类型是等效的}\label{subsec:four-equiv-para}
-我们首先分析组件 (B) 的设计选择 \Cref{eq:general-dm-loss-D}。我们已经看到，四种预测类型并不是独立的选择，而是对同一基础量的不同看法。例如，噪声和干净的预测直接相关（\Cref{subsec:ddpm-prediction})，分数和噪声预测也是如此（\Cref{sec:SMLD}）。这种重复出现的模式指出了一个更深层次的原理：所有四种参数化在代数上都是等效的，并且可以通过简单的变换相互转换。为了使这种联系更加精确，我们提出以下命题，如图所示 \Cref{fig:equiv-parametrizations}，以下~\citep{kingma2021variational}.
+\subsection{四种预测类型是等价的}\label{subsec:four-equiv-para}
+先分析 \Cref{eq:general-dm-loss-D} 中 (B) 这一设计选项。前面已经看到，四种预测类型并不是彼此独立的选择，而是对同一个基础量的不同看法。例如，噪声预测与干净数据预测之间存在直接的对应关系（\Cref{subsec:ddpm-prediction}），分数预测与噪声预测也是如此（\Cref{sec:SMLD}）。这一反复出现的现象指向一个更深的原理：四种参数化在代数上都是等价的，都可以通过简单变换相互转换。为把这一联系说得更精确，我们给出下面的命题（见 \Cref{fig:equiv-parametrizations}），它沿用~\citep{kingma2021variational} 的结论。
 \proppp{参数化的等价}{equi-para}{
-让最小化各自目标的最优预测为
+设各自目标的最优预测为
 \[
 \bm{\epsilon}^*(\rvx_t,t) , \quad \rvx^*(\rvx_t,t), \quad \rvs^*(\rvx_t,t) , \quad \rvv^*(\rvx_t,t),
 \]
-对应于噪声、清音、乐谱和速度参数化。这些满足以下等价关系：
+它们分别对应噪声、干净数据、分数与速度这几种参数化。这些量满足如下等价关系：
 \begin{equation}\label{eq:predictions-equivalence}
 \begin{aligned}
 \bm{\epsilon}^*(\rvx_t,t) &= -\sigma_t \rvs^*(\rvx_t,t), \\
@@ -937,8 +860,8 @@ ELBO 高斯增强解释。
 = f(t)\rvx_t - \frac{1}{2} g^2(t)\rvs^*(\rvx_t,t).
 \end{aligned}
 \end{equation}
-这里， $f(t)$ 和 $g(t)$ 与相关 $\alpha_t$ 和 $\sigma_t$ 通过引理~\ref{forward-sde}。此外，这些最小化器满足以下给出的恒等式 \Cref{eq:noise-def,eq:clean-def,eq:score-def,eq:velocity-def}. 
-}{证明与定理类似~\ref{dsm-minimizer}，分析了DSM目标下各种匹配损失的全局最优。参见 \Cref{app-sec:equiv-para} 了解详情。
+此处的 $f(t)$ 与 $g(t)$ 通过引理~\ref{forward-sde} 与 $\alpha_t$、$\sigma_t$ 相联系。此外，这些最小化器还满足由 \Cref{eq:noise-def,eq:clean-def,eq:score-def,eq:velocity-def} 给出的恒等式。
+}{证明与定理~\ref{dsm-minimizer} 类似：分析 DSM 目标下各类匹配损失的全局最优解。详见 \Cref{app-sec:equiv-para}。
 }
 
 
@@ -984,19 +907,16 @@ ELBO 高斯增强解释。
 
 
 \end{tikzpicture}
-\caption{\textbfs{四种预言机参数化之间的等价关系。}
-每个预言机预测都可以使用前向调度和观察到的状态转换为其他预言机预测 $\rvx_t$。例如，
+\caption{\textbfs{四种预言量参数化之间的等价关系。}
+借助前向调度与观测到的状态 $\rvx_t$，每一种预言量预测都可以转换为其他预言量预测。例如，
 $\rvv^*=\alpha_t'\rvx^*+\sigma_t'\bm{\epsilon}^*$，同时 $\rvx$- 和
 $\beps$-预测满足
 $\rvx_t=\alpha_t\rvx^*+\sigma_t\bm{\epsilon}^*$.
 \figcredit{由作者创建。}}
     \label{fig:equiv-parametrizations}
 \end{figure}
-这个命题最自然地被理解为等价于
-\emph{预言机信息}。在任何噪声水平下，了解一个预言机预测以及噪声观察 $\rvx_t$ 和前向调度一样，通过中的恒等式确定其他人
-\Cref{eq:predictions-equivalence}。例如，分数决定了后验均值干净预测，而其中任何一个都决定了 PF-ODE 速度。因此，在预言机级别，这些参数化包含有关底层扩散过程的相同信息。然而，对于学习模型，必须区分这种预言等价物
-来自神经网络直接预测的数量。一个人可以选择
-任何一个
+这个命题最自然的理解方式是：它讲的是
+\emph{预言量信息} 的等价。在任意噪声水平下，只要知道其中一种预言量预测，再结合含噪观测 $\rvx_t$ 与前向调度，就可以通过 \Cref{eq:predictions-equivalence} 中的恒等式确定其余三种。例如，分数预测就决定了后验均值意义上的干净数据预测，而这四者中任何一个都能确定 PF-ODE 的速度。因此，在预言量层面，这些参数化所携带的关于底层扩散过程的信息完全相同。不过对于实际学习的模型，还必须把这种预言量层面的等价，与“神经网络直接预测的是哪个量”区分开来。网络输出可以任选其中之一：
 \[
 \bm{\epsilon}_{\bm{\phi}}(\rvx_t,t),
 \quad
@@ -1006,11 +926,9 @@ $\rvx_t=\alpha_t\rvx^*+\sigma_t\bm{\epsilon}^*$.
 \quad
 \rvv_{\bm{\phi}}(\rvx_t,t)
 \]
-作为网络输出。一旦一个预测被视为主要预测，其他预测就会
-可以通过与以下相同的代数转换来定义
-\Cref{eq:predictions-equivalence}。特别是，对于经过训练的模型
-参数$\bm{\phi}^\times$，这些转换后的预测正是
-结构一致；例如，
+作为网络输出。一旦把某一种预测视作“主”预测，其他预测就可以
+用 \Cref{eq:predictions-equivalence} 中同样的代数变换来定义。特别地，对于训练好的模型
+参数 $\bm{\phi}^\times$，这些转换得到的预测在结构上是彼此一致的；例如
 \[
 \rvx
 =
@@ -1020,42 +938,42 @@ $\rvx_t=\alpha_t\rvx^*+\sigma_t\bm{\epsilon}^*$.
 \sigma_t
 \beps_{\bm{\phi}^\times}(\rvx,t).
 \]
-这些转换在训练期间和训练后都很有用。例如，
-噪声预测可以转换为反向 SDE 采样的分数
-或转换为 PF-ODE 采样的速度。
+这些转换在训练中和训练后都很有用。例如，
+噪声预测可以转换为用于反向 SDE 采样的分数，
+也可以转换为用于 PF-ODE 采样的速度。
 
-网络预测参数化也应该与
-\emph{ 训练损失 }。正如在（B）部分中所讨论的
-\Cref{eq:general-dm-loss-D}，网络输出的数量无需
-评估损失的数量：预测可能首先是
-在计算目标之前转换为另一个参数化。
-这种转换通常会改变平方误差目标
-与时间相关的加权，如稍后在 \Cref{eq:s-e-x-v-equi} 中所示。
+另外要注意，网络预测所用的参数化，与
+\emph{训练损失} 所用的参数化并不一定要一致。正如 \Cref{eq:general-dm-loss-D} 的 (B) 部分所讨论的，网络输出的量与计算损失的量可以不
+相同：可以先把预测转换到另一种参数化，再计算目标。
+这种转换通常会改变平方误差目标的
+时间相关加权，稍后将在 \Cref{eq:s-e-x-v-equi} 中说明。
 
-这些区别对于有限神经网络很重要。虽然神谕
-目标是信息等价的，直接预测不同的数量
-引导网络表示和优化不同的功能，并且
-相应的目标可能对噪声水平进行不同的加权。因此，
-在不同的预测参数化下独立训练的模型
-不需要产生相同的经验预测或相同的 PF-ODE。
-因此，该命题的等价性涉及信息
-由理想的神谕预测所承载；网络输出参数化
-训练目标仍然是独立且有意义的设计选择。
+这些区别对有限容量的神经网络很重要。虽然各种预言量
+目标在信息上是等价的，但直接预测不同的量，
+会引导网络去表示和优化不同的函数，而
+相应的目标也可能对不同噪声水平给出不同的加权。因此，
+分别在不同的预测参数化下独立训练出来的模型，
+未必给出相同的经验预测，也未必对应相同的 PF-ODE。
+所以，该命题所说的等价只涉及
+理想预言量预测所承载的信息；“网络输出用哪种参数化”
+以及“训练目标怎么设计”，仍然是彼此独立、且有意义的设计选择。
 
 
-不同参数化的 \subsection{PF-ODE}\label{subsec:pf-ode-different-para} 
-PF-ODE 允许几个等效参数化（分数、噪声、去噪和速度）。 
-尽管原则上可以互换，但这种选择具有实际后果：它改变了矢量场的刚度、离散化误差的行为以及优化的难易程度。
-为了使用高级 ODE 求解器进行快速采样（请参阅 \Cref{ch:solvers}），从业者经常使用 $\beps$ 或 $\rvx$ 预测，因为它们与求解器输入很好地对齐并减少误差累积。
-对于仅使用少量函数评估的训练生成器（请参阅 \Cref{ch:fast-scratch}），$\rvx$ 或 $\rvv$ 预测通常会产生更平滑的目标和更好的逐步一致性。
+\subsection{不同参数化下的 PF-ODE}\label{subsec:pf-ode-different-para}
+PF-ODE 可以有若干种等价的参数化（分数、噪声、去噪与速度）。
+尽管在原理上可以互换，这一选择却有实际后果：它会改变向量场的刚性、离散化误差的表现以及优化起来的难易程度。
+若要用高阶 ODE 求解器做快速采样（参见 \Cref{ch:solvers}），实践中常采用 $\beps$ 或 $\rvx$ 预测，因为它们与求解器的输入形式契合良好，并能减少误差累积。
+而对于只允许少量函数评估的训练生成器（参见 \Cref{ch:fast-scratch}），$\rvx$ 预测或 $\rvv$ 预测往往能带来更平滑的目标以及更好的逐步一致性。
 
 
-我们在每个参数化下编写 PF-ODE 并使得
-使用 \Cref{eq:predictions-equivalence} 显式转换。的
-结果收集在以下命题中。不同参数化的 \proppnp{PF-ODE}{pf-ode-para}{
-令 $\alpha_t$ 和 $\sigma_t$ 为前向扰动表，并用下式表示时间导数：
+下面把 PF-ODE 分别在每种参数化下写出，并借助
+\Cref{eq:predictions-equivalence} 显式地相互转换。所得
+结果汇总在下面的命题中。
+
+\proppnp{不同参数化下的 PF-ODE}{pf-ode-para}{
+设 $\alpha_t$ 与 $\sigma_t$ 为前向扰动调度，并记时间导数为
 $\alpha_t' := \tfrac{\diff \alpha_t}{\diff t}$ 和 $\sigma_t' := \tfrac{\diff \sigma_t}{\diff t}$。
-那么经验 PF-ODE 承认等价形式
+那么经验 PF-ODE 有如下等价形式：
 \begin{align}\label{eq:clean_pf_ode}
 \begin{aligned}
     \frac{\diff \rvx(t)}{\diff t}
@@ -1087,9 +1005,7 @@ g^2(t) = \frac{\diff}{\diff t} \big(\sigma_t^2\big)
 = f(t) \rvx(t)  -  \frac{1}{2} g^2(t) \rvs^*(\rvx(t),t).
 \]
 
-具体了解 PF-ODE 是如何离散化的
-为了进行采样，我们将在 \Cref{sec:revisit-ddim} 中呈现 a 的更新规则
-广泛使用的基于扩散的 ODE 采样器，即 DDIM 方案。此示例将展示欧拉离散化如何自然地与 PF-ODE 连接。
+若想具体看看 PF-ODE 是如何被离散化用于采样的，可参见 \Cref{sec:revisit-ddim}：那里给出了一种广泛使用的基于扩散的 ODE 采样器——DDIM 方案——的更新规则。这个例子会展示欧拉离散化如何自然地与 PF-ODE 衔接起来。
 
 
 
@@ -1097,19 +1013,19 @@ g^2(t) = \frac{\diff}{\diff t} \big(\sigma_t^2\big)
 
 
 
-\subsection{所有仿射流都是等效的}\label{subsec:all-flows-are-equiv}
-接下来我们分析 \Cref{eq:general-dm-loss-D} 中组件 (A) 的设计选择。
+\subsection{所有仿射流都是等价的}\label{subsec:all-flows-are-equiv}
+接下来分析 \Cref{eq:general-dm-loss-D} 中 (A) 这一设计选项。
 
-\paragraph{国家级等效.}
-FM~\citep{lipman2022flow} 和 RF~\citep{liu2022rectified} 中使用的便捷规范插值是
+\paragraph{规范形式下的等价。}
+FM~\citep{lipman2022flow} 与 RF~\citep{liu2022rectified} 中采用的便捷规范插值是
 \[
 \rvx_t^{\mathrm{FM}}=(1-t) \rvx_0+t \beps = \rvx_{0}+t(\beps-\rvx_0),
 \]
-其速度为常数向量$\beps-\rvx_0$。本小节的关键点是，这种选择的表面简单性并不重要：任何仿射插值
+其速度为常向量 $\beps-\rvx_0$。本小节的要点是：这种选择表面上看似简单，其实无关紧要——任何仿射插值
 \[
 \rvx_t=\alpha_t \rvx_0+\sigma_t \beps
 \]
-可以写成规范路径的时间重新参数化和重新缩放版本。定义
+都可以写成规范路径经过时间重参数化与重缩放之后的版本。定义
 \[
 c(t):=\alpha_t+\sigma_t,
 \qquad
@@ -1125,15 +1041,15 @@ c(t):=\alpha_t+\sigma_t,
 &=c(t) \left(\big(1-\tau(t)\big)\rvx_0+\tau(t)\beps\right)
 =c(t) \rvx_{\tau(t)}^{\mathrm{FM}}.
 \end{align*}
-因此，每当 $c(t)\neq0$ 时，每个仿射路径都可以逐点表示
-作为规范路径的标量重新缩放。另外，如果 $\tau(t)$ 是
-在感兴趣的时间间隔内连续且严格单调，那么
-$t\mapsto\tau(t)$也是正品变时间变量，两条路径
-通过时间重新参数化和缩放 $c(t)$ 相关。
-对于通常的前向扩散方案，单调衰减
-信噪比意味着 $\tau(t)$ 的单调演化。
+可见只要 $c(t)\neq0$，任何仿射路径都可以逐点表示为
+规范路径的一个标量重缩放。此外，如果 $\tau(t)$ 在
+所关心的时间区间上连续且严格单调，那么
+$t\mapsto\tau(t)$ 本身就是一个合法的（重新参数化的）时间变量，两条路径
+便通过时间重参数化与缩放 $c(t)$ 联系在一起。
+对常见的前向扩散调度而言，信噪比单调衰减，
+也就意味着 $\tau(t)$ 单调演化。
 
-对于关联的速度，将链式法则应用于 $\rvx_t=c(t)\rvx_{\tau(t)}^{\mathrm{FM}}$：
+至于相应的速度，对 $\rvx_t=c(t)\rvx_{\tau(t)}^{\mathrm{FM}}$ 应用链式法则：
 \begin{align*}
 \rvv(\rvx_t,t)
 &:= \frac{\diff}{\diff t}\left(\alpha_t\rvx_0 +\sigma_t \beps\right)
@@ -1142,20 +1058,19 @@ $t\mapsto\tau(t)$也是正品变时间变量，两条路径
 &=c'(t) \rvx_{\tau(t)}^{\mathrm{FM}}+c(t) \tau'(t) \frac{\diff}{\diff s}\rvx^{\mathrm{FM}}_{s}\bigg|_{s=\tau(t)} \\
 &=c'(t) \rvx_{\tau(t)}^{\mathrm{FM}}+c(t) \tau'(t) \rvv^{\mathrm{FM}} \left(\rvx_{\tau(t)}^{\mathrm{FM}},\tau(t)\right),
 \end{align*}
-自 $\rvv^{\mathrm{FM}}(\rvx^{\mathrm{FM}}_{\tau},\tau)=-\rvx_0+\beps$ 起沿着规范路径。
+这里用到了沿规范路径成立的 $\rvv^{\mathrm{FM}}(\rvx^{\mathrm{FM}}_{\tau},\tau)=-\rvx_0+\beps$。
 
-我们将上述推导总结为以下命题中的正式陈述。
+上述推导可归纳为下面的正式命题。
 
-\proppnp{仿射流的等价}{equiv-interpolation}{
-让
+\proppnp{仿射流的等价性}{equiv-interpolation}{
+记
 $\rvx_t^{\mathrm{FM}}=(1-t)\rvx_0+t\beps$
-和
+以及
 $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$，
-与
-$c(t):=\alpha_t+\sigma_t\neq0$
-和
+并令
+$c(t):=\alpha_t+\sigma_t\neq0$、
 $\tau(t):=\sigma_t/(\alpha_t+\sigma_t)$。
-然后
+则有
 \begin{align}\label{eq:fm-general-affine-formula}
 \begin{aligned}
 \rvx_t
@@ -1173,47 +1088,47 @@ c(t)\tau'(t)
 \right).
 \end{aligned}
 \end{align}
-因此，每个 $c(t)\neq0$ 的仿射插值都承认这个规范
-州级代表。当 $\tau(t)$ 额外连续且
-严格单调，也可以解释为时间重新参数化
-与标量重新缩放 $c(t)$ 一起。
+因此，每个满足 $c(t)\neq0$ 的仿射插值都有这样的规范
+状态级表示。若 $\tau(t)$ 还连续且
+严格单调，该表示还可以进一步解释为时间重参数化，
+并配合标量重缩放 $c(t)$。
 }
 
-\subparagraph{与三角流等效。}
-另一种广泛使用的仿射流是三角插值~\citep{salimans2021progressive,albergo2023stochastic,lu2024simplifying}。作为一个具体的例子，我们还表明 \emph{任意} 仿射流可以用这种形式表示。三角路径定义为
+\subparagraph{与三角流的等价性。}
+另一种被广泛使用的仿射流是三角插值~\citep{salimans2021progressive,albergo2023stochastic,lu2024simplifying}。作为一个具体例子，我们还可以说明：\emph{任意} 仿射流都能写成这种形式。三角路径定义为
 \begin{align}\label{eq:trig-para}
 \rvx^{\mathrm{Trig}}_u := \cos(u) \rvx_0 + \sin(u)\beps .
 \end{align}
-让 $R_t := \sqrt{\alpha_t^2 + \sigma_t^2}$ 并假设 $R_t>0$。选择一个角度 $\tau_t$ 这样
+令 $R_t := \sqrt{\alpha_t^2 + \sigma_t^2}$，并设 $R_t>0$。选取角度 $\tau_t$ 使得
 \[
 \cos \tau_t = \frac{\alpha_t}{R_t},
 \qquad
 \sin \tau_t = \frac{\sigma_t}{R_t}.
 \]
-然后每次仿射插值 $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 允许逐点重新缩放和重新定时的三角路径：
+于是每条仿射插值 $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$ 都可以写成经过逐点重缩放与重新定时的三角路径：
 \begin{align}\label{eq:any-to-trig}
 \rvx_t
 = \alpha_t\rvx_0+\sigma_t\beps
 = R_t \left(\frac{\alpha_t}{R_t}\rvx_0+\frac{\sigma_t}{R_t}\beps\right)
 = R_t \rvx^{\mathrm{Trig}}_{\tau_t}.
 \end{align}
-一对 $(\alpha_t,\sigma_t)$ 是平面上的一点。标准化为 $R_t$ 将其放在单位圆上，固定角度 $\tau_t$ 因此状态 $\rvx^{\mathrm{Trig}}_{\tau_t}$;半径 $R_t$ 给出总体规模。如果 $\tau_t$ 还可以选择为连续且严格单调的函数 $t$ 在感兴趣的区间上，这种状态级表示还定义了真正的时间重新参数化。差异化 $\rvx^{\mathrm{Trig}}_u$ 相对于 $u$ 给出其速度，  
+可以把一对 $(\alpha_t,\sigma_t)$ 看成平面上的一个点：除以 $R_t$ 做归一化后，它落在单位圆上，其角度 $\tau_t$ 决定了状态 $\rvx^{\mathrm{Trig}}_{\tau_t}$；半径 $R_t$ 则给出整体尺度。如果还能把 $\tau_t$ 取为 $t$ 在相应区间上连续且严格单调的函数，那么这种状态级表示就进一步定义了真正的时间重参数化。对 $\rvx^{\mathrm{Trig}}_u$ 关于 $u$ 求导即可得其速度：  
 \[
 \rvv^{\mathrm{Trig}}_u = -\sin(u) \rvx_0 + \cos(u) \beps.
 \]
-通过与中相同的变量更改 \Cref{eq:any-to-trig}，此关系提供速度的封闭形式转换（以及类似的其他参数化）。总结以上讨论，我们得出以下结论：
-\msg{结论}{}{无论日程安排如何 $(\alpha_t,\sigma_t)$，包括VE、VP（例如三角）、FM或RF，仿射插值可以通过时间变量的适当变化和标量重新缩放来相互转换。}
+借助与 \Cref{eq:any-to-trig} 相同的变量替换，这一关系给出了速度之间的闭式转换（其他参数化同理）。综合以上讨论，可得：
+\msg{结论}{}{无论调度 $(\alpha_t,\sigma_t)$ 如何取值——包括 VE、VP（例如三角插值）、FM 或 RF——各种仿射插值都可以通过适当的时间变量替换与标量重缩放相互转换。}
 
 
 
 \paragraph{四种参数化的训练目标。}
-让 $\rvx_t=\alpha_t \rvx_0+\sigma_t \beps$ 有 $\sigma_t>0$ 和可微分 $(\alpha_t,\sigma_t)$ 这样 $\alpha_t'\sigma_t-\alpha_t\sigma_t'\neq 0$。考虑预言机目标
+设 $\rvx_t=\alpha_t \rvx_0+\sigma_t \beps$，其中 $\sigma_t>0$，$(\alpha_t,\sigma_t)$ 可微且满足 $\alpha_t'\sigma_t-\alpha_t\sigma_t'\neq 0$。考虑如下预言量目标
 \[
 \beps^*(\rvx_t,t)=\E[\beps|\rvx_t],\quad 
 \rvx_0^*(\rvx_t,t)=\E[\rvx_0|\rvx_t],\quad
 \rvv^*(\rvx_t,t)=\E[\alpha_t'\rvx_0+\sigma_t'\beps|\rvx_t].
 \]
-来自命题~\ref{equi-para}，他们满足
+由命题~\ref{equi-para}，它们满足
 \[
 \nabla_{\rvx_t}\log p_t(\rvx_t)
 = -\frac{1}{\sigma_t} \beps^*(\rvx_t,t)
@@ -1221,18 +1136,18 @@ c(t)\tau'(t)
 \quad
 \rvv^*=\alpha_t' \rvx_0^*+\sigma_t' \beps^*.
 \]
-头下转换
+据此可写出如下转换：
 \[
 \rvs_{\bphi} \equiv -\frac{1}{\sigma_t} \beps_{\bphi}
 \equiv \frac{\alpha_t}{\sigma_t^2} \left(\rvx_{\bphi}-\frac{\rvx_t}{\alpha_t}\right),
 \]
-速度到分数的转换为
+而由速度到分数的转换为
 \[
 \rvs_{\bphi}
 = \frac{\alpha_t}{\sigma_t(\alpha_t'\sigma_t-\alpha_t\sigma_t')} \rvv_{\bphi}
 - \frac{\alpha_t'}{\sigma_t(\alpha_t'\sigma_t-\alpha_t\sigma_t')} \rvx_t,
 \]
-每个样本的平方损失与时间相关的权重相匹配：
+相应地，各参数化下的逐样本平方损失之间只差一个与时间相关的权重：
 \begin{align}\label{eq:s-e-x-v-equi}
 \begin{aligned}
 \big\|\rvs_{\bphi}-\nabla_{\rvx_t}\log p_t(\rvx_t)\big\|_2^2
@@ -1243,16 +1158,16 @@ c(t)\tau'(t)
 \end{aligned}
 \end{align}
 
-按提议~\ref{equiv-interpolation}，任意仿射流 $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$
-可通过以下方式传输至规范 FM 路径 $\rvx_t=c(t)\rvx^{\mathrm{FM}}_{\tau(t)}$ 与
-$c(t)=\alpha_t+\sigma_t$ 和 $\tau(t)=\sigma_t/(\alpha_t+\sigma_t)$。微分给出
+根据命题~\ref{equiv-interpolation}，任意仿射流 $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$
+都可以映射到规范 FM 路径 $\rvx_t=c(t)\rvx^{\mathrm{FM}}_{\tau(t)}$，其中
+$c(t)=\alpha_t+\sigma_t$、$\tau(t)=\sigma_t/(\alpha_t+\sigma_t)$。求导可得
 \[
 \rvv_{\bphi}(\rvx_t,t)=c'(t)\rvx^{\mathrm{FM}}_{\tau(t)}
 +c(t)\tau'(t)\rvv^{\mathrm{FM}}_{\bphi} \left(\rvx_{\tau(t)}^{\mathrm{FM}},\tau(t)\right),
 \qquad
 \rvx_{\tau(t)}^{\mathrm{FM}}=\frac{\rvx_t}{c(t)},
 \]
-同样的关系适用于 $\rvv^*$。因此速度损失变换为
+$\rvv^*$ 也满足同样的关系。于是速度损失变为
 \begin{align*}
     \big\|\rvv_{\bphi}(\rvx_t,t)-\rvv^*(\rvx_t,t)\big\|_2^2
 = \big(c(t) \tau'(t)\big)^2
@@ -1260,35 +1175,35 @@ $c(t)=\alpha_t+\sigma_t$ 和 $\tau(t)=\sigma_t/(\alpha_t+\sigma_t)$。微分给�
 -\big(\rvv^{\mathrm{FM}}\big)^* \left(\frac{\rvx_t}{c(t)},\tau(t)\right)\Big\|_2^2.
 \end{align*}
 
-通过上述观察，我们得出以下结论：
-\msg{结论}{}{分数、噪声、干净和速度训练目标在理论上与时间相关的权重是等效的（并且，对于速度，涉及仿射头转换 $\rvx_t$) 确定 $(\alpha_t,\sigma_t)$.}
+由上述观察可得：
+\msg{结论}{}{分数、噪声、干净数据与速度这四类训练目标，在理论上只相差一个与时间相关的权重（对速度目标而言，还涉及由 $(\alpha_t,\sigma_t)$ 确定的仿射转换 $\rvx_t$）。}
 
 
-\subsection{（选读）参数化和规范流分析}\label{subsec:concept-why-v-affine}
-尽管我们在前面的部分中已经表明，所有四种参数化在数学上都是等效的并且可以相互转换，并且前向仿射噪声注入流等效于规范形式
+\subsection{（选读）参数化与规范流的分析}\label{subsec:concept-why-v-affine}
+前面的章节已经表明：四种参数化在数学上彼此等价、可以相互转换，并且前向仿射加噪流等价于规范形式
 \[
 \rvx_t^{\mathrm{FM}} = (1-t) \rvx_0 + t \beps,
 \]
-在本小节中，我们提供进一步的直觉并分析使用 $\rvv$-预测参数化以及该规范仿射流。本小节提出一个简单的问题： \emph{不同的参数化和时间表如何塑造模型学习的内容以及我们如何采样？} 我们从两个概念角度出发：
+本小节将提供进一步的直观理解，并分析 $\rvv$ 预测参数化与这一规范仿射流的配合使用。这里要回答的问题很简单：\emph{不同的参数化与调度，如何塑造模型所学到的东西，又如何影响我们的采样方式？} 我们从两个概念角度入手：
 \begin{itemize}
-    \item \textbfs{回归目标和时间表。}
-    我们专注于为什么结合 $\rvv$-使用规范线性计划进行预测 $(\alpha_t,\sigma_t)=(1-t,t)$ 很自然：它保持条件速度目标尺度在时间上恒定，并从速度分解中删除显式的进度曲率项。
-  \item \textbfs{求解器的影响。}
-我们研究此参数化如何与数值积分相互作用，同时将详细的求解器分析推迟到 \Cref{ch:solvers}.
+    \item \textbfs{回归目标与调度。}
+    我们重点关注为什么把 $\rvv$ 预测与规范线性调度 $(\alpha_t,\sigma_t)=(1-t,t)$ 搭配起来是自然的：它使条件速度目标的量级在时间上保持恒定，并从速度的分解式中消去了显式的进度曲率项。
+  \item \textbfs{对求解器的影响。}
+我们考察这一参数化如何与数值积分相互作用；更细致的求解器分析留到 \Cref{ch:solvers}。
 \end{itemize}
 
-在继续之前，我们区分两种类型的速度场以避免歧义。的 \emph{条件速度}，作为易于处理的训练目标，定义为
+为避免混淆，先区分两类速度场。一类是 \emph{条件速度}，它就是可处理的训练目标，定义为
 \[
 \rvv_t(\rvx_t |\rvz) = \rvx_t' = \alpha_t' \rvx_0 + \sigma_t' \beps, 
 \quad \text{其中 } \rvz = (\rvx_0, \beps),
 \]
-虽然 \emph{预言机（边缘化）速度}，用于在 PF-ODE 求解推理期间移动样本，由下式给出
+另一类是 \emph{预言量（边缘）速度}，它在求解 PF-ODE 做推理时用来移动样本，由下式给出
 \[
 \rvv^*(\rvx, t) = \E\big[\rvv_t(\cdot |\rvz)  \big|  \rvx_t = \rvx\big].
 \]
 
-\paragraph{观点 1：为什么 $(\alpha_t,\sigma_t)=(1-t,t)$ 是自然时间表。}
-写作 $\sigma_t:=\zeta(t)$ 和 $\alpha_t:=1-\zeta(t)$ 针对时变 $\zeta(t)$，条件速度变为
+\paragraph{观点一：为什么 $(\alpha_t,\sigma_t)=(1-t,t)$ 是自然的调度。}
+记 $\sigma_t:=\zeta(t)$、$\alpha_t:=1-\zeta(t)$，其中 $\zeta(t)$ 随时间变化，则条件速度变为
 \[
 \rvv_t(\rvx_t |\rvz)
 =\zeta'(t)(\beps-\rvx_0),
@@ -1296,89 +1211,81 @@ $c(t)=\alpha_t+\sigma_t$ 和 $\tau(t)=\sigma_t/(\alpha_t+\sigma_t)$。微分给�
 \]
 
 
-\subparagraph{单位规模回归目标。}
-对于规范时间表 $\zeta(t)=t$，条件速度 $\rvv_t(\cdot |\rvz)$ 满足
+\subparagraph{量级恒定的回归目标。}
+对规范调度 $\zeta(t)=t$，条件速度 $\rvv_t(\cdot |\rvz)$ 满足
 \begin{align}\label{eq:unit-velocity}
 \mathbb{E}\left[\|\rvv_t(\cdot |\rvz)\|_2^2\right]
 =\E_{\beps}\norm{\beps}_2^2+\E_{\rvx_0}\norm{\rvx_0}^2_2 = D + \underbrace{\Tr\Cov[\rvx_0]}_{\text{total variance}}+\underbrace{\norm{\E\rvx_0}^2_2}_{\text{mean}}.
 \end{align}
-因此预期目标幅度在 $t$。将数据标准化为零均值和恒等协方差后（即 $\Cov[\rvx_0]=\rmI$)，两个组件
-$\alpha_t'\rvx_0$ 和 $\sigma_t'\beps$ 为所有人做出同等贡献 $t$，避免端点附近的梯度爆炸/消失。为了看到这一点，我们考虑扩散的训练目标：
+可见目标的期望量级与 $t$ 无关。若把数据标准化为零均值、单位协方差（即 $\Cov[\rvx_0]=\rmI$），则
+$\alpha_t'\rvx_0$ 与 $\sigma_t'\beps$ 这两个分量对任意 $t$ 的贡献相同，从而避免了端点附近梯度的爆炸或消失。要看清这一点，考虑速度的训练目标：
 \[
 \mathcal{L}_{\mathrm{velocity}}(\bphi)
 = \E_{t}  \E_{\rvx_0,\beps}\left[\big\|\rvv_{\bphi}(\rvx_t,t) - \rvv_t(\rvx_t|\rvz)\big\|_2^2
 \right].
 \]
-通过应用链式法则，该损失相对于模型参数的梯度 $\bphi$ 是
+对该损失关于模型参数 $\bphi$ 应用链式法则，得梯度
 \[
 \nabla_{\bphi}\mathcal{L}_{\mathrm{velocity}}(\bphi)
 = 2  \E_{t}  \E_{\rvx_0,\beps} \left[
   \partial_{\bphi}\rvv_{\bphi}(\rvx_t,t)^{\top} \left(\rvv_{\bphi}(\rvx_t,t) - \rvv_t(\rvx_t|\rvz)\right)
 \right].
 \]
-因此目标的规模 $\|\rvv_t(\rvx_t|\rvz)\|_2$ 影响梯度稳定性：如果它崩溃到 $0$ （或爆炸）在某些时候 $t$，在其他条件相同的情况下，梯度往往会消失（或爆炸）。随着规范的选择 $\zeta(t)=t$, 
-\Cref{eq:unit-velocity} 给出 $t$-独立的目标震级，因此没有终点（$t=0$ 或 $t=1$) 回归信号引起的崩溃或爆炸（假设 $\E\|\partial_{\bphi}\rvv_{\bphi}(\rvx_t,t)\|^2$ 
-并且任何时间权重都受到控制）。
-\subparagraph{ 规范时间表和 $\rvv$-预测的相互作用。}
-在仿射路径 $\rvx_t=\alpha_t \rvx_0+\sigma_t\beps$ 下，预言速度分解为
+可见目标的量级 $\|\rvv_t(\rvx_t|\rvz)\|_2$ 会影响梯度的稳定性：若它在某些 $t$ 处塌缩到 $0$（或爆掉），在其他条件相同的情况下，梯度就容易消失（或爆炸）。在规范选择 $\zeta(t)=t$ 之下，\Cref{eq:unit-velocity} 给出的目标量级与 $t$ 无关，因此不会在两个端点（$t=0$ 或 $t=1$）附近出现由回归信号导致的塌缩或爆炸（前提是 $\E\|\partial_{\bphi}\rvv_{\bphi}(\rvx_t,t)\|^2$ 以及任何时间权重都得到控制）。
+\subparagraph{规范调度与 $\rvv$ 预测的相互作用。}
+在仿射路径 $\rvx_t=\alpha_t \rvx_0+\sigma_t\beps$ 下，预言量速度可分解为
 \[
 \rvv^*(\rvx, t)=\alpha_t' \rvx^*(\rvx,t)+\sigma_t' \beps^*(\rvx,t),
 \]
-与 $\rvx^*=\E[\rvx_0|\rvx_t=\rvx]$ 和 $ \beps^*=\E[\beps|\rvx_t=\rvx]$。
-在固定 $\rvx$ 处微分给出
+其中 $\rvx^*=\E[\rvx_0|\rvx_t=\rvx]$、$\beps^*=\E[\beps|\rvx_t=\rvx]$。
+在固定 $\rvx$ 处对时间求导可得
 \[
 \partial_t \rvv^*
 =\underbrace{\alpha_t'' \rvx^*+\sigma_t'' \beps^*}_{\text{schedule curvature}}
 + \alpha_t' \partial_t \rvx^*+\sigma_t' \partial_t \beps^*.
 \]
-对于线性表 $\alpha_t=1-t,\ \sigma_t=t$，曲率项消失
-（$\alpha_t''=\sigma_t''=0$），因此$\rvv^*$的时间变化主要反映了
-后验进化$(\partial_t \rvx^*,\partial_t \beps^*)$而不是时间表。
-对于 $\rvv$ 预测，这种效果尤其清晰：系数 $\alpha_t',\sigma_t'$
-是常量（$-1$ 和 $+1$），避免了漂移中额外的与 $t$ 相关的重新缩放。
-相比之下，分数、$\rvx_0$ 或 $\beps$ 参数化通常会引入诸如
-$\sigma_t'/\sigma_t$ 或 $\alpha_t'/\alpha_t$ 在端点附近可能急剧变化，
-即使在线性时间表下。因此，虽然原则上不排他性，但线性
-$(1-t,t)$ 时间表与 $v$ 预测相结合，提供了特别稳定和
-预言机速度的透明时间依赖性。
+对线性调度 $\alpha_t=1-t$、$\sigma_t=t$，曲率项消失
+（$\alpha_t''=\sigma_t''=0$），于是 $\rvv^*$ 随时间的变化主要反映的是
+后验的演化 $(\partial_t \rvx^*,\partial_t \beps^*)$，而非调度本身。
+对 $\rvv$ 预测而言这一点尤为清楚：系数 $\alpha_t'$、$\sigma_t'$
+都是常数（$-1$ 与 $+1$），从而避免了漂移项中额外的、与 $t$ 相关的重缩放。
+相比之下，分数、$\rvx_0$ 或 $\beps$ 参数化往往会引入诸如
+$\sigma_t'/\sigma_t$ 或 $\alpha_t'/\alpha_t$ 这样的因子，它们在端点附近可能急剧变化，
+即便在线性调度下也是如此。因此，线性调度
+$(1-t,t)$ 与 $v$ 预测相结合（尽管这并非唯一选择），能给出格外稳定、
+且对预言量速度的时间依赖关系格外清晰的表述。
 
-\subparagraph{最小化条件能量。} 接下来我们采用更理论化的最优传输视角（参见\Cref{ch:ot-eot}）。 
-这里，\emph{条件动能}量化了总的预期运动 
-沿前向路径的条件速度，即
-从以下位置移动所需的瞬时运动量（或动能） 
-$\rvx_0$ 至 $\beps$：
+\subparagraph{最小化条件能量。} 下面换一个更偏理论的最优传输视角（参见 \Cref{ch:ot-eot}）。
+这里，\emph{条件动能}度量的是沿前向路径的条件速度所对应的总期望运动量，
+也就是把 $\rvx_0$ 移动到 $\beps$ 所需的瞬时运动量（动能）：
 \[
 \mathcal K[\zeta]
 :=\int_0^1 \E_{\rvx_0,\beps}\!\big[\|\rvv_t(\cdot |\rvz)\|_2^2\big]\diff t
 =\Big(D+\Tr\Cov[\rvx_0]+\|\E\rvx_0\|_2^2\Big)
 \int_0^1 \big(\zeta'(t)\big)^2\diff t.
 \]
-因此，最小化 $\mathcal K[\zeta]$ 对应于找到最平滑、能量最小的
-仿射插值族内的期望路径
+因此，最小化 $\mathcal K[\zeta]$ 就等价于在这一族仿射插值中，寻找最平滑、能量最小的期望路径
 \[
 \rvx_t=(1-\zeta(t))\rvx_0+\zeta(t)\beps.
 \]
-在边界条件 $\zeta(0)=0$ 和 $\zeta(1)=1$ 的情况下，
-欧拉-拉格朗日方程 $\zeta''(t)=0$ 给出最小化器 $\zeta(t)=t$，对应于
-直接条件路径。这意味着，在该系列的所有顺利调度$\zeta$中，
-规范流程 $\zeta(t)=t$ 是从 $\rvx_0$ 转移到的最节能的方式
-$\beps$。我们将在 ~\ref{ot-conditional-flow} 提案中重新讨论这一点
-以获得更详细的治疗。
+在边界条件 $\zeta(0)=0$、$\zeta(1)=1$ 下，
+欧拉—拉格朗日方程 $\zeta''(t)=0$ 给出的最小化器为 $\zeta(t)=t$，对应的正是
+直线条件路径。这说明：在这一切光滑调度 $\zeta$ 之中，
+规范流 $\zeta(t)=t$ 是把 $\rvx_0$ 输运到 $\beps$ 最省能的方式。我们将在命题~\ref{ot-conditional-flow} 中再次讨论这一点，并给出更细致的处理。
 
 
-\subparagraph{关于预言机速度能量的备注.}
-线性计划 $\zeta(t)=t$ 始终最小化 \emph{conditional}
-上面导出的速度能量，但它不需要最小化速度能量
-边缘化预言机速度 $\rvv^*$。原因在于，其大小
-$\rvv^*$ 可以沿着概率路径变化，因此能量最小化时间表
-可以以不同的速度穿过路径的不同部分。
+\subparagraph{关于预言量速度能量的注记。}
+线性调度 $\zeta(t)=t$ 总是使上面导出的 \emph{条件}
+速度能量最小，但它未必能使边缘化后的预言量速度 $\rvv^*$ 的能量最小。
+原因在于：$\rvv^*$ 的量级可以沿概率路径变化，因此使能量最小的调度
+可能以不同的速度穿过路径的不同部分。
 
 为了使这种依赖性明确，让
 \[
 \rvy_u=(1-u)\rvx_0+u\beps,
 \qquad u\in[0,1],
 \]
-其中 $u$ 表示沿仿射概率路径的位置，并定义
+其中 $u$ 表示沿仿射概率路径的位置；再定义
 \[
 \mathbf{b}_u(\rvy)
 :=
@@ -1391,15 +1298,14 @@ $\rvv^*$ 可以沿着概率路径变化，因此能量最小化时间表
 \|\mathbf{b}_u(\rvy_u)\|_2^2
 \right].
 \]
-这里，$\kappa(u)$ 测量预言机的预期平方大小
-沿路径每单位运动的速度。时间表 $u=\zeta(t)$ 指定穿过该路径的速度。自从
-$\rvx_t=\rvy_{\zeta(t)}$，预言机速度变为
+这里，$\kappa(u)$ 度量预言量速度沿路径每单位运动的期望平方大小。调度 $u=\zeta(t)$ 规定了沿该路径前进的快慢。由于
+$\rvx_t=\rvy_{\zeta(t)}$，预言量速度变为
 \[
 \rvv^*(\rvx,t)
 =
 \zeta'(t)\mathbf{b}_{\zeta(t)}(\rvx),
 \]
-具有动能
+其动能为
 \[
 \mathcal{K}_{\mathrm{marg}}[\zeta]
 =
@@ -1408,7 +1314,7 @@ $\rvx_t=\rvy_{\zeta(t)}$，预言机速度变为
 \bigl(\zeta'(t)\bigr)^2
 \diff t.
 \]
-假设 $\kappa(u)>0$ 和足够的规律性，最小化该能量给出
+设 $\kappa(u)>0$ 且有足够的正则性，则最小化该能量给出
 \[
 \kappa(\zeta(t))
 \bigl(\zeta'(t)\bigr)^2
@@ -1419,14 +1325,9 @@ $\rvx_t=\rvy_{\zeta(t)}$，预言机速度变为
 \propto
 \frac{1}{\sqrt{\kappa(\zeta(t))}}.
 \]
-因此，能源最小化计划在预言机的情况下移动得更慢
-速度具有较大的预期幅度，并且在较小的情况下速度更快
-幅度。
+可见，使能量最小的调度会在预言量速度期望量级较大处走得更慢，而在量级较小处走得更快。
 
-因此，$\zeta(t)=t$ 仅在以下情况下才最小化边缘速度能量：
-$\kappa(u)$ 沿路径恒定。这凸显了与
-上面的条件速度结果，其中线性计划始终是
-仿射系列中恒速最小能量的选择。
+因此，只有当 $\kappa(u)$ 沿整个路径恒定不变时，$\zeta(t)=t$ 才使边缘速度能量最小。这与上面关于条件速度的结论形成了对照：在条件速度那里，线性调度始终是仿射族中能量最小的常速选择。
 
 
 
@@ -1504,22 +1405,21 @@ $\kappa(u)$ 沿路径恒定。这凸显了与
 
 
 
-\paragraph{观点 2：为什么速度预测可以被认为是自然采样。}
+\paragraph{观点二：为什么速度预测称得上“天然的采样参数化”。}
 
-使用 PF-ODE 采样最终需要其速度场。
-这使得 $\rvv$ 预测特别直接：网络预测
-出现在 ODE 本身右侧的数量。相比之下，
-$\rvx$-、$\beps$-和$\rvs$-预测编码相同的预言速度
-通过当前状态和网络预测的结合。
+用 PF-ODE 采样，最终需要的正是它的速度场。
+这使得 $\rvv$ 预测格外直接：网络预测的就是
+ODE 右端所出现的那个量。相比之下，
+$\rvx$、$\beps$ 与 $\rvs$ 三种预测要借助当前状态与网络预测的组合，
+才能拼出同一个预言量速度。
 
-在预言机级别，这些是相同的完全相同的可转换形式
-$\rvv^*(\rvx,t)$ by \Cref{eq:clean_pf_ode}；因此，底层的预言机
-PF-ODE 不会因参数化的选择而改变。在这里，我们重点讨论如何
-学习的 PF-ODE 在采样期间表达；用于训练的损失
-可以单独选择相应的预测。
+在预言量层面，由 \Cref{eq:clean_pf_ode}，这些都只是 $\rvv^*(\rvx,t)$ 的等价可转换形式；
+因此底层的预言量 PF-ODE 并不会因参数化选择而改变。这里关注的是：
+训练好的 PF-ODE 在采样阶段以什么形式表达；而训练所用的损失，
+则完全可以另行选择相应的预测。
 
-\subparagraph{PF-ODE 根据 $\rvx$-、$\beps$- 和 $\rvs$-Predictions.}
-\Cref{eq:clean_pf_ode} 中的前三个恒等式共享以下形式
+\subparagraph{用 $\rvx$、$\beps$ 与 $\rvs$ 预测表示 PF-ODE。}
+\Cref{eq:clean_pf_ode} 中的前三个恒等式具有共同的形式
 \[
 \frac{\diff\rvx(t)}{\diff t}
 =
@@ -1527,10 +1427,9 @@ PF-ODE 不会因参数化的选择而改变。在这里，我们重点讨论如�
 +
 \underbrace{\rmN_{\bm{\phi}^{\times}}(\rvx(t),t)}_{\text{network-dependent term}},
 \]
-其中 $L(t)$ 表示相应的已知标量系数，由下式确定
-噪声表，$\rmN_{\bm{\phi}^{\times}}$ 包含适当的
-与时间相关的系数乘以干净、噪声或分数预测。
-例如，在$\beps$-预测下，
+其中 $L(t)$ 是由噪声调度确定的已知标量系数，
+$\rmN_{\bm{\phi}^{\times}}$ 则把干净数据预测、噪声预测或分数预测
+乘以相应的时间相关系数。例如在 $\beps$ 预测下，
 \[
 L(t)
 =
@@ -1547,14 +1446,13 @@ L(t)
 \beps_{\bm{\phi}^{\times}}(\rvx,t).
 \]
 
-这种形式对于数值积分很有用，因为已知的线性项可以
-在近似网络相关项的同时进行分析处理
-数字上。基于指数积分器的扩散求解器，例如
-DPM-Solver~\citep{lu2022dpm} 正是利用了这种结构。我们开发这个
-\Cref{ch:solvers} 中详细介绍了求解器视点。
+这种形式对数值积分很有用：与网络无关的线性项可以解析处理，
+而只把依赖网络的那一项做数值近似。基于指数积分器的扩散求解器（例如
+DPM-Solver~\citep{lu2022dpm}）正是利用了这一结构。求解器视角的详细展开
+见 \Cref{ch:solvers}。
 
-\subparagraph{PF-ODE 根据 $\rvv$-Prediction.}
-通过 $\rvv$ 预测，PF-ODE 采用直接且简单的形式
+\subparagraph{用 $\rvv$ 预测表示 PF-ODE。}
+采用 $\rvv$ 预测时，PF-ODE 具有直接而简洁的形式
 \[
 \frac{\diff\rvx(t)}{\diff t}
 =
@@ -1562,14 +1460,13 @@ DPM-Solver~\citep{lu2022dpm} 正是利用了这种结构。我们开发这个
 \approx
 \rvv^*(\rvx(t),t).
 \]
-因此，单个网络评估直接提供了所需的数量
-标准 ODE 求解器，无需首先将预测与单独的
-线性项。规范的线性时间表使这种联系特别透明。
+因此，一次网络前向就直接给出了标准 ODE 求解器所需要的量，
+无需先把预测与另一个线性项组合起来。规范线性调度使这一联系尤为清晰。
 对于
 \[
 \rvx_t=(1-t)\rvx_0+t\beps,
 \]
-速度预测确定相应的端点预测
+速度预测即可确定相应的端点预测
 \[
 \widehat{\rvx}_0
 =
@@ -1579,7 +1476,7 @@ DPM-Solver~\citep{lu2022dpm} 正是利用了这种结构。我们开发这个
 =
 \rvx_t+(1-t)\rvv_{\bm{\phi}^{\times}}(\rvx_t,t).
 \]
-使用这个单一预测从 $t$ 移动到 $s$ 给出
+用这一组预测把状态从 $t$ 推进到 $s$，得到
 \[
 (1-s)\widehat{\rvx}_0+s\widehat{\beps}
 =
@@ -1587,24 +1484,17 @@ DPM-Solver~\citep{lu2022dpm} 正是利用了这种结构。我们开发这个
 +
 (s-t)\rvv_{\bm{\phi}^{\times}}(\rvx_t,t),
 \]
-这正是学习速度场的简单欧拉更新
-规范的线性时间表。因此，$\rvv$ 预测和
-线性表在模型之间提供了特别直接的联系
-PF-ODE 的预测和数值积分。我们推迟了详细的
-数值求解器的讨论和更一般的时间表
-\Cref{ch:solvers}。
+这恰好是规范线性调度下，用学到的速度场做简单欧拉更新所得的结果。因此，$\rvv$ 预测与线性调度在“模型的预测”与“PF-ODE 的数值积分”之间搭起了一座格外直接的桥。关于数值求解器以及更一般调度的详细讨论，我们留到 \Cref{ch:solvers}。
 
-综合起来，$\rvv$-预测直接提供了所需的速度
-PF-ODE，而其他预测类型代表相同的预言机
-通过依赖于计划的转换实现动态。这个直接
-对应是速度预测的主要意义
-被认为是自然采样。
+综合来看：$\rvv$ 预测直接给出了 PF-ODE 所需的速度；
+而其他预测类型要通过依赖调度的转换，才能表示同一个预言量动力学。正是这种直接对应关系，
+使速度预测有理由被视为“天然的采样参数化”。
 
 
 
 
-\paragraph{结论.}
-虽然 $\rvv$ 预测与规范线性时间表相结合提供了某些理论上的优势，例如恒定的目标幅度和不存在时间表曲率，但这些属性并不一定使其具有普遍的优越性。在实践中，模型性能取决于一系列相互作用的因素，包括网络架构、标准化方案、随时间变化的损失权重、采样器和离散化步骤的选择、指导强度、正则化策略、数据缩放和总体训练预算。不同的数据集和目标可能有利于替代参数化或时间表，而最佳配置最终是一个经验问题，应通过验证和消融研究来解决。
+\paragraph{小结。}
+把 $\rvv$ 预测与规范线性调度结合使用，确实带来了一些理论上的好处，例如目标量级恒定、不存在调度曲率；但这些性质并不能让它普遍占优。实践中，模型性能取决于一系列相互作用的因素，包括网络结构、归一化方案、随时间变化的损失权重、采样器与离散化步数的选择、引导强度、正则化策略、数据缩放以及总体训练预算。不同的数据集与目标，可能更适合别的参数化或调度；最优配置归根结底是个经验问题，应通过验证与消融实验来确定。
 
 
 
@@ -1616,7 +1506,7 @@ PF-ODE，而其他预测类型代表相同的预言机
 
 
 
-\section{ 一切的背后：福克尔-普朗克方程}\label{sec:comparison-connection}
+\section{万变不离其宗：福克尔—普朗克方程}\label{sec:comparison-connection}
 
 
 \begin{figure}[htbp]
@@ -1715,9 +1605,9 @@ PF-ODE，而其他预测类型代表相同的预言机
 
 
 
-在本节中，我们将展示扩散模型的三个主要观点——变分模型、基于分数的模型和基于流的模型——并不是独立的结构，而是源于一个单一的统一原则：在选定的前向过程下控制密度演化的连续性（福克-普朗克）方程。
+本节要说明的是：扩散模型的三种主要视角——变分模型、分数模型与流模型——并不是彼此独立的理论构造，而是源自同一条统一原理，即在给定前向过程下支配密度演化的连续性方程（福克尔—普朗克方程）。
 
-首先，我们回顾一下中的分析 \Cref{eq:heuristic-fpe-sde} 将基于离散核和贝叶斯规则的变分视角与基于分数的连续动态 SDE 视角相结合。我们通过证明变分模型充当基础正向和反向 SDE 的一致离散化来建立这种联系。具体来说，通过离散核逐步计算的边缘密度以与控制连续时间动态的福克尔-普朗克方程一致的方式演化。这证实了这两种观点在根本上是等同的。然后我们连接基于流和基于分数的视图。在 \Cref{subsec:flow-score}我们证明了 ODE 流决定了一条密度路径，其边缘总是可以通过一系列随机过程来实现。这将确定性流和随机 SDE 置于同一家族中。总之，这些结果将三个观点统一在一个框架下（见 \Cref{fig:unified_framework}）。最后，我们总结这一章 \Cref{subsec:takeaway-dm-gaussianfm}.
+先回顾 \Cref{eq:heuristic-fpe-sde} 附近的分析，那里把基于离散核与贝叶斯公式的变分视角，与基于连续动力学 SDE 的分数视角联系了起来。我们通过证明“变分模型正是基础前向与反向 SDE 的一致离散化”来建立这一联系。具体地说，逐步经由离散核算出的边缘密度，其演化方式与支配连续时间动力学的福克尔—普朗克方程一致。这就证明了两种视角在根本上是等价的。随后再打通流视角与分数视角：在 \Cref{subsec:flow-score} 中我们证明，ODE 流所确定的密度路径，其各时刻的边缘分布总可以由一列随机过程来实现。这样，确定性流与随机 SDE 就被归入了同一类框架。总而言之，这些结果把三种视角统一在同一个框架之下（见 \Cref{fig:unified_framework}）。最后，我们在 \Cref{subsec:takeaway-dm-gaussianfm} 中对本章作总结。
 
 
 
@@ -1834,25 +1724,25 @@ PF-ODE，而其他预测类型代表相同的预言机
 
 \subsection{流方法与分数 SDE 的联系}\label{subsec:flow-score}
 
-扩散模型的一个显着方面在于不同的动态系统（确定性或随机性）如何能够追踪概率分布的相同演化。在本节中，我们揭示了基于 ODE 的流之间的自然而优雅的联系 \Cref{sec:flow-matching-framework} 并对 SDE 进行评分。具体来说，我们证明了定义生成 ODE 的速度场可以转换为遵循相同福克-普朗克动力学的随机对应物，从而在确定性插值和随机采样之间提供了原则上的桥梁。这为我们提供了从 ODE 到 SDE 的一系列连续模型，它们生成相同的数据分布路径。我们考虑连续时间设置，其中扰动内核由下式给出
+扩散模型一个值得注意的地方在于：看似不同的动力学系统（确定性的或随机的），竟然可以追踪概率分布的同一条演化轨迹。本节将揭示 \Cref{sec:flow-matching-framework} 中基于 ODE 的流与分数 SDE 之间那种自然而优雅的联系。具体来说，我们证明：定义生成 ODE 的速度场可以转换为一个遵循相同福克尔—普朗克动力学的随机对应物，从而在确定性插值与随机采样之间架起一座原则性的桥梁。这便给出了一族从 ODE 到 SDE 的连续模型，它们生成同一条数据分布路径。下面考虑连续时间设定，其中扰动核为
 \[
 p_t(\rvx_t|\rvx_0) = \mathcal{N}(\rvx_t; \alpha_t \rvx_0, \sigma_t^2 \rmI),
 \]
-其中 $\rvx_0 \sim p_{\mathrm{data}}$。这种条件分布会产生边缘密度路径 $p_t(\rvx_t) = \mathbb{E}_{\rvx_0 \sim p_{\mathrm{data}}}[p(\rvx_t|\rvx_0)]$ 像往常一样，与 $p_T\approx p_{\mathrm{prior}}$。为了匹配此密度路径，请考虑 ODE
+其中 $\rvx_0 \sim p_{\mathrm{data}}$。由该条件分布可得到边缘密度路径 $p_t(\rvx_t) = \mathbb{E}_{\rvx_0 \sim p_{\mathrm{data}}}[p(\rvx_t|\rvx_0)]$，并一如既往地假定 $p_T\approx p_{\mathrm{prior}}$。为匹配这条密度路径，考虑 ODE
 \begin{align}\label{eq:ode-velocity}
     \frac{\diff\rvx(t)}{\diff t} = \mathbf{v}_t(\rvx(t)), \quad t \in [0,T],
 \end{align}
-其中 $\mathbf{v}_t(\rvx) =\E\left[\alpha_t'\rvx_0+\sigma_t'\beps|\rvx\right]$ 是预言机速度，如图所示 \Cref{eq:marginal-oracle-velocity} （注意时间被翻转以遵循扩散模型约定）。整合 \eqref{eq:ode-velocity} 从 $\rvx(T)\sim p_{\mathrm{prior}}$ 产生样本 $p_0$.
+其中 $\mathbf{v}_t(\rvx) =\E\left[\alpha_t'\rvx_0+\sigma_t'\beps|\rvx\right]$ 为预言量速度（见 \Cref{eq:marginal-oracle-velocity}；注意此处时间已翻转，以符合扩散模型的约定）。从 $\rvx(T)\sim p_{\mathrm{prior}}$ 出发积分 \eqref{eq:ode-velocity}，即可得到服从 $p_0$ 的样本。
 
-虽然此 ODE 足以生成高质量样本，但纳入随机性可能会提高样本多样性。这引发了以下问题：
+这个 ODE 足以生成高质量的样本；不过引入随机性可能有助于提升样本多样性。这就引出了下面的问题：
 \begin{question}
-是否存在一个 SDE，其动态从 $p_{\mathrm{prior}}$，产生与 ODE 相同的边缘密度 \Cref{eq:ode-velocity}?
+是否存在一个 SDE，从 $p_{\mathrm{prior}}$ 出发演化，却能产生与 ODE \eqref{eq:ode-velocity} 相同的边缘密度？
 \end{question}
-该陈述确认存在一系列反时 SDE，它们产生与相应 PF-ODE 相同的边缘密度路径。这些 SDE 引起的密度满足该路径的相同 福克尔-普朗克方程，因此它们的一次性边缘与规定的插值一致 $\{p_t\}_{t\in[0,T]}$\footnote{为了完整起见，前向 SDE 表示（此处不需要）是
+答案是肯定的：存在一族反向时间 SDE，它们生成与相应 PF-ODE 相同的边缘密度路径。这些 SDE 所诱导的密度满足同一条路径的福克尔—普朗克方程，因此它们各个时刻的边缘分布与所规定的插值 $\{p_t\}_{t\in[0,T]}$ 完全一致\footnote{为完整起见，此处也给出前向 SDE 的表述（本节并不需要它）：
 \[
 \diff \rvx(t)=f(t) \rvx(t) \diff t+g(t) \diff \rvw(t),
 \]
-与 $f(t)$ 和 $g(t)$ 相关 $(\alpha_t,\sigma_t)$ 通过 \Cref{eq:kernel-sde-equiv}.}.
+其中 $f(t)$ 与 $g(t)$ 通过 \Cref{eq:kernel-sde-equiv} 与 $(\alpha_t,\sigma_t)$ 相联系。}.
 
 
 
@@ -1878,8 +1768,8 @@ p_t(\rvx_t|\rvx_0) = \mathcal{N}(\rvx_t; \alpha_t \rvx_0, \sigma_t^2 \rmI),
 
 
 
-\proppp{反时 SDE 生成与插值相同的边缘}{rev-sde-interpolant}{
-让 $\gamma(t) \geq 0$ 是任意时间相关系数。考虑用原始时间变量编写的逆时 SDE $t$ 并向后集成 $T$ 至 $0$,
+\proppp{反向时间 SDE 生成与插值相同的边缘分布}{rev-sde-interpolant}{
+设 $\gamma(t) \geq 0$ 为任意随时间变化的系数。考虑按原始时间变量 $t$ 写出的反向时间 SDE，从 $T$ 向 $0$ 反向积分，
 \begin{align}\label{eq:general-reverse-sde}
     \diff \bar\rvx(t)
     =
@@ -1890,10 +1780,10 @@ p_t(\rvx_t|\rvx_0) = \mathcal{N}(\rvx_t; \alpha_t \rvx_0, \sigma_t^2 \rmI),
     + \gamma(t)\diff\bar{\rvw}(t),
     \qquad t:T\to 0 .
 \end{align}
-有终端条件 $\bar\rvx(T)\sim p_T$。那么这个过程
-$\{\bar\rvx(t)\}_{t\in[0,T]}$ 符合规定的边距
-$\{p_t\}_{t\in[0,T]}$ 由 ODE 的密度路径引起。在这里，
-$\rvs^*(\rvx,t):=\nabla_{\rvx}\log p_t(\rvx)$ 是分数函数，与速度场有关 $\rvv^*(\rvx,t)$ 通过
+终端条件为 $\bar\rvx(T)\sim p_T$。那么该过程
+$\{\bar\rvx(t)\}_{t\in[0,T]}$ 的边缘分布与 ODE 所诱导的密度路径
+$\{p_t\}_{t\in[0,T]}$ 完全吻合。其中
+$\rvs^*(\rvx,t):=\nabla_{\rvx}\log p_t(\rvx)$ 为分数函数，它与速度场 $\rvv^*(\rvx,t)$ 的关系为
 \begin{align}\label{eq:score-velocity}
     \rvv^*(\rvx, t)
     =
@@ -1908,7 +1798,7 @@ $\rvs^*(\rvx,t):=\nabla_{\rvx}\log p_t(\rvx)$ 是分数函数，与速度场有�
     {\alpha_t'\sigma_t-\alpha_t\sigma_t'} .
 \end{align}
 }{
-反时福克尔-普朗克方程，相对于原始时间变量编写 $t$ 虽然工艺向后集成，但
+按原始时间变量 $t$ 写出的反向时间福克尔—普朗克方程（尽管积分方向是向后的）为
 \[
 \partial_t p_t
 =
@@ -1923,32 +1813,32 @@ $\rvs^*(\rvx,t):=\nabla_{\rvx}\log p_t(\rvx)$ 是分数函数，与速度场有�
 -
 \tfrac{1}{2}\gamma^2\Delta p_t .
 \]
-使用恒等式 $\nabla\cdot(\rvs^*p_t)=\Delta p_t$ 自
-$\rvs^*=\nabla\log p_t$，二阶项取消，产生
+利用由 $\rvs^*=\nabla\log p_t$ 得到的恒等式 $\nabla\cdot(\rvs^*p_t)=\Delta p_t$，二阶项相互抵消，于是
 \[
 \partial_t p_t
 =
 -\nabla\cdot(\rvv^*p_t),
 \]
-即与 PF-ODE 相关的一阶连续性方程。因此，反时 SDE 和 ODE 产生相同的边缘密度路径
-$\{p_t\}$。见附录~A.2--A.3 \citet{ma2024sit}.
+这正是与 PF-ODE 相对应的一阶连续性方程。因此，反向时间 SDE 与 ODE 生成的是同一条边缘密度路径
+$\{p_t\}$。推导见 \citet{ma2024sit} 的附录 A.2--A.3。
 }
 
 
-在命题的预言机级别~\ref{rev-sde-interpolant},
-$\gamma(t)$ 可以任意选择而不改变规定的边缘密度路径： $\gamma$相关漂移和扩散项在福克尔-普朗克方程中完全抵消。一些有代表性的选择是：
+在命题~\ref{rev-sde-interpolant} 的预言量层面，
+$\gamma(t)$ 可以任意选取，都不会改变所规定的边缘密度路径：与 $\gamma$ 相关的漂移项和扩散项在福克尔—普朗克方程中完全抵消。下面是几个有代表性的取法：
 \begin{itemize}
-    \item 设置 $\gamma(t) = 0$ 恢复 ODE \Cref{eq:ode-velocity}.
-    \item 当 $\gamma(t) = g(t)$, \Cref{eq:general-reverse-sde} 成为反时SDE \Cref{eq:sde_backward}，自从oracle速度 $\rvv(\rvx, t)$ 满足（参见命题~\ref{equi-para}):
+    \item 取 $\gamma(t) = 0$，即回到 ODE \eqref{eq:ode-velocity}。
+    \item 取 $\gamma(t) = g(t)$ 时，\Cref{eq:general-reverse-sde} 就是反向时间 SDE \eqref{eq:sde_backward}，因为预言量速度 $\rvv(\rvx, t)$ 满足（参见命题~\ref{equi-para}）：
     \[
     \rvv^*(\rvx, t) = f(t)\rvx - \tfrac{1}{2}g^2(t)\rvs^*(\rvx, t).
     \]
-    \item 其他选择 $\gamma(t)$ 已探索；例如， \citet{ma2024sit} 选择 $\gamma(t)$ 最小化之间的KL差距 $p_{\mathrm{data}}$ 以及 $t=0$ 求解得到的密度 \Cref{eq:general-reverse-sde} 来自 $t=T$.
+    \item 其他取法也有人研究过；例如 \citet{ma2024sit} 选取 $\gamma(t)$，使 $p_{\mathrm{data}}$ 与从 $t=T$ 出发求解 \Cref{eq:general-reverse-sde} 在 $t=0$ 处所得密度之间的 KL 差距最小。
 \end{itemize}
-遵循 Score SDE，训练后的速度场 $\rvv_{\bm{\phi}^\times}(\rvx, t)$ 可以转换为参数化分数函数 $\rvs_{\bm{\phi}^\times}(\rvx, t)$ 通过 \Cref{eq:score-velocity}。将其插入 \Cref{eq:general-reverse-sde} 定义 \emph{经验逆时 SDE}，可以通过数值积分来采样 $t=T$ 与 $\bar\rvx(T) \sim p_{\mathrm{prior}}$.这个命题凸显了扩散模型的显着灵活性：
-一旦 \emph{ 边缘密度路径 } $\{p_t\}_{t\in[0,T]}$ 由
-正向过程，可以通过整个反向时间系列来实现
-动力学，包括 PF-ODE 和反时 SDE
+沿用 Score SDE 的做法，训练好的速度场 $\rvv_{\bm{\phi}^\times}(\rvx, t)$ 可以通过 \Cref{eq:score-velocity} 转换为参数化的分数函数 $\rvs_{\bm{\phi}^\times}(\rvx, t)$；把它代入 \Cref{eq:general-reverse-sde}，就得到 \emph{经验反向时间 SDE}，从 $t=T$、$\bar\rvx(T) \sim p_{\mathrm{prior}}$ 出发做数值积分即可采样。
+
+这个命题凸显了扩散模型一个值得注意的灵活性：一旦前向过程确定了
+\emph{边缘密度路径} $\{p_t\}_{t\in[0,T]}$，就可以用整整一族反向时间
+动力学来实现它，其中既包括 PF-ODE，也包括反向时间 SDE
 \[
 \diff\bar\rvx(t)
 =
@@ -1961,22 +1851,21 @@ $\gamma(t)$ 可以任意选择而不改变规定的边缘密度路径： $\gamma
 \quad
 \gamma(t)\geq0,
 \]
-从 $t=T$ 到 $t=0$。虽然 $\gamma(t)$ 改变了个体的随机动力学
-轨迹，相应的福克尔-普朗克方程都减少，对于
-规定的密度路径，到相同的控制密度方程：
+积分方向从 $t=T$ 到 $t=0$。虽然 $\gamma(t)$ 会改变单条随机轨迹，
+但相应的福克尔—普朗克方程在规定的密度路径上都化为
+同一个控制密度的方程：
 \[
 \partial_t p_t
 =
 -\nabla_{\rvx}\cdot
 \bigl(\rvv^*(\rvx,t)p_t(\rvx)\bigr).
 \]
-确实，使用
-$\rvs^*(\rvx,t)=\nabla_{\rvx}\log p_t(\rvx)$，附加
-$\gamma$ 相关的漂移和扩散项在密度水平上抵消。
-因此，$\gamma(t)$ 控制样本轨迹的随机性，同时
-保留相同的预言机一次性边缘，连接确定性
-具有一系列随机 SDE 对应项的 PF-ODE，如图所示
-\Cref{fig:unified_framework}。
+确实，利用
+$\rvs^*(\rvx,t)=\nabla_{\rvx}\log p_t(\rvx)$ 可知，那些额外的、
+与 $\gamma$ 相关的漂移项和扩散项在密度层面恰好抵消。
+因此，$\gamma(t)$ 调节的是样本轨迹的随机性，而各个时刻的边缘分布（在预言量层面）保持不变。这就把确定性的
+PF-ODE 与一族随机 SDE 对应物联系了起来，如
+\Cref{fig:unified_framework} 所示。
 
 
 \newpage
@@ -1993,26 +1882,25 @@ $\gamma$ 相关的漂移和扩散项在密度水平上抵消。
 
 
 
-本章是我们理论探索的基石，将变分、基于分数和基于流程的观点综合成一个单一的、有凝聚力的框架。我们已经证明，这三种看似不同的方法不仅是并行的，而且是深刻且根本上相互关联的。
+本章是全书理论探索的基石：它把变分、分数与流三种视角综合成一个连贯统一的框架。我们已经说明，这三种看似不同的方法并非只是平行并列，而是深刻而根本地相互关联的。
 
-我们的统一基于两个核心见解。首先，我们确定了所有框架共有的秘密武器：一种调节技巧，将棘手的边缘训练目标转化为易于处理的条件目标，从而实现稳定和高效的学习。其次，我们确定福克尔-普朗克方程是控制概率密度演化的普遍规律。所有三种观点都以自己的方式构建了一个尊重这一基本动力的生成过程。
+我们的统一建立在两个核心洞见之上。第一，我们找到了所有框架共有的“秘密武器”——条件化技巧：它把棘手的边缘训练目标转化为可处理的条件目标，从而实现稳定而高效的训练。第二，我们确认福克尔—普朗克方程是支配概率密度演化的普遍规律；三种视角各自以不同方式构造出尊重这一基本动力学律的生成过程。
 
 
-此外，我们还证明了预言机噪声、干净数据、分数和速度
-预测包含相同的信息并且可以相互转换
-代数上。这个预言等价物并没有做出预测
-参数化只是装饰性的：有限容量网络可以近似
-这些目标不同，他们的训练目标可以权衡误差
-噪声水平不同，有限步数值求解器可以表现
-取决于动态的表示形式而有所不同
-近似。因此，重要的教训是区分
-来自实践训练或等价物的基础连续理论
-采样算法。然而，在密度层面，共同原则仍然存在：现代扩散
-方法构建动态，其边缘将简单的先验传递给
-数据沿着规定的概率路径分布。随着这个统一和原则性基础的牢固建立，我们现在有能力从基础理论转向扩散模型的实际应用和加速。生成相当于求解微分方程这一中心思想为控制和优化提供了强大的平台。本专着的后续部分将利用这种统一的理解来解决关键的实际挑战：
+此外我们还证明：噪声、干净数据、分数与速度这四种预言量
+预测携带的信息完全相同，并且可以通过
+代数运算相互转换。这种预言量层面的等价并不意味着预测
+参数化的选择只是装饰性的：有限容量的网络对
+这些目标会有不同的近似，各自的训练目标也会以
+不同方式权衡不同噪声水平上的误差，而有限步数的数值求解器同样会因
+动力学被近似的具体形式不同而表现不同。因此，重要的教益是：要把
+底层的连续时间理论上的等价，与实际的训练或
+采样算法区分开来。不过，在密度层面，共同的原则依然成立：现代扩散
+方法所构造的动力学，其边缘分布会把简单的先验沿着规定的概率路径输运成
+数据分布。有了这一统一而坚实的原理性基础，我们现在就可以从基础理论转向扩散模型的实际应用与加速。生成等价于求解微分方程这一核心思想，为控制与优化提供了强有力的平台。本书后续部分将利用这一统一的理解去应对关键的实践挑战：
 \begin{enumerate}
-    \item C 部分将重点改进推理时的采样过程。我们将探索如何引导可控生成的生成轨迹（\Cref{ch:guidance}），并研究先进的数值求解器以显着加速缓慢的迭代采样过程（\Cref{ch:solvers}）。
-    然后，\item D 部分将超越迭代求解器，直接学习快速生成器。我们将研究只需一个或几个步骤即可生成高质量样本的方法，无论是通过从教师模型 (\Cref{ch:distillation}) 中进行蒸馏，还是通过从头开始训练 (\Cref{ch:fast-scratch})。
+    \item C 部分着眼于改进推理阶段的采样过程。我们将探讨如何引导生成轨迹以实现可控生成（\Cref{ch:guidance}），并研究先进的数值求解器，以大幅加速原本缓慢的迭代采样过程（\Cref{ch:solvers}）。
+    \item 随后，D 部分将跳出迭代求解器的框架，直接学习快速生成器。我们将考察只需一步或几步就能生成高质量样本的方法，无论它们是靠从教师模型蒸馏得来（\Cref{ch:distillation}），还是靠从头训练（\Cref{ch:fast-scratch}）。
 \end{enumerate}
 
-统一了扩散模型的 \textit{what} 和 \textit{why} 后，我们现在将注意力转向 \textit{how} 令人兴奋且实用的前沿。
+在厘清了扩散模型的 \textit{是什么} 与 \textit{为什么} 之后，我们接下来把注意力转向 \textit{怎么做}——转向那些令人兴奋的实用前沿。

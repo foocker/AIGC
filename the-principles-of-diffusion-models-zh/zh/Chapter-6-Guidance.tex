@@ -6,17 +6,17 @@
 
 \chapterlearning{
 
-  \item 了解调节如何修改扩散采样期间使用的速度场；
+  \item 理解条件化如何修改扩散采样中所用的速度场；
 
-  \item 导出分类器引导和无分类器引导背后的关键思想，并了解引导强度如何控制调节；
+  \item 推导分类器引导与无分类器引导背后的核心思想，并理解引导强度如何控制条件化；
 
-  \item 了解免训练引导如何使用特定于任务的损失或测量模型来引导预训练的扩散模型，包括逆问题；
+  \item 理解免训练引导如何借助任务相关的损失或测量模型来引导预训练扩散模型，包括在逆问题中的应用；
 
-  \item 将精确条件采样与替代引导动力学及其固定时间倾斜密度解释区分开来；
+  \item 区分精确的条件采样与替代性的引导动力学，以及后者在固定时刻的倾斜密度解释；
 
-  \item 了解基于偏好的对齐（从 RLHF 到 DPO 和 Diffusion-DPO）如何进一步重塑条件生成模型以实现首选输出。
+  \item 理解基于偏好的对齐（从 RLHF 到 DPO 与 Diffusion-DPO）如何进一步把条件生成模型重塑为偏向人类偏好的输出。
 
-}{ 本章假设 Score SDE/PF-ODE 图片来自 \Cref{ch:score-sde,ch:all-equivalent}。主要对可控生成感兴趣的读者可以将后面的偏好调整材料视为第二遍。}
+}{本章假定读者已掌握 \Cref{ch:score-sde,ch:all-equivalent} 中的 Score SDE/PF-ODE 框架。主要关心可控生成的读者，可以把后面关于偏好对齐的内容当作第二轮阅读。}
 
 
 
@@ -28,17 +28,17 @@
 \section{序言}\label{sec:prologue-guidance}\begin{figure}[th!]
     \centering
     \includegraphics[width=\linewidth]{Images/PartC/guidance.pdf}
-\caption{\textbfs{ 定向扩散采样示意图。}
-反时 PF-ODE 采样从右侧的纯噪声 ($t = T$) 开始，逐渐演变为左侧的干净样本 ($t = 0$)。
-在此过程中，由 $w_t$ 加权的时间相关引导方向修改无条件分数字段并将轨迹引导至所需属性（日本绘画风格），同时样本从粗到细的细节逐渐细化。
-\figcredit{由作者创建。}}
+\caption{\textbfs{受引导的扩散采样示意图。}
+反向时间的 PF-ODE 采样从右侧的纯噪声（$t = T$）出发，逐渐演化到左侧的干净样本（$t = 0$）。
+在此过程中，由 $w_t$ 加权的、依赖时间的引导方向修改无条件分数场，把轨迹引导到所需属性（日本绘画风格）上，同时样本的细节由粗到细逐步细化。
+\figcredit{由作者绘制。}}
     \label{fig:guidance}
 \end{figure}
 
 
 扩散模型的生成过程以从粗到细的方式进行，为可控生成提供了灵活的框架。每一步都会去除少量噪声，样本变得更加清晰，逐渐揭示更多结构和细节。此属性可以控制生成过程：通过向学习的、与时间相关的速度场添加引导项，我们可以引导生成轨迹以反映用户意图。
 
-扩散模型的引导采样以条件分数的贝叶斯分解为基础。对于每个噪声级别 $t$，
+扩散模型中引导式采样有一个有原则的基础，即条件分数的贝叶斯分解。对每个噪声水平 $t$，
 \begin{mdframed}
 \begin{align}
 \nabla_{\rvx_t}\log p_t(\rvx_t |\rvc)
@@ -49,10 +49,10 @@
 \label{eq:guidance_bayes}
 \end{align}
 \end{mdframed}
-这个恒等式表明，通过添加引导项可以获得精确的条件反向动力学
-$\nabla_{\rvx_t}\log p_t(\rvc|\rvx_t)$ 在无条件分数之上。我们稍后会看到分类器引导~\citep{dhariwal2021diffusion}直接估计这个术语，
-无分类器引导~\citep{ho2021classifier}将其隐式估计为联合学习的条件分数和无条件分数之间的差异，
-更通用的免训练方法可能会使用特定于任务的替代引导方向。
+这一恒等式表明：把引导项
+$\nabla_{\rvx_t}\log p_t(\rvc|\rvx_t)$ 叠加到无条件分数之上，就得到精确的条件反向动力学。后文将会看到，分类器引导~\citep{dhariwal2021diffusion}直接估计这一项；
+无分类器引导~\citep{ho2021classifier}则通过联合学习的条件分数与无条件分数之差把它隐式地估计出来；
+更一般的免训练方法还可以改用某种任务相关的替代引导方向。
 
 有了精确的条件分数，PF-ODE 就变成
 \begin{align}\label{eq:condition_prob_ode}
@@ -61,36 +61,36 @@ $\nabla_{\rvx_t}\log p_t(\rvc|\rvx_t)$ 在无条件分数之上。我们稍后�
     &= f(t)\mathbf{x}(t) - \frac{1}{2} g^2(t) \Big[ \nabla_{\rvx_t} \log p_t(\rvx(t)) + \nabla_{\rvx_t} \log p_t(\rvc |\rvx(t)) \Big].
 \end{aligned}
 \end{align}
-通过精确的分数和精确的积分，这些动态就会恢复
-$p_0(\rvx_0|\rvc)$ 初始化时从对应的终端边缘开始
-$p_T(\rvx_T|\rvc)$。在标准扩散结构中，终端噪声
-选择使得 $p_T(\rvx_T|\rvc)$ 与通常的近似匹配
-条件无关先验。
+若分数精确、积分也精确，那么从相应的终端边缘
+$p_T(\rvx_T|\rvc)$ 出发初始化时，这些动力学就能还原
+$p_0(\rvx_0|\rvc)$。在标准扩散构造中，终端加噪
+方式被选得使 $p_T(\rvx_T|\rvc)$ 近似等于
+与条件无关的通常先验。
 
-下面以分数预测为例。标准的 $\rvx$ 预测、$\beps$ 预测、分数预测和 $\rvv$ 预测，在相应变换有定义时可通过含时线性变换互相转换。因此，可以利用 \Cref{eq:predictions-equivalence} 在其他参数化下写出同一个引导修正。
-\paragraph{引导方向的实例.}
+为清楚起见，下文以分数预测的形式展开讨论。标准的 $\rvx$ 预测、$\beps$ 预测、分数预测与 $\rvv$ 预测之间，在相应变换有定义之处都由依赖时间的线性变换相联系；因此在其他参数化下，同一个引导修正可以利用 \Cref{eq:predictions-equivalence} 中的关系写出。
+
+\paragraph{引导方向的几种具体形式}
 \begin{enumerate}[leftmargin=*]
-\item \textbfs{分类器引导 (CG).} 在 \Cref{sec:cg} 中，分类器引导 (CG) 训练时间条件分类器
-$p_{\bpsi}(\rvc | \rvx_t, t)$ 上的噪声数据 $\rvx_t$（通过破坏
-清洁 $t$ 级别的标记样品）。在采样时，其输入梯度
+\item \textbfs{分类器引导（CG）。} \Cref{sec:cg} 中的分类器引导（CG）会在加噪数据 $\rvx_t$ 上训练一个时间条件分类器
+$p_{\bpsi}(\rvc | \rvx_t, t)$（$\rvx_t$ 由 $t$ 水平加噪、破坏干净的有标签样本得到）。采样时，该分类器对输入的梯度
 提供引导项：
 \[
 \nabla_{\rvx_t}\log p_{\bpsi}(\rvc | \rvx_t, t)
  \approx  \nabla_{\rvx_t}\log p_t(\rvc | \rvx_t),
 \]
-然后将其添加到无条件分数 ~\citep{dhariwal2021diffusion} 中。
-\item \textbfs{Classifier-Free Guidance (CFG).} 在\Cref{sec:cfg}中，CFG直接训练单个条件模型
+再把它加到无条件分数上~\citep{dhariwal2021diffusion}。
+\item \textbfs{无分类器引导（CFG）。} \Cref{sec:cfg} 中的 CFG 直接训练单个条件模型
 \[
 \rvs_{\bphi}(\rvx_t,t,\rvc) \approx \nabla_{\rvx_t}\log p_t(\rvx_t|\rvc),
 \]
-其中，无条件模型是通过在训练步骤的一部分中随机用特殊的空标记替换条件来联合学习的。
-\item \textbfs{免训练（替代）引导.}
-在标准前向噪声结构下，我们首先画出
-$(\rvx_0,\rvc)\sim p_{\mathrm{data}}$ 然后取样
-$\rvx_t\sim p_t(\cdot|\rvx_0)$，其中前向转移核不依赖
-另外在 $\rvc$ 上。因此
+其中无条件模型是联合学出来的：在一部分训练步中，把条件随机替换为一个特殊的空标记。
+\item \textbfs{免训练（替代）引导。}
+在标准的前向加噪构造下，先抽取
+$(\rvx_0,\rvc)\sim p_{\mathrm{data}}$，再采样
+$\rvx_t\sim p_t(\cdot|\rvx_0)$；这里前向转移核并不额外
+依赖于 $\rvc$。因此有
 $\rvc\perp\rvx_t\mid\rvx_0$\footnote{
-确实，
+确实有
 \[
 p_t(\rvc|\rvx_t)
 =
@@ -101,11 +101,11 @@ p(\rvc,\rvx_0|\rvx_t)\,\mathrm d\rvx_0
 p(\rvc|\rvx_0,\rvx_t)\,
 p(\rvx_0|\rvx_t)\,\mathrm d\rvx_0.
 \]
-因为标准前向转移核满足
+由于标准前向转移核满足
 $p_t(\rvx_t|\rvx_0,\rvc)=p_t(\rvx_t|\rvx_0)$，
-我们有
-$p(\rvc|\rvx_0,\rvx_t)=p(\rvc|\rvx_0)$,
-产生下面的表达式。
+故有
+$p(\rvc|\rvx_0,\rvx_t)=p(\rvc|\rvx_0)$，
+于是得到下面的表达式。
 }。
 因此，
 \[
@@ -116,7 +116,7 @@ p(\rvc|\rvx_0)\,
 p(\rvx_0|\rvx_t)\,
 \mathrm d\rvx_0.
 \]
-这个后验期望通常难以计算。免训练方法据此为具体任务构造替代引导方向。
+这个后验期望一般难以计算。免训练方法正是据此为具体任务构造出替代的引导方向。
 
 \Cref{subsec:tfg} 中的免训练引导以现成的损失函数 $\ell(\rvx_t,\rvc;t)$ 代替难以直接求值的条件似然 $p_t(\rvc|\rvx_t)$。损失越小，当前样本越符合给定条件。由此定义取正值的\emph{引导势}
 \[
@@ -134,14 +134,14 @@ p(\rvx_0|\rvx_t)\,
 -\tau\nabla_{\rvx_t}\ell(\rvx_t,\rvc;t).
 \]
 
-分类器引导自然地适合同一张图片。在人口方面
-水平，其引导势为
+分类器引导也自然地归入同一图景：在总体
+层面上，其引导势为
 \[
 \rvh_t(\rvx_t;\rvc)
 =
 p_t(\rvc|\rvx_t),
 \]
-在实践中由学习到的分类器近似
+在实践中用学到的分类器近似
 $p_{\bpsi^\times}(\rvc|\rvx_t,t)$。等价地，学习到的分类器
 对应于损失
 \[
@@ -154,10 +154,10 @@ $p_{\bpsi^\times}(\rvc|\rvx_t,t)$。等价地，学习到的分类器
 
 \end{enumerate}
 
-在人口层面，以上三种结构具有相同的加法
-引导模板。赋予积极的潜力
-$\rvh_t(\rvx_t;\rvc)$ 和引导强度 $w_t\geq0$，定义引导分数
-领域
+在总体层面上，上面三种构造共享同一个加性的
+引导模板。给定一个正的势函数
+$\rvh_t(\rvx_t;\rvc)$ 以及引导强度 $w_t\geq0$，定义如下的引导分数
+场
 \begin{align}
 \rvs^{\mathrm{guide}}(\rvx_t,t,\rvc;w_t)
 :=
@@ -169,38 +169,35 @@ w_t\mathcal{G}_t(\rvx_t,\rvc).
 对于基于损失的引导，
 $\mathcal{G}_t(\rvx_t,\rvc)
 =-\tau\nabla_{\rvx_t}\ell(\rvx_t,\rvc;t)$。
-对于准确的分类器引导，
+对于精确的分类器引导，
 $\mathcal{G}_t(\rvx_t,\rvc)
-=\nabla_{\rvx_t}\log p_t(\rvc|\rvx_t)$;无分类器引导表示
-通过差异来实现相同的人口引导方向
-有条件分数和无条件分数。
+=\nabla_{\rvx_t}\log p_t(\rvc|\rvx_t)$；而无分类器引导则通过
+条件分数与无条件分数之差来表达同一个总体引导方向。
 
-在每个固定时间$t$，\Cref{eq:generic-guided-score}，每当
-可归一化，倾斜密度的分数
+在每个固定时刻 $t$，只要能够归一化，\Cref{eq:generic-guided-score} 就是如下倾斜密度的分数：
 \[
 \widetilde p_t^{\mathrm{tilt}}(\rvx_t|\rvc)
 \propto
 p_t(\rvx_t)\rvh_t(\rvx_t;\rvc)^{w_t}.
 \]
-这给出了有用的能量解释：基础密度有利于样本
-由扩散模型支持，而潜力将它们重新加权
-所需的条件。在实践中，相应的学习或代理版本
-\Cref{eq:generic-guided-score} 被插入到逆时动态中。
-重要的是，上面的倾斜密度只是一个固定时间的解释：
-家人
+这提供了一个有用的能量式解释：基础密度倾向于由扩散模型所支持的样本，
+而势函数则按照所需条件对它们重新加权。实践中，我们把 \Cref{eq:generic-guided-score} 相应的学习版本或替代版本
+插入逆时间动力学之中。
+需要注意的是，上面的倾斜密度只是一个固定时刻的解释：
+这一族
 $\{\widetilde p_t^{\mathrm{tilt}}(\cdot|\rvc)\}_t$
-不需要与引导采样器生成的边缘一致。
-因此，对于通用损失或引导强度调度，整合引导
-从 $T$ 到 $0$ 的 PF-ODE 通常不会生成分布式样本
-根据 $\widetilde p_0^{\mathrm{tilt}}(\cdot|\rvc)$。
-这种解释成立所需的额外跨时间一致性
-在 \Cref{subsec:guided-marginal-path} 中进行了讨论。
+不必与引导采样器实际产生的边缘分布相一致。
+因此，对于一般的损失或引导强度调度，把引导后的
+PF-ODE 从 $T$ 积分到 $0$，生成的样本分布通常并不服从
+$\widetilde p_0^{\mathrm{tilt}}(\cdot|\rvc)$。
+要让这一解释成立，还需要额外的跨时间一致性，这一点
+在 \Cref{subsec:guided-marginal-path} 中讨论。
 
 
-引导对采样轨迹的影响如图所示
-\Cref{fig:guidance}。同样的原理也可以应用在
-已经有条件的模型，允许额外的控制信号来修改其
-采样动态。
+引导对采样轨迹的影响见
+\Cref{fig:guidance}。同样的原理也可以用于
+本身已带条件的模型，让额外的控制信号去修改其
+采样动力学。
 
 
 
@@ -215,10 +212,9 @@ $\{\widetilde p_t^{\mathrm{tilt}}(\cdot|\rvc)\}_t$
 
 \paragraph{从控制到通过直接偏好优化更好地对齐。}
 
-强控制可以是有条件的，但不是偏好的：样本可以满足
-条件信号（例如提示）但偏离了人类的实际情况
-更喜欢。我们通过将条件目标倾斜 $t=0$ 来形式化这一点
-偏好等级：
+强控制可以做到「符合条件但不符合偏好」：一个样本可能满足
+条件信号（例如提示词），却偏离了人真正
+偏好的样子。为把这一点形式化，我们在 $t=0$ 处用「偏好评分」对条件目标做倾斜：
 \[
 \widetilde p_0^{\mathrm{tilt}}(\rvx_0|\rvc)
 \propto
@@ -229,12 +225,11 @@ p_0(\rvx_0|\rvc)
 \qquad
 \lambda_{\mathrm{pref}}>0,
 \]
-其中 $r(\rvx_0,\rvc)$ 是干净样本的标量对准评级
-$\rvx_0$和条件$\rvc$，数值越大表示越强
-偏好，$\lambda_{\mathrm{pref}}$ 控制的强度
-偏好重新加权。在后面介绍的KL正则化公式中，
-优化器采用这种形式，以参考策略为基础
-分布和$\lambda_{\mathrm{pref}}=1/\beta$。
+其中 $r(\rvx_0,\rvc)$ 是对干净样本
+$\rvx_0$ 与条件 $\rvc$ 的一个标量对齐评分，数值越大表示
+偏好越强，而 $\lambda_{\mathrm{pref}}$ 控制偏好重加权的
+强度。在后文介绍的 KL 正则化表述中，优化解正是这种形式，其中以参考策略作为基础
+分布，且 $\lambda_{\mathrm{pref}}=1/\beta$。
 
 
 
@@ -276,9 +271,9 @@ $\rvx_0$和条件$\rvc$，数值越大表示越强
 
 
 
-实现这种可操纵性的现有方法通常会收集模型生成相对质量的人类标签，并通常通过人类反馈（RLHF）的强化学习来微调条件扩散模型以符合这些偏好。然而，RLHF 是一个复杂且通常不稳定的过程：它首先拟合奖励模型来捕获人类偏好，然后通过强化学习微调条件扩散模型，以最大化估计的奖励，同时限制政策与原始模型的偏差。
+现有实现这种可控性的方法，通常会收集人类对模型生成结果相对质量的标注，再借助人类反馈强化学习（RLHF）微调条件扩散模型，使其与这些偏好对齐。然而，RLHF 是一个复杂而且往往不稳定的过程：它先拟合一个奖励模型来刻画人类偏好，再用强化学习微调条件扩散模型，以最大化估计出的奖励，同时约束策略相对原始模型的偏离。
 
-这自然会提出一个问题：\emph{ 我们可以完全删除奖励模型训练阶段吗？} 我们通过 Diffusion-DPO~\citep{wallace2024diffusion} 来解决这个问题，它是最初为大型语言模型开发的直接偏好优化 ~\citep{rafailov2023direct} 的改编版。如 \Cref{sec:rlhf-dpo} 中所述，Diffusion-DPO 直接从成对选择中学习偏好倾斜，因此条件扩散模型经过微调以适应偏好，而无需单独的奖励模型。
+这就自然引出一个问题：\emph{我们能不能干脆去掉奖励模型训练这一步？} 我们用 Diffusion-DPO~\citep{wallace2024diffusion} 来回答这个问题。它是最初为大语言模型提出的直接偏好优化~\citep{rafailov2023direct} 的一个改编版本。正如 \Cref{sec:rlhf-dpo} 中所述，Diffusion-DPO 直接从成对比较中学习偏好倾斜，因此无需单独的奖励模型，就能把条件扩散模型微调到与偏好对齐。
 
 
 
@@ -389,11 +384,11 @@ $\rvx_0$和条件$\rvc$，数值越大表示越强
 \section{分类器引导}\label{sec:cg}
 
 \subsection{分类器引导的基础}
-让 $\rvc$ 表示从分布中提取的条件变量 $p(\rvc)$，例如类标签、标题或其他辅助信息。我们的目标是从中抽取样本 $p_0(\rvx | \rvc)$。在基于扩散的条件生成中，我们通过运行时间边缘为的逆时动力学来实现这一目标 $p_t(\cdot | \rvc)$。这些动态的漂移取决于条件分数
+设 $\rvc$ 是取自分布 $p(\rvc)$ 的条件变量，例如类别标签、文本标题或其他辅助信息。我们的目标是从 $p_0(\rvx | \rvc)$ 中抽取样本。在基于扩散的条件生成中，实现这一目标的做法是运行一条逆时间动力学，使其在时刻 $t$ 的边缘分布为 $p_t(\cdot | \rvc)$。这条动力学的漂移取决于条件分数
 \[
 \nabla_{\rvx_t}\log p_t(\rvx_t | \rvc), \quad t \in [0,T].
 \]
-因此是标准且有效的路线\footnote{原则上可以获得 $p_0(\rvx | \rvc)$ 来自无条件生成器，通过拒绝或重要性采样，如果 $p(\rvc | \rvx)$ 可用且经过良好校准。这对于高维或稀有条件来说很少实用。} 是估计这个数量。基于贝叶斯规则的一个基本见解是条件分数可以分解为：
+因此，标准而有效的做法\footnote{原则上，若 $p(\rvc | \rvx)$ 可得且校准良好，也可以借助拒绝采样或重要性采样从无条件生成器中得到 $p_0(\rvx | \rvc)$ 的样本。但对于高维条件或稀有条件，这很少实用。}是去估计这一量。基于贝叶斯规则的一个基本洞见是：条件分数可以分解为
 \begin{align}
 \nabla_{\rvx_t} \log p_t(\rvx_t | \rvc) 
 &= \nabla_{\rvx_t} \log \left( \frac{p_t(\rvx_t)   p_t(\rvc | \rvx_t)}{p(\rvc)} \right) \nonumber \\
@@ -401,10 +396,9 @@ $\rvx_0$和条件$\rvc$，数值越大表示越强
 &= \underbrace{\nabla_{\rvx_t} \log p_t(\rvx_t)}_{\text{unconditional score}} 
 + \underbrace{\nabla_{\rvx_t} \log p_t(\rvc | \rvx_t)}_{\text{classifier gradient}}, \label{eq:cg_bayes}
 \end{align}
-其中 $p_t(\rvc | \rvx_t)$ 表示概率 $\mathbf{c}$ 条件为 $\mathbf{x}_{t}$ 预测条件 $\rvc$ 来自噪声输入 $\rvx_t$ 当时 $t$。这个分解\footnote{在最后一个恒等式中，
-$\nabla_{\rvx_t}\log p(\rvc)=0$ 因为 $p(\rvc)$ 不依赖于
-$\rvx_t$.} 激励 \emph{分类器引导} （CG）提出的方法
-\citet{dhariwal2021diffusion}。为了将群体恒等式与实践中使用的学习分类器分开，首先考虑预言数量。对于引导强度 $\omega\geq0$，在每个固定时间定义 $t$
+其中 $p_t(\rvc | \rvx_t)$ 表示在时刻 $t$ 由带噪输入 $\rvx_t$ 预测出条件 $\rvc$ 的概率。这一分解\footnote{在最后一个等式中，
+$\nabla_{\rvx_t}\log p(\rvc)=0$，因为 $p(\rvc)$ 不依赖于
+$\rvx_t$。}正是 \citet{dhariwal2021diffusion} 提出的\emph{分类器引导}（CG）的动因。为了把总体层面的恒等式与实践中所用的学习分类器区分开，先考虑总体（预言量）形式。给定引导强度 $\omega\geq0$，对每个固定时刻 $t$ 定义
 \begin{align}
 \widetilde p_t^{\mathrm{CG},\omega}(\rvx_t|\rvc)
 \propto
@@ -424,37 +418,37 @@ p_t(\rvx_t)p_t(\rvc|\rvx_t)^\omega.
 \omega\nabla_{\rvx_t}\log p_t(\rvc|\rvx_t).
 \label{eq:cg_omega}
 \end{align}
-因此 $\omega$ 缩放分类器引导方向。当 $\omega=1$，贝叶斯规则给出
-$\widetilde p_t^{\mathrm{CG},1}(\rvx_t|\rvc)=p_t(\rvx_t|\rvc)$, 和
-\Cref{eq:cg_omega} 恢复精确的条件分数。对于一般
-$\omega$, $\widetilde p_t^{\mathrm{CG},\omega}$ 提供引导场的固定时间缓释解释；它是否也形成引导采样器的边缘路径在
-\Cref{subsec:guided-marginal-path}。标量 $\omega \ge 0$ 调节分类器的影响：
+可见 $\omega$ 对分类器引导方向起缩放作用。当 $\omega=1$ 时，由贝叶斯规则得
+$\widetilde p_t^{\mathrm{CG},1}(\rvx_t|\rvc)=p_t(\rvx_t|\rvc)$，于是
+\Cref{eq:cg_omega} 还原出精确的条件分数。对于一般的
+$\omega$，$\widetilde p_t^{\mathrm{CG},\omega}$ 为引导后的分数场提供了一个固定时刻的解释；它是否同时构成引导采样器实际的边缘路径，见
+\Cref{subsec:guided-marginal-path}。标量 $\omega \ge 0$ 调节分类器的影响强度：
 \begin{itemize}
-    \item $\omega = 1$: 恢复真实的条件分数 $\nabla_{\rvx_t} \log p_t(\rvx_t |\rvc)$.
-    \item $\omega > 1$：放大分类器信号，通常会提高条件保真度（通常以牺牲多样性为代价）。
-    \item $0 \le \omega < 1$：降低分类器信号的权重，通常会增加样本多样性，同时削弱调节。
+    \item $\omega = 1$：还原真实的条件分数 $\nabla_{\rvx_t} \log p_t(\rvx_t |\rvc)$。
+    \item $\omega > 1$：放大分类器信号，通常提高对条件的保真度（但往往牺牲多样性）。
+    \item $0 \le \omega < 1$：减小分类器信号的权重，通常会提高样本多样性，同时削弱条件化程度。
 \end{itemize}
 
 \paragraph{CG 中的实用近似。}
-在实践中，CG 是一种免训练的方法（w.r.t.\ 扩散模型），用于引导预训练的无条件扩散模型，
+在实践中，CG 是一种免训练的方法（这里「免训练」是相对扩散模型而言的），用于引导预训练的无条件扩散模型：
 \[
 \rvs_{\bm{\phi}^\times}(\rvx_t ,t) \approx \nabla_{\rvx_t} \log p_t(\rvx_t).
 \]
-CG仅在采样时应用，而不修改扩散模型本身。为了实现这一点，依赖于时间的分类器 $p_{\bpsi}(\rvc |\rvx_t,t)$ 单独训练以预测状况 $\rvc$ 来自噪声输入 $\rvx_t$ 不同噪声水平 $t$。通过最小化交叉熵损失以标准方式训练分类器：
+CG 只在采样阶段施加，不修改扩散模型本身。为此，需要单独训练一个依赖时间的分类器 $p_{\bpsi}(\rvc |\rvx_t,t)$，使其能由各噪声水平 $t$ 下的带噪输入 $\rvx_t$ 预测出条件 $\rvc$。分类器按标准方式训练，即最小化交叉熵损失：
 \begin{align}
 \mathbb{E}_{t \sim \mathcal{U}[0,T], (\rvx, \rvc) \sim p_{\text{data}},  \bm{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})}
 \Big[ -\log p_{\bpsi}(\rvc | \rvx_t,t) \Big],
 \end{align}
-其中 $(\rvx,\rvc)\sim p_{\text{data}}$ 表示配对标记数据，并且 $\rvx_t = \alpha_t \rvx + \sigma_t \bm{\epsilon}$ 是此时的噪声输入 $t$。分类器必须在噪声级别上进行训练，并且通常接收 $t$，或等效的噪声级别表示，作为输入，以便它可以近似
-$p_t(\rvc|\rvx_t)$ 整个扩散路径。训练后，分类器提供分数作为真实似然梯度的替代：
+其中 $(\rvx,\rvc)\sim p_{\text{data}}$ 是带标签的成对数据，$\rvx_t = \alpha_t \rvx + \sigma_t \bm{\epsilon}$ 是时刻 $t$ 的带噪输入。分类器必须在各个噪声水平上都训练，并且通常把 $t$（或等价的噪声水平表示）也作为输入，这样它才能在整个扩散路径上近似
+$p_t(\rvc|\rvx_t)$。训练完成后，就可以用分类器的分数来替代真实似然的梯度：
 \[
 \nabla_{\rvx_t} \log p_{\bpsi^\times}(\rvc |\rvx_t,t) \approx \nabla_{\rvx_t} \log p_t(\rvc |\rvx_t).
 \]
 
 
 \subsection{用 CG 进行推理}
-在推理时，学习到的分类器梯度
-$\nabla_{\rvx_t}\log p_{\bpsi^\times}(\rvc|\rvx_t,t)$ 添加到无条件分数估计中并按比例缩放 $\omega$，产生对 oracle 字段的学习近似 \Cref{eq:cg_omega}:
+推理时，把学到的分类器梯度
+$\nabla_{\rvx_t}\log p_{\bpsi^\times}(\rvc|\rvx_t,t)$ 加到无条件分数估计上，并按 $\omega$ 缩放，即得到 \Cref{eq:cg_omega} 中预言量分数场的一个学习近似：
 \begin{align*}
 \rvs^{\mathrm{CG}}_{\mathrm{model}}(\rvx_t,t,\rvc;\omega)
 :=
@@ -466,18 +460,18 @@ p_{\bpsi^\times}(\rvc|\rvx_t,t)}_{\text{guidance direction}}
 \approx
 \rvs^{\mathrm{CG}}(\rvx_t,t,\rvc;\omega).
 \end{align*}
-反时 SDE 或 PF-ODE 中的无条件分数估计被替换为
-$\rvs^{\mathrm{CG}}_{\mathrm{model}}(\rvx_t,t,\rvc;\omega)$，从而将生成轨迹转向与条件相符的样本 $\rvc$.
+随后把反向时间的 SDE 或 PF-ODE 中的无条件分数估计替换为
+$\rvs^{\mathrm{CG}}_{\mathrm{model}}(\rvx_t,t,\rvc;\omega)$，从而把生成轨迹引导到符合条件 $\rvc$ 的样本上。
 
 
 
-\subsection{优点和局限性}
+\subsection{优点与局限}
 
-CG 为条件生成提供了一种简单而灵活的机制，允许通过以下方式显式控制条件的强度 $\omega$。它可以与任何预先训练的无条件扩散模型一起使用，只需要一个额外的分类器进行调节。然而，该方法有明显的局限性：
+CG 为条件生成提供了一个简单而灵活的机制，并可通过 $\omega$ 显式控制条件的作用强度。它可以搭配任意预训练好的无条件扩散模型使用，只需额外训练一个分类器来做条件化。不过，该方法有几处明显的局限：
 \begin{itemize}
-    \item \textbfs{训练费用：} 分类器必须经过训练才能在所有噪声级别上运行，这在计算上是昂贵的。
-    \item \textbfs{稳健性：} 分类器必须能够很好地泛化到严重损坏的输入 $\rvx_t$，特别是对于大型 $t$，这可能具有挑战性。
-    \item \textbfs{单独训练：} 由于分类器的训练独立于扩散模型，因此它可能无法与学习的数据分布完全一致。
+    \item \textbfs{训练开销：} 分类器必须在所有噪声水平上都能工作，训练成本较高。
+    \item \textbfs{稳健性：} 分类器要能很好地泛化到严重加噪的输入 $\rvx_t$，尤其在 $t$ 较大时，这相当困难。
+    \item \textbfs{单独训练：} 分类器的训练与扩散模型相互独立，因此它未必能与模型学到的数据分布完全一致。
 \end{itemize}
 
 \clearpage
@@ -488,21 +482,20 @@ CG 为条件生成提供了一种简单而灵活的机制，允许通过以下�
 \begin{figure}[th!]
     \centering
 \includegraphics[width=\linewidth]{Images/PartB/classifier_guidance_v2.pdf}
-\caption{\textbfs{ CFG.} 插图
-引导方向是条件分数的线性组合
-$\nabla_{\rvx_t}\log p_t(\rvx_t|\rvc)$ 和无条件分数
-$\nabla_{\rvx_t}\log p_t(\rvx_t)$，由$\omega$控制。
-对于 $0\leq\omega\leq1$，这会在两个方向之间进行插值；为了
-$\omega>1$，它推断出超出条件分数的条件
-方向。由此产生的场用于引导采样轨迹
-调节信号。
-\figcredit{由作者创建。}}
+\caption{\textbfs{CFG 图示。}
+引导方向是条件分数
+$\nabla_{\rvx_t}\log p_t(\rvx_t|\rvc)$ 与无条件分数
+$\nabla_{\rvx_t}\log p_t(\rvx_t)$ 的线性组合，组合由 $\omega$ 控制。
+当 $0\leq\omega\leq1$ 时，它在两个方向之间做插值；当
+$\omega>1$ 时，它会把条件方向外推到条件分数之外。
+所得的分数场用于把采样轨迹引导到
+条件信号上。
+\figcredit{由作者绘制。}}
     \label{fig:cfg}
 \end{figure}
 
-\emph{无分类器引导} (CFG)~\citep{ho2021classifier}消除了需要
-通过表达分类器引导来单独训练分类器
-通过有条件和无条件分数来确定方向。贝叶斯规则给出
+\emph{无分类器引导}（CFG）~\citep{ho2021classifier}无需单独训练分类器：它把分类器引导方向
+直接用条件分数与无条件分数表示出来。由贝叶斯规则可得
 \begin{align}
 \nabla_{\rvx_t}\log p_t(\rvc|\rvx_t)
 =
@@ -510,7 +503,7 @@ $\omega>1$，它推断出超出条件分数的条件
 -
 \nabla_{\rvx_t}\log p_t(\rvx_t).
 \end{align}
-将此恒等式代入 \Cref{eq:cg_omega} 给出 oracle CFG 字段
+把这一恒等式代入 \Cref{eq:cg_omega}，即得预言量形式的 CFG 分数场
 \begin{align}\label{eq:cfg-model}
 \rvs^{\mathrm{CFG}}(\rvx_t,t,\rvc;\omega)
 &:=
@@ -530,39 +523,32 @@ $\omega>1$，它推断出超出条件分数的条件
 (1-\omega)
 \underbrace{\nabla_{\rvx_t}\log p_t(\rvx_t)}_{\text{unconditional score}}.
 \end{align}
-有了精确的分数，\Cref{eq:cfg-model} 在代数上是相同的引导场
-如 \Cref{eq:cg_omega}。在 $\omega=1$ 处，它简化为精确的条件
-分数。对于其他引导优势，其固定时间倾斜密度
-解释应与由
-引导动力学，如所讨论的
+在分数精确的前提下，\Cref{eq:cfg-model} 与 \Cref{eq:cg_omega} 在代数上是同一个引导场。
+当 $\omega=1$ 时，它化简为精确的条件
+分数。对于其他引导强度，其固定时刻的倾斜密度解释应当与引导动力学所生成的分布相区分，详见
 \Cref{subsec:guided-marginal-path}。
 
-超参数 $\omega$ 在控制条件信息的影响方面再次发挥着关键作用（我们采用 $\omega \ge 0$）：
+超参数 $\omega$ 在这里同样起关键作用，决定条件信息的影响有多强（以下取 $\omega \ge 0$）：
 \begin{itemize}
-    \item 在 $\omega = 0$ 中，模型表现为无条件扩散模型，完全忽略调节。
-    \item 在 $\omega = 1$ 中，模型使用条件分数，无需额外引导。
-    \item 对于 $\omega > 1$，该模型更重视条件分数，而不是无条件分数，加强了与 $\rvc$ 的一致性，但通常会降低多样性。
+    \item $\omega = 0$ 时，模型表现为无条件扩散模型，完全忽略条件。
+    \item $\omega = 1$ 时，模型直接使用条件分数，不做额外引导。
+    \item $\omega > 1$ 时，模型更看重条件分数而非无条件分数，与 $\rvc$ 的一致性更强，但多样性通常会下降。
 \end{itemize}
 
 \subsection{CFG 的训练与采样}
 
 
-\paragraph{通过CFG.}联合训练无条件和条件扩散模型
-CFG 需要经过训练以支持条件和条件的扩散模型
-无条件的预测。 CFG 没有训练两个单独的模型，而是使用
-单个型号 $\rvs_{\bm{\phi}}(\rvx_t,t,\rvc)$ 并随机替换
-在训练期间通过空标记 $\emptyset$ 调节输入：
+\paragraph{用 CFG 联合训练。}
+CFG 需要模型同时支持条件预测与无条件预测。它并不训练两个独立的模型，而是只用一个网络 $\rvs_{\bm{\phi}}(\rvx_t,t,\rvc)$，在训练过程中以一定概率把条件输入随机替换为空标记 $\emptyset$：
 \begin{itemize}
-    \item 具有空输入，模型学习无条件预测
-    $\rvs_{\bm{\phi}}(\rvx_t,t,\emptyset)$;
-    \item 与原始条件，它学习条件预测
+    \item 输入为空标记时，模型学到无条件预测
+    $\rvs_{\bm{\phi}}(\rvx_t,t,\emptyset)$；
+    \item 输入为原始条件时，它学到条件预测
     $\rvs_{\bm{\phi}}(\rvx_t,t,\rvc)$。
 \end{itemize}
-零条件以 $p_\mathrm{uncond}$ 的概率使用，
-用户指定的条件退出概率。完整的训练流程是
-\Cref{alg:cfg_training} 中所示，以及标准无条件训练
-\Cref{alg:no_cfg_training}。仅介绍引导权重$\omega$
-在采样时，不是此训练目标的一部分。\begin{center}
+空条件的替换概率记为 $p_\mathrm{uncond}$，是由用户指定的「条件丢弃概率」。完整的训练流程见
+\Cref{alg:cfg_training}，标准的无条件训练流程见
+\Cref{alg:no_cfg_training}。引导权重 $\omega$ 只在采样阶段出现，不属于该训练目标的一部分。\begin{center}
 \begin{minipage}[t]{0.48\textwidth}
   \begin{algorithm}[H]
   {\small
@@ -573,9 +559,9 @@ CFG 需要经过训练以支持条件和条件的扩散模型
         \State $t \sim \mathcal{U}[0, T]$
         \State $\bm{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$
         \State $\rvx_t = \alpha_t \rvx + \sigma_t \bm{\epsilon}$
-        \State 采取梯度步骤：
+        \State 取一个梯度步：
         \Statex \quad $\nabla_{\bm{\phi}} \left\| \rvs_{\bm{\phi}}(\rvx_t, t) - \rvs \right\|^2$
-      \Until{融合}
+      \Until{收敛}
     \end{algorithmic}
     }
   \end{algorithm}
@@ -584,28 +570,26 @@ CFG 需要经过训练以支持条件和条件的扩散模型
 \begin{minipage}[t]{0.48\textwidth}
   \begin{algorithm}[H]
       {\small
-    {\small \caption{CFG 用于电导率。 DM \label{alg:cfg_training}}}
+    {\small \caption{用于条件扩散模型（DM）的 CFG 训练 \label{alg:cfg_training}}}
     \begin{algorithmic}[1]
-      \Require \textcolor{orange}{$p_\mathrm{uncond}$：问题。无条件退出}
+      \Require \textcolor{orange}{$p_\mathrm{uncond}$：无条件丢弃概率。}
       \Repeat
         \State \textcolor{orange}{$(\rvx, \rvc) \sim p_{\text{data}}(\rvx, \rvc)$}
-        \State \textcolor{orange}{$\rvc \gets \emptyset$ 有问题。 $p_\mathrm{uncond}$}
+        \State \textcolor{orange}{以概率 $p_\mathrm{uncond}$ 令 $\rvc \gets \emptyset$}
         \State $t \sim \mathcal{U}[0, T]$
         \State $\bm{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$
         \State $\rvx_t = \alpha_t \rvx + \sigma_t \bm{\epsilon}$
-        \State 采取梯度步骤：
+        \State 取一个梯度步：
         \Statex \quad \textcolor{orange}{$\nabla_{\bm{\phi}} \left\| \rvs_{\bm{\phi}}(\rvx_t, t, \rvc) - \rvs \right\|^2$}
-      \Until{融合}
+      \Until{收敛}
     \end{algorithmic}
     }
   \end{algorithm}
 \end{minipage}
 \end{center}
 
-\paragraph{带CFG的条件采样.}
-
-一旦模型 $\rvs_{\bm{\phi}^\times}(\rvx_t,t,\rvc)$ 使用
-算法~\ref{alg:cfg_training}，CFG形成学习引导场
+\paragraph{使用 CFG 做条件采样。}
+一旦用算法~\ref{alg:cfg_training} 训练出模型 $\rvs_{\bm{\phi}^\times}(\rvx_t,t,\rvc)$，CFG 就构成如下的学习引导场：
 \begin{align}\label{eq:cfg-model-nn}
 \rvs_{\mathrm{model}}^{\mathrm{CFG}}(\rvx_t,t,\rvc;\omega)
 &:=
@@ -618,15 +602,13 @@ CFG 需要经过训练以支持条件和条件的扩散模型
 &\approx
 \rvs^{\mathrm{CFG}}(\rvx_t,t,\rvc;\omega).
 \end{align}
-采样期间，逆时 SDE 中的无条件分数估计或
-PF-ODE 被替换为
+采样时，把逆时间 SDE 或
+PF-ODE 中的无条件分数估计替换为
 $\rvs_{\mathrm{model}}^{\mathrm{CFG}}$。
-因此，CFG 通过结合学习到的数据定义了一个修改后的采样域
-有条件和无条件分数估计。
+于是 CFG 通过组合学到的条件分数估计与无条件分数估计，定义出一个修改后的采样分数场。
 
-该配方可以通过调节 $\omega$ 来实现可控生成，
-提供体能训练强度和训练后的简单权衡
-样本多样性，无需单独训练的分类器或
+这一配方通过调节 $\omega$ 即可实现可控生成，在训练阶段与训练之后都很容易在
+条件强度与样本多样性之间做权衡，而且无需单独训练分类器或
 无条件扩散模型。
 
 
@@ -647,31 +629,31 @@ $\rvs_{\mathrm{model}}^{\mathrm{CFG}}$。
 
 
 \section{免训练引导}
-免训练引导修改了固定预训练的采样动态
-使用外部条件、损耗或测量目标的扩散模型，
-无需重新训练扩散模型本身。贝叶斯分解
-\Cref{eq:guidance_bayes} 在分数空间中提供了有用的动机：引导
-将条件相关的方向添加到无条件分数中。在实践中，
-特定于任务的损失可用于构建对
-预测的干净样本或采样期间使用的分数。
+免训练引导借助外部条件、损失函数或测量目标来修改一个固定的预训练扩散模型的采样动力学，
+而无需重新训练扩散模型本身。贝叶斯分解
+\Cref{eq:guidance_bayes} 在分数空间中给出了很好的动因：引导
+就是把与条件相关的方向加到无条件分数上。实践中，
+可以用任务相关的损失来构造这一方向，作用于
+预测出的干净样本或采样过程中所用的分数。
 
-我们首先在\Cref{subsec:tfg}中介绍这两种通用形式。然后我们问
-这种替代引导的动力学实际上会产生什么分布
-\Cref{subsec:guided-marginal-path}，在转向代表之前
-逆问题的免训练方法
-\Cref{subsec:inverse-problem}。\paragraph{设置和符号.}
-让 $\rvc$ 表示条件变量。我们假设可以访问预先训练的
-扩散模型 $\rvs_{\bm{\phi}^\times}(\rvx_t,t)$ 以分数表示
-预测\footnote{这里我们采用score和$\rvx$-prediction
-为简单起见参数化；其他参数化，例如
-$\beps$-预测可以类似地处理。}。另外，假设我们是
-假设任务丢失
+我们先在 \Cref{subsec:tfg} 中介绍两种通用形式。随后在
+\Cref{subsec:guided-marginal-path} 中追问：这种替代性的引导动力学究竟会产生什么分布；
+再转向逆问题中具有代表性的
+免训练方法
+\Cref{subsec:inverse-problem}。
+
+\paragraph{设定与记号。}
+设 $\rvc$ 表示条件变量。假定可以访问一个预训练好的
+扩散模型 $\rvs_{\bm{\phi}^\times}(\rvx_t,t)$，以分数
+预测的形式给出\footnote{这里为简单起见采用分数与 $\rvx$ 预测
+参数化；其他参数化（例如
+$\beps$ 预测）也可类似处理。}。此外，设任务损失为
 \[
 \ell(\cdot,\rvc)\colon\mathbb{R}^D\to\mathbb{R}
 \]
-衡量与所需条件的分歧，以便更小的
-$\ell(\rvx,\rvc)$ 表示一致性较好。例子包括感性
-到参考目标的距离，或特征空间距离或负数
+它衡量样本与所需条件之间的差异，因此
+$\ell(\rvx,\rvc)$ 越小表示越一致。典型例子包括到参考目标的感知
+距离，或特征空间中的距离，又如对数似然的负值
 从预先训练的表示中得出的相似性，例如
 CLIP~\citep{radford2021learning}。
 
@@ -681,29 +663,27 @@ p_t(\cdot|\rvx_0)
 :=
 \mathcal N\bigl(\cdot;\alpha_t\rvx_0,\sigma_t^2\rmI\bigr).
 \]
-我们借用\Cref{eq:ddim-update-all}后面介绍的DDIM更新作为
-具体例子：
+作为具体例子，我们借用 \Cref{eq:ddim-update-all} 之后将要介绍的 DDIM 更新：
 \begin{align}\label{eq:ddim-update-clean-noise-score}
 \rvx_{t\rightarrow t-1}
 =
 \alpha_{t-1}
-\underbrace{\hat{\rvx}_0(\rvx_t)}_{\text{in data space}}
+\underbrace{\hat{\rvx}_0(\rvx_t)}_{\text{数据空间中}}
 -
 \sigma_{t-1}\sigma_t
-\underbrace{\hat{\rvs}(\rvx_t)}_{\text{in noise space}},
+\underbrace{\hat{\rvs}(\rvx_t)}_{\text{噪声空间中}},
 \end{align}
 其中
-$\hat{\rvx}_0(\rvx_t):=\rvx_{\bm{\phi}^\times}(\rvx_t,t)$ 是干净的
-$\rvx$-预测和
-$\hat{\rvs}(\rvx_t):=\rvs_{\bm{\phi}^\times}(\rvx_t,t)$ 是分数
-噪声水平 $t$ 的预测。
+$\hat{\rvx}_0(\rvx_t):=\rvx_{\bm{\phi}^\times}(\rvx_t,t)$ 是干净样本的
+$\rvx$ 预测，
+$\hat{\rvs}(\rvx_t):=\rvs_{\bm{\phi}^\times}(\rvx_t,t)$ 是噪声水平 $t$ 处的分数
+预测。
 
 
 \subsection{免训练引导概念框架}\label{subsec:tfg}
 
-一个常见的策略是使用任务损失的梯度来修改
-预测的干净样本或采样更新中的分数项。来区分
-这两个操作定义了数据空间方向
+一种常见策略是利用任务损失的梯度，去修正在采样更新中使用的
+预测干净样本或分数项。为区分这两类做法，先定义数据空间方向
 \[
 \mathcal G_t^{\mathrm{data}}(\rvx_t,\rvc)
 :=
@@ -712,17 +692,16 @@ $\hat{\rvs}(\rvx_t):=\rvs_{\bm{\phi}^\times}(\rvx_t,t)$ 是分数
 \nabla_{\rvx_0}\ell(\rvx_0,\rvc)
 \right|_{\rvx_0=\hat{\rvx}_0(\rvx_t)}.
 \]
-对于噪声空间校正，我们重用了中引入的引导方向
-序言，
+至于噪声空间中的修正，我们沿用序言中引入的引导方向：
 \[
 \mathcal G_t(\rvx_t,\rvc)
 :=
 \nabla_{\rvx_t}\log\rvh_t(\rvx_t;\rvc),
 \]
-对于取正值的引导势 $\rvh_t$，如下所示。
+其中 $\rvh_t$ 为取正值的引导势，其定义如前所述。
 
-使用 \Cref{eq:ddim-update-clean-noise-score} 中的 DDIM 更新，两个
-更正可以简洁地写为
+利用 \Cref{eq:ddim-update-clean-noise-score} 中的 DDIM 更新，这两处
+修正可以简洁地写成
 \begin{align}\label{eq:ddim-update-clean-noise-guide}
 \begin{aligned}
 \rvx_{t\rightarrow t-1}
@@ -734,7 +713,7 @@ $\hat{\rvs}(\rvx_t):=\rvs_{\bm{\phi}^\times}(\rvx_t,t)$ 是分数
 {\color{orange}
 \eta_t^{\text{data}}
 \mathcal G_t^{\text{data}}(\rvx_t,\rvc)}
-\right)}_{\text{A. data space}}
+\right)}_{\text{A. 数据空间}}
 -
 \sigma_{t-1}\sigma_t
 \underbrace{\left(
@@ -743,18 +722,17 @@ $\hat{\rvs}(\rvx_t):=\rvs_{\bm{\phi}^\times}(\rvx_t,t)$ 是分数
 {\color{orange}
 \eta_t^{\text{latent}}
 \mathcal G_t(\rvx_t,\rvc)}
-\right)}_{\text{B. noise space}},
+\right)}_{\text{B. 噪声空间}},
 \end{aligned}
 \end{align}
 其中
 $\eta_t^{\text{data}},\eta_t^{\text{latent}}\geq0$
-控制数据空间和噪声空间校正的强度，
-分别。
+分别控制数据空间与噪声空间修正的强度。
 
 
-\paragraph{A。数据空间指南.}
-数据空间校正直接改进了当前的干净估计
-采取局部步骤来减少任务损失：
+\paragraph{A. 数据空间引导。}
+数据空间中的修正直接改进当前的干净样本估计：沿着降低任务损失的方向
+走一小步：
 \[
 \hat{\rvx}_0(\rvx_t)
 \;\longmapsto\;
@@ -763,19 +741,18 @@ $\eta_t^{\text{data}},\eta_t^{\text{latent}}\geq0$
 \eta_t^{\text{data}}
 \mathcal G_t^{\text{data}}(\rvx_t,\rvc).
 \]
-因此，干净的预测首先与
-条件，然后用于后续采样更新。此次修正
-当需要多个优化步骤时也可以重复应用。
+这样，先让干净样本的预测与
+条件相符，再把它用于后续的采样更新。当需要多步优化时，这一修正
+也可以重复施加。
 
 代表性示例包括 MGPD~\citep{he2023manifold} 和
 UGD~\citep{bansal2023universal}。
 
 
-\paragraph{B。噪声空间引导.}
-密切相关的策略直接将引导应用于期间使用的分数
-抽样。按照中介绍的潜在观点
-\Cref{sec:prologue-guidance}，一种常见的结构评估任务损失
-当前的去噪估计并选择
+\paragraph{B. 噪声空间引导。}
+另一类密切相关的策略，是把引导直接加在采样过程中所用的分数上。按照
+\Cref{sec:prologue-guidance} 中引入的势函数视角，常见做法是先对
+当前的去噪估计计算任务损失，再取
 \[
 \rvh_t(\rvx_t;\rvc)
 :=
@@ -784,7 +761,7 @@ UGD~\citep{bansal2023universal}。
 \right),
 \qquad \tau>0.
 \]
-根据上面 $\mathcal G_t$ 的定义，这给出
+按上面 $\mathcal G_t$ 的定义，这给出
 \begin{align*}
 \mathcal G_t(\rvx_t,\rvc)
 =
@@ -802,18 +779,18 @@ UGD~\citep{bansal2023universal}。
 \eta_t^{\text{latent}}
 \mathcal G_t(\rvx_t,\rvc).
 \]
-将这一实际更新与人口水平建设进行比较
-\Cref{eq:generic-guided-score}，
-$\eta_t^{\text{latent}}$ 起到通用引导力量的作用
-$w_t$，而 $\hat{\rvs}(\rvx_t)$ 将精确的无条件分数替换为
-它的学习估计。当 $\rvh_t(\rvx_t;\rvc)$ 与真实条件似然成正比时
-$p_t(\rvc|\rvx_t)$ 高达一个独立于 $\rvx_t$ 的系数，
-$\mathcal G_t(\rvx_t,\rvc)$ 恢复贝叶斯引导方向
-$\nabla_{\rvx_t}\log p_t(\rvc|\rvx_t)$。对于一般任务损失，
-$\mathcal G_t$ 相反定义了代理引导方向。
+把这个实际更新与总体层面上的构造
+\Cref{eq:generic-guided-score} 对比可见：
+$\eta_t^{\text{latent}}$ 扮演通式引导强度
+$w_t$ 的角色，而 $\hat{\rvs}(\rvx_t)$ 把精确的无条件分数换成了
+对它的学习估计。当 $\rvh_t(\rvx_t;\rvc)$ 与真实的条件似然
+$p_t(\rvc|\rvx_t)$ 只相差一个不依赖于 $\rvx_t$ 的因子时，
+$\mathcal G_t(\rvx_t,\rvc)$ 就还原为贝叶斯引导方向
+$\nabla_{\rvx_t}\log p_t(\rvc|\rvx_t)$。而对一般的任务损失，
+$\mathcal G_t$ 给出的是替代（代理）引导方向。
 
-评估 $\mathcal G_t$ 需要通过区分
-$\rvx$-预测：
+计算 $\mathcal G_t$ 需要对
+$\rvx$ 预测求导：
 \[
 \mathcal G_t(\rvx_t,\rvc)
 =
@@ -825,30 +802,28 @@ $\rvx$-预测：
 \nabla_{\rvx_0}\ell(\rvx_0,\rvc)
 \right|_{\rvx_0=\hat{\rvx}_0(\rvx_t)},
 \]
-这在实践中可能会产生大量的计算成本。
+这在实践中可能带来显著的计算开销。
 
-代表性的例子包括
+代表性的方法包括
 \citep{yu2023freedom,chung2022diffusion,bansal2023universal}。
 
-上述结构指定了指南如何修改每个采样步骤。
-它们本身并不决定所获得的边缘分布
-将这些修改后的动态在所有噪声级别上进行积分后。我们
-接下来澄清这个区别。
+上面的框架只规定了引导如何修改每一个采样步，
+本身并不决定把这些修改后的动力学在所有噪声水平上积分之后，最终得到
+什么样的边缘分布。接下来我们就来澄清这一区分。
 
-\subsection{ 引导采样产生什么分布？}
+\subsection{引导采样得到的究竟是什么分布？}
 \label{subsec:guided-marginal-path}
 
-上面的潜在视图在以下位置具有精确的固定时间密度解释：
-人口水平。特别是，替换学习到的无条件分数
-通过精确分数估计 $\hat{\rvs}$，正电位
-$\rvh_t(\rvx;\rvc)$和引导强度$w_t\geq0$定义了理想的引导
-领域
+上面的势函数视角在总体层面上具有精确的固定时刻密度解释。具体而言，把学到的无条件分数
+换成精确的分数估计 $\hat{\rvs}$ 后，一个正的
+势函数 $\rvh_t(\rvx;\rvc)$ 与引导强度 $w_t\geq0$ 就定义了如下的理想引导
+分数场
 \[
 \nabla_{\rvx}\log p_t(\rvx)
 +
 w_t\nabla_{\rvx}\log\rvh_t(\rvx;\rvc).
 \]
-在每个固定的 $t$ 处，这是
+在每个固定时刻 $t$，它的意义如下
 \begin{align}
 \widetilde p_t^{\mathrm{tilt}}(\rvx|\rvc)
 =
@@ -861,11 +836,10 @@ Z_t(\rvc)
 p_t(\rvx)\rvh_t(\rvx;\rvc)^{w_t}\,\diff\rvx,
 \label{eq:guided-fixed-time-tilt}
 \end{align}
-提供$0<Z_t(\rvc)<\infty$。实践中使用的学习领域近似
-通过学习的分数估计来实现这种理想的构造
-$\hat{\rvs}(\rvx_t)$。
+只要 $0<Z_t(\rvc)<\infty$。实践中使用的那种分数场，则通过学到的分数估计
+$\hat{\rvs}(\rvx_t)$ 来近似这一理想构造。
 
-对于上述基于损失的构建，
+对于前面基于损失的构造，
 \[
 \rvh_t(\rvx_t;\rvc)
 =
@@ -873,19 +847,19 @@ $\hat{\rvs}(\rvx_t)$。
 -\tau\ell\bigl(\hat{\rvx}_0(\rvx_t),\rvc\bigr)
 \right],
 \]
-$\eta_t^{\mathrm{latent}}$扮演$w_t$的角色。
+其中 $\eta_t^{\mathrm{latent}}$ 扮演 $w_t$ 的角色。
 
-这个固定时间恒等式并不能决定之后生成的分布
-引导动态在噪声水平上进行整合。因此，对于一个
-通用损失和引导表，求解从 $T$ 到 $0$ 的引导 PF-ODE
-一般不会产生按照以下方式分布的样本
-$\widetilde p_0^{\mathrm{tilt}}(\cdot|\rvc)$。
+但这个固定时刻的恒等式并不能决定把引导动力学在所有噪声水平上积分之后，最终生成的
+分布是什么。因此，对于一般的
+损失函数与引导强度调度，求解从 $T$ 到 $0$ 的引导 PF-ODE，
+一般并不会得到服从
+$\widetilde p_0^{\mathrm{tilt}}(\cdot|\rvc)$ 的样本。
 
 原因是跨时间一致性：不同噪声水平下的密度
 不能独立选择。对于
-$\{\widetilde p_t^{\mathrm{tilt}}\}_t$ 形成关联的边缘路径
-具有相同的前向扩散，它们也必须满足相应的
-福克尔-普朗克方程：
+$\{\widetilde p_t^{\mathrm{tilt}}\}_t$ 要构成与同一个前向扩散相对应的边缘路径，
+它们还必须满足相应的
+福克尔—普朗克方程：
 \[
 \partial_t \widetilde p_t^{\mathrm{tilt}}
 +
@@ -897,7 +871,7 @@ $\{\widetilde p_t^{\mathrm{tilt}}\}_t$ 形成关联的边缘路径
 =
 0.
 \]
-当该条件成立时，相应的 PF-ODE
+当这一条件成立时，相应的 PF-ODE
 \[
 \frac{\diff\rvx(t)}{\diff t}
 =
@@ -907,14 +881,13 @@ f(t)\rvx(t)
 \nabla_{\rvx}\log
 \widetilde p_t^{\mathrm{tilt}}\left(\rvx(t)|\rvc\right)
 \]
-初始化时，将 $\widetilde p_t^{\mathrm{tilt}}$ 作为其边缘路径
-对应终端分布
-$\widetilde p_T^{\mathrm{tilt}}(\cdot|\rvc)$。
+就会以 $\widetilde p_t^{\mathrm{tilt}}$ 作为其边缘路径，前提是从相应的终端分布
+$\widetilde p_T^{\mathrm{tilt}}(\cdot|\rvc)$ 出发初始化。
 
 
-可以直接检查兼容性情况。替代
-将 \Cref{eq:guided-fixed-time-tilt} 代入 福克尔-普朗克方程并使用
-事实上 $p_t$ 本身满足相同的方程给出
+相容性条件可以直接验证。把
+\Cref{eq:guided-fixed-time-tilt} 代入福克尔—普朗克方程，并利用
+$p_t$ 本身满足同一方程这一事实，可得
 \begin{align*}
 &
 \partial_t \widetilde p_t^{\mathrm{tilt}}
@@ -953,17 +926,14 @@ g^2(t)
 \frac{Z_t'}{Z_t}
 \Bigg],
 \end{align*}
-其中参数 $(\rvx;\rvc)$ 被抑制以提高可读性。
-因此，仅当括号中的倾斜族是有效的边缘路径时
-数量消失。通用任务损失和引导强度调度不需要满足
-这个条件。因此，即使分数准确，不匹配仍然存在
-评估和精确的 ODE 积分：它来自引导动力学
-本身而不是数值离散化。这是一个实例
-更广泛的福克普朗克一致性要求中讨论
-\citep{lai2023fp}。两个简单的案例阐明了这种区别。当$w_t\equiv0$时，倾斜消失
-恢复原来的无条件路径$p_t$。对于精确分类器
-引导，在前向扩散扰动的标准制定下
-$\rvx$ 同时保持 $\rvc$ 固定，
+其中参数 $(\rvx;\rvc)$ 为便于阅读已省略。
+因此，只有当括号中的量恒为零时，这个倾斜族才是有效的边缘路径。而一般的任务损失与引导强度调度并不需要满足
+这一条件。所以，即使分数估计准确、ODE 积分也精确，这种不相容依然存在：它来自引导动力学
+本身，而非数值离散化。这属于
+\citep{lai2023fp} 中所讨论的更一般的福克—普朗克一致性要求的一个实例。两个简单情形可以说明这一区别。当 $w_t\equiv0$ 时，倾斜消失，
+回到原来的无条件路径 $p_t$。对于精确的分类器
+引导，在前向扩散对
+$\rvx$ 加噪、同时保持 $\rvc$ 固定的标准构造下，
 \[
 \rvh_t(\rvx;\rvc)
 =
@@ -977,8 +947,8 @@ w_t\equiv1.
 =
 p_t(\rvx|\rvc),
 \]
-所以倾斜家庭正是条件边缘路径。这解释了
-引导权重$1$对于预言分类器似然的特殊作用。
+因此这一倾斜族恰好就是条件边缘路径。这就解释了
+为什么引导强度取 $1$ 时，对预言量形式的分类器似然具有特殊地位。
 
 对于一般引导强度，例如
 \[
@@ -987,20 +957,18 @@ p_t(\rvx) p_t(\rvc|\rvx)^\omega,
 无论何时，表达式仍然定义有效的固定时间倾斜密度
 可标准化，但通常不能保证描述边缘
 引导采样器。特殊选择可以满足所需的兼容性
-条件，因此 $\omega\neq1$ 本身并不意味着不一致。
+条件，因此 $\omega\neq1$ 本身并不意味着一不相容。
 
-基于修正的方法，例如 Feynman-Kac
-Correctors~\citep{skreta2025feynman} 明确考虑了这个跨时间
-当目标是遵循规定的倾斜顺序时，不匹配
-更忠实地分配。
+若希望更忠实地遵循给定的倾斜分布，可以改用基于修正项的方法，
+例如 Feynman-Kac Correctors~\citep{skreta2025feynman}，它们会显式处理这种跨时间的
+不一致。
 
 \subsection{免训练反问题方法示例}\label{subsec:inverse-problem}
-\Cref{subsec:tfg}中介绍的原理在反问题中具有重要的应用。我们首先概述背景，然后提供几个具体示例，说明如何利用预训练的扩散模型来解决推理时间逆问题。
+\Cref{subsec:tfg} 中介绍的原理在逆问题中有重要应用。我们先概述相关背景，再给出几个具体例子，说明如何利用预训练的扩散模型在推理阶段求解逆问题。
 
 
-\paragraph{逆问题背景.}
-令 $\mathcal A$ 表示已知的前向算子，可能是非线性的，并且
-假设
+\paragraph{逆问题的背景。}
+设 $\mathcal A$ 为已知的前向算子（可以是非线性的），并设
 \begin{align}\label{eq:inverse_problem}
 \rvy
 =
@@ -1010,52 +978,49 @@ Correctors~\citep{skreta2025feynman} 明确考虑了这个跨时间
 \qquad
 \rvz\sim\mathcal N(\bm 0,\rmI).
 \end{align}
-贝叶斯的目标是表征后验概率
-$p_0(\rvx_0|\rvy)$，将测量模型与先验知识相结合
-关于看似合理的干净信号。盲逆问题通过以下方式扩展了此设置
-将 $\mathcal A$ 的未知参数视为附加量进行推断。
+贝叶斯视角的目标是刻画后验分布
+$p_0(\rvx_0|\rvy)$，即把测量模型与「干净信号该长什么样」的先验知识结合起来。盲逆问题则在此之上进一步扩展：
+把 $\mathcal A$ 的未知参数也当作需要推断的量。
 
-经典的反问题方法通常将数据保真度项与
-变分或贝叶斯公式中的分析或手工设计。
-有监督的恢复方法可能会学习直接映射
-使用配对数据进行测量以清理信号。预训练扩散模型
-提供第三种途径：学习到的干净数据的先验可以在跨环境中重复使用
-测量操作员，测量信息仅在
-推理时间。
+经典逆问题方法通常把数据保真项与一个解析的或手工设计的先验，
+统一写进变分形式或贝叶斯形式。有监督的恢复方法则直接用成对数据去学习一个从
+测量到干净信号的映射。预训练的扩散模型提供了第三条途径：学到的干净数据先验可以跨不同的
+测量算子复用，而测量信息只在
+推理阶段才引入。
 
-\paragraph{预训练扩散模型作为逆问题求解器。}
-对于上面的测量模型，贝叶斯规则给出
+\paragraph{把预训练扩散模型当作逆问题求解器。}
+对上面的测量模型，由贝叶斯规则可得
 \begin{align}
 \nabla_{\rvx_t}\log p_t(\rvx_t|\rvy)
 =
-\underbrace{\nabla_{\rvx_t}\log p_t(\rvx_t)}_{\text{data score}}
+\underbrace{\nabla_{\rvx_t}\log p_t(\rvx_t)}_{\text{数据分数}}
 +
-\underbrace{\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)}_{\text{measurement guidance}}.
+\underbrace{\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)}_{\text{测量引导项}}.
 \label{eq:bayes_rule}
 \end{align}
-数据分数可以由预先训练的扩散模型提供，而
-测量术语通常无法以封闭形式提供。免训练
-因此，逆求解器在采样期间引入测量信息，
-但它们不必都以相同的数学形式来实现。
+其中数据分数可以由预训练的扩散模型给出，而
+测量项通常没有闭式表达。因此免训练的
+逆问题求解器会在采样过程中引入测量信息，
+但它们的实现方式未必采用同一种数学形式。
 
-两种常见策略之间的一个有用区别。一些方法通过修改或投影中间样本来直接强制测量一致性。其他人近似似然的分数
-$\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)$ 并通过将其添加到数据分数中
-\Cref{eq:bayes_rule}.
+区分两种常见策略很有用。一类方法直接强制测量一致性，做法是修改或投影中间样本；另一类方法则去近似似然的分数
+$\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)$，再按
+\Cref{eq:bayes_rule} 把它加到数据分数上。
 
 \subparagraph{ILVR~\citep{choi2021ilvr}.}
-ILVR 提供了第一个策略的简单示例。让 $\phi_N$ 表示其线性低通算子。在每个反向步骤中，首先对无条件提案进行采样
+ILVR 是前一类策略的一个简单例子。设 $\phi_N$ 为一线性低通算子。在每一个反向步骤中，先采样无条件提议
 \[
 \rvx_{t-1}'
 \sim
 p_{\bm\theta}(\rvx_{t-1}'|\rvx_t)
 \]
-并将参考图像的噪声提高到相同的水平，
+再把参考图像加噪到同一水平，
 \[
 \rvy_{t-1}
 \sim
 p_{t-1}(\rvy_{t-1}|\rvy).
 \]
-然后根据以下内容对提案进行细化
+然后按下列方式对提议作修正
 \[
 \rvx_{t-1}
 =
@@ -1063,8 +1028,8 @@ p_{t-1}(\rvy_{t-1}|\rvy).
 +
 (\rmI-\phi_N)\rvx_{t-1}'.
 \]
-因此，规定的低频分量来自噪声参考，而互补分量来自无条件扩散建议。这是样本空间一致性校正，而不是显式近似
-$\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)$.
+也就是说，指定的低频分量取自加噪后的参考图像，而与之互补的高频分量来自无条件扩散的提议。这是样本空间上的一致性修正，而不是对
+$\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)$ 的显式近似。
 
 
 
@@ -1122,9 +1087,9 @@ $\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)$.
 
 
 
-\subparagraph{扩散后采样（DPS）~\citep{chung2022diffusion}.}
-对于已知的非线性前向算子 $\mathcal A$ 具有加性高斯测量噪声 $\sigma_{\rvy}>0$, \emph{扩散后采样}
-（DPS）近似值
+\subparagraph{扩散后验采样（DPS）~\citep{chung2022diffusion}。}
+对于已知的非线性前向算子 $\mathcal A$ 与加性高斯测量噪声（$\sigma_{\rvy}>0$），\emph{扩散后验采样}
+（DPS）作如下近似
 \begin{align}\label{eq:dps-score}
 \nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)
 \approx
@@ -1133,46 +1098,47 @@ $\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)$.
 \end{align}
 其中
 $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
-是给定的干净样本的后验平均值 $\rvx_t$，通常使用 Tweedie 公式根据预训练的扩散模型进行估计（\Cref{eq:tweedie}）。该插件近似用后验均值处的值替换测量似然的后验均值：
+是给定了 $\rvx_t$ 之后干净样本的后验均值，通常借助 Tweedie 公式由预训练扩散模型估计（\Cref{eq:tweedie}）。这一「代入」近似，就是用在均值处取的值来替代测量似然的后验均值：
 \begin{align*}
   p_t(\rvy|\rvx_t)
   &= \int p_t(\rvy|\rvx_t, \rvx_0)  p(\rvx_0|\rvx_t)  \mathrm{d}\rvx_0 \\
   &= \int p_t(\rvy|\rvx_0)  p(\rvx_0|\rvx_t)  \mathrm{d}\rvx_0 
    \approx  p_t\bigl(\rvy|X_0=\hat\rvx_0(\rvx_t)\bigr),
 \end{align*}
-这里用到了条件独立性。给定 $\rvx_0$ 后，$\rvy$ 不再依赖 $\rvx_t$。这个近似还要求后验 $p(\rvx_0|\rvx_t)$ 集中在均值附近。又因为
+这里用到了条件独立性：给定 $\rvx_0$ 之后，$\rvy$ 便不再依赖 $\rvx_t$。该近似还要求后验 $p(\rvx_0|\rvx_t)$ 集中在均值附近。又由于
 \[
   p_t\bigl(\rvy|X_0 = \hat\rvx_0(\rvx_t)\bigr)
   = \mathcal{N}\bigl(\rvy;  \mathcal{A}(\hat\rvx_0(\rvx_t)),  \sigma_{\rvy}^2 \rmI\bigr),
 \]
-我们计算
+可得
 \begin{align*}
   \nabla_{\rvx_t} \log p_t(\rvy|\rvx_t)
   &\approx \nabla_{\rvx_t} \log \mathcal{N}\bigl(\rvy;  \mathcal{A}(\hat\rvx_0),  \sigma_{\rvy}^2 \rmI\bigr) \\
   &= -\frac{1}{2\sigma_{\rvy}^2}  \nabla_{\rvx_t} \bigl\| \rvy - \mathcal{A}(\hat\rvx_0) \bigr\|^2 \quad  \\
   &= \frac{1}{\sigma_{\rvy}^2}  \left[ \mathcal{J}_{\mathcal{A}}\big(\hat\rvx_0(\rvx_t)\big) \cdot \nabla_{\rvx_t} \hat\rvx_0(\rvx_t) \right]^\top \bigl( \rvy - \mathcal{A}\big(\hat\rvx_0(\rvx_t)\big) \bigr),
 \end{align*}
-其中 $\mathcal{J}_{\mathcal{A}}\big(\hat\rvx_0(\rvx_t)\big) := \nabla_{\rvx_0} \mathcal{A}(\rvx) \big|_{\rvx = \hat\rvx_0(\rvx_t)}$ 表示前向算子相对于其输入的雅可比矩阵。该公式通过分数近似管道传播梯度，反映测量似然如何随着噪声样本中的扰动而变化 $\rvx_t$。对于线性反问题，这进一步简化为：
+其中 $\mathcal{J}_{\mathcal{A}}\big(\hat\rvx_0(\rvx_t)\big) := \nabla_{\rvx_0} \mathcal{A}(\rvx) \big|_{\rvx = \hat\rvx_0(\rvx_t)}$ 是前向算子关于其输入的雅可比矩阵。该式把梯度沿分数近似的链路一路回传，刻画了测量似然如何随带噪样本 $\rvx_t$ 上的扰动而变化。对于线性逆问题，它进一步化简为：
 \begin{align*}
     \nabla_{\rvx_t} \log p_t(\rvy | \rvx_t) \approx \eqnmarkbox[OliveGreen]{guidance}{\frac{1}{\sigma_{\rvy}^2}} \,\,    \eqnmarkbox[Plum]{proj}{\left[ \rmA \cdot \nabla_{\rvx_t} \hat\rvx_0(\rvx_t) \right]^\top} \left(\eqnmarkbox[NavyBlue]{merror}{\rvy - \rmA(\hat\rvx_0(\rvx_t))}\right).
 \end{align*}
 
-大量工作通过提出各种近似来探索基于扩散的逆问题求解器 $\nabla_{\rvx_t} \log p_t(\rvy | \rvx_t)$。为了获得全面的概述，我们建议读者参阅以下调查：~\citet{daras2024survey}.
+已有大量工作通过各式近似来构造基于扩散的逆问题求解器中的
+$\nabla_{\rvx_t} \log p_t(\rvy | \rvx_t)$。如需全面了解，建议读者参阅~\citet{daras2024survey} 的综述。
 
-\paragraph{A相关监督迭代恢复观点及其与PF-ODE的连接.}
-上述讨论通过将预先训练的扩散先验与 \Cref{eq:bayes_rule} 中的贝叶斯规则分解相结合来解决逆问题。更具体地说，这些方法使用先验分布的分数以及测量模型来引导重建过程。同时，它们还反映了一种更广泛的想法：它们不是一步恢复干净的信号，而是通过许多小的更新逐渐改善损坏的输入。类似的高级策略也出现在监督图像恢复中，但起点不同。这些方法不是使用预先训练的分数模型作为先验，而是直接从配对的损坏和干净的示例中学习细化过程。
+\paragraph{相关的有监督迭代恢复视角及其与 PF-ODE 的联系。}
+上述讨论通过把预训练的扩散先验与 \Cref{eq:bayes_rule} 中的贝叶斯分解结合起来求解逆问题。更具体地说，这些方法利用先验分布的分数和测量模型来引导重建过程。它们同时也体现了一种更宏观的思路：不去一步恢复出干净信号，而是通过许多次小幅更新逐步改良受损坏的输入。类似的高层策略在有监督图像恢复中同样存在，只是出发点不同：那些方法不用预训练的分数模型作先验，而是直接从成对的「损坏—干净」样本中学习一个细化过程。
 
-一个代表性的例子是 InDI~\citep{delbracio2023inversion}。与上述基于贝叶斯规则的方法不同，InDI 从配对数据 $(\rvy,\rvx_0)$ 开始，其中 $\rvy$ 是损坏的观测值，$\rvx_0$ 是相应的干净目标。重要的是，它一般不假设从 $\rvx_0$ 到 $\rvy$ 的损坏是分析已知的或者是高斯的。 
+一个代表性例子是 InDI~\citep{delbracio2023inversion}。与上述基于贝叶斯规则的方法不同，InDI 从成对数据 $(\rvy,\rvx_0)$ 出发，其中 $\rvy$ 是受损坏的观测、$\rvx_0$ 是对应的干净目标。值得注意的是，它一般并不假设从 $\rvx_0$ 到 $\rvy$ 的损坏过程是解析已知的，也不假设它是高斯的。
 
-基本思想是通过插值路径连接两个端点
+其基本思想是用一条插值路径把两个端点连起来：
 \[
 \rvx_t=(1-t)\rvx_0+t\rvy,\qquad t\in[0,1].
 \]
-这条路径只能被理解为从干净目标到损坏观察的便捷轨迹。一般来说，这不是一个高斯噪声过程。沿着这条路径，对于任何 $0\le s\le t$，都有精确的关系
+这条路径只应理解为一条从干净目标通往损坏观测的便捷轨迹，它一般并不是一个高斯加噪过程。沿这条路径，对任意 $0\le s\le t$ 都有精确关系
 \[
 \rvx_s=\Bigl(1-\frac{s}{t}\Bigr)\rvx_0+\frac{s}{t}\rvx_t.
 \]
-考虑给定 $\rvx_t$ 的条件期望收益率
+考虑给定 $\rvx_t$ 时 $\rvx_s$ 的条件期望
 \[
 \mathbb E[\rvx_s|\rvx_t]
 =
@@ -1180,9 +1146,9 @@ $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
 +
 \frac{s}{t}\rvx_t.
 \]
-这表明，要从当前状态 $\rvx_t$ 转移到降级程度稍低的状态，从 $\rvx_t$ 预测干净目标就足够了。
+这说明，要从当前状态 $\rvx_t$ 退回到损坏程度略轻的状态，只需由 $\rvx_t$ 预测出干净目标即可。
 
-基于这个想法，训练一个时间条件预测器 $\rmF_{\bphi}(\rvx_t,t)$ 通过最小化回归目标来自配对示例
+基于这一想法，可用成对样本训练一个依赖时间的预测器 $\rmF_{\bphi}(\rvx_t,t)$，其方式是极小化如下回归目标
 \[
 \min_{\bphi}\;
 \mathbb E_{(\rvx_0,\rvy)\sim p(\rvx_0,\rvy),  t\sim p(t)}
@@ -1190,11 +1156,11 @@ $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
 \rmF_{\bphi}\bigl((1-t)\rvx_0+t\rvy, t\bigr)-\rvx_0
 \Bigr\|_2^2,
 \]
-其中 $p(\rvx_0,\rvy)$ 表示由干净目标组成的数据对的联合分布 $\rvx_0$ 及其损坏的观察结果 $\rvy$、 和 $p(t)$ 指定训练期间如何采样插值时间。也就是说， $\rmF_{\bphi}$ 经过训练，可以沿着插值路径从中间退化状态预测干净目标。对于这个平方误差损失，贝叶斯最优预测器是条件期望
+其中 $p(\rvx_0,\rvy)$ 是「干净目标 $\rvx_0$ 与其损坏观测 $\rvy$」组成的样本对的联合分布，$p(t)$ 则规定了训练时如何采样插值时间。也就是说，$\rmF_{\bphi}$ 被训练成沿插值路径从中间退化状态预测干净目标。对这个平方误差损失而言，贝叶斯最优预测器就是条件期望
 \[
 \rmF^*(\rvx_t,t)=\mathbb E[\rvx_0|\rvx_t].
 \]
-因此，如果模型类具有足够的表达能力并且优化成功，则学习的预测器近似与中间状态相关的平均干净目标 $\rvx_t$ 当时 $t$。从这个意义上说，训练目标在精神上与扩散模型训练相似：在这两种情况下，人们都会学习从中间损坏状态到更干净目标的时间条件回归。不同之处在于，扩散模型从规定的前向扰动过程中综合生成此类训练对，而这里的端点对 $(\rvy,\rvx_0)$ 直接来自监督恢复数据。在推理时，我们从 $\hat{\rvx}_1=\rvy$ 并通过以下方式反复细化估计
+因此，只要模型类有足够的表达能力、且优化成功，学到的预测器就近似于给定时刻 $t$ 的中间状态 $\rvx_t$ 时干净目标的平均。从这个意义上说，这一训练目标与扩散模型训练在精神上是相似的：两者都在学习一条从中间损坏状态回归到更干净目标的时间条件回归。区别在于，扩散模型的这类训练对是由指定的前向扰动过程合成出来的，而这里的端点对 $(\rvy,\rvx_0)$ 直接来自有监督恢复数据。推理时，我们从 $\hat{\rvx}_1=\rvy$ 出发，按下式反复细化估计
 \[
 \hat{\rvx}_{t-\Delta t}
 =
@@ -1209,7 +1175,7 @@ $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
 \frac{\rvx_t-\rmF_{\bphi}(\rvx_t,t)}{t}.
 \]
 
-现在假设我们进一步专门研究高斯去噪设置，其中假设损坏采用已知的分析形式
+现在进一步把问题特化到高斯去噪的情形，即假定损坏具有已知的解析形式
 \[
 \rvy=\rvx_0+\sigma\beps,
 \qquad \beps\sim\mathcal N(\bm 0,\rmI),
@@ -1226,7 +1192,7 @@ $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
 \qquad\text{with}\qquad
 \alpha_t=1,\;\sigma_t=t\sigma.
 \]
-因此，预测器 \(\rmF_{\bphi}(\rvx_t,t)\approx \mathbb E[\rvx_0\mid \rvx_t]\) 现在正在学习对高斯损坏的中间状态进行去噪 \(\rvx_t\)。在这种情况下，剩余流 ODE 变为
+于是，预测器 \(\rmF_{\bphi}(\rvx_t,t)\approx \mathbb E[\rvx_0\mid \rvx_t]\) 此时学到的是对高斯损坏的中间状态 \(\rvx_t\) 做去噪。在这种情形下，残差流 ODE 变为
 \[
 \frac{\diff \rvx_t}{\diff t}
 =
@@ -1234,18 +1200,18 @@ $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
 =
 -\dot{\sigma}_t\sigma_t\nabla_{\rvx_t}\log p_t(\rvx_t),
 \]
-最后一个等式来自 \(\sigma_t=t\sigma\) 与 Tweedie 公式一起，
+最后一个等号由 \(\sigma_t=t\sigma\) 结合 Tweedie 公式得到，
 \[
 \mathbb E[\rvx_0\mid \rvx_t]
 =
 \rvx_t+\sigma_t^2\nabla_{\rvx_t}\log p_t(\rvx_t).
 \]
-这正是此高斯去噪路径的 PF-ODE，以去噪器形式或分数形式编写。因此，在高斯去噪专门化下，InDI 提出了扩散建模的另一种解释：人们可以将其视为对高斯损坏数据的监督去噪学习，其中 PF-ODE 作为逐渐细化的连续时间极限而出现。
+这正是该高斯去噪路径的 PF-ODE，既可以写成去噪器形式，也可以写成分数形式。因此，在高斯去噪这一特例下，InDI 给出了扩散建模的一种替代解释：可以把扩散建模看成对高斯损坏数据做有监督去噪学习，而 PF-ODE 是逐步细化过程在连续时间下的极限。
 
 
 
 \newpage
-\section{用于模型对齐的强化学习与直接偏好优化}\label{sec:rlhf-dpo}
+\section{从强化学习到直接偏好优化：面向模型对齐}\label{sec:rlhf-dpo}
 
 
 
@@ -1257,22 +1223,22 @@ $\hat\rvx_0(\rvx_t):=\E[\rvx_0|\rvx_t]$
 
 
 
-为了使生成模型与人类意图保持一致，流行的范例是人类反馈强化学习（RLHF）。 RLHF 虽然有效，但它是一个复杂的多阶段过程，并且可能不稳定。本节介绍 \emph{直接偏好优化 (DPO)}~\citep{rafailov2023direct}一种更精简、更稳定的方法，无需显式奖励建模或强化学习即可达到相同的目标。然后，我们通过以下方式概述了其对扩散模型的扩展： \emph{Diffusion-DPO}~\citep{wallace2024diffusion}.
+为了让生成模型与人类意图对齐，主流范式一直是基于人类反馈的强化学习（RLHF）。RLHF 虽然有效，却是一个复杂的多阶段过程，而且容易不稳定。本节介绍 \emph{直接偏好优化（DPO）}~\citep{rafailov2023direct}：它更精简、也更稳定，不需要显式的奖励建模或强化学习就能达到同样的目标。随后我们概述它向扩散模型的推广，即 \emph{Diffusion-DPO}~\citep{wallace2024diffusion}。
 
 \subsection{动机：规避 RLHF 的陷阱}
 
-对齐的目标是引导基本的预训练模型（例如 SFT 模型）转向人类喜欢的输出。 RLHF 分三个阶段进行。首先， \emph{监督微调（SFT）} 在提示-响应对上训练基本模型。第二， \emph{奖励建模（RM）} 拟合由提示组成的偏好数据的模型 $\mathbf{c}$ 和配对响应（首选“获胜者” $\mathbf{x}_w$ 和一个不受欢迎的“失败者” $\mathbf{x}_l$)，学习标量 $r(\mathbf{c},\mathbf{x})$ 与 $r(\mathbf{c},\mathbf{x}_w)>r(\mathbf{c},\mathbf{x}_l)$。三、 \emph{RL微调} 优化SFT模型（策略 $\pi$\footnote{策略将提示/历史（状态）映射到响应/操作的分布。}) 使用 PPO 等算法~\citep{schulman2017proximal}，最大化预期奖励 $r$ 在通过 KL 惩罚进行正则化时，保持 $\pi$ 接近参考/SFT 分布。尽管有影响，但该流程也存在缺点：强化学习阶段不稳定且计算成本高昂，因为它是在策略的——每次更新都需要从当前模型中新鲜生成的样本；它还需要训练和托管多个大型模型（SFT、奖励，有时还需要价值模型）；而且它仅优化人类偏好的代理，因此奖励模型中的缺陷可以被利用。这引发了一个中心问题：
+对齐的目标是把一个基础的预训练模型（例如 SFT 模型）引导向人类偏好的输出。RLHF 分三个阶段进行。第一步是\emph{有监督微调（SFT）}，在「提示—响应」对上训练基础模型。第二步是\emph{奖励建模（RM）}，在由提示 $\mathbf{c}$ 与成对响应（一个更受偏好的「胜者」$\mathbf{x}_w$ 和一个更不受偏好的「败者」$\mathbf{x}_l$）构成的偏好数据上拟合一个模型，学出一个标量 $r(\mathbf{c},\mathbf{x})$，使得 $r(\mathbf{c},\mathbf{x}_w)>r(\mathbf{c},\mathbf{x}_l)$。第三步是\emph{强化学习微调}，用 PPO~\citep{schulman2017proximal} 一类算法优化 SFT 模型（策略 $\pi$\footnote{策略把提示/历史（状态）映射为响应/动作上的分布。}），在最大化 $r$ 给出的期望奖励的同时，用 KL 惩罚把 $\pi$ 约束在参考/SFT 分布附近。尽管影响很大，这个流程仍有几处缺点：强化学习阶段不稳定且算力开销高，因为它是同策略（on-policy）的——每次更新都需要从当前模型新采样；它还需要训练并托管多个大模型（SFT 模型、奖励模型，有时还有价值模型）；而且它优化的只是人类偏好的一个代理量，因此奖励模型中的缺陷可能被利用。这就引出一个核心问题：
 \begin{question}
     我们可以消除显式奖励模型和不稳定的强化学习步骤，直接在偏好数据上优化模型吗？
 \end{question}
 
-直接偏好优化 (DPO) 通过用单个监督式步骤替换多级 RLHF 管道来简化对齐。 DPO 不是训练单独的奖励模型并运行不稳定的 RL 算法（如 PPO），而是使用简单的逻辑损失直接将策略拟合到偏好对，同时保持接近固定的参考模型。关键的见解是 KL 正则化 RLHF 目标可以重写，以便策略和参考之间的对数似然比充当隐式奖励。这保留了对参考策略的相同正则化，但避免了昂贵的部署和显式奖励建模。在 \Cref{subsec:rlhf-bradley-terry} 中，我们简要回顾了 RLHF 管道及其对大奖励模型和 RL 微调的依赖。在 \Cref{subsec:dpo} 中，我们提出了最初为语言模型提出的 DPO，它绕过了奖励模型训练并简化了对齐微调。最后，在 \Cref{subsec:diffusion-dpo} 中，我们将这一想法扩展到扩散模型，引入Diffusion-DPO 作为生成建模设置中实用且稳定的对齐方法。
+直接偏好优化（DPO）把多阶段的 RLHF 流程替换为一个单一的、监督式风格阶段，从而简化对齐。它不再单独训练奖励模型、也不再运行 PPO 这类不稳定的强化学习算法，而是用一个简单的逻辑损失把策略直接拟合到偏好对上，同时保持与一个固定的参考模型接近。关键观察是：KL 正则化的 RLHF 目标可以改写，使策略与参考之间的对数似然比本身充当隐式奖励。这样既保留了对参考策略的同样正则化，又避免了昂贵的采样部署和显式奖励建模。在 \Cref{subsec:rlhf-bradley-terry} 中，我们简要回顾 RLHF 流程及其对大奖励模型与强化学习微调的依赖。在 \Cref{subsec:dpo} 中，我们介绍最初针对语言模型提出的 DPO，它绕开了奖励模型训练、简化了对齐微调。最后在 \Cref{subsec:diffusion-dpo} 中，我们把这一思路推广到扩散模型，给出生成建模场景下实用而稳定的对齐方法 Diffusion-DPO。
 
-\subsection{RLHF：Bradley--Terry视角}\label{subsec:rlhf-bradley-terry}
+\subsection{RLHF：Bradley--Terry 视角}\label{subsec:rlhf-bradley-terry}
 
 
 \paragraph{RLHF简介.}
-RLHF 从一个有学识的判断开始：一个奖励模型 $r_{\bm\psi}$，它为同一提示 $\mathbf c$ 的候选者响应分配标量偏好分数。数据集 $\mathcal D$ 由 $(\tilde{\mathbf x},\mathbf x)$ 组成，标签 $y$ 进行注释，指示 $\tilde{\mathbf x}$ 是否优先于 $\mathbf x$。标签可以是二进制 $y\in\{0,1\}$ 或通过聚合多个评估者获得的软值 $y\in[0,1]$。训练目标是简单的逻辑损失
+RLHF 从一个学出来的「裁判」开始：一个奖励模型 $r_{\bm\psi}$，它为同一提示 $\mathbf c$ 下的候选响应打出一个标量偏好分数。数据集 $\mathcal D$ 由成对样本 $(\tilde{\mathbf x},\mathbf x)$ 构成，并带有标签 $y$，用以指示 $\tilde{\mathbf x}$ 是否优于 $\mathbf x$。标签可以是二值的 $y\in\{0,1\}$，也可以是聚合多位标注者得到的软标签 $y\in[0,1]$。训练目标是一个简单的逻辑损失
 \begin{align}\label{eq:rm-emp}
 \begin{aligned}
     \mathcal L_{\mathrm{RM}}(\bm\psi)
@@ -1284,9 +1250,7 @@ y &\log \sigma \big(r_{\bm\psi}(\mathbf c,\tilde{\mathbf x})-r_{\bm\psi}(\mathbf
 \Big],
 \end{aligned}
 \end{align}
-其中 $\sigma(u)=1/(1+e^{-u})$。实际上，$\mathcal D$ 中的偏好对可能源自各种来源：策划的响应、不同检查点的模型快照或来自预训练条件扩散模型的生成。  
-标准约定是以有序格式 $(\text{winner}, \text{loser})$ 存储它们。  
-在此约定下，我们只需设置 $y=1$，然后 \Cref{eq:rm-emp} 简化为特殊情况（使用 $\tilde\rvx = \rvx^w$ 和 $\rvx = \rvx^l$）：
+其中 $\sigma(u)=1/(1+e^{-u})$。实践中，$\mathcal D$ 里的偏好对可以来自多种渠道：人工精选的响应、不同检查点的模型快照，或者预训练条件扩散模型的生成结果。通常的约定是按有序格式 $(\text{胜者}, \text{败者})$ 存储。在这一约定下，只需令 $y=1$，\Cref{eq:rm-emp} 就退化为如下特例（取 $\tilde\rvx = \rvx^w$、$\rvx = \rvx^l$）：
 \begin{equation}\label{eq:rm-bt}
 \mathcal L_{\mathrm{RM}}(\bm\psi)
 =
@@ -1295,49 +1259,48 @@ y &\log \sigma \big(r_{\bm\psi}(\mathbf c,\tilde{\mathbf x})-r_{\bm\psi}(\mathbf
 \end{equation}
 
 
-\paragraph{Bradley-Terry View 和 KL 连接。}
-解读起来很标准
+\paragraph{Bradley--Terry 视角与 KL 的联系。}
+标准做法是把
 \[
 p_{r_{\bm\psi}}(\tilde{\mathbf x}\succ \mathbf x|\mathbf c)
 := \sigma \big(r_{\bm\psi}(\mathbf c,\tilde{\mathbf x})-r_{\bm\psi}(\mathbf c,\mathbf x)\big)
 \]
-通过 Bradley-Terry (BT) 模型 ~\citep{bradley1952rank}，将两个标量分数转换为获胜概率。  
-这个公式强调了两个关键属性：(i) 只有分数的 \emph{difference} 很重要（因此 $r_{\bm\psi}(\mathbf c,\cdot)$ 是平移不变的），以及 (ii) 损失将预测的获胜者分数推至失败者分数以上。为了直观地看到 (ii)，考虑一对带有标签 $y\in\{0,1\}$ 并定义
+借助 Bradley--Terry（BT）模型~\citep{bradley1952rank} 来解释，它把两个标量分数转成一个获胜概率。这一写法突出了两个关键性质：(i) 只有分数的\emph{差}起作用（因此 $r_{\bm\psi}(\mathbf c,\cdot)$ 具有平移不变性）；(ii) 该损失会把预测出的胜者分数推到败者分数之上。要直观理解 (ii)，考虑一对标签为 $y\in\{0,1\}$ 的样本，并定义
 \[
 \Delta r := r_{\bm\psi}(\mathbf c,\tilde{\mathbf x})-r_{\bm\psi}(\mathbf c,\mathbf x),
 \quad
 p:=\sigma(\Delta r),\quad \sigma(u)=\tfrac{1}{1+e^{-u}}.
 \]
-每个示例的逻辑损失是
+单样本逻辑损失为
 \[
 \ell=-\big[y\log p+(1-y)\log(1-p)\big].
 \]
-然后
+于是
 \[
 \frac{\partial \ell}{\partial \Delta r}=\sigma(\Delta r)-y.
 \]
-在步长为 $\eta>0$ 的梯度下降下，分数差距更新为
+在步长为 $\eta>0$ 的梯度下降下，分数差按如下方式更新
 \[
 \Delta r \leftarrow \Delta r-\eta\big(\sigma(\Delta r)-y\big).
 \]
-因此，如果 $y=1$（“$\tilde{\mathbf x}$ 获胜”），则 $\sigma(\Delta r)-1\le 0$，因此 $\Delta r$ 增加（胜者向上，败者向下）；如果 $y=0$，则 $\Delta r$ 减少。
+因此，若 $y=1$（即「$\tilde{\mathbf x}$ 获胜」），则 $\sigma(\Delta r)-1\le 0$，于是 $\Delta r$ 增大（胜者上去、败者下来）；若 $y=0$，则 $\Delta r$ 减小。
 
-每个示例术语 \Cref{eq:rm-emp} 可以视为观察到的伯努利标签与模型预测的获胜概率之间的交叉熵：
+\Cref{eq:rm-emp} 中的每一项都可以看作观测到的伯努利标签与模型预测的获胜概率之间的交叉熵：
 \[
 -\big[y\log p_{r_{\bm\psi}}+(1-y)\log(1-p_{r_{\bm\psi}})\big]
 = \mathcal D_{\mathrm{KL}} \big(\mathrm{Bern}(y) \big\| \mathrm{Bern}(p_{r_{\bm\psi}})\big)
 + \mathcal H \big(\mathrm{Bern}(y)\big),
 \]
-其中 $\mathcal H$ 是目标伯努利分布的熵。对数据集求平均值 $\mathcal D$ 给出
+其中 $\mathcal H$ 是目标伯努利分布的熵。在数据集 $\mathcal D$ 上取平均得到
 \begin{align}\label{eq:reward_loss}
     \mathcal L_{\mathrm{RM}}(\bm\psi)
 = \mathbb E_{\mathcal D} \Big[\mathcal D_{\mathrm{KL}}\left(\mathrm{Bern}(y) \big\| \mathrm{Bern}(p_{r_{\bm\psi}})\right)\Big]
 + \underbrace{\mathbb E_{\mathcal D} \big[\mathcal H(\mathrm{Bern}(y))\big]}_{\text{independent of }\bm\psi}.
 \end{align}
-因此，最小化逻辑损失相当于最小化人类标签的经验伯努利分布与模型预测的伯努利分布之间的 KL 散度。在二进制情况下（$y\in\{0,1\}$)，这个等价是准确的；对于软标签（$y\in[0,1]$)，结果保持熵常数偏移。直观地说，奖励模型经过训练来调整其获胜概率，直到它们与数据集中观察到的经验人类获胜率一致。从现在开始，我们采用最常见的约定，其中 $\mathcal D$ 以有序格式存储对： $(\rvx^w, \rvx^l, \rvc) \sim \mathcal D$。在此约定下，标签始终是 $y=1$，并且损失简化为给出的有序形式 \Cref{eq:rm-bt}，我们将在下面的讨论中使用它。
+所以，最小化逻辑损失等价于最小化人类标签的经验伯努利分布与模型预测的伯努利分布之间的 KL 散度。在二值情形（$y\in\{0,1\}$）下这一等价是精确的；对于软标签（$y\in[0,1]$），结论在相差一个熵常数的意义下成立。直观地说，奖励模型被训练去调整自己的获胜概率，直到它与数据集中观测到的经验人类胜率相符。以下我们采用最常见的约定：$\mathcal D$ 按有序格式存储样本对，即 $(\rvx^w, \rvx^l, \rvc) \sim \mathcal D$。在这一约定下标签恒为 $y=1$，损失化简为 \Cref{eq:rm-bt} 给出的有序形式，下文都使用它。
 
-\paragraph{KL正规化政策优化（固定奖励）。}
-附带奖励 $r:=r_{\bm\psi^\times}$ 通过训练 \Cref{eq:rm-bt}，以及条件预训练扩散模型 $p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$，RLHF 然后调整可学习的策略 $\pi_{\bm\theta}(\mathbf x|\mathbf c)$，通常在之上进行微调 $p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$，朝向更高奖励的响应。同时，策略被正则化以接近参考模型，作为预训练的扩散模型 $\pi_{\mathrm{ref}}(\mathbf x|\mathbf c):=p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$，使用 $\mathcal{D}_{\mathrm{KL}}$ 处罚：
+\paragraph{KL 正则化的策略优化（奖励固定）。}
+在通过 \Cref{eq:rm-bt} 训练得到奖励 $r:=r_{\bm\psi^\times}$、并有一个条件预训练扩散模型 $p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$ 之后，RLHF 接着调整一个可学习的策略 $\pi_{\bm\theta}(\mathbf x|\mathbf c)$（通常是在 $p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$ 之上微调），使其偏向奖励更高的响应。同时，用一个 $\mathcal{D}_{\mathrm{KL}}$ 惩罚把策略约束在参考模型附近，参考模型取预训练的扩散模型 $\pi_{\mathrm{ref}}(\mathbf x|\mathbf c):=p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$：
 \begin{equation}\label{eq:rlhf-policy-correct}
 \max_{\bm\theta} 
 \mathbb E_{\mathbf c\sim p(\mathbf c)}
@@ -1346,7 +1309,7 @@ p:=\sigma(\Delta r),\quad \sigma(u)=\tfrac{1}{1+e^{-u}}.
 -\beta \mathcal{D}_{\mathrm{KL}} \big(\pi_{\bm\theta}(\cdot|\mathbf c) \big\| \pi_{\mathrm{ref}}(\cdot|\mathbf c)\big)
 \Big],
 \end{equation}
-这使得两种力量变得明确：寻找法官喜欢的样本，但保持接近预先训练的参考。我们注意到，奖励目标 \Cref{eq:rm-bt} 仅使用标记对，不需要 $\mathcal D$ 由参考模型（即预训练的条件扩散模型）生成。虽然不是必需的，但从接近预期策略的模型中收集对可以减少分布变化，并使学习到的奖励在将要使用的区域中更加可靠。综上所述，RLHF 分两个阶段进行：首先拟合奖励 $r^*$ 通过最小化损失 \Cref{eq:rm-bt} （相当于预期的二进制 $\mathcal{D}_{\mathrm{KL}}$ 在 \Cref{eq:reward_loss}）；然后优化政策 $\pi^*$ 通过求解 \Cref{eq:rlhf-policy-correct}.
+这使两股力量都显式可见：既要寻找裁判偏好的样本，又要保持在预训练参考附近。需要说明的是，\Cref{eq:rm-bt} 中的奖励目标只用到带标签的样本对，并不要求 $\mathcal D$ 由参考模型（即预训练的条件扩散模型）生成。虽然并非必需，但从接近目标策略的模型上收集样本对可以减少分布偏移，使学到的奖励在其将被使用的区域更可靠。总之，RLHF 分两个阶段：先用 \Cref{eq:rm-bt} 中的损失（等价于 \Cref{eq:reward_loss} 中二值情形下的期望 $\mathcal{D}_{\mathrm{KL}}$）拟合奖励 $r^*$；再通过求解 \Cref{eq:rlhf-policy-correct} 优化策略 $\pi^*$。
 
 
 \newpage
@@ -1475,25 +1438,25 @@ p:=\sigma(\Delta r),\quad \sigma(u)=\tfrac{1}{1+e^{-u}}.
 
 
 \subsection{DPO 框架}\label{subsec:dpo}
-\paragraph{来自 RLHF 的桥。}
-KL 规范化政策目标 \Cref{eq:rlhf-policy-correct} 每个提示都有一个简单的封闭式解决方案 $\mathbf c$，给予合适的奖励 $r := r_{\bm\psi^\times}$，以以下能量形式表示~\citep{peters2010relative}:
+\paragraph{从 RLHF 通向 DPO 的桥梁。}
+给定拟合好的奖励 $r := r_{\bm\psi^\times}$，\Cref{eq:rlhf-policy-correct} 中的 KL 正则化策略目标对每个提示 $\mathbf c$ 都有简单的闭式解，并可以写成如下基于能量的形式~\citep{peters2010relative}：
 \begin{equation}\label{eq:rlhf-closed-form}
 \pi^*(\mathbf x|\mathbf c)
 =
 \frac{1}{Z(\mathbf c)} \pi_{\mathrm{ref}}(\mathbf x|\mathbf c)\exp(r(\mathbf c,\mathbf x)/\beta),
 \end{equation}
-其中 $\pi_{\mathrm{ref}}(\mathbf x|\mathbf c):=p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$, 和 $Z(\mathbf c)$ 是确保分区功能 $\int \pi^*(\mathbf x|\mathbf c) \diff \mathbf x=1$.
+其中 $\pi_{\mathrm{ref}}(\mathbf x|\mathbf c):=p_{\bm{\phi}^\times}(\mathbf x|\mathbf c)$，而 $Z(\mathbf c)$ 是配分函数，用于保证 $\int \pi^*(\mathbf x|\mathbf c) \diff \mathbf x=1$。
 
-适用于较小的 $\beta$, $\exp(r/\beta)$ 变得更锐利，所以 $\pi^*$ 集中在高回报区域：回报占主导地位，政策远离 $\pi_{\mathrm{ref}}$，多样性减少，训练可能变得不稳定或容易出现奖励黑客行为。对于较大的 $\beta$, $\exp(r/\beta)$ 压平、保持 $\pi^*$ 更接近 $\pi_{\mathrm{ref}}$：KL术语占主导，更新保守，多样性遵循参考，但奖励收益有限。由于我们的目标是直接微调策略（无需训练单独的奖励模型）， \Cref{eq:rlhf-closed-form} 让我们 \emph{定义} 一个 \textit{隐性奖励} 来自任何策略。我们介绍如下：
-\paragraph{定义由反转驱动的隐式奖励 \Cref{eq:rlhf-closed-form}.}
-\Cref{eq:rlhf-closed-form} 建议立即反转：对于任何策略 $\pi$ （支持包含在 $\pi_{\mathrm{ref}}$), 定义
+当 $\beta$ 较小时，$\exp(r/\beta)$ 变得更尖锐，$\pi^*$ 于是集中到高奖励区域：奖励项占主导，策略离 $\pi_{\mathrm{ref}}$ 越来越远，多样性下降，训练可能变得不稳定，或容易遭到奖励攻击（reward hacking）。当 $\beta$ 较大时，$\exp(r/\beta)$ 变得平坦，$\pi^*$ 更靠近 $\pi_{\mathrm{ref}}$：KL 项占主导，更新保守，多样性跟随参考模型，但奖励上的提升有限。由于我们的目标是直接微调策略（而不训练单独的奖励模型），\Cref{eq:rlhf-closed-form} 允许我们由任意策略\emph{定义}一个\textit{隐式奖励}。下面给出这一做法：
+\paragraph{把 \Cref{eq:rlhf-closed-form} 反过来，定义隐式奖励。}
+\Cref{eq:rlhf-closed-form} 提示我们直接把它反过来：对任意策略 $\pi$（其支撑集包含在 $\pi_{\mathrm{ref}}$ 的支撑集内），定义
 \begin{equation}\label{eq:implicit-reward}
 r_{\pi}(\mathbf c,\mathbf x)
  = 
 \beta \log\frac{\pi(\mathbf x|\mathbf c)}{\pi_{\mathrm{ref}}(\mathbf x|\mathbf c)}
  + \beta \log Z(\mathbf c).
 \end{equation}
-然后 \Cref{eq:rlhf-closed-form} 持有 $\pi$ 代替 $\pi^*$, i.e., $\pi$ 将是优化器 \Cref{eq:rlhf-policy-correct} 用于奖励函数 $r_{\pi}$。从这个意义上说， $r_{\pi}$ 是一个 \emph{隐性（政策诱导）奖励}: 被识别到与提示相关的常量 $\beta\log Z(\mathbf c)$，在任何成对比较中都会消失，例如在 BT 模型中：
+此时 \Cref{eq:rlhf-closed-form} 对 $\pi$ 而非 $\pi^*$ 成立，也就是说，$\pi$ 就是以 $r_{\pi}$ 为奖励函数时 \Cref{eq:rlhf-policy-correct} 的最优解。从这个意义上说，$r_{\pi}$ 是一个\emph{隐式的（由策略诱导的）奖励}：它只在相差一个与提示相关的常数 $\beta\log Z(\mathbf c)$ 的意义下被确定，而该常数在任何成对比较中都会消去，例如在 BT 模型中：
 \[
 r_{\pi}(\mathbf c,\mathbf x_w)-r_{\pi}(\mathbf c,\mathbf x_l)
 =
@@ -1503,10 +1466,10 @@ r_{\pi}(\mathbf c,\mathbf x_w)-r_{\pi}(\mathbf c,\mathbf x_l)
 \log\frac{\pi(\mathbf x_l|\mathbf c)}{\pi_{\mathrm{ref}}(\mathbf x_l|\mathbf c)}
 \Big).
 \]
-这种取消正是使常数与偏好学习无关的原因，并直接导致对数概率差异上的 DPO 损失。
+正是这种相消使该常数对偏好学习毫无影响，并直接导出定义在对数概率差上的 DPO 损失。
 
 \paragraph{DPO 的训练损失。}
-插入隐式奖励 \Cref{eq:implicit-reward} 进入BT模式 \Cref{eq:rm-bt} 用于标记对 $(\mathbf x_w,\mathbf x_l)$ 同一提示下 $\mathbf c$。常数 $\log Z(\mathbf c)$ 赢家和输家之间取消，产生对数概率差异的单一逻辑损失目标：
+把隐式奖励 \Cref{eq:implicit-reward} 代入 \Cref{eq:rm-bt} 的 BT 模型，考察同一提示 $\mathbf c$ 下的标注对 $(\mathbf x_w,\mathbf x_l)$。常数 $\log Z(\mathbf c)$ 在胜者与败者之间相互抵消，于是得到定义在对数概率差上的单一逻辑损失：
 \begin{align*}
 \mathcal L_{\mathrm{DPO}}(\bm\theta;\pi_{\mathrm{ref}})
 &=
@@ -1520,7 +1483,7 @@ r_{\pi}(\mathbf c,\mathbf x_w)-r_{\pi}(\mathbf c,\mathbf x_l)
 \Big)
 \right].
 \end{align*}
-换句话说：DPO 提高了胜者相对于败者的（温度尺度）优势，以对数似然改进相对于参考的差异来衡量：
+用文字表述：DPO 抬高了胜者相对败者的优势（按温度缩放），而这一优势用「相对于参考模型的对数似然改进之差」来度量：
 \[
 -\log \sigma \left(
   \beta 
@@ -1531,21 +1494,16 @@ r_{\pi}(\mathbf c,\mathbf x_w)-r_{\pi}(\mathbf c,\mathbf x_l)
   \bigr]
 \right).
 \]
-这在单一、稳定的分类式微调阶段实现了 RLHF 的目标，而无需训练显式奖励模型。
+这样就在一个单一、稳定的分类式微调阶段内实现了 RLHF 的目标，而无需训练显式的奖励模型。
 
 
 \subsection{Diffusion-DPO}\label{subsec:diffusion-dpo}
-在本小节中，我们保留来自
-\Cref{subsec:dpo}: $\pi_{\bm\theta}$ 和 $\pi_{\mathrm{ref}}$ 表示学习的和参考的扩散策略，包括它们的路径和转换分布，而 $p_t(\rvx_t|\rvx_0)$ 继续表示固定前向噪声过程。
-\paragraph{为什么 Naive DPO 对于扩散模型失败？}
-评估样本似然 $\pi_\btheta(\mathbf x|\mathbf c)$ 在扩散模型中需要 ODE 求解的瞬时变量变换公式（漂移的散度）（参见 \Cref{eq:score-sde-likelihood})\footnote{在离散时间扩散模型（例如 DDPM）中，评估 $\pi_{\bm\theta}(\mathbf x_0| \mathbf c)$ 需要边缘化潜在的反向轨迹 $\mathbf x_{1:T}$.
-}，这是计算密集型的。此外，对整个采样轨迹进行区分可能会遇到梯度消失或爆炸的问题。为了避免这些问题，Diffusion-DPO 致力于 \emph{路径} 级别。我们以离散时间扩散模型（例如DDPM）为例；连续时间扩散模型是类似的。
+本小节沿用 \Cref{subsec:dpo} 中的策略记号：$\pi_{\bm\theta}$ 与 $\pi_{\mathrm{ref}}$ 分别表示待学习与参考的扩散策略，包括它们的路径分布和转移分布；$p_t(\rvx_t|\rvx_0)$ 仍表示固定的前向加噪过程。
+\paragraph{为什么朴素的 DPO 在扩散模型上失效？}
+在扩散模型中计算样本似然 $\pi_\btheta(\mathbf x|\mathbf c)$ 需要用到 ODE 求解的瞬时变量替换公式（即漂移的散度，参见 \Cref{eq:score-sde-likelihood}）\footnote{在离散时间扩散模型（如 DDPM）中，计算 $\pi_{\bm\theta}(\mathbf x_0| \mathbf c)$ 需要对隐变量反向轨迹 $\mathbf x_{1:T}$ 做边缘化。}，计算量很大。此外，对整个采样轨迹求导还可能遇到梯度消失或爆炸。为避开这些问题，Diffusion-DPO 在\emph{路径}层面展开。我们以离散时间扩散模型（如 DDPM）为例说明，连续时间情形完全类似。
 
-\paragraph{定义路径隐式奖励。}
-设轨迹为
-$\mathbf x_{0:T}:=(\mathbf x_T,\ldots,\mathbf x_0)$ 在带条件的逆时马尔可夫链下
-$\pi(\mathbf x_{t-1}|\mathbf x_t,\mathbf c)$。在这里， $\mathbf x_T$ 是最高噪声状态， $\mathbf x_0$ 是干净的输出。人类偏好是通过最终输出来定义的
-$r(\mathbf c,\mathbf x_0)$。自从 $\mathbf x_0$ 是每个扩散轨迹的一部分，当我们移动到路径空间时，奖励本身不需要改变。有用的步骤是规范整个逆向过程。根据 KL 散度的链式法则，完整路径分布之间的 KL 散度至少与其端点边缘之间的 KL 散度一样大。这激发了路径目标
+\paragraph{定义路径式的隐式奖励。}
+设一条轨迹为 $\mathbf x_{0:T}:=(\mathbf x_T,\ldots,\mathbf x_0)$，它服从以 $\pi(\mathbf x_{t-1}|\mathbf x_t,\mathbf c)$ 为条件转移的逆时间马尔可夫链。其中 $\mathbf x_T$ 是噪声最大的状态，$\mathbf x_0$ 是干净输出。人类偏好由最终输出定义，即 $r(\mathbf c,\mathbf x_0)$。由于 $\mathbf x_0$ 本身就是每条扩散轨迹的一部分，转到路径空间时奖励本身无需改动；真正有意义的一步是对整个反向过程做正则化。由 KL 散度的链式法则，完整路径分布之间的 KL 散度不小于其端点边缘分布之间的 KL 散度。这就启发如下路径式目标
 \[
 \max_{\btheta}\mathbb E_{\mathbf c\sim p(\mathbf c)}
 \Big[
@@ -1560,8 +1518,7 @@ $r(\mathbf c,\mathbf x_0)$。自从 $\mathbf x_0$ 是每个扩散轨迹的一部
 \big)
 \Big],
 \]
-其中 $\pi_{\btheta}(\cdot|\mathbf c)$ 和
-$\pi_{\mathrm{ref}}(\cdot|\mathbf c)$ 表示对应的路径分布。奖励项保持不变，而 KL 惩罚现在还控制潜在去噪轨迹如何偏离参考。在分布级别，假设标准化器是有限的，每个提示的优化器 $\mathbf c$ 具有基于能量的形式
+其中 $\pi_{\btheta}(\cdot|\mathbf c)$ 与 $\pi_{\mathrm{ref}}(\cdot|\mathbf c)$ 表示相应的路径分布。奖励项保持不变，而 KL 惩罚现在还要约束隐去噪轨迹偏离参考的程度。在分布层面，只要归一化常数有限，每个提示 $\mathbf c$ 的最优解都具有如下基于能量的形式
 \begin{equation}\label{eq:path-closed-form}
 \pi^*(\mathbf x_{0:T}|\mathbf c)
 =
@@ -1569,8 +1526,7 @@ $\pi_{\mathrm{ref}}(\cdot|\mathbf c)$ 表示对应的路径分布。奖励项保
 \pi_{\mathrm{ref}}(\mathbf x_{0:T}|\mathbf c)
 \exp\big(r(\mathbf c,\mathbf x_0)/\beta\big).
 \end{equation}
-与普通 DPO 一样，我们可以反转这个关系并定义
-\emph{隐式路径奖励} 任何政策诱发 $\pi$:
+与普通 DPO 一样，我们可以把这个关系反过来，定义为任意策略 $\pi$ 所诱导的\emph{隐式路径奖励}：
 \[
 R_{\pi}(\mathbf c,\mathbf x_{0:T})
 :=
@@ -1579,11 +1535,10 @@ R_{\pi}(\mathbf c,\mathbf x_{0:T})
 {\pi_{\mathrm{ref}}(\mathbf x_{0:T}|\mathbf c)}
 +\beta\log Z(\mathbf c).
 \]
-在路径最优时，
-$R_{\pi^*}(\mathbf c,\mathbf x_{0:T})=r(\mathbf c,\mathbf x_0)$。然而，对于一般政策来说， $R_{\pi}$ 也可能取决于潜在轨迹。由于偏好数据仅比较干净的端点，因此我们对与每个端点相关的轨迹的隐式路径奖励进行平均。
+在路径式最优解处有 $R_{\pi^*}(\mathbf c,\mathbf x_{0:T})=r(\mathbf c,\mathbf x_0)$。但对一般策略而言，$R_{\pi}$ 还可能依赖隐轨迹。由于偏好数据只比较干净端点，我们对与每个端点相关联的轨迹求这一隐式路径奖励的平均。
 
-\paragraph{从 Pathwise 隐式奖励到 DPO。}
-对于标记的端点对 $(\mathbf x_0^w,\mathbf x_0^l)$ 同一提示下 $\mathbf c$，Bradley--Terry 边缘是通过比较其隐式路径奖励的条件平均值获得的：
+\paragraph{从路径式隐式奖励到 DPO。}
+对同一提示 $\mathbf c$ 下的标注端点对 $(\mathbf x_0^w,\mathbf x_0^l)$，Bradley--Terry 边际概率通过比较两者隐式路径奖励的条件平均得到：
 \begin{align}\label{eq:diffusion-dpo}
 \begin{aligned}
 \mathcal L_{\mathrm{Diff\text{-}DPO}}(\bm\theta;\pi_{\mathrm{ref}})
@@ -1599,31 +1554,30 @@ $R_{\pi^*}(\mathbf c,\mathbf x_{0:T})=r(\mathbf c,\mathbf x_0)$。然而，对�
  \Big[R_{\pi_{\bm\theta}} \big(\mathbf c,(\mathbf x_0^l,\mathbf x_{1:T}^l)\big)\Big]}_{\text{loser path expectation}}. 
 \end{aligned}
 \end{align}
-这里，期望 $\mathbb E_{\mathbf x_{1:T}\sim\pi_{\bm\theta}(\cdot|\mathbf x_0,\mathbf c)}[\cdot]$ 表示：给定一个固定端点 $\mathbf x_0$ （例如，获胜者 $\mathbf x_0^w$) 从数据集中，我们对潜在去噪轨迹进行期望 $\mathbf x_{1:T}$ 在模型诱导的条件路径分布（逆时轨迹上的后验）下，使用内核
-$\pi_{\bm\theta}(\mathbf x_{t-1}|\mathbf x_t,\mathbf c)$，可以产生 $\mathbf x_0$。由于这些中间状态是不可观察的，因此我们对所有此类轨迹的路径奖励进行平均。然而， \Cref{eq:diffusion-dpo} 由于三个实际原因而不切实际：
+这里的期望 $\mathbb E_{\mathbf x_{1:T}\sim\pi_{\bm\theta}(\cdot|\mathbf x_0,\mathbf c)}[\cdot]$ 指的是：在给定数据集中某个固定端点 $\mathbf x_0$（例如胜者 $\mathbf x_0^w$）的条件下，对隐去噪轨迹 $\mathbf x_{1:T}$ 取期望，其分布是模型诱导的条件路径分布，即以 $\pi_{\bm\theta}(\mathbf x_{t-1}|\mathbf x_t,\mathbf c)$ 为转移核、并在逆时间上能生成 $\mathbf x_0$ 的轨迹后验。由于这些中间状态不可观测，我们对所有此类轨迹的路径奖励取平均。然而，\Cref{eq:diffusion-dpo} 在实践中有三点不切实际：
 \begin{enumerate}[leftmargin=*]
-\item \textbfs{端点调节会导致难以处理的后验路径。}
-术语 $\mathbb E_{\pi_{\bm\theta}(\mathbf x_{1:T}|\mathbf x_0,\mathbf c)}[\cdot]$ 反向路径的平均值被限制命中 $\mathbf x_0$，而采样器运行 $\mathbf x_T \to \cdots \to \mathbf x_0$ 没有这个限制。对端点的调节会创建一个扩散桥后验，通常没有闭形式并且采样成本很高。
+\item \textbfs{以端点为条件会引出难解的后验路径。}
+$\mathbb E_{\pi_{\bm\theta}(\mathbf x_{1:T}|\mathbf x_0,\mathbf c)}[\cdot]$ 是对被约束为命中 $\mathbf x_0$ 的反向路径求平均，而采样器的运行过程 $\mathbf x_T \to \cdots \to \mathbf x_0$ 并没有这一约束。以端点为条件会得到一个扩散桥后验，它一般没有闭式表达，采样代价也很高。
 
-\item \textbfs{嵌套， $\bm\theta$-耦合期望。}
+\item \textbfs{嵌套且与 $\bm\theta$ 耦合的期望。}
 损失 $-\log\sigma(\Delta R(\mathbf c;\bm\theta))$ 与
 \[
 \Delta R=\mathbb E_{\text{paths}|\mathbf x_0^w,\mathbf c}[R_{\pi_{\bm\theta}}]
 -\mathbb E_{\text{paths}|\mathbf x_0^l,\mathbf c}[R_{\pi_{\bm\theta}}]
 \]
-同时具有路径联合分布和被积函数 $R_{\pi_{\bm\theta}}$ 取决于 $\bm\theta$。因此 $\nabla_{\bm\theta}$ 必须通过采样分布进行区分，导致增强/路径耦合和高方差梯度。
+中，路径的联合分布与被积函数 $R_{\pi_{\bm\theta}}$ 都依赖 $\bm\theta$。于是 $\nabla_{\bm\theta}$ 必须穿过采样分布求导，从而带来 REINFORCE 式（路径式）的耦合和高方差梯度。
 
-\item \textbfs{长链、大金额和昂贵的反向传播。}
-在 $R_{\pi_{\bm\theta}}(\mathbf c,\mathbf x_{0:T})$, 计算
+\item \textbfs{长链、大求和与昂贵的反向传播。}
+在 $R_{\pi_{\bm\theta}}(\mathbf c,\mathbf x_{0:T})$ 中计算
 \[
 \beta \left[\log \pi_{\bm\theta}(\mathbf x_{0:T}|\mathbf c)
 -\log \pi_{\mathrm{ref}}(\mathbf x_{0:T}|\mathbf c)\right]
 \]
-需要 $\mathcal O(T)$ 每步对数密度 $T \sim 10^2$–$10^3$，对于两种策略 $\pi_{\bm\theta}$ 和参考 $\pi_{\mathrm{ref}}$，并且对于赢家/输家路径。通过这些随机链（或桥采样器）进行反向传播需要大量内存和计算，并且可能不稳定；对每对和所有三元组的许多样本重复此操作会使训练超出实际预算。
+需要对策略 $\pi_{\bm\theta}$ 与参考 $\pi_{\mathrm{ref}}$、以及胜者/败者两条路径分别计算 $T \sim 10^2$–$10^3$ 个逐步对数密度，每步 $\mathcal O(T)$ 量级。穿过这些随机链（或桥采样器）做反向传播既耗内存又耗算力，还可能不稳定；若对每一对样本的多个样本、以及所有三元组都重复这一过程，训练开销就超出了实际可承受的预算。
 \end{enumerate}
 
-\paragraph{寻找一个易于处理的替代品 \Cref{eq:diffusion-dpo}.}
-为了使其可计算，我们应用了关键的数学见解。通过利用扩散模型的特性并应用 Jensen 不等式，我们可以优化此损失的易于处理的上限。这将问题从计算整条路径的似然转变为评估路径内各个单步转换的期望：因为 $-\log\sigma(\cdot)$ 是凸的，Jensen 不等式通过将内部期望移到非线性函数之外来产生上限：
+\paragraph{为 \Cref{eq:diffusion-dpo} 寻找可处理的替代目标。}
+为使其可计算，我们用一个关键的数学观察。借助扩散模型的性质并应用 Jensen 不等式，可以为该损失优化一个可处理的上界。这使问题从「计算整条路径的似然」转为「对路径中各个单步转移求期望」：由于 $-\log\sigma(\cdot)$ 是凸的，Jensen 不等式把内层期望移到非线性函数之外，就得到一个上界：
 \begin{align*}
 \mathcal L_{\mathrm{Diff\text{-}DPO}}(\bm\theta;\pi_{\mathrm{ref}})
 \le  
@@ -1638,7 +1592,7 @@ R_{\pi_{\bm\theta}}(\mathbf c,\mathbf x^l_{0:T})
 \Big)
 \right].
 \end{align*}
-使用隐式奖励恒等式 $R_{\pi_{\bm\theta}}=\beta\log\frac{\pi_{\bm\theta}}{\pi_{\mathrm{ref}}}+\beta\log Z(\mathbf c)$ 取消获胜者和失败者之间的常数，界限变为
+利用隐式奖励恒等式 $R_{\pi_{\bm\theta}}=\beta\log\frac{\pi_{\bm\theta}}{\pi_{\mathrm{ref}}}+\beta\log Z(\mathbf c)$，胜者与败者之间的常数相消，上界化为
 \begin{align}\label{eq:dpo-path-bound}
 \mathcal L_{\mathrm{Diff\text{-}DPO}}(\bm\theta;\pi_{\mathrm{ref}})
 & \le
@@ -1652,7 +1606,7 @@ R_{\pi_{\bm\theta}}(\mathbf c,\mathbf x^l_{0:T})
 \big)
 \Big)
 \right].
-\end{align}\subparagraph{A 可处理代理（逐步形式）。} 我们现在利用逆过程的马尔可夫性质来分解 $\mathcal L_{\mathrm{Diff\text{-}DPO}}$ 的上限。这使我们能够将路径级偏好表示为每步贡献的总和，将棘手的路径损失转换为易于处理的单步估计器。由此产生的形式产生 DPO 风格的 log-sigmoid 损失，其内部边缘减少为 DSM 风格的 MSE 差异。具体来说，对于反向链，
+\end{align}\subparagraph{一个可处理的替代目标（逐步形式）。} 下面利用反向过程的马尔可夫性分解 $\mathcal L_{\mathrm{Diff\text{-}DPO}}$ 的上界。这样就能把路径层面的偏好写成各步贡献之和，把难处理的路径式损失转换成可处理的单步估计量。所得形式给出一个 DPO 风格的 log-sigmoid 损失，其内部的边际量退化为 DSM 风格的 MSE 之差。具体地，对反向链有
 \begin{align*}
     \pi_{\bm\theta}(\mathbf x_{0:T}| \mathbf c)
 &=\pi_{\bm\theta}(\mathbf x_T| \mathbf c) \prod_{t=1}^{T}
@@ -1671,21 +1625,21 @@ R_{\pi_{\bm\theta}}(\mathbf c,\mathbf x^l_{0:T})
 \frac{\pi_{\bm\theta}(\mathbf x_{t-1}| \mathbf x_t,\mathbf c)}
      {\pi_{\mathrm{ref}}(\mathbf x_{t-1}| \mathbf x_t,\mathbf c)}.
 \]
-如果两个模型的先验时间 $T$ 相同，
+若两个模型在时刻 $T$ 的先验相同，即
 $\pi_{\bm\theta}(\mathbf x_T| \mathbf c)=\pi_{\mathrm{ref}}(\mathbf x_T| \mathbf c)$，
-那么第一个因子等于 $1$，并取对数得到
+则第一个因子等于 $1$，取对数后得到
 \[
 \log\frac{\pi_{\bm\theta}(\mathbf x_{0:T}| \mathbf c)}{\pi_{\mathrm{ref}}(\mathbf x_{0:T}| \mathbf c)}
 =\sum_{t=1}^{T}
 \log\frac{\pi_{\bm\theta}(\mathbf x_{t-1}| \mathbf x_t,\mathbf c)}
          {\pi_{\mathrm{ref}}(\mathbf x_{t-1}| \mathbf x_t,\mathbf c)}.
 \]
-由此可见，\Cref{eq:dpo-path-bound} 中的界限可以写为
+由此，\Cref{eq:dpo-path-bound} 中的上界可以写成
 \[
 \mathcal L_{\mathrm{Diff\text{-}DPO}}(\bm\theta;\pi_{\mathrm{ref}})
   \le  - \E \left[\log\sigma \Big(\beta \sum_{t=1}^T \Delta_t\Big)\right],
 \]
-其中每个每步贡献是
+其中每一步的贡献为
 \[
 \Delta_t
 = \log\frac{\pi_{\bm\theta}(\mathbf x^w_{t-1}|\mathbf x^w_t,\mathbf c)}
@@ -1694,13 +1648,11 @@ $\pi_{\bm\theta}(\mathbf x_T| \mathbf c)=\pi_{\mathrm{ref}}(\mathbf x_T| \mathbf
                {\pi_{\mathrm{ref}}(\mathbf x^l_{t-1}|\mathbf x^l_t,\mathbf c)}.
 \]
 
-要将时间步长的总和减少到单个随机选择的转换，
-可得：\par\noindent
+为把对时间步的求和化为单个随机抽取的转移，只需注意
 $\beta\sum_{s=1}^T\Delta_s
 \allowbreak=\allowbreak
 \E_{t\sim\mathcal U\{1,\dots,T\}}[\beta T\Delta_t]$。
-由于 $-\log\sigma(\cdot)$ 是凸的，Jensen 不等式给出，
-在考虑了现有的外部期望之后，
+由于 $-\log\sigma(\cdot)$ 是凸的，把这个已有的外层期望一并考虑后，Jensen 不等式给出
 \[
 \mathcal L_{\mathrm{Diff\text{-}DPO}}(\bm\theta;\pi_{\mathrm{ref}})
 \leq
@@ -1708,24 +1660,20 @@ $\beta\sum_{s=1}^T\Delta_s
 \log\sigma\bigl(\beta T\Delta_t\bigr)
 \right],
 \]
-其中，期望对下列联合采样过程取值：
+其中期望对如下联合采样过程取值：
 $(\mathbf c,\mathbf x_0^w,\mathbf x_0^l)\sim\mathcal D$,
 $t\sim\mathcal U\{1,\dots,T\}$，和
 $\mathbf x_{t-1:t}^w\sim
 \pi_{\bm\theta}(\cdot|\mathbf x_0^w,\mathbf c)$ 和
 $\mathbf x_{t-1:t}^l\sim
 \pi_{\bm\theta}(\cdot|\mathbf x_0^l,\mathbf c)$。
-尽管界限现在仅取决于一次转换，但对这些进行采样
-端点条件转换对仍然很棘手。
+虽然上界现在只依赖一次转移，但要采样这样一对「以端点为条件」的转移仍然很难处理。
 
-遵循 Diffusion-DPO，我们近似了棘手的模型诱导的
-使用固定前向噪声过程的条件路径。对于每一次清洁
-端点$\mathbf x_0$，我们首先采样$\mathbf x_t
+沿用 Diffusion-DPO 的做法，我们用固定的前向加噪过程来近似那个难以处理的、由模型诱导的条件路径。对每个干净端点 $\mathbf x_0$，先采样 $\mathbf x_t
 \sim
 p_t(\mathbf x_t|\mathbf x_0)$。
-以 $(\mathbf x_0,\mathbf x_t)$ 为条件，前向过程导致
-可计算的后验 $p(\mathbf x_{t-1}|\mathbf x_t,\mathbf x_0)$。
-在此后验条件下求逆向转移对数比的平均值给出
+在给定 $(\mathbf x_0,\mathbf x_t)$ 的条件下，前向过程给出
+可计算的后验 $p(\mathbf x_{t-1}|\mathbf x_t,\mathbf x_0)$。在该后验下对反向转移的对数比取平均，得到
 \begin{align*}
 &\E_{p(\mathbf x_{t-1}|\mathbf x_t,\mathbf x_0)}
 \left[
@@ -1752,9 +1700,7 @@ p(\mathbf x_{t-1}|\mathbf x_t,\mathbf x_0)
 \right).
 \end{align*}
 
-对于具有相同规定反向方差的高斯反向转移核，这些
-KL 散度减少为加权去噪回归误差。下
-$\boldsymbol\epsilon$-预测，
+当反向转移核取高斯、且规定相同的反向方差时，这些 KL 散度就化为加权去噪回归误差。在 $\boldsymbol\epsilon$-预测参数化下，
 \begin{align}
 \E_{p(\mathbf x_{t-1}|\mathbf x_t,\mathbf x_0)}
 \left[
@@ -1783,16 +1729,15 @@ $\boldsymbol\epsilon$-预测，
 =
 \alpha_t\mathbf x_0
 +
-\sigma_t\boldsymbol\epsilon$ 与 $\boldsymbol\epsilon\sim\mathcal N(\mathbf 0,\mathbf I)$ 和 $\lambda_t>0$ 收集与计划相关的权重因子。
+\sigma_t\boldsymbol\epsilon$，$\boldsymbol\epsilon\sim\mathcal N(\mathbf 0,\mathbf I)$，而 $\lambda_t>0$ 汇集了与噪声调度相关的权重系数。
 
-为了简化符号，定义任何噪声样本 $(\mathbf x_t,\boldsymbol\epsilon)$：
+为简化记号，对任意带噪样本 $(\mathbf x_t,\boldsymbol\epsilon)$ 定义
 \[
 \Delta\mathrm{MSE}(\mathbf x_t;\boldsymbol\epsilon)
 := \big\|\hat{\boldsymbol\epsilon}_{\bm\theta}(\mathbf x_t,t,\mathbf c)-\boldsymbol\epsilon\big\|^2
  - \big\|\hat{\boldsymbol\epsilon}_{\mathrm{ref}}(\mathbf x_t,t,\mathbf c)-\boldsymbol\epsilon\big\|^2.
 \]
-这产生了实用的单步Diffusion-DPO 替代品
- 对于 $\mathcal L_{\mathrm{Diff\text{-}DPO}}$：
+由此得到 $\mathcal L_{\mathrm{Diff\text{-}DPO}}$ 的一个实用单步替代目标：
 \begin{mdframed}
 \begin{align*}
     &\tilde{\mathcal L}_{\mathrm{Diff\text{-}DPO}}(\bm\theta;\pi_{\mathrm{ref}})
@@ -1810,23 +1755,21 @@ $\boldsymbol\epsilon$-预测，
 $\mathbf x_t^w=\alpha_t\mathbf x_0^w+\sigma_t\boldsymbol\epsilon^w$
 和
 $\mathbf x_t^l=\alpha_t\mathbf x_0^l+\sigma_t\boldsymbol\epsilon^l$。
-在实践中，也可以使用共享噪声
-$\boldsymbol\epsilon^w=\boldsymbol\epsilon^l$
-作为方差减少变体；这不会改变整体 DPO 风格的形式
-目标，但稍微改变随机估计量。
+实践中也可以令胜者与败者共用噪声 $\boldsymbol\epsilon^w=\boldsymbol\epsilon^l$，作为降低方差的变体；这不改变整体 DPO 风格的目标形式，只是略微改变了随机估计量。
 
-直观上，最小化 $\tilde{\mathcal L}_{\mathrm{Diff\text{-}DPO}}$ 会增加参考标准化赢家与输家之间的差距。同样，它鼓励模型减少获胜者的去噪误差，而不是失败者的去噪误差（相对于冻结的参考模型进行测量）。参考模型不提供直接梯度项，但它保留在 $\log\sigma(\cdot)$ 非线性的裕度内，因此它仍然塑造 DPO 样式的每个示例权重。
+直观上，最小化 $\tilde{\mathcal L}_{\mathrm{Diff\text{-}DPO}}$ 会拉大胜者与败者相对于参考模型的（归一化）差距。它鼓励模型缩小胜者的去噪误差多过缩小败者的去噪误差，而误差都是相对冻结的参考模型来度量的。参考模型本身不贡献直接的梯度项，但它仍留在 $\log\sigma(\cdot)$ 这个非线性的自变量之中，因此依然在塑造 DPO 式的逐样本权重。
 
 
 \newpage
-\section{结束语}\label{sec:ch8_cr}本章将我们的重点从基本原则转移到可控生成的实际挑战上。我们建立了一个基于条件分数的贝叶斯分解的统一引导框架，它将生成过程优雅地分为无条件方向和引导项。
+\section{结束语}\label{sec:ch8_cr}
 
-我们看到这一原则在几种强大的技术中得到了体现。我们介绍了需要专门训练的方法，例如使用外部分类器的分类器引导 (CG) 和更高效的无分类器引导 (CFG)，它在单个模型中学习条件和无条件分数。我们还探索了灵活的免训练引导方法，该方法可以通过从特定任务损失中定义替代引导势来在推理时引导预训练模型，从而实现从艺术控制到解决逆问题的应用，而无需任何再训练。
+本章把关注点从基本原理转向可控生成的实际难题。我们围绕条件分数的贝叶斯分解建立了一个统一的引导框架，它把生成过程干净地拆成无条件方向与引导项两部分。
 
-除了简单的调节之外，我们还深入研究了将模型输出与人类偏好保持一致的微妙任务。在审查了标准但复杂的 RLHF 管道之后，我们引入了直接偏好优化 (DPO) 及其新颖的改编版本 Diffusion-DPO，作为更直接和稳定的替代方案。这种方法通过直接从偏好数据中得出损失，优雅地绕过了对显式奖励模型和强化学习的需求。
+我们看到这一原则体现在若干强有力的技术中。我们讨论了需要专门训练的方法，例如借助外部分类器的分类器引导（CG），以及更高效的无分类器引导（CFG）——后者在单个模型内同时学到条件分数与无条件分数。我们还考察了灵活的无训练引导方法：它们通过由任务相关的损失构造一个替代的引导势，在推理阶段引导预训练模型，从而无需任何再训练就能实现从艺术风格控制到求解逆问题的多种应用。
 
+除了简单的条件化之外，我们还深入讨论了让模型输出与人类偏好对齐这一细致任务。在回顾了标准但复杂的 RLHF 流程之后，我们介绍了直接偏好优化（DPO）及其针对扩散模型的新改编 Diffusion-DPO，作为更直接、更稳定的替代方案。这类方法直接从偏好数据导出损失，从而绕开了显式奖励模型和强化学习的需要。
 
-通过这些技术，我们组装了一个强大的工具包来引导生成过程。然而，一个主要的实际障碍仍然没有触及：迭代采样过程本身的巨大计算成本和延迟。解决了生成什么之后，我们现在转向同样重要的问题，即生成它的速度有多快。下一章将直接应对这一挑战：
+借助这些技术，我们已经为引导生成过程组装出一套有力的工具。然而，一个主要的实践障碍仍未触及：迭代采样过程本身高昂的计算成本与延迟。在解决了「生成什么」之后，现在转向同样重要的问题——「能多快地生成」。下一章将直接应对这一挑战：
 \begin{enumerate}
     \item 我们将利用采样相当于求解 ODE 的见解来探索旨在大幅减少所需步骤数量的复杂数值求解器。
     \item 我们将研究一系列有影响力的方法，包括 DDIM、DEIS 和 DPM-Solver 系列，这些方法通过将采样速度提高几个数量级，使扩散模型更加实用。
