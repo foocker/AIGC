@@ -331,7 +331,7 @@ q_{\text{enc}}(\mathbf{z})
 \[
 p_{\bm{\phi}}(\mathbf{x}, \mathbf{z}_{1:L}) = p_{\bm{\phi}}(\mathbf{x} | \mathbf{z}_1) \prod_{i=2}^{L} p_{\bm{\phi}}(\mathbf{z}_{i-1}|\mathbf{z}_i)   p(\mathbf{z}_L).
 \]
-该结构定义了边缘数据分布，该结构定义了边缘数据分布，
+该结构定义了边缘数据分布，
 \[
 p_{\text{HVAE}}(\mathbf{x}) := \int p_{\bm{\phi}}(\mathbf{x}, \mathbf{z}_{1:L}) \diff \mathbf{z}_{1:L}.
 \]
@@ -524,7 +524,7 @@ DDPM 的核心涉及两个不同的随机过程：
 p(\rvx_i|\rvx_{i-1}) := \mathcal{N}(\rvx_i; \sqrt{1 - \beta_i^2}   \rvx_{i-1}, \beta_i^2 \rmI).
 \]
 这里过程从 $\rvx_{0}$ 开始，它代表从真实数据分布 $p_{\text{data}}$ 中抽取的样本。序列 $\{\beta_i\}_{i=1}^L$ 是预先给定的单调递增噪声表，其中每个
-$\beta_i \in (0, 1)$ 控制第 $i$ 步注入的高斯噪声的方差。为方便起见，定义 $\alpha_i := \sqrt{1 - \beta_i^2}$。$\beta_i \in (0, 1)$ 控制步骤注入的高斯噪声的方差 $i$。为了方便起见，我们定义 $\alpha_i := \sqrt{1 - \beta_i^2}$。这个定义完全等价于下面直观的迭代更新：
+$\beta_i \in (0, 1)$ 控制第 $i$ 步注入的高斯噪声的方差。为方便起见，定义 $\alpha_i := \sqrt{1 - \beta_i^2}$。这个定义完全等价于下面直观的迭代更新：
 \[
 \rvx_i = \alpha_i \rvx_{i-1} + \beta_i \bm{\epsilon}_i,  
 \]
@@ -829,7 +829,7 @@ ELBO $\mathcal{L}_{\text{ELBO}}$ 由三项组成：
 系数
 $\sqrt{1-\bar{\alpha}_{i-1}^2 - \tilde{\beta}_i^2}$
 可化简为
-$\frac{\alpha_i(1-\bar{\alpha}_{i-1}^2)}{\sqrt{1-\bar{\alpha}_i^2}}$，它恒为非负，因此平方根处处有定义。}。此外，残差系数满足。此外，残差系数满足
+$\frac{\alpha_i(1-\bar{\alpha}_{i-1}^2)}{\sqrt{1-\bar{\alpha}_i^2}}$，它恒为非负，因此平方根处处有定义。}。此外，残差系数满足
 \[
 \bigl(1-\bar{\alpha}_{i-1}^2-\tilde{\beta}_i^2\bigr)+\tilde{\beta}_i^2
 =

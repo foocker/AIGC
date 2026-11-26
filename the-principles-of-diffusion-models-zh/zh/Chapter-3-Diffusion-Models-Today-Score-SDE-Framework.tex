@@ -244,7 +244,7 @@ SDE 基础知识的简要介绍见 \Cref{app:sde-intro}，更深入的讨论见 
 一旦给定漂移 $\rvf(\rvx,t)$ 与扩散 $g(t)$，前向时间 SDE 就自动诱导出一个反向时间 SDE，把终端的噪声分布运回数据分布。反向动力学中只含一个未知项，而且出乎意料地简单——就是每个连续时间水平上的\emph{分数函数}。这就把分数匹配确立为训练目标：分数一旦学到，采样就等价于对带学习分数的反向时间 SDE 做数值积分。
 
 
-\Cref{sec:scoresde-training-sampling} 会给出实际实现\Cref{sec:scoresde-training-sampling} 会给出实际实现，但我们先看理论基础：\Cref{subsec:forward-sde} 与 \Cref{subsec:reverse-sde} 分别讨论前向与反向过程。
+\Cref{sec:scoresde-training-sampling} 会给出实际实现，但我们先看理论基础：\Cref{subsec:forward-sde} 与 \Cref{subsec:reverse-sde} 分别讨论前向与反向过程。
 
 \subsection{正向时间 SDE：从数据到噪声}\label{subsec:forward-sde}
 \begin{figure}[th!]
@@ -405,7 +405,7 @@ $s:=T-t$；除特别说明外，我们仍沿用原始时钟 $t$。
 \[
 \tilde\rvx(T) + \int_{T}^{0} \Big[ \mathbf{f}(\tilde\rvx(\tau), \tau) - \frac{1}{2} g^2(\tau)  \nabla_{\rvx} \log p_\tau(\tilde\rvx(\tau)) \Big]   \diff \tau,
 \]
-初始条件为 $\tilde\rvx(T) \sim p_{\mathrm{prior}}$。该积分一般没有闭式解，实际生成因而依赖数值求解器（例如欧拉法，见 \Cref{eq:euler-maruyama}）。因此实际生成依赖于数值求解器（例如，欧拉方法，请参阅 \Cref{eq:euler-maruyama}）。
+初始条件为 $\tilde\rvx(T) \sim p_{\mathrm{prior}}$。该积分一般没有闭式解，实际生成因而依赖数值求解器（例如欧拉法，见 \Cref{eq:euler-maruyama}）。
 
 与逆时 SDE 相比，PF-ODE 有两个关键优势：
 \begin{itemize}
@@ -440,7 +440,7 @@ $p_t$；当 PF-ODE \emph{沿时间正向运行}时，它确定性地沿同一条
     \label{fig:score-sde-three-dynamics}
     \vspace{-2cm}
 \end{figure}
-本节把\emph{福克尔—普朗克方程}作为支配扩散模型的中心原则来介绍。它描述概率密度在带噪动力学下如何演化，可视为存在随机性时“变量替换公式”的自然对应（见 \Cref{app:continuity}）。我们从定义边缘分布 $p_t$ 的前向扩散过程出发，说明逆时 SDE 与 PF-ODE 如何被设计成重现同一族边缘分布；随后用一个高斯例子把这一原则落到实处——在那里逆时 SDE 与 PF-ODE 都能直接、显式地算出来。随后用一个高斯例子把这一原则落到实处——在那里逆时 SDE 与 PF-ODE 都能直接、显式地算出来。
+本节把\emph{福克尔—普朗克方程}作为支配扩散模型的中心原则来介绍。它描述概率密度在带噪动力学下如何演化，可视为存在随机性时“变量替换公式”的自然对应（见 \Cref{app:continuity}）。我们从定义边缘分布 $p_t$ 的前向扩散过程出发，说明逆时 SDE 与 PF-ODE 如何被设计成重现同一族边缘分布；随后用一个高斯例子把这一原则落到实处——在那里逆时 SDE 与 PF-ODE 都能直接、显式地算出来。
 
 
 
@@ -458,7 +458,7 @@ $p_t$；当 PF-ODE \emph{沿时间正向运行}时，它确定性地沿同一条
 怎样才能保证不同的过程给出完全相同的边缘分布？
 \end{question}
 
-回到我们的设定：前向 SDE 一旦给定，就确定了边缘密度从 $p_{\mathrm{data}}$ 演化到 $p_{\mathrm{prior}}$ 的过程。随后构造的逆时 SDE 与 PF-ODE，要使它们的轨迹给出与前向过程完全一致的边缘分布。这一对应关系的关键在于福克尔—普朗克方程，它支配着边缘密度在扩散过程中的演化。示意见 \Cref{fig:score-sde-three-dynamics}。下面的定理~\citep{anderson1982reverse,song2020score} 为这一联系奠定了基础：以下定理~\citep{anderson1982reverse,song2020score} 为这种连接奠定了基础：
+回到我们的设定：前向 SDE 一旦给定，就确定了边缘密度从 $p_{\mathrm{data}}$ 演化到 $p_{\mathrm{prior}}$ 的过程。随后构造的逆时 SDE 与 PF-ODE，要使它们的轨迹给出与前向过程完全一致的边缘分布。这一对应关系的关键在于福克尔—普朗克方程，它支配着边缘密度在扩散过程中的演化。示意见 \Cref{fig:score-sde-three-dynamics}。下面的定理~\citep{anderson1982reverse,song2020score} 为这一联系奠定了基础：
 \thmp{通过福克尔-普朗克方程进行边缘对齐}{fpe}{
 考虑前向 SDE
 \[
@@ -625,7 +625,7 @@ A\Big(x_t-\frac{B}{A}\Big)^2  -  \frac{B^2}{A},
 \]
 这两个闭式结果已经刻画了任意小 $\Delta t$ 下的反向转移。要从中读出反向时间 SDE，接着对小的 $\Delta t$ 做展开。
 
-代入 $a=1+f(t)\Delta t$ 与 $r^2=g^2(t)\Delta t$。当 $\Delta t\to 0$ 时，$\frac{a^2}{r^2}\sim \frac{1}{g^2(t)\Delta t}$ 这一项在精度中占主导，因此方差变为这些封闭形式已经描述了任何小 $\Delta t$。为了读取反向时间 SDE，我们现在将它们扩展为小的 $\Delta t$。使用 $a=1+f(t)\Delta t$ 和 $r^2=g^2(t)\Delta t$。作为 $\Delta t\to 0$，贡献 $\frac{a^2}{r^2}\sim \frac{1}{g^2(t)\Delta t}$ 主导精度，因此方差变为
+代入 $a=1+f(t)\Delta t$ 与 $r^2=g^2(t)\Delta t$。当 $\Delta t\to 0$ 时，$\frac{a^2}{r^2}\sim \frac{1}{g^2(t)\Delta t}$ 这一项在精度中占主导，因此方差变为
 \[
 \Var(x_t   |   x_{t+\Delta t})
 = \left(\frac{1}{s_t^2}+\frac{a^2}{r^2}\right)^{-1}
@@ -693,7 +693,9 @@ $\nabla_{\rvx}\log p_t$.
 x_{t+\Delta t}=\Phi_{t,\Delta t}(x_t)
 = x_t + \Delta t v_t(x_t) + \mathcal{O}(\Delta t^2),
 \]
-它不过是关于 $\Delta t$ 的一阶泰勒展开。我们的目标是构造一个速度场，使其确定性流复现同样的高斯边缘演化。一个特别简单的选择是仿射速度场这只是一阶泰勒展开 $\Delta t$。我们的目标是构建一个速度场，其确定性流再现相同的高斯边缘演化。一个特别简单的选择是仿射速度场
+它不过是关于 $\Delta t$ 的一阶泰勒展开。
+我们的目标是构造一个速度场，使其确定性流复现同样的高斯边缘演化。
+一个特别简单的选择是仿射速度场
 \[
 v_t(x)=a_t x+b_t.
 \]
@@ -1069,7 +1071,7 @@ VP SDE 的典型实例是 DDPM，其噪声调度 $\beta(t)$ 定义为
 \diff\rvx(t) = f(t)\rvx(t) \diff t + g(t) \diff\rvw(t).
 \]
 
-即便初始分布 $p_{\mathrm{data}}$ 不是高斯分布，漂移的线性性也能保证条件过程保持高斯。具体地说，对 $t>0$，转移核具有如下形式：即便初始分布 $p_{\mathrm{data}}$ 不是高斯分布，漂移的线性性也能保证条件过程保持高斯。具体地说，对 $t>0$，转移核具有如下形式：
+即便初始分布 $p_{\mathrm{data}}$ 不是高斯分布，漂移的线性性也能保证条件过程保持高斯。具体地说，对 $t>0$，转移核具有如下形式：
 \[
 p_t( \rvx_t | \rvx_0 ) = \mathcal{N} \left( \rvx_t;  \rvm(t),  P(t) \mathbf{I}_D \right),
 \]

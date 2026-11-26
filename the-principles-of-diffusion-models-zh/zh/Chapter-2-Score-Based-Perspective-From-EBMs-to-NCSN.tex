@@ -10,7 +10,7 @@
 \chapterlearning{
   \item 理解基于分数建模的核心思想：分数函数是什么，以及如何把它与朗之万动力学结合起来做生成；
   \item 理解去噪分数匹配如何借助条件化技巧学习单一噪声水平上的分数，以及 Tweedie 公式如何把分数预测与去噪联系起来；
-  \item 理解噪声条件分数网络（NCSN）如何把去噪分数匹配推广到多个噪声水平、多个噪声水平为何有用，以及 NCSN 的分数预测与 DDPM 的噪声预测之间有何关系。
+  \item 理解噪声条件分数网络（NCSN）如何把去噪分数匹配推广到多个噪声水平、这样做的益处何在，以及 NCSN 的分数预测与 DDPM 的噪声预测之间有何关系。
 }{
 已熟悉能量模型的读者可以略过 \Cref{sec:ebm}，直接从 \Cref{subsec:training-sm} 开始。
 }
@@ -102,7 +102,7 @@
 \log p(\rvx) 
 = \log p(\rvx_0) + \int_0^1 \rvs(\rvx_0 + t(\rvx - \rvx_0))^\top (\rvx - \rvx_0)  \diff t,
 \]
-其中 $\rvx_0$ 是参考点并且 $\log p(\rvx_0)$ 通过标准化修复。其中 $\rvx_0$ 是参考点，$\log p(\rvx_0)$ 由归一化条件确定。因此，对分数建模与对 $p(\rvx)$ 本身建模具有相同的表达能力，而前者通常更有利于生成建模。
+其中 $\rvx_0$ 是参考点，$\log p(\rvx_0)$ 由归一化条件确定。因此，对分数建模与对 $p(\rvx)$ 本身建模具有相同的表达能力，而前者通常更有利于生成建模。
 
 
 \subsection{通过分数匹配训练 EBM}\label{subsec:training-ebm}
@@ -124,7 +124,7 @@
 + \tfrac{1}{2}  \|\nabla_{\mathbf{x}} E_{\bm{\phi}}(\rvx)\|_2^2
 \right] + C,
 \]
-其中 $\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}(\rvx)$ 是 $E_{\bm{\phi}}$ 的黑塞矩阵，$C$ 是不依赖于 $\bm{\phi}$ 的常数。其中 $\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}(\rvx)$ 是 黑塞矩阵 $E_{\bm{\phi}}$ 和 $C$ 是一个独立于 $\bm{\phi}$。这种写法很有吸引力：它消除了配分函数，也避免了训练期间从模型中采样。它的主要缺点是要求二阶导数：虽然只需黑塞矩阵的迹 $\Tr \big(\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}\big)$ 而非完整的黑塞矩阵，但精确计算这一项通常需要聚合各输入坐标上的二阶导数信息，因此其代价一般随输入维数 $D$ 增长。本章稍后我们会再讨论如何绕开这一限制。
+其中 $\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}(\rvx)$ 是 $E_{\bm{\phi}}$ 的黑塞矩阵，$C$ 是不依赖于 $\bm{\phi}$ 的常数。这种写法很有吸引力：它消除了配分函数，也避免了训练期间从模型中采样。它的主要缺点是要求二阶导数：虽然只需黑塞矩阵的迹 $\Tr \big(\nabla_{\mathbf{x}}^2 E_{\bm{\phi}}\big)$ 而非完整的黑塞矩阵，但精确计算这一项通常需要聚合各输入坐标上的二阶导数信息，因此其代价一般随输入维数 $D$ 增长。本章稍后我们会再讨论如何绕开这一限制。
 
 
 
@@ -145,7 +145,7 @@
 \begin{align}\label{eq:discrete-langevin}
     \mathbf{x}_{n+1} = \mathbf{x}_n - \eta \nabla_{\mathbf{x}} E_{\bm{\phi}}(\mathbf{x}_n) +  \sqrt{2 \eta} \bm{\epsilon}_n, \quad n=0,1,2,\ldots,
 \end{align}
-其中 $\mathbf{x}_0$ 从某个分布（通常是高斯分布）中初始化其中 $\mathbf{x}_0$ 从某种分布（通常是高斯分布）初始化，$\eta > 0$ 是步长，$\bm{\epsilon}_n \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$ 是高斯噪声。噪声带来的随机性使探索能够越过局部极小值。
+其中 $\mathbf{x}_0$ 从某个分布（通常是高斯分布）中初始化，$\eta > 0$ 是步长，$\bm{\epsilon}_n \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$ 是高斯噪声。噪声带来的随机性使探索能够越过局部极小值。
 
 由于分数函数可以写成
 \[
@@ -205,7 +205,7 @@ p_{\bm{\phi}}(\mathbf{x}) \propto e^{-E_{\bm{\phi}}(\mathbf{x})}.
 
 可以把采样想象为探索一片广阔而崎岖的地形，其中散落着许多彼此遥远的山谷，每个山谷对应数据的一个模态。朗之万动力学依赖局部的随机更新，难以有效地跨越这些山谷，因此往往无法覆盖分布的全部多样性。
 
-EBM 表明，生成只取决于分数——它指向概率更高的区域，而不需要完全归一化的密度。虽然分数匹配绕开了配分函数，但通过能量来训练仍然需要昂贵的二阶导数。关键的想法是：既然朗之万采样只需要分数，我们就可以直接用神经网络来学习它。这种从建模能量到建模分数的转变，构成了基于分数的生成模型的基础。这种从建模能量到建模分数的转变形成了基于分数的生成模型的基础。
+EBM 表明，生成只取决于分数——它指向概率更高的区域，而不需要完全归一化的密度。虽然分数匹配绕开了配分函数，但通过能量来训练仍然需要昂贵的二阶导数。关键的想法是：既然朗之万采样只需要分数，我们就可以直接用神经网络来学习它。这种从建模能量到建模分数的转变，构成了基于分数的生成模型的基础。
 
 
 
@@ -283,7 +283,7 @@ $\tfrac12\|\rvs_{\bm\phi}(\rvx)\|^2$ 会压制这些区域中过大的
 
 \subparagraph{场为（近似）梯度时的凹性。}
 散度项 $\Tr(\nabla_{\rvx} \rvs_{\bm\phi}(\rvx))$ 在损失中以正号出现，因此最小化目标倾向于
-在数据分布强调的区域出现负的散度。散度为负意味着局部净收缩，不过
+在数据分布集中的区域会出现负的散度。散度为负意味着局部净收缩，不过
 它本身并不保证驻点就是汇点。
 为把这一点说清，假设
 $\rvs_{\bm\phi}=\nabla_{\rvx}u$，其中 $u:\R^D\to\R$ 是标量函数，此时模型正是在匹配
@@ -304,7 +304,7 @@ $\nabla_{\rvx}^2 u$ 负定，而不仅仅是迹为负。
 迹为负只能保证特征值之和为负，某些特征值仍可能
 为正，从而得到鞍点而非极大值。
 }。
-由于黑塞矩阵的所有特征值均为负由于黑塞矩阵的所有特征值均为负，其迹也必为负：
+由于黑塞矩阵的所有特征值均为负，其迹也必为负：
 $\Tr(\nabla_{\rvx}^2 u(\rvx_\star))<0$。
 因此在这种情况下，该驻点在分数场下具有局部吸引性：
 微小的扰动都会被拉向 $\rvx_\star$。
@@ -353,7 +353,7 @@ $\Tr(\nabla_{\rvx}^2 u(\rvx_\star))<0$。
 
 \paragraph{从切片分数匹配到去噪分数匹配。} 切片分数匹配绕开了雅可比矩阵，但仍依赖原始数据分布，因而相当脆弱：对于落在低维流形上的图像数据，分数 $\nabla_{\rvx}\log p_{\mathrm{data}}(\rvx)$ 可能没有定义，也可能数值不稳；而且该方法只在观测点上约束向量场，对这些点邻域的控制很弱，还要额外承担随机探测方向带来的方差和反复计算 JVP/VJP 的开销。
 
-一个更稳健、也是本章重点讨论的替代方案，是\emph{去噪分数匹配}（DSM）~\citep{vincent2011connection}。它既有清晰的理论依据，又能扩展到大规模问题。下面重点讨论更稳健、也适合大规模计算的\emph{去噪分数匹配}（DSM）~\citep{vincent2011connection}。
+一个更稳健、也是本章重点讨论的替代方案，是\emph{去噪分数匹配}（DSM）~\citep{vincent2011connection}。它既有清晰的理论依据，又能扩展到大规模问题。
 
 \subsection{训练}
 让我们重新审视 \Cref{eq:sm} 中的分数匹配损失：
@@ -424,7 +424,7 @@ p_{\sigma}(\tilde{\rvx}|\rvx) = \mathcal{N}(\tilde{\rvx}; \rvx, \sigma^2 \mathbf
 \end{figure}
 
 
-\paragraph{特殊情形：加性高斯噪声。} 现在考虑最常见的情形：给每个数据点 $\rvx \sim p_{\text{data}}$ 加上方差为 $\sigma^2$ 的高斯噪声 $\mathcal{N}(\mathbf{0}, \sigma^2 \rmI)$，即\paragraph{特殊情况：加性高斯噪声。} 我们现在考虑高斯噪声的常见情况 $\mathcal{N}(\mathbf{0}, \sigma^2 \rmI)$ 有差异 $\sigma^2$ 添加到每个数据点 $\rvx \sim p_{\text{data}}$:
+\paragraph{特殊情形：加性高斯噪声。} 现在考虑最常见的情形：给每个数据点 $\rvx \sim p_{\text{data}}$ 加上方差为 $\sigma^2$ 的高斯噪声 $\mathcal{N}(\mathbf{0}, \sigma^2 \rmI)$，即
 \[
 \tilde{\rvx} = \rvx + \sigma \bm{\epsilon}, \quad \bm{\epsilon} \sim \mathcal{N}(\mathbf{0}, \rmI),
 \]
@@ -457,14 +457,15 @@ p_{\mathrm{data}} * \mathcal{N}(\bm{0},\sigma^2\rmI),
 为更清楚地看出这一目标为何天然对应“去噪”过程，我们展开 \Cref{subsec:why-dsm-denoising-tweedie,subsec:why-dsm-denoising-sure} 中的讨论。
 
 
-\subsection{采样} 一旦在噪声水平 $\sigma$ 上训练好分数模型 $\rvs_{\bm{\phi}^\times}(\tilde{\rvx}, \sigma)$，就可以用学到的模型替换真实分数，通过朗之万动力学生成样本。更新规则为：\subsection{采样} 一旦我们有了经过训练的分数模型 $\rvs_{\bm{\phi}^\times}(\tilde{\rvx}, \sigma)$ 处于噪声水平 $\sigma$，我们通过用学习模型替换真实分数，使用 Langevin 动力学生成样本。更新规则为：
+\subsection{采样}
+一旦在噪声水平 $\sigma$ 上训练好分数模型 $\rvs_{\bm{\phi}^\times}(\tilde{\rvx}, \sigma)$，就可以用学到的模型替换真实分数，通过朗之万动力学生成样本。更新规则为：
 \begin{align}\label{eq:score-langevin-emp-dsm}
    \tilde{\rvx}_{n+1} = \tilde{\rvx}_n + \eta \underbrace{\rvs_{\bm{\phi}^\times}(\tilde{\rvx}_n, \sigma)}_{\approx \nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx}_n)} + \sqrt{2\eta}    \bm{\epsilon}_n, \quad \bm{\epsilon}_n \sim \mathcal{N}(\mathbf{0}, \rmI),
 \end{align}
 其中 $n = 0, 1, 2, \dots$，迭代从初值 $\tilde{\rvx}_0$ 出发。若 $\sigma$ 足够小，则经过充分多轮迭代后，$\tilde{\rvx}_n$ 可近似为 $p_{\text{data}}$ 的样本。
 
 
-\paragraph{噪声注入的好处。}\paragraph{噪声注入的优点。}
+\paragraph{噪声注入的好处。}
 此外还值得指出，与 \Cref{eq:sm} 中的原始分数匹配相比，注入高斯噪声形成 $p_\sigma$（例如 \Cref{eq:gaussian-dsm}）带来两个关键优势~\citep{song2019generative}：
 \begin{itemize}
   \item \textbfs{梯度处处有定义。} 噪声把数据推离其低维流形，使 $p_\sigma$ 在 $\mathbb{R}^D$ 上具有满支撑。于是分数函数 $\nabla_{\tilde{\rvx}} \log p_\sigma(\tilde{\rvx})$ 处处有明确定义。
@@ -503,9 +504,9 @@ Tweedie 公式在扩散模型中起核心作用，因为扩散模型如同 DDPM 
 \]
 即为降噪器。
 
-\paragraph{（选读）高阶 Tweedie 公式。}\paragraph{（选读）高阶 Tweedie 公式。} 经典的 Tweedie 公式用梯度 $\nabla_{\tilde{\rvx}}\log p(\tilde{\rvx})$ 表达后验均值 $\E[\rvx_0|\tilde{\rvx}]$。高阶扩展~\citep{meng2021estimating} 则用 $\log p(\tilde{\rvx})$ 的更高阶导数表达后验协方差及更高阶累积量。
+\paragraph{（选读）高阶 Tweedie 公式。} 经典的 Tweedie 公式用梯度 $\nabla_{\tilde{\rvx}}\log p(\tilde{\rvx})$ 表达后验均值 $\E[\rvx_0|\tilde{\rvx}]$。高阶扩展~\citep{meng2021estimating} 则用 $\log p(\tilde{\rvx})$ 的更高阶导数表达后验协方差及更高阶累积量。
 
-\subparagraph{含对数归一化子 $\lambda(\tilde{\rvx})$ 的指数族设定。}\subparagraph{使用对数归一化器进行指数族设置 $\lambda(\tilde{\rvx})$.}
+\subparagraph{含对数归一化子 $\lambda(\tilde{\rvx})$ 的指数族设定。}
 设给定潜在自然参数 $\boldsymbol\eta\in\R^D$ 时 $\tilde{\rvx}$ 的条件分布属于自然指数族，写作
 \[
 q_\sigma(\tilde{\rvx}|\boldsymbol\eta)
@@ -549,7 +550,7 @@ p(\boldsymbol\eta|\tilde{\rvx})
 \]
 更高阶的累积量按同样的比例对应 $\log p_\sigma(\tilde{\rvx})$ 的更高阶导数。已有若干研究探索用神经网络估计高阶分数~\citep{meng2021estimating,lu2022maximum,lai2023fp}。这里的目的只在于说明它们与各阶统计量的关系，方法细节请读者参阅这些工作。
 
-\subsection{（选读）为什么 DSM 是去噪：SURE}\subsection{（选读）为什么DSM能够去噪：SURE}\label{subsec:why-dsm-denoising-sure}
+\subsection{（选读）为什么 DSM 是去噪：SURE}\label{subsec:why-dsm-denoising-sure}
 
 
 \paragraph{SURE（Stein 的无偏风险估计器）。}
@@ -558,7 +559,7 @@ p(\boldsymbol\eta|\tilde{\rvx})
 \tilde{\rvx} = \rvx + \sigma \bm{\epsilon}, 
 \qquad \bm{\epsilon} \sim \mathcal{N}(\mathbf{0},\rmI),
 \]
-其中 $\rvx \in \R^D$ 是未知的干净信号，$\tilde{\rvx}$ 是观测到的带噪版本。降噪器是任意（弱可微）映射 $\rmD:\R^D \to \R^D$，它对 $\rvx$ 给出估计 $\rmD(\tilde{\rvx})$。自然的质量度量是条件 MSE其中 $\rvx \in \R^D$ 是未知的干净信号， $\tilde{\rvx}$ 是观察到的噪声版本。降噪器是任何（弱可微）映射 $\rmD:\R^D \to \R^D$ 产生估计值 $\rmD(\tilde{\rvx})$ 的 $\rvx$。自然质量度量是条件 MSE
+其中 $\rvx \in \R^D$ 是未知的干净信号，$\tilde{\rvx}$ 是观测到的带噪版本。降噪器是任意（弱可微）映射 $\rmD:\R^D \to \R^D$，它对 $\rvx$ 给出估计 $\rmD(\tilde{\rvx})$。自然的质量度量是条件 MSE
 \[
 R(\rmD;\rvx) := \E_{\tilde{\rvx}|\rvx}\left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2 \,\big|\, \rvx\right].
 \]
@@ -576,7 +577,7 @@ R(\rmD;\rvx) := \E_{\tilde{\rvx}|\rvx}\left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2 \,\b
 \]
 其中期望是对高斯噪声 $\beps\sim\mathcal{N}(\bm{0},\rmI)$ 取的。因此，无论在期望意义下还是在经验意义下，最小化 SURE 都等价于最小化真实的 MSE，而所用的只有带噪数据。实践中，同时对数据 $\rvx\sim p_{\mathrm{data}}$ 和加噪噪声 $\beps$ 取平均，即可得到总体 MSE 风险的无偏估计。
 
-\paragraph{与 Tweedie 公式及贝叶斯最优性的联系。}\paragraph{链接到 Tweedie 公式和贝叶斯最优性。}
+\paragraph{与 Tweedie 公式及贝叶斯最优性的联系。}
 记 $p_\sigma(\tilde{\rvx}) = \big(p_{\mathrm{data}} * \mathcal{N}(\mathbf{0}, \sigma^2 \rmI)\big)(\tilde{\rvx})$ 为本节所考虑的带噪边缘分布。
 
 在以 $\rvx$ 为条件下，SURE 是关于噪声的均方误差的无偏估计：
@@ -599,7 +600,7 @@ $\mathbb{E}_{(\rvx, \tilde{\rvx})}\big[\|\rmD(\tilde{\rvx})-\rvx\|^2\big]
 \end{align}
 
 
-\paragraph{SURE 与分数匹配的关系。}\paragraph{SURE 与分数匹配的关系。}
+\paragraph{SURE 与分数匹配的关系。}
 \Cref{eq:sure-tweedie-denoiser} 中的恒等式启发我们用分数场来参数化降噪器 $\rmD$：
 \[
 \rmD(\tilde{\rvx})=\tilde{\rvx}+\sigma^2\rvs_{\bm\phi}(\tilde{\rvx}, \sigma),
@@ -616,7 +617,7 @@ $\nabla_{\tilde{\rvx}}\log p_\sigma(\cdot)$。把 $\rmD(\tilde{\rvx})=\tilde{\rv
 于是，对 $\tilde{\rvx}\sim p_\sigma$ 取期望后，最小化 SURE 与最小化 Hyv\"arinen 在噪声水平 $\sigma$ 下的替代分数匹配目标等价（至多相差一个可加常数），其中期望取在 $p_\sigma$ 下（见 \Cref{eq:sm-alternative}）。两者因而具有相同的最优解，即 \Cref{eq:sure-tweedie-denoiser} 中的降噪器。
 
 
-\subsection{（选读）广义分数匹配}\subsection{（选读）广义分数匹配}
+\subsection{（选读）广义分数匹配}
 
 
 \paragraph{动机。}
@@ -630,7 +631,7 @@ $\nabla_{\tilde{\rvx}}\log p_\sigma(\cdot)$。把 $\rmD(\tilde{\rvx})=\tilde{\rv
 \]
 正是 $\frac{\mathcal L p}{p}$ 这一结构使得可以分部积分，从而消去归一化常数，得到只依赖 $p$ 的样本与所学场 $\rvs_\bphi$ 的可处理目标。这一视角催生了广义分数匹配框架。
 
-\paragraph{广义 Fisher 散度。}\paragraph{广义费舍尔散度。}
+\paragraph{广义 Fisher 散度。}
 设 $p$ 为数据分布，$q$ 为任意模型分布。对作用于 $\rvx$ 的标量函数的线性算子 $\mathcal L$，定义广义 Fisher 散度
 \[
 \mathcal D_{\mathcal L}(p \,\|\, q)
@@ -647,7 +648,7 @@ $\nabla_{\tilde{\rvx}}\log p_\sigma(\cdot)$。把 $\rmD(\tilde{\rvx})=\tilde{\rv
 \]
 则 $\mathcal D_{\mathcal L}(p \,\|\, q)=0$ 即说明 $q=p$。取 $\mathcal L=\nabla_{\tilde\rvx}$ 便回到经典的 Fisher 散度（见 \Cref{eq:fisher}）。
 
-\paragraph{分数的参数化。}\paragraph{分数参数化。}
+\paragraph{分数的参数化。}
 实践中我们并不去建模归一化密度 $q$，而是直接参数化一个向量场 $\rvs_\bphi(\rvx)$ 来逼近广义分数 $\frac{\mathcal L p(\rvx)}{p(\rvx)}$。考虑
 \[
 \mathcal D_{\mathcal L}\!\left(p \,\|\, \rvs_\bphi\right)
@@ -672,7 +673,7 @@ $\nabla_{\tilde{\rvx}}\log p_\sigma(\cdot)$。把 $\rmD(\tilde{\rvx})=\tilde{\rv
 
 取 $\mathcal L=\nabla$ 时 $\mathcal L^\dagger=-\nabla\!\,\cdot$，便回到 \Cref{eq:sm-alternative} 中 Hyv\"arinen 的分数匹配目标 $\mathbb E_p\!\big[\tfrac{1}{2}\|\rvs_\bphi\|_2^2 + \nabla\!\cdot \rvs_\bphi\big]$。
 
-\paragraph{算子的几个例子。}\paragraph{运算符示例.}
+\paragraph{算子的几个例子。}
 \begin{itemize}
 \item \textbfs{经典分数匹配。} 取 $\mathcal L = \nabla_{\rvx}$。此时广义分数退化为经典分数函数
 \[
@@ -708,7 +709,7 @@ $\tilde\rvx=\alpha\rvx_0+\sigma\beps$，相应的恒等式中就含有
 与 \Cref{eq:tweedie} 相同的因子 $\alpha$。
 
 
-\item \textbfs{高阶目标。}\item \textbfs{高阶目标.}
+\item \textbfs{高阶目标。}
 在 $\mathcal L$ 内把导数层层叠加，就会牵出 $\nabla^2\log p$ 及更高阶导数，它们分别对应后验协方差与更高阶累积量。
 \end{itemize}
 
@@ -723,7 +724,7 @@ $\tilde\rvx=\alpha\rvx_0+\sigma\beps$，相应的恒等式中就含有
 \newpage
 
 
-\section{\texorpdfstring{多噪声级别的去噪分数匹配（NCSN）}{多噪声级别的去噪分数匹配（NCSN）}}\section{\texorpdfstring{多噪声级别的去噪分数匹配（NCSN）}{多噪声级别的去噪分数匹配（NCSN）}}\label{sec:SMLD}
+\section{\texorpdfstring{多噪声级别的去噪分数匹配（NCSN）}{多噪声级别的去噪分数匹配（NCSN）}}\label{sec:SMLD}
 
 \subsection{动机}
 给数据分布加入单一固定方差的高斯噪声，能在一定程度上起到平滑作用，但只在单一噪声水平上训练基于分数的模型会带来几项关键局限。注入噪声较小时，低密度区域中梯度趋于消失，朗之万动力学很难跨越多模态分布的各个模态；噪声较大时采样确实容易了，但模型只能抓住粗糙结构，样本因而模糊、缺少细节。此外，朗之万动力学在高维空间中收敛可能很慢，甚至会失败：它依靠对数密度的梯度作引导，初值不佳（尤其是在平坦区域或鞍点附近）会妨碍探索，或使采样器困在单一模态里。
@@ -736,7 +737,7 @@ $\tilde\rvx=\alpha\rvx_0+\sigma\beps$，相应的恒等式中就含有
     \label{fig:sm-acc-illustration}
 \end{figure}
 
-为应对这些挑战，\citet{song2019generative} 提出在数据分布的多个噪声水平上注入高斯噪声，并联合训练一个噪声条件分数网络（NCSN），以估计一系列噪声尺度下的分数函数。为了应对这些挑战， \citet{song2019generative} 建议将多个级别的高斯噪声注入数据分布中，并联合训练噪声条件分数网络（NCSN）以估计一系列噪声尺度的分数函数。生成时，朗之万动力学以噪声退火的方式运行：先在高噪声水平上做粗略探索，再逐步过渡到低噪声水平以恢复细节。
+为应对这些挑战，\citet{song2019generative} 提出在数据分布的多个噪声水平上注入高斯噪声，并联合训练一个噪声条件分数网络（NCSN），以估计一系列噪声尺度下的分数函数。生成时，朗之万动力学以噪声退火的方式运行：先在高噪声水平上做粗略探索，再逐步过渡到低噪声水平以恢复细节。
 
 
 
@@ -750,8 +751,7 @@ $\tilde\rvx=\alpha\rvx_0+\sigma\beps$，相应的恒等式中就含有
 
 
 \subsection{训练}
-为克服在单一噪声水平上训练基于分数模型的局限\subsection{训练}
-为了克服在单一噪声级别训练的基于分数的模型的局限性， \citet{song2019generative} \citet{song2019generative} 提出在数据分布上加入多个水平的高斯噪声。具体做法是选取一串 $L$ 个噪声水平 $\{\sigma_i\}_{i=1}^L$，满足
+为克服在单一噪声水平上训练基于分数模型的局限，\citet{song2019generative} 提出在数据分布上加入多个水平的高斯噪声。具体做法是选取一串 $L$ 个噪声水平 $\{\sigma_i\}_{i=1}^L$，满足
 \[
 0 < \sigma_1 < \sigma_2 < \cdots < \sigma_L,
 \]
@@ -820,7 +820,7 @@ $\lambda(\sigma_i)>0$ 是各尺度对应的权重函数。最小化该目标得�
 -\frac{1}{\sigma_i}
 \E\left[\beps|\rvx_i\right].
 \]
-换言之，在 DDPM 中预测噪声，与在噪声水平 $i$ 上预测分数，只相差一个已知的比例因子 $1/\sigma_i$，两者等价。关于各类参数化之间的这种等价性，我们将在 \Cref{ch:all-equivalent} 中系统比较与总结。我们将在\Cref{ch:all-equivalent}中系统地比较和总结参数化的这种等价性。
+换言之，在 DDPM 中预测噪声，与在噪声水平 $i$ 上预测分数，只相差一个已知的比例因子 $1/\sigma_i$，两者等价。关于各类参数化之间的这种等价性，我们将在 \Cref{ch:all-equivalent} 中系统比较与总结。
 
 
 
@@ -889,13 +889,13 @@ $p_{\mathrm{init}}$
 
 初始分布 $p_{\mathrm{init}}$ 只是为马尔可夫链提供一个起点。在最大噪声水平上，朗之万动力学把这个初始分布推向 $p_{\sigma_L}$；随后各个噪声水平接力，把样本逐渐引导到平滑程度越来越低的数据分布上。
 
-\paragraph{NCSN 采样慢。}\paragraph{NCSN 采样速度慢。}
+\paragraph{NCSN 采样慢。}
 NCSN 借助退火 MCMC（通常是朗之万动力学）在一系列噪声尺度 $\{\sigma_i\}_{i=1}^L$ 上生成样本。对每个尺度 $\sigma_i$，它执行 $K$ 次如下形式的迭代更新：“用分数 $\rvs_{\bm{\phi}^\times}(\tilde{\mathbf{x}}_n,\sigma_i)$ 加上一个小的随机扰动来更新 $\tilde{\mathbf{x}}_n$”，而每一次更新都需要通过分数网络做一次前向传播。有两个因素使得 $L \times K$ 必须很大：
 \begin{enumerate}
     \item[(i)] \textbfs{局部精度与稳定性：} 学到的分数只在小扰动范围内可靠，因此需要较小的步长，并在每个噪声水平上迭代多次，以避免偏差或不稳定；
     \item[(ii)] \textbfs{高维空间中的混合慢：} 局部 MCMC 移动在探索多模态、高维目标时效率很低，需要大量迭代才能到达数据的典型区域。
 \end{enumerate}
-由于更新严格串行（每次迭代都依赖上一次），且每次都需一次昂贵的网络求值，总体代价为 $\mathcal{O}(L  K)$ 次串行网络前向，采样因而在计算上很慢。由于更新是严格顺序的（每次迭代都取决于前一次）并且每次都需要昂贵的网络评估，因此总体成本为 $\mathcal{O}(L  K)$ 顺序网络通过，导致采样计算速度变慢。
+由于更新严格串行（每次迭代都依赖上一次），且每次都需一次昂贵的网络求值，总体代价为 $\mathcal{O}(LK)$ 次串行网络前向，采样因而在计算上很慢。
 
 
 
@@ -916,7 +916,7 @@ NCSN 借助退火 MCMC（通常是朗之万动力学）在一系列噪声尺度 
 
 
 \begin{table}[th]
-  \caption{NCSN 与 DDPM 的比较}  \caption{NCSN 和 DDPM 的比较}
+  \caption{NCSN 与 DDPM 的比较}
   \small
   \centering
   \resizebox{\textwidth}{!}{
@@ -937,7 +937,7 @@ NCSN 借助退火 MCMC（通常是朗之万动力学）在一系列噪声尺度 
     \left[ \norm{\rvs_{\bm{\phi}}(\rvx_i, \sigma_i) +   \frac{\bm{\epsilon}}{\sigma_i}}_2^2 \right] $ 
             &  $      \mathbb{E}_{i}\mathbb{E}_{p_{\text{data}}(\rvx)} \mathbb{E}_{\bm{\epsilon}\sim \mathcal{N}(\bm{0},\rmI)}\left[ \norm{\bm{\epsilon}_{\bm{\phi}}(\rvx_i, i) - \bm{\epsilon}}_2^2 \right]$ \\
     \midrule
-     采样   & \begin{tabular}{@{}c@{}} 逐层执行朗之万；\\ 用其输出初始化下一层 \end{tabular}     采样   & \begin{tabular}{@{}c@{}} 每层涂抹朗之万；\\ 使用输出来初始化下一个 \end{tabular}  &  \begin{tabular}{@{}c@{}}遍历马尔可夫链 \\ $p_{\bm{\phi}^\times}(\rvx_{i-1} | \rvx_i)$   \end{tabular} \\
+     采样   & \begin{tabular}{@{}c@{}} 逐层执行朗之万；\\ 用其输出初始化下一层 \end{tabular}  &  \begin{tabular}{@{}c@{}}遍历马尔可夫链 \\ $p_{\bm{\phi}^\times}(\rvx_{i-1} | \rvx_i)$   \end{tabular} \\
  \bottomrule
   \end{tabular}
   }
@@ -960,7 +960,7 @@ NCSN 借助退火 MCMC（通常是朗之万动力学）在一系列噪声尺度 
 
 \newpage
 
-\section{结束语}\section{结束语}\label{sec:ch3_cr}
+\section{结束语}\label{sec:ch3_cr}
 
 
 
@@ -974,8 +974,8 @@ NCSN 借助退火 MCMC（通常是朗之万动力学）在一系列噪声尺度 
 
 这种趋同绝非巧合，它暗示着背后有一个更深、更统一的数学结构。而这些离散时间模型的局限，正说明需要一个更一般的框架。下一章我们将迈出这关键一步：
 \begin{enumerate}
-    \item 我们将转入连续时间视角    \item 我们将转入连续时间视角，说明 DDPM 与 NCSN 都可以被优雅地统一为同一个由随机微分方程（SDE）刻画的强大过程的不同离散化。
+    \item 我们将转入连续时间视角，说明 DDPM 与 NCSN 都可以被优雅地统一为同一个由随机微分方程（SDE）刻画的强大过程的不同离散化。
     \item 这一 Score SDE 框架将把变分视角与分数视角正式联系起来，并把生成问题改写为求解一个微分方程。
 \end{enumerate}
 
-这一统一视角不仅带来理论上的透彻理解，还会解锁一类新的高等数值方法，用以应对采样缓慢这一根本挑战。这一统一视角不仅带来理论上的透彻理解，还会解锁一类新的高等数值方法，用以应对采样缓慢这一根本挑战。旨在解决慢采样的基本挑战。
+这一统一视角不仅带来理论上的透彻理解，还会解锁一类新的高等数值方法，用以应对采样缓慢这一根本挑战。

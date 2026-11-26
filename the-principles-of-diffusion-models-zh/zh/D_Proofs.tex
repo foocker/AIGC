@@ -1526,7 +1526,7 @@ EDM 考虑 $\rvx$ 预测模型的参数化，用 $\rvx_{\bm{\phi}}(\rvx, t)$\foo
     \\ \Longleftrightarrow &~c_{\mathrm{out}}^2(t)  = \left(1-c_{\mathrm{skip}}(t)\alpha_t\right)^2 \sigma_{\mathrm{d}}^2 + c_{\mathrm{skip}}^2(t)\sigma_t^2, 
 \end{align}
 具有居中数据（$\E[\rvx_0]=\bm{0}$）。
-\paragraph{最小化从$\rmF_{\bm{\phi}}$到$\rvx_{\bm{\phi}}$的误差放大。} EDM旨在减轻网络学习误差从$\rmF_{\bm{\phi}}$到$\rvx_{\bm{\phi}}$的放大。这是通过选择 $c_{\mathrm{skip}}$ 来最小化 $c_{\mathrm{out}}$ 来实现的：
+\paragraph{最小化从$\rmF_{\bm{\phi}}$到$\rvx_{\bm{\phi}}$的误差放大。} EDM 通过选择 $c_{\mathrm{skip}}$ 来最小化 $c_{\mathrm{out}}$，从而抑制网络学习误差从 $\rmF_{\bm{\phi}}$ 到 $\rvx_{\bm{\phi}}$ 的放大：
 \[
 c_{\mathrm{skip}}^* \in \argmin_{c_{\mathrm{skip}}}  c_{\mathrm{out}}^2.
 \]
