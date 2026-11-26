@@ -371,14 +371,14 @@ C:=\frac{1}{2}\Bigg(\mathbb{E}_{\tilde{\rvx} \sim p_\sigma(\tilde{\rvx})}  \norm
 仅取决于 $p_{\text{data}}(\rvx)$ 和 $p_{\sigma}(\tilde{\rvx}|\rvx)$，因此它对于 $\bm{\phi}$.
 \hfill$\blacksquare$
 
-\subsection{引理~\ref{tweedie}: 特威迪公式}\label{app-sec:tweedie}
+\subsection{引理~\ref{tweedie}: Tweedie 公式}\label{app-sec:tweedie}
 我们首先陈述 Tweedie 公式的更一般形式，该公式考虑了与时间相关的高斯扰动，我们在下面提供了其证明。
 
 
 \paragraph{具有时间相关参数的 Tweedie 恒等式。}
 让
 $\rvx_t|\rvx_0 \sim
-\mathcal{N}\big(\cdot; \alpha_t\rvx_0, \sigma_t^2\rmI\big)$。然后特威迪的公式说
+\mathcal{N}\big(\cdot; \alpha_t\rvx_0, \sigma_t^2\rmI\big)$。于是 Tweedie 公式给出
 \begin{align*}
 \alpha_t \mathbb{E}_{\mathbf{x}_0 \sim p(\mathbf{x}_0|\rvx_t)}[\mathbf{x}_0|\rvx_t] = \rvx_t + \sigma_t^2 \nabla_{\rvx_t} \log p_t(\rvx_t),
 \end{align*}
@@ -1245,7 +1245,7 @@ $(\partial_\btheta\hat\rvx_t)\,\diff\btheta$。因此，VSD梯度可以写为
 \\
 &= \E[\rvx_{s'}|\rvx_s].
 \end{align*}
-这里我们使用Tweedie的公式
+这里我们使用 Tweedie 公式
 \[
 \E[\rvx_0 |\rvx_s]=\frac{\rvx_s+\sigma_s^2\nabla_{\rvx_s}\log p_s(\rvx_s)}{\alpha_s},
 \]

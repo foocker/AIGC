@@ -365,6 +365,17 @@ Stanford University
 \crefname{definition}{定义}{定义}
 \Crefname{definition}{定义}{定义}
 
+% cleveref 列表连接词本地化：多标签 \Cref{a,b} 默认输出英文 "and"，
+% 区间 \Cref{a,b,c} 默认输出 "a to c"。这里统一改为中文。
+% 两个并列项用「与」，三项及以上中间用顿号、末尾用「和」。
+\newcommand{\creflastconjunction}{与}
+\newcommand{\crefpairconjunction}{与}
+\newcommand{\crefmiddleconjunction}{、}
+\newcommand{\creflastgroupconjunction}{和}
+\newcommand{\crefrangeconjunction}{至}
+\newcommand{\crefpairgroupconjunction}{和}
+\newcommand{\crefmiddlegroupconjunction}{、}
+
 \begin{document}
 
 \makeabstracttitle

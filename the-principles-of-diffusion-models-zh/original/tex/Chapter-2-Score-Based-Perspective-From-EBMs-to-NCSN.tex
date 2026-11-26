@@ -1242,11 +1242,8 @@ With trained score networks available at multiple noise levels
 \rvs_{\bm{\phi}^\times}(\cdot, \sigma_1), \quad\rvs_{\bm{\phi}^\times}(\cdot, \sigma_2), \quad \cdots, \quad \rvs_{\bm{\phi}^\times}(\cdot, \sigma_{L-1}), \quad    \rvs_{\bm{\phi}^\times}(\cdot, \sigma_L),
 \]
 % \se{this notation is weird}\jcc{do you meant the notation of $\bm{\phi}^\times$ is weird, which i was thoroughly using $\bm{\phi}^\times$ to denote a trained network? }
-the sampling procedure known as \emph{annealed Langevin dynamics}~\citep{song2019generative} generates data by progressively denoising from a high noise level $\sigma_L$ down to a low noise level $\sigma_1 \approx 0$.
-
-With trained scores at noise levels
-$0<\sigma_1<\cdots<\sigma_L$, annealed Langevin dynamics generates samples by
-moving gradually from high noise to low noise.
+The sampling procedure known as \emph{annealed Langevin dynamics}~\citep{song2019generative} generates samples by moving gradually from a high noise level $\sigma_L$ down to a low noise level $\sigma_1 \approx 0$, given trained scores at noise levels
+$0<\sigma_1<\cdots<\sigma_L$.
 Starting from a simple initialization
 $\rvx\sim p_{\mathrm{init}}$, it first applies Langevin dynamics at the largest
 noise level $\sigma_L$, whose score

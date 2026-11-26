@@ -165,12 +165,12 @@
 代入 $\rho=p_{\bm\phi}$ 可得 $(\tfrac{\sigma^2}{2}-1)\Delta p_{\bm\phi}=0$，它仅在 $\sigma=\sqrt{2}$ 时成立。
 }：
 \begin{align}\label{eq:continuous-langevin}
- \diff \mathbf{x}(t) = \nabla_{\mathbf{x}} \log p_{\bm{\phi}}(\mathbf{x}(t)) \diff t + \sqrt{2} \diff \mathbf{w}(t), \diff \mathbf{x}(t) = \nabla_{\mathbf{x}} \log p_{\bm{\phi}}(\mathbf{x}(t)) \diff t + \sqrt{2} \diff \mathbf{w}(t),
+ \diff \mathbf{x}(t) = \nabla_{\mathbf{x}} \log p_{\bm{\phi}}(\mathbf{x}(t)) \diff t + \sqrt{2} \diff \mathbf{w}(t),
 \end{align}
 其中 $\mathbf{w}(t)$ 表示标准布朗运动（又称维纳过程\footnote{布朗增量满足
 $\mathbf{w}(t+\eta)-\mathbf{w}(t)\sim \mathcal{N}(\mathbf{0},  \eta  \mathbf{I})$。
 因此 Euler--Maruyama 格式使用的噪声为 $\sqrt{2}  [\mathbf{w}(t+\eta)-\mathbf{w}(t)]
-= \sqrt{2\eta}  \bm{\epsilon}_n$，其中 $\bm{\epsilon}_n \sim \mathcal{N}(\mathbf{0},\mathbf{I})$，这就解释了 $\sqrt{\eta}$ 这一因子，也是平方根缩放的来源。关于布朗运动与 SDE 的详细介绍，见 \Cref{app:de}。}）。需要理解的是，\Cref{eq:discrete-langevin} 中的离散更新规则正是该连续 SDE 的 Euler--Maruyama 离散化。充当该连续 SDE 的 Euler-Maruyama 离散化。
+= \sqrt{2\eta}  \bm{\epsilon}_n$，其中 $\bm{\epsilon}_n \sim \mathcal{N}(\mathbf{0},\mathbf{I})$，这就解释了 $\sqrt{\eta}$ 这一因子，也是平方根缩放的来源。关于布朗运动与 SDE 的详细介绍，见 \Cref{app:de}。}）。需要理解的是，\Cref{eq:discrete-langevin} 中的离散更新规则正是该连续 SDE 的 Euler--Maruyama 离散化。
 
 
 
@@ -178,7 +178,6 @@ $\mathbf{w}(t+\eta)-\mathbf{w}(t)\sim \mathcal{N}(\mathbf{0},  \eta  \mathbf{I})
 
 \paragraph{为什么要用朗之万采样？}
 理解朗之万采样的一种自然方式是从物理视角出发：能量函数 $ E_{\bm{\phi}}(\mathbf{x}) $ 定义了一个支配粒子行为的势能地形。按牛顿力学，粒子在该能量所导出的力场中的运动由常微分方程（ODE）描述：
-根据牛顿动力学，粒子在由该能量导出的力场下的运动由常微分方程（ODE）描述
 \[
 \diff \mathbf{x}(t) = -\nabla_{\mathbf{x}} E_{\bm{\phi}}\big(\mathbf{x}(t)\big)  \diff t,
 \]
@@ -204,6 +203,8 @@ p_{\bm{\phi}}(\mathbf{x}) \propto e^{-E_{\bm{\phi}}(\mathbf{x})}.
 这种低效率的根源是混合时间（mixing time）过长：对于含许多孤立模态的复杂数据分布，朗之万采样常常需要极长时间才能在高概率区域之间迁移，而且随着维数升高这一问题更加严重，导致收敛过慢。
 
 可以把采样想象为探索一片广阔而崎岖的地形，其中散落着许多彼此遥远的山谷，每个山谷对应数据的一个模态。朗之万动力学依赖局部的随机更新，难以有效地跨越这些山谷，因此往往无法覆盖分布的全部多样性。
+
+这种低效也提示我们：需要更结构化、更有引导性的采样方法，才能比纯粹的随机探索更有效地穿行于复杂的数据流形。
 
 \newpage
 
@@ -789,7 +790,7 @@ $\lambda(\sigma_i)>0$ 是各尺度对应的权重函数。最小化该目标得�
 
 
 \paragraph{与 DDPM 损失的关系。}
-设 $\rvx_\sigma=\rvx+\sigma\boldsymbol{\epsilon}$，其中 $\boldsymbol{\epsilon}\sim\mathcal{N}(\mathbf{0},\mathbf{I})$，并以 $p_\sigma$ 记边缘分布。由 Tweedie 公式，让 $p_\sigma$ 表示边缘分布。根据特威迪公式，
+设 $\rvx_\sigma=\rvx+\sigma\boldsymbol{\epsilon}$，其中 $\boldsymbol{\epsilon}\sim\mathcal{N}(\mathbf{0},\mathbf{I})$，并以 $p_\sigma$ 记边缘分布。由 Tweedie 公式，
 \[
 \nabla_{\rvx_\sigma}\log p_\sigma(\rvx_\sigma)
 = -\frac{1}{\sigma} \E \left[\boldsymbol{\epsilon} \middle|  \rvx_\sigma\right].
@@ -857,9 +858,7 @@ $p_{\mathrm{init}}$
 \[
 \rvs_{\bm{\phi}^\times}(\cdot, \sigma_1), \quad\rvs_{\bm{\phi}^\times}(\cdot, \sigma_2), \quad \cdots, \quad \rvs_{\bm{\phi}^\times}(\cdot, \sigma_{L-1}), \quad    \rvs_{\bm{\phi}^\times}(\cdot, \sigma_L),
 \]
-称为\emph{退火朗之万动力学}（annealed Langevin dynamics）~\citep{song2019generative} 的采样过程，就是从高噪声水平 $\sigma_L$ 逐步去噪、一直降到低噪声水平 $\sigma_1 \approx 0$ 来生成数据。
-
-在噪声水平 $0<\sigma_1<\cdots<\sigma_L$ 上都有训练好的分数之后，退火朗之万动力学由高噪声向低噪声逐步推进来生成样本。它先从一个简单的初始化 $\rvx\sim p_{\mathrm{init}}$ 出发，在最大噪声水平 $\sigma_L$ 上做朗之万动力学，用分数 $\rvs_{\bm{\phi}^\times}(\cdot,\sigma_L)$ 把样本推向相应的平滑分布 $p_{\sigma_L}$；再用得到的样本去初始化下一个较小噪声水平上的朗之万动力学。如此反复，样本逐步被细化，直到抵达最小噪声水平 $\sigma_1$。
+称为\emph{退火朗之万动力学}（annealed Langevin dynamics）~\citep{song2019generative} 的采样过程，在给定了噪声水平 $0<\sigma_1<\cdots<\sigma_L$ 上训练好的分数之后，由高噪声向低噪声逐步推进来生成样本。它先从一个简单的初始化 $\rvx\sim p_{\mathrm{init}}$ 出发，在最大噪声水平 $\sigma_L$ 上做朗之万动力学，用分数 $\rvs_{\bm{\phi}^\times}(\cdot,\sigma_L)$ 把样本推向相应的平滑分布 $p_{\sigma_L}$；再用得到的样本去初始化下一个较小噪声水平上的朗之万动力学。如此反复，样本逐步被细化，直到抵达最小噪声水平 $\sigma_1$。
 
 在每个噪声水平 $\sigma_\ell$ 上，朗之万动力学执行的更新为
 \[
