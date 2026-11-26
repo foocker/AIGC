@@ -205,12 +205,10 @@ p_{\bm{\phi}}(\mathbf{x}) \propto e^{-E_{\bm{\phi}}(\mathbf{x})}.
 
 可以把采样想象为探索一片广阔而崎岖的地形，其中散落着许多彼此遥远的山谷，每个山谷对应数据的一个模态。朗之万动力学依赖局部的随机更新，难以有效地跨越这些山谷，因此往往无法覆盖分布的全部多样性。
 
-EBM 表明，生成只取决于分数——它指向概率更高的区域，而不需要完全归一化的密度。虽然分数匹配绕开了配分函数，但通过能量来训练仍然需要昂贵的二阶导数。关键的想法是：既然朗之万采样只需要分数，我们就可以直接用神经网络来学习它。这种从建模能量到建模分数的转变，构成了基于分数的生成模型的基础。
+\newpage
 
-
-
-
-
+\section{从能量模型到基于分数的生成模型}
+EBM 表明，生成只取决于分数——它指向概率更高的区域，而不需要完全归一化的密度。虽然分数匹配绕开了配分函数，但经由能量来训练仍然需要昂贵的二阶导数。关键的想法是：既然朗之万采样只需要分数，我们就可以直接用神经网络来学习分数本身。这种从建模能量到建模分数的转变，构成了基于分数的生成模型的基础。
 
 \begin{figure}[ht!]
     \centering
@@ -226,7 +224,6 @@ EBM 表明，生成只取决于分数——它指向概率更高的区域，而�
 \rvs_{\bm{\phi}}(\rvx) \approx \rvs(\rvx).
 \]
 \emph{分数匹配}通过最小化真实分数与估计分数之间的均方误差（MSE）来拟合这一向量场：
-\emph{分数匹配} 通过最小化真实分数和估计分数之间的均方误差 (MSE) 来拟合此向量场：
 \begin{mdframed}
 \begin{align}\label{eq:sm}
     \mathcal{L}_{\mathrm{SM}}(\bm{\phi}) 
@@ -252,13 +249,13 @@ $\rvs(\rvx)$ 是未知的。所幸 \citet{hyvarinen2005estimation} 指出，通�
             + \frac{1}{2} \norm{\rvs_{\bm{\phi}}(\rvx)}_2^2
             \right].
         \end{align}
-        且 $C$ 是不依赖于 $\bm{\phi}$ 的常数。其最小解为 $\rvs^*(\cdot) = \nabla_{\rvx} \log p(\cdot)$。        和 $C$ 是一个不依赖于的常数 $\bm{\phi}$。最小化器 $\rvs^*$ 获得为： $\rvs^*(\cdot) = \nabla_{\rvx} \log p(\cdot)$.
+        且 $C$ 是不依赖于 $\bm{\phi}$ 的常数。其最小解为 $\rvs^*(\cdot) = \nabla_{\rvx} \log p(\cdot)$。
         }
         {证明把 MSE 展开为 $ \mathcal{L}_{\text{SM}} $ 的形式，再应用分部积分。见 \Cref{app-sec:sm-trace}。
         }
 
 利用等价目标 \Cref{eq:sm-alternative}，我们就可以只从观测样本 $p_{\mathrm{data}}$ 训练分数模型 $\rvs_{\bm{\phi}}(\rvx)$，不再需要真实分数函数。
-在中使用等效目标 \Cref{eq:sm-alternative}，我们训练分数模型 $\rvs_{\bm{\phi}}(\rvx)$ 仅来自观察到的样本 $p_{\mathrm{data}}$，消除了对真实分数函数的需要。
+
 \paragraph{\Cref{eq:sm-alternative} 的直觉。}
 替代的分数匹配目标 $\widetilde{\mathcal{L}}_{\text{SM}}(\bm\phi)$
 可以从它的两项来理解。
@@ -824,7 +821,7 @@ $\lambda(\sigma_i)>0$ 是各尺度对应的权重函数。最小化该目标得�
 
 
 
-\subsection{取样} 
+\subsection{采样} 
 
 
 \begin{algorithm}[th]
@@ -948,9 +945,9 @@ NCSN 借助退火 MCMC（通常是朗之万动力学）在一系列噪声尺度 
 尽管 NCSN 与 DDPM 的表述不同，两者都依赖稠密的时间离散化。这带来一个关键限制：采样往往需要数百乃至数千次迭代，生成因此既慢又费算力。
 
 \begin{question}\label{ques:dm-sampling-slow}
-    如何加速扩散模型的采样？
+    怎样加速扩散模型的采样？
 \end{question}
-我们将在 \Cref{ch:solvers} 中回到这一挑战，那里发展出更高效的采样器；\Cref{ch:distillation} 则把需要数百步采样的预训练扩散模型压缩成步数更少的学生生成器；\Cref{ch:fast-scratch} 研究如何在扩散启发的原理下，直接从头学习快速的少步生成器。
+我们将在后续三章中分别回到这一挑战：\Cref{ch:solvers} 发展更高效的采样器；\Cref{ch:distillation} 把一个需要数百步采样的预训练扩散模型压缩成步数更少的学生生成器；\Cref{ch:fast-scratch} 则研究如何在扩散思想的启发下，直接从零训练出快速的少步生成器。
 
 
 
