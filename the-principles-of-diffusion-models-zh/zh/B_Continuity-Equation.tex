@@ -88,14 +88,10 @@
 \label{fig:unified_framework_CoV}
 \end{figure}
 
-\newpage
 
 \section{变量变换公式：\\从确定性映射到随机流}\label{sec:cov}
 
 在本节中，我们的目标是通过类比微积分中的经典变量变换公式来揭开连续性方程和福克尔-普朗克方程的神秘面纱。我们从熟悉的单变量情况开始，将其扩展到多变量设置和概率密度（\Cref{subsec:cov-det})，然后推广到双射映射的组合，其连续时间极限导致连续性方程 (\Cref{subsec:cov-continuity-eq}）。最后，我们通过引入随机噪声来结合随机性，这自然地将连续性方程扩展到 福克尔-普朗克方程（\Cref{subsec:cov-fpe}).
-
-
-
 
 
 \subsection{确定性映射的变量变换公式}\label{subsec:cov-det}
@@ -161,7 +157,6 @@ p_{\rvy}(\rvy)
 \end{align*}
 
 
-
 \paragraph{组合多个双射。} 我们现在按顺序应用多个更新。让 $\rvx_k = \bm{\Psi}_k(\rvx_{k-1})$ 用于 $k=1,\dots,L$;也就是说，
 \[
 \rvx_0 \xrightarrow{\ \bm{\Psi}_1\ } \rvx_1 \xrightarrow{\ \bm{\Psi}_2\ } \cdots
@@ -191,11 +186,8 @@ p_{k}(\rvx_k) \;=\; p_{k-1}(\rvx_{k-1}) \,
 
 \Cref{eq:cov-multi-layer-nolog} 作为规范化流的核心原则（参见 \Cref{subsec:NODE}).
 
-\clearpage
-\newpage
 
 \subsection{连续时间极限：连续性方程}\label{subsec:cov-continuity-eq}
-
 
 
 我们现在从离散更新过渡到连续描述。假设粒子运动由时变速度场驱动
@@ -339,8 +331,6 @@ p_t(\rvx)
 \end{align*}
 
 
-
-
 \paragraph{（选读）调节。}
 如果附加条件变量 $\rvz \sim \pi(\rvz)$ 被引入，同样的推理适用于每个固定 $\rvz$:
 \[
@@ -354,32 +344,6 @@ p_t(\rvx)
 \[
 p_t(\rvx)=\int p_t(\rvx|\rvz)\pi(\rvz)\diff\rvz.
 \]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 \subsection{随机过程：福克尔-普朗克方程}\label{subsec:cov-fpe}
@@ -412,17 +376,8 @@ $\bPsi_{s\to t}(\rvx_s)$。对于 SDE，新的布朗噪声在一段时间后注�
 }
 
 
-
 福克尔-普朗克方程的推导比较复杂；我们建议读者参考 \Cref{subsec:rigorous-proof-fpe}.
 
-
-
-
-
-
-
-\newpage
-\clearpage
 
 \section{连续性方程的直观}\label{sec:intuition-continuity}
 在本节中，我们给出连续性方程的物理解释，强调它作为动态系统中概率密度守恒定律的作用。
@@ -564,8 +519,6 @@ p(\mathbf{x}_t,t)\nabla\cdot\mathbf{v}(\mathbf{x}_t,t).
 \]
 这提供了另一种有用的解释：当附近的粒子散开时密度会减小，而当附近的粒子收缩时密度会增加。因此，速度场告诉我们单个粒子如何运动，而连续性方程告诉我们整个密度如何演化。
 
-\clearpage
-\newpage
 
 \section{（选读）Wasserstein 梯度流作为分布级训练}
 \label{sec:wgf-distribution-level-training}我们现在从特定于扩散的动态中退一步，采取更广泛的方法
@@ -896,6 +849,3 @@ $p_{\mathrm{data}}$。
 $p_{\bphi}$ 朝向 $p_{\mathrm{data}}$。  从这个角度来说，扩散模型、基于似然的模型、分布匹配方法，以及可以在共享分布级别下查看基于分数不匹配的方法分类学。
 
 
-
-\clearpage
-\newpage

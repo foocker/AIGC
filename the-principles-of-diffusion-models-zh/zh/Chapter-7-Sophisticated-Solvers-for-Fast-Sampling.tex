@@ -21,9 +21,6 @@
 }{对微分方程或数值求解器不熟悉的读者，可以先参阅 \Cref{app:de}。阅读本章时请始终带着一个问题：每个求解器究竟精确积分了什么，又在数值上近似了什么？}
 
 
-\clearpage
-
-
 \section{序言}\label{sec:prologue-solvers}
 \subsection{快速采样数值积分}
 
@@ -113,8 +110,6 @@ Score SDE 框架~\citep{song2020score} 奠定了一个关键基础：它把离�
 这一区分贯穿全章都很重要。前两个选择决定了交给求解器的数值形式，第三个选择决定了求解器如何使用已有的模型评估。
 
 
-
-
 \paragraph{求解器怎样使用模型评估？}
 整理各类数值求解器的一个有效办法，是问「下一次更新的信息从哪里来」。从当前状态出发，求解器既可能在\emph{当前步内}取得额外信息，也可能复用\emph{先前步骤}的信息。
 
@@ -128,10 +123,6 @@ Score SDE 框架~\citep{song2020score} 奠定了一个关键基础：它把离�
 例如，无分类器引导（见 \Cref{sec:cfg}）同时需要条件与无条件的模型预测，于是每个采样步的神经网络评估开销大约翻倍。
 
 这一经典分类告诉我们\emph{数值信息从哪来}，以及要付出多少次模型评估。扩散 PF-ODE 还提供了额外的机会：向量场并非每一部分都同样未知。视预测参数化而定，动力学的一部分由噪声调度解析地确定，只有剩下的那个量才需要神经网络评估。下面我们考察，把这一分离显式暴露出来会怎样改变 PF-ODE 的数值形式，并由此引出专为扩散模型设计的积分器。
-
-
-
-
 
 
 \subsection{扩散专用求解器的设计}
@@ -196,7 +187,6 @@ Score SDE 框架~\citep{song2020score} 奠定了一个关键基础：它把离�
     \beps_{\bm{\phi}^\times}(\rvx,t).
 \]
 这些预测参数化在代数上彼此相关，但神经网络给出的那个量只是求解器设计中的一环。下面我们考察同一条 PF-ODE 在这些不同参数化下会呈现怎样的数值形式。
-
 
 
 \paragraph{II. 同一条 PF-ODE，两种数值形式。}
@@ -518,12 +508,6 @@ ParaDiGMS &
 为使叙述有条理，各节大体都遵循同样的框架：先推导该扩散求解器，说明它借用了哪个数值思想；再把它对应到相应的经典求解器原理；最后把它与本章其他扩散求解器联系起来。这种安排既凸显了共同的数值主干，也点明了真正把各类方法区分开来的、扩散模型特有的成分。
 
 
-
-
-
-\clearpage
-\newpage
-
 \section{\texorpdfstring{DDIM}{DDIM}}\label{sec:revisit-ddim}
 
 \emph{去噪扩散隐式模型}（DDIM）~\citep{song2020denoising} 是最早、也用得最广的加速扩散采样方法之一。虽然 DDIM 最初是从概率角度提出的，但它的确定性更新在 PF-ODE 下有一个格外清晰的解释。因此我们在这里把 DDIM 放到本章统一的数值 ODE 求解框架中介绍，而把它原本的变分视角留到 \Cref{subsec:ddim}。
@@ -710,7 +694,6 @@ $\tfrac{1}{2}\tfrac{g^2(\tau)}{\sigma_\tau}
 \end{figure}
 
 
-
 \paragraph{为什么「固定哪个预测」很重要？}
 在任意固定的状态和时刻上，各个标准预测参数化按 \Cref{eq:predictions-equivalence} 都是代数等价的。然而，有限步求解器还会额外引入一层近似：把选定的那个预测在一整个区间内保持不变。这种「冻结」近似只有在换用别的参数化之后依然成立时，才算得上与参数化无关，也就是说，转换后的那个预测量必须沿所得近似轨迹同样保持恒定。
 
@@ -800,7 +783,6 @@ $\tilde\rvx_s=\alpha_s\widehat\rvx_0+\sigma_s\widehat\beps$。
 \rmkb{
 各预测参数化在逐点上代数等价，但「有限步冻结」这一操作未必能与含时的换算交换次序。DDIM 固定的是一个自洽的起始时刻「干净/噪声」对；相应的分数与完整速度则会随步内时间变化。因此，直接去冻结原始的分数或速度，定义出来的是另一种一阶方法。速度那一情形在 \Cref{subsec:ddim-classical-euler} 中做了定量比较。
 }
-
 
 
 \subsection{与欧拉型方法的关系}
@@ -917,7 +899,6 @@ $\Delta s:=s-t>0$，并假设起始时刻的干净数据预测与噪声预测在
 因此，两种方法在有限步上的区别来自已知调度在原始扩散时间下的非线性。
 
 
-
 \paragraph{DDIM 与指数 Euler。}
 上面的比较借助「干净/噪声」写法，说明了 DDIM 在原始扩散时间下与普通 Euler 的差别。现在我们回到序言中的半线性写法，把 DDIM 与传统指数 Euler 区分开。区别很简单：两种方法都解析地保留了已知的线性演化，但它们在剩余积分里固定的量不同。在噪声预测下，\Cref{eq:general-semilinear-pfode} 中因式分解形式的 PF-ODE 取
 \Cref{eq:general-semilinear-pfode} 有
@@ -1028,7 +1009,6 @@ b(s)\widehat\beps,
 $\widehat\beps
 :=
 \beps_{\bm{\phi}^\times}(\tilde\rvx_s,s)$。三者在该步起始处用的是同一次神经网络评估。普通 Euler 近似的是完整速度；指数 Euler 先保留已知的线性传播；DDIM 还进一步保留已知系数 $b(\tau)$，只对神经预测作近似。这一层次划分关心的是「哪些解析已知的项被保留下来」，而不是对单步误差给出一个普适排序。它在数值上的主要后果是：DDIM 中剩下的近似只与神经预测的变化有关，可以完全隔离出来，下面就来展示这一点。
-
 
 
 \paragraph{各方法还剩下什么误差？}
@@ -1317,7 +1297,6 @@ e^{-\lambda}
 这里用了稍后在 \Cref{sec:dpm} 中才引入的 $\lambda$ 参数化模型记号。
 
 若把神经预测固定住、同时保留已知的变量权重变化，得到的有限步更新完全一样，所以 DPM-Solver-1 就是 DDIM。不过一旦超过一阶，状态与时间坐标以及「神经预测如何被近似」就成了数值方法本身的一部分。DPM-Solver 之所以采用 $\lambda$，是因为它把积分写成指数加权形式后，能方便地做高阶展开。
-
 
 
 \subsection{（选读）DDIM 最初的变分解释}\label{subsec:ddim}
@@ -1793,9 +1772,6 @@ CFM 用的则是它的瞬时条件速度。后者的后验平均恰好给出边�
 DDIM 把该步起始处推断出的预测固定住不动，而精确的边缘 PF-ODE 速度则随状态的演化不断变化。
 
 
-\clearpage
-\newpage
-
 \section{\texorpdfstring{DEIS}{DEIS}}\label{sec:exponential}
 
 在因式分解指数积分公式中 (\Cref{eq:variation_of_constants}),
@@ -1922,7 +1898,6 @@ P_2(\tau)
 
 在 DEIS 中，锚点就是此前已完成的采样步上的神经预测。
 该多项式与这些存下的预测完全吻合，随后在下一个反向时间区间内被外推到最新锚点之外。
-
 
 
 \subsection{DEIS：PF-ODE 积分的拉格朗日多项式逼近}
@@ -2154,10 +2129,6 @@ C_{i0} = \frac{1}{2} \int_{t_{i-1}}^{t_{i}} \frac{g^2(\tau)}{\sigma_\tau} \mathc
 尽管它在表示与推导上都与 DEIS 不同，两种方法同样都是借过去的模型评估来刻画神经预测，而无需引入额外的步内阶段。
 我们会在 \Cref{subsec:dpm-deis} 中回到这一联系，
 并把两者的结构对比得更清楚。
-
-\clearpage
-\newpage
-
 
 
 \section{\texorpdfstring{DPM-Solver}{DPM-Solver}}\label{sec:dpm}
@@ -2449,7 +2420,6 @@ t=e^{-\lambda},
 \end{itemize}
 
 
-
 \subsection{利用泰勒展开估计积分}\label{subsec:dpm-method-2}
 DEIS 与 DPM-Solver 依据同一个分解原理，但获取高阶信息的方式不同。
 DEIS 复用此前已完成各步的模型输出来外推下一步区间内的神经预测；
@@ -2683,7 +2653,6 @@ e^h-\frac{h^2}{2}-h-1
 }
 
 
-
 \subparagraph{对 $k \leq n-1$ 逼近 {\color{cyan}$\hat{\bm{\epsilon}}_{\bm{\phi}^\times}^{(k)}(\hat\rvx_\lambda,\lambda)$}.}
 对 $n \geq 2$，\citet{lu2022dpm} 沿用单步 ODE 求解器的标准做法
 ~\citep{atkinson2009numerical}，在当前步内用额外的模型评估来逼近高阶导数。下面以 $n=2$ 为例说明这一思路。
@@ -2852,7 +2821,6 @@ t_i=t_\lambda(\lambda_{t_i})
 凡是需要评估模型或需要进度系数的地方都如此处理，
 例如参见 \Cref{alg:dpm-solver-2}。于是 $\lambda$ 只充当
 数值积分的坐标，而采样器始终是在各自对应的时间标签上调用原始预训练的扩散模型。
-
 
 
 \subsection{DDIM $=$ DPM-Solver-1}
@@ -3214,9 +3182,6 @@ DPM-Solver-1 正是 DDIM，更高阶的 DPM-Solver 则借助额外的步内评�
 先把已知的、与扩散相关的权重解析地保留住了。
 }
 
-
-\clearpage
-\newpage
 
 \section{\texorpdfstring{DPM-Solver\texttt{++}}{DPM-Solver\texttt{++}}}\label{sec:dpm++}
 
@@ -4070,7 +4035,7 @@ DPM-Solver\texttt{++} 则改用数据预测来重构求解器——在较强的 
 其系数借助预先算出的模型统计量来选取，以减小局部离散化误差。
 从这个意义上说，它把「表示」本身也变成了数值求解器设计的一部分。
 
-另一个相关方向是预测器—校正器框架。在分数 SDE 框架中
+另一个相关方向是预测器—校正器框架。在 Score SDE 框架中
 （参见 \Cref{ch:score-sde}），\emph{预测器}用一个数值步按
 反向时间的动力学推进样本，而\emph{校正器}通常是在同一噪声水平上
 做一次朗之万型更新，利用分数进一步修正样本（参见 \Cref{sec:SMLD}）。
@@ -4079,16 +4044,7 @@ Heun 方法先用 Euler 步预测出端点，再用平均斜率改进这一数�
 UniPC~\citep{zhao2023unipc} 等方法则把预测器—校正器结构专门发展用于扩散采样。本书不再深入这些扩展，但它们恰好说明了贯穿本章的同一个主题：高效的扩散求解器总是把经典的数值思想与扩散 PF-ODE 的特定结构结合起来。
 
 
-
-
-\clearpage
-\newpage
-
-
-
-
 \section{\texorpdfstring{（选读） ParaDiGMs}{（选读） ParaDiGMs}}\label{sec:picard}
-
 
 
 \begin{figure}[th!]
@@ -4164,7 +4120,6 @@ UniPC~\citep{zhao2023unipc} 等方法则把预测器—校正器结构专门发�
 \end{figure}
 
 
-
 \subsection{从逐步推进到时间并行求解器}
 
 前面几节介绍的都是时间步进方法：从先前时刻的状态出发，
@@ -4184,8 +4139,6 @@ UniPC~\citep{zhao2023unipc} 等方法则把预测器—校正器结构专门发�
 本节转向\emph{时间并行}方法，其代表是 \emph{ParaDiGMS}：
 它建立在经典的 Picard 迭代之上，从而在时间维度上并行地完成积分。
 ParaDiGMS 的核心想法是\emph{用更多的计算资源换取更快的模拟}。
-
-
 
 
 \subsection{ParaDiGMS 方法论}
@@ -4369,7 +4322,6 @@ Picard 更新中改变了多少。若该值很小，说明相邻两次近似在�
 $p \leftarrow \min\{p,\,M-\ell\}$ 后继续。
 
 
-
 窗口向前推移时，会露出一些尚无取值的新时间节点。
 要在这些节点上启动 Picard 迭代，只需把窗口左端的取值复制过去，
 作为初始猜测。这种「常数外推」代价很小、也比较稳定，
@@ -4412,8 +4364,6 @@ $p \leftarrow \min\{p,\,M-\ell\}$ 后继续。
     \State \Return $\{\rvx^{(k)}_j\}_{j=0}^{M}$
   \end{algorithmic}
 \end{algorithm}
-
-
 
 
 \subsection{与时间步进求解器的关系}
@@ -4460,7 +4410,6 @@ DPM-Solver）直接用作它的基础离散化。此时 Picard 更新按相应�
 得到的就是相应的顺序离散轨迹。而容差有限、迭代提前停止时，
 最终结果除了基础求解器的离散化误差之外，还会额外带上一份残余的不动点迭代误差。
 
-\newpage
 \section{结束语}\label{sec:ch9_cr}
 
 本章面对的是扩散模型最重要的实际瓶颈之一：其缓慢的迭代采样过程。
@@ -4490,6 +4439,3 @@ DPM-Solver）直接用作它的基础离散化。此时 Picard 更新按相应�
 从设计更好的数值求解器，到直接学习生成解映射的快速逼近，
 这一转变的目标是把扩散模型的质量与一步或几步生成的速度结合起来。
 
-
-\clearpage
-\newpage

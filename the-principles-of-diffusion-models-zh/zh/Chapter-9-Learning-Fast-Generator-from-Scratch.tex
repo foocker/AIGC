@@ -36,7 +36,6 @@ $p_{\mathrm{prior}}$ 输运到数据分布 $p_{\mathrm{data}}$，同时保持每
 
 }{本章的中心对象是 ODE 流映射。各种方法都应看作是在学习同一个底层对象时所采用的不同参数化与训练策略。}
 
-\newpage
 \section{序言}
 
 \begin{figure}[th]
@@ -79,8 +78,6 @@ $p_{\mathrm{prior}}$ 输运到数据分布 $p_{\mathrm{data}}$，同时保持每
 \figcredit{由作者绘制。}}
   \label{fig:timeline}
 \end{figure}
-
-
 
 
 \paragraph{流映射模型的动机。}
@@ -159,8 +156,6 @@ $\rvx_s$，把它直接输运到时刻 $t$：
 \end{align}
 
 
-
-
 但实际上理想的 $\bPsi_{s\to 0}(\rvx_s)$ 拿不到。于是把它替换成一个\emph{停止梯度}的目标，
 记作 $\rvf_{\btheta^-}$，取自同一轨迹上稍早一步的 $\bPsi_{s\to s-\Delta s}(\rvx_s)$：
 \[
@@ -226,7 +221,6 @@ $\alpha'_s\,\rvx_0+\sigma'_s\,\beps$，它由前向加噪过程
 $\rvx_s = \alpha_s \rvx_0+\sigma_s \beps$ 导出。
 
 
-
 \subparagraph{CTM 与 MF 的关系。}
 CTM 与 MF 近似的是同一个路径积分，只是各自参数化了该积分的不同替代量：
 \begin{align*}
@@ -258,15 +252,6 @@ $\bPsi_{s\to 0}$。这一部分既包括它的离散时间版本（\Cref{sec:dis
 为了让后面的叙述更清楚，我们并不严格按这些方法出现的先后顺序来讲，
 而是按概念上的关联来组织讨论。不过，为了尊重原创性并照顾时间先后，
 我们在 \Cref{fig:timeline} 中给出了历史时间线。
-
-
-
-
-
-
-
-\clearpage
-\newpage
 
 
 \section{特殊流映射：离散时间下的一致性模型}\label{sec:discrete-cm}
@@ -370,8 +355,6 @@ $u=s-\Delta s$ 的特殊情形）。
 \end{table}
 
 
-
-
 \subsection{用于学习一致性函数的离散时间近似}\label{subsec:approx-cm}
 
 原则上，可以通过最小化 \Cref{eq:oracle-cm} 中的理想损失来学习一致性函数：
@@ -419,7 +402,6 @@ $\rvs_{\bm{\phi}^\times}(\rvx_s, s) \approx \nabla_{\rvx_s}\log p_s(\rvx_s)$。�
 它的作用是防止训练塌缩到平凡解（例如输出恒定预测）。
 
 
-
 \paragraph{没有预训练扩散模型的情形（一致性训练）。}
 当没有预训练扩散模型可用时，理想的分数 $\nabla_{\rvx}\log p_s(\rvx_s)$ 仍然可以直接用一个简单的单点近似来估计（尽管方差很大）。回忆一下，它可以写成条件期望的形式：
 \begin{align*}
@@ -434,7 +416,6 @@ $\rvs_{\bm{\phi}^\times}(\rvx_s, s) \approx \nabla_{\rvx_s}\log p_s(\rvx_s)$。�
 =-\frac{\rvx_s-\alpha_s \rvx_0}{\sigma_s^2}
 \]
 就是 $\rvx_s$ 处分数的一个\emph{无偏}估计（关于 $p(\rvx_0|\rvx_s)$ 条件无偏）。它正好对应去噪分数匹配中作为回归目标使用的\emph{条件分数}。
-
 
 
 把这个估计代入从 $s$ 到 $s' = s-\Delta s$ 的 DDIM 一步更新（见 \Cref{eq:ddim-update-all}），得到
@@ -474,41 +455,6 @@ $\rvx_0$ 与用于构造 $\rvx_s$ 的高斯噪声 $\beps$ 来自同一个数据�
  \left[\widehat{\nabla_{\rvx}\log}p_s(\rvx_s)\right].
 \]}。回想一下去噪分数匹配中类似的条件期望构造（参见 \Cref{sec:conditional-trick}）：这里的单点状态估计在进入非线性的目标网络和距离度量之前是无偏的，因此得到的损失不必与理想损失完全一致。在给定 $\rvx_s$ 的条件下，一阶误差会如预期相消；在适当的平滑性与矩假设下，剩余的偏差为
 $\mathcal{O}(\Delta s^2)$，下面把它形式化。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 \thmp{CM-CT 等效性高达错误 $\mathcal{O}(\Delta s^2)$}{ct-cm}{
@@ -571,19 +517,6 @@ $\mathcal{L}_{\mathrm{CT}}
 从而在零时刻强制满足一致性，并保证在没有噪声时网络输出与输入完全一致。
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 \subsection{用一致性模型采样}\label{subsec:cm-sampling}
 一致性模型 $\rvf_{\bm{\theta}^\times}$ 一旦训练完成（无论用连续时间还是离散时间），就可以用来一步或几步生成样本。具体做法见 \Cref{alg:cm_sampling}。
 
@@ -618,67 +551,6 @@ $T>\tau_1 > \tau_2 > \cdots > \tau_{M-1}=0$，从初始噪声 $\hat\rvx_T$ 出�
     }
 \end{algorithm}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\clearpage
-\newpage
 
 \section{特殊流映射：连续时间的一致性模型}\label{sec:conti-cm}
 
@@ -727,8 +599,6 @@ $\alpha_s' \rvx_0 + \sigma_s' \beps$，具体见
 \rvf_{\btheta^-} \big(\bPsi_{s\to s-\Delta s}(\rvx_s), s-\Delta s\big)
 \big\|_2^2\right].
 \end{align}
-
-
 
 
 对 \Cref{eq:cd-discrete-approx-N,eq:ct-discrete-approx-N} 背后所取的均匀划分，令
@@ -843,15 +713,12 @@ $\mathcal{L}^\infty_{\mathrm{CT}}(\bm{\theta},\bm{\theta}^-)$，它对应从头�
 \]
 
 
-
 至此，\Cref{tb:consistency-methods} 中列出的各类基本方法都已介绍完毕，
 它们都用来学习一致性函数 $\bPsi_{s\to 0}$。
 为便于总览，\Cref{fig:cd-ct-loss-distill} 汇总了训练一致性函数时
 各种损失函数之间的关系。
 该图还标出每种方法是否依赖预训练的扩散模型，
 并区分了连续时间目标与离散时间目标。
-
-
 
 
 \begin{figure}[ht]
@@ -919,9 +786,6 @@ $\mathcal{L}_{\text{CD}}(\bm{\theta},\bm{\theta}^-)  =\mathcal{L}_{\text{CT}}(\b
 （sCM）~\citep{lu2024simplifying} 中的技术，用来缓解这些问题。
 
 
-
-
-
 \subsection{（选读）连续时间 CT 的实践考量}
 我们关心的是从头训练这一情形，因为它给出的是一个独立的生成模型，不依赖外部预训练的扩散模型。所以下面的讨论集中在连续时间情形上。
 
@@ -930,8 +794,6 @@ $\mathcal{L}_{\text{CD}}(\bm{\theta},\bm{\theta}^-)  =\mathcal{L}_{\text{CT}}(\b
 \citep{geng2025consistency,lu2024simplifying}。正如 \Cref{subsec:summary-disentagle} 中所总结的，
 影响训练稳定性的主要因素有：\emph{扩散过程}、\emph{参数化的选择}、
 \emph{时间加权函数}和\emph{时间采样分布}；在连续时间一致性模型里，这些因素也都需要仔细设计并彼此解耦。
-
-
 
 
 \paragraph{扩散过程。}不再使用标准扩散参数化
@@ -965,7 +827,6 @@ c_{\mathrm{skip}}(s) = \cos(s), \quad c_{\mathrm{out}}(s) = -\sigma_{\mathrm{d}}
     \rvf_{\bm{\theta}}(\rvx, s) = \cos(s)\rvx - \sin(s)\sigma_{\mathrm{d}}\rmF_{\bm{\theta}}\left(\frac{\rvx}{\sigma_{\mathrm{d}}}, c_{\mathrm{noise}}(s)\right).
 \end{align}
 我们注意到这种参数化还确保神经网络始终满足边界条件 $\rvf_{\bm{\theta}}(\rvx, 0) \equiv \rvx$ 对于所有 $\rvx$，这是一致性函数的基本属性。
-
 
 
 \subparagraph{稳定切线训练的技术。}
@@ -1102,88 +963,6 @@ s \mapsto c_{\mathrm{noise}}(s) \mapsto \text{emb}(c_{\mathrm{noise}}(s)) \mapst
 \end{algorithm}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\clearpage
-\newpage
-
 \section{\texorpdfstring{通用流映射：一致性轨迹模型}{通用流映射：一致性轨迹模型}}\label{sec:CTM}
 
 一致性轨迹模型（CTM）~\citep{kim2023consistency}是最早学习\emph{一般}流映射 $\bPsi_{s\to t}$ 的方法之一。
@@ -1249,9 +1028,6 @@ EDM 只是便于说明的一例；CTM 还适用于由任意线性高斯前向核
 \rmG_{\btheta}(\rvx_s,s,s)=\rvx_s,
 \]
 训练时无需任何显式约束。
-
-
-
 
 
 \paragraph{CTM 参数化的优点。}
@@ -1476,7 +1252,6 @@ w(s)
 \end{align}
 
 
-
 当 $t$ 接近 $s$ 时，$\mathcal L_{\mathrm{DM}}$ 通过对轨迹上的小跳跃做显式监督来提高精度。
 在这种情形下，\Cref{eq:ctm_para_1} 中的因子 $1-\tfrac{t}{s}$ 趋于零，会削弱梯度、拖慢学习；
 而 $\mathcal L_{\mathrm{DM}}$ 提供了更强的局部信号，使训练更稳定。
@@ -1536,9 +1311,6 @@ CTM 的 $\gamma$ 采样给出一族统一的采样器，它们都是从学习一
 参数 $\gamma$ 直接控制生成过程中语义变化的程度，因此 $\gamma$ 采样可以针对不同的下游应用灵活调整，成为一种「感知任务」的策略。
 
 
-
-
-
 \begin{figure}[t]
     \centering
     \includegraphics[width=\linewidth]{Images/PartD/ctm_gamma.pdf}
@@ -1596,17 +1368,12 @@ $、从 $p_T$ 出发所得到的密度。则
 就可以计算精确似然（\Cref{subsec:sde-sample}），或者套用 DDIM、DPM 等高级采样器（\Cref{ch:solvers}）来生成。
 
 
-
-
-\newpage
-
 \section{\texorpdfstring{一般流映射：平均流}{一般流映射：平均流}}\label{sec:MF}
 
 
 正如扩散模型可以有许多等价的参数化和训练目标，一般流映射 $\bPsi_{s\to t}$ 也有多种都说得通的学习方式。
 本节介绍\emph{平均流}（MF）~\citep{geng2025mean}，它是一般流映射 $\bPsi_{s\to t}$ 这一家族中较晚出现的代表，
 展示了一种不同但有原理可循的视角来看待这类映射该如何有效学习。
-
 
 
 \subsection{平均流的建模和训练}
@@ -1678,7 +1445,6 @@ $\rvv_{\bphi^\times} \approx \rvv^*$。
 使用单点条件速度 $\alpha_s'\rvx_0 + \sigma_s'\beps$，
 它由前向加噪 $\rvx_s=\alpha_s\rvx_0+\sigma_s\beps$（$\beps\sim\mathcal N(\bm{0},\rmI)$）得到。
 在成对的 $(\rvx_0,\beps)$ 上求值时，它给出噪声水平 $s$ 处瞬时漂移的一个无偏单样本估计。
-
 
 
 \subsection{平均流的采样}
@@ -1769,10 +1535,7 @@ CTM ($\rmG_\btheta(\rvx_s,s,t)$) 和 MF ($\rvh_\btheta(\rvx_s,s,t)$) 都旨在�
 因此，CTM 与 MF 都可以看作灵活而通用的流映射表述，它们把基于扩散的推理推广到了直接的「时刻到时刻」映射。
 
 
-
-
 \paragraph{小结。}
-
 
 
 CTM 与 MF 之间的关系，类似于扩散模型的不同参数化之间的关系（\Cref{sec:equivalent-parametrizations}）：
@@ -1791,8 +1554,6 @@ CTM 与 MF 的表现可能不同，因而在某些条件下其中一种会优于
 从而催生新的独立生成模型。探索这些替代方案，有望进一步拓宽扩散模型及其流映射推广的前景，
 把少步生成的边界再往前推。
 
-\clearpage
-\newpage
 
 \section{结束语}\label{sec:ch11_cr}
 
@@ -1886,7 +1647,6 @@ $t$。此时终点沿同一条轨迹移动：
 \]
 因此，\Cref{eq:conti-ct-motivation} 就是 \Cref{sec:discrete-cm,sec:conti-cm} 所研究的特殊流映射
 应满足的起始时刻一致性条件。
-
 
 
 这一视角也把 \Cref{subsec:equivalence-ctm-mf} 中 CTM 与 MF 的关系重新梳理了一遍。
@@ -2083,33 +1843,3 @@ $\rvx_\tau=\bPsi_{s\to \tau}(\rvx_s)$ 保持常数，因此
 它保留了扩散模型以轨迹为基础的内核，同时扩大了高效生成的设计空间。
 目标不再只是「在推理时更高效地对生成 ODE 做积分」，而是直接学习其解映射中那些有用的有限时间转移。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\clearpage
-\newpage

@@ -19,12 +19,6 @@
 }{本章假定读者已掌握 \Cref{ch:score-sde,ch:all-equivalent} 中的 Score SDE/PF-ODE 框架。主要关心可控生成的读者，可以把后面关于偏好对齐的内容当作第二轮阅读。}
 
 
-
-
-
-\clearpage
-\newpage
-
 \section{序言}\label{sec:prologue-guidance}\begin{figure}[th!]
     \centering
     \includegraphics[width=\linewidth]{Images/PartC/guidance.pdf}
@@ -191,16 +185,6 @@ $\widetilde p_0^{\mathrm{tilt}}(\cdot|\rvc)$。
 本身已带条件的模型，让额外的控制信号去修改其采样动力学。
 
 
-
-
-
-
-
-
-
-
-
-
 \paragraph{从控制到通过直接偏好优化更好地对齐。}
 
 强控制可以做到「符合条件但不符合偏好」：一个样本可能满足条件信号（例如提示词），却偏离了人真正偏好的样子。为把这一点形式化，我们在 $t=0$ 处用「偏好评分」对条件目标做倾斜：
@@ -218,153 +202,9 @@ p_0(\rvx_0|\rvc)
 $\rvx_0$ 与条件 $\rvc$ 的一个标量对齐评分，数值越大表示偏好越强，而 $\lambda_{\mathrm{pref}}$ 控制偏好重加权的强度。在后文介绍的 KL 正则化表述中，优化解正是这种形式，其中以参考策略作为基础分布，且 $\lambda_{\mathrm{pref}}=1/\beta$。
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 现有实现这种可控性的方法，通常会收集人类对模型生成结果相对质量的标注，再借助人类反馈强化学习（RLHF）微调条件扩散模型，使其与这些偏好对齐。然而，RLHF 是一个复杂而且往往不稳定的过程：它先拟合一个奖励模型来刻画人类偏好，再用强化学习微调条件扩散模型，以最大化估计出的奖励，同时约束策略相对原始模型的偏离。
 
 这就自然引出一个问题：\emph{我们能不能干脆去掉奖励模型训练这一步？} 我们用 Diffusion-DPO~\citep{wallace2024diffusion} 来回答这个问题。它是最初为大语言模型提出的直接偏好优化~\citep{rafailov2023direct} 的一个改编版本。正如 \Cref{sec:rlhf-dpo} 中所述，Diffusion-DPO 直接从成对比较中学习偏好倾斜，因此无需单独的奖励模型，就能把条件扩散模型微调到与偏好对齐。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\clearpage
-\newpage
 
 
 \section{分类器引导}\label{sec:cg}
@@ -450,7 +290,6 @@ p_{\bpsi^\times}(\rvc|\rvx_t,t)}_{\text{guidance direction}}
 $\rvs^{\mathrm{CG}}_{\mathrm{model}}(\rvx_t,t,\rvc;\omega)$，从而把生成轨迹引导到符合条件 $\rvc$ 的样本上。
 
 
-
 \subsection{优点与局限}
 
 CG 为条件生成提供了一个简单而灵活的机制，并可通过 $\omega$ 显式控制条件的作用强度。它可以搭配任意预训练好的无条件扩散模型使用，只需额外训练一个分类器来做条件化。不过，该方法有几处明显的局限：
@@ -460,8 +299,6 @@ CG 为条件生成提供了一个简单而灵活的机制，并可通过 $\omega
     \item \textbfs{单独训练：} 分类器的训练与扩散模型相互独立，因此它未必能与模型学到的数据分布完全一致。
 \end{itemize}
 
-\clearpage
-\newpage
 
 \section{无分类器引导}\label{sec:cfg}
 \subsection{无分类器引导的基础}
@@ -592,22 +429,6 @@ $\rvs_{\mathrm{model}}^{\mathrm{CFG}}$。
 于是 CFG 通过组合学到的条件分数估计与无条件分数估计，定义出一个修改后的采样分数场。
 
 这一配方通过调节 $\omega$ 即可实现可控生成，在训练阶段与训练之后都很容易在条件强度与样本多样性之间做权衡，而且无需单独训练分类器或无条件扩散模型。
-
-
-
-
-
-
-
-
-
-
-
-
-
-\clearpage
-\newpage
-
 
 
 \section{免训练引导}
@@ -982,61 +803,6 @@ p_{t-1}(\rvy_{t-1}|\rvy).
 $\nabla_{\rvx_t}\log p_t(\rvy|\rvx_t)$ 的显式近似。
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \subparagraph{扩散后验采样（DPS）~\citep{chung2022diffusion}。}
 对于已知的非线性前向算子 $\mathcal A$ 与加性高斯测量噪声（$\sigma_{\rvy}>0$），\emph{扩散后验采样}
 （DPS）作如下近似
@@ -1159,18 +925,7 @@ $\nabla_{\rvx_t} \log p_t(\rvy | \rvx_t)$。如需全面了解，建议读者参
 这正是该高斯去噪路径的 PF-ODE，既可以写成去噪器形式，也可以写成分数形式。因此，在高斯去噪这一特例下，InDI 给出了扩散建模的一种替代解释：可以把扩散建模看成对高斯损坏数据做有监督去噪学习，而 PF-ODE 是逐步细化过程在连续时间下的极限。
 
 
-
-\newpage
 \section{从强化学习到直接偏好优化：面向模型对齐}\label{sec:rlhf-dpo}
-
-
-
-
-
-
-
-
-
 
 
 为了让生成模型与人类意图对齐，主流范式一直是基于人类反馈的强化学习（RLHF）。RLHF 虽然有效，却是一个复杂的多阶段过程，而且容易不稳定。本节介绍 \emph{直接偏好优化（DPO）}~\citep{rafailov2023direct}：它更精简、也更稳定，不需要显式的奖励建模或强化学习就能达到同样的目标。随后我们概述它向扩散模型的推广，即 \emph{Diffusion-DPO}~\citep{wallace2024diffusion}。
@@ -1260,131 +1015,6 @@ p:=\sigma(\Delta r),\quad \sigma(u)=\tfrac{1}{1+e^{-u}}.
 \Big],
 \end{equation}
 这使两股力量都显式可见：既要寻找裁判偏好的样本，又要保持在预训练参考附近。需要说明的是，\Cref{eq:rm-bt} 中的奖励目标只用到带标签的样本对，并不要求 $\mathcal D$ 由参考模型（即预训练的条件扩散模型）生成。虽然并非必需，但从接近目标策略的模型上收集样本对可以减少分布偏移，使学到的奖励在其将被使用的区域更可靠。总之，RLHF 分两个阶段：先用 \Cref{eq:rm-bt} 中的损失（等价于 \Cref{eq:reward_loss} 中二值情形下的期望 $\mathcal{D}_{\mathrm{KL}}$）拟合奖励 $r^*$；再通过求解 \Cref{eq:rlhf-policy-correct} 优化策略 $\pi^*$。
-
-
-\newpage
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 \subsection{DPO 框架}\label{subsec:dpo}
@@ -1709,7 +1339,6 @@ $\mathbf x_t^l=\alpha_t\mathbf x_0^l+\sigma_t\boldsymbol\epsilon^l$。
 直观上，最小化 $\tilde{\mathcal L}_{\mathrm{Diff\text{-}DPO}}$ 会拉大胜者与败者相对于参考模型的（归一化）差距。它鼓励模型缩小胜者的去噪误差多过缩小败者的去噪误差，而误差都是相对冻结的参考模型来度量的。参考模型本身不贡献直接的梯度项，但它仍留在 $\log\sigma(\cdot)$ 这个非线性的自变量之中，因此依然在塑造 DPO 式的逐样本权重。
 
 
-\newpage
 \section{结束语}\label{sec:ch8_cr}
 
 本章把关注点从基本原理转向可控生成的实际难题。我们围绕条件分数的贝叶斯分解建立了一个统一的引导框架，它把生成过程干净地拆成无条件方向与引导项两部分。

@@ -127,7 +127,6 @@ p(\rvx_{i-1}|\rvx_i,\rvx_0)
 \hfill$\blacksquare$
 
 
-
 \subsection{定理~\ref{thm:ddpm-elbo}: 扩散模型的 ELBO}\label{app:vlb-proof}
 
 \paragraph{\textit{证明。}} 为了符号简单起见，我们表示
@@ -251,9 +250,6 @@ p_{\bm{\phi}}(\rvx_{i-1}| \rvx_i)
 这证明了所声称的分解。
 \hfill$\blacksquare$
 
-
-\clearpage
-\newpage
 
 \section{基于分数的视角}\label{app-sec:score-proof}
 
@@ -501,7 +497,6 @@ R(\rmD;\rvx):=\E \left[\|\rmD(\tilde{\rvx})-\rvx\|_2^2| \rvx\right].
 -D\sigma^2
 \]
 满足 $\E \left[\mathrm{SURE}(\rmD;\tilde{\rvx}) \big| \rvx\right]=R(\rmD;\rvx)$。因此，最小化 SURE（在期望中或根据经验）相当于在仅使用噪声观测值时最小化真实条件 MSE。
-
 
 
 \subsection{定理~\ref{thm:fpe}: 通过 Fokker–Planck 进行边缘对齐}\label{app-sec:scoresde-fpe-proof}
@@ -793,7 +788,6 @@ p(\rvx_0|\rvx_t)
 \hfill$\blacksquare$
 
 
-
 \subsection{高斯的闭式分数函数}
 
 为了将来参考，我们将一般多元正态分布的分数公式总结为以下引理：
@@ -828,13 +822,6 @@ p(\tilde{\rvx} | \rvx) = \frac{1}{(2\pi)^{D/2} |\bm{\Sigma}|^{1/2}} \exp\left( -
 \end{align}
 }
 
-
-
-
-
-
-\clearpage
-\newpage
 
 \section{基于流的视角}\label{app-sec:flow-proof}
 
@@ -966,8 +953,6 @@ p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
 这就完成了等价性的证明。
 \hfill$\blacksquare$
 
-\clearpage
-\newpage
 
 \section{理论补充：扩散模型的统一系统观点}\label{app-sec:equiv-para}
 
@@ -1012,11 +997,6 @@ p_t(\mathbf{x}) = p_t^{\mathrm{fwd}}(\mathbf{x})
 
 
 \hfill$\blacksquare$
-
-
-
-\clearpage
-\newpage
 
 
 \section{理论补充：学习快速扩散生成器}\label{app-sec:flow-map}
@@ -1085,144 +1065,6 @@ $(\partial_\btheta\hat\rvx_t)\,\diff\btheta$。因此，VSD 梯度可以写为
 \Cref{sec:wgf-distribution-level-training}.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \subsection{定理~\ref{thm:ct-cm}: CM 等于 CT 直至 $\mathcal{O}(\Delta s^2)$}
 
 \paragraph{\textit{证明：}}
@@ -1258,8 +1100,6 @@ $(\partial_\btheta\hat\rvx_t)\,\diff\btheta$。因此，VSD 梯度可以写为
 \]
 在第三个和第四个等式中。我们还注意到，更准确地说， $\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s]$ 应理解为
 $\hat\rvx_{s'}=\E[\rvx_{s'}|\rvx_s, s]$，因为 $s'=s-\Delta s$ 确定性固定一次 $s$ 已采样。
-
-
 
 
 \textbfs{步骤 2：围绕条件均值展开 CT $\hat\rvx_{s'}$.}
@@ -1466,15 +1306,12 @@ $\sigma_{s'}-\sigma_s=\mathcal{O}(\Delta s)$，因此
 \hfill$\blacksquare$
 
 
-\newpage
 \section{（选读）EDM 的模型设计}\label{sec:edm}
 这里介绍 EDM~\citep{karras2022elucidating} 为 $\rvx$ 预测提出的神经网络参数化准则。这些准则让训练更容易优化，也更可靠。
 $\rvx$ 预测模型表示为与时间相关的跳跃连接与
 缩放残差 (\Cref{eq:D-parametrization})。中心思想是将输入和回归目标标准化为
 始终保持单位方差，并调整跳跃路径以使残差不会随着时间的推移而放大。
  这个食谱已成为扩散模型实现中广泛采用的默认值自然地扩展到流映射学习，尤其是一致性家族模型。
-
-
 
 
 \subsection{神经网络标准$\rvx_{\bm{\phi}}$设计}\label{subsec:D-design-edm}
@@ -1485,7 +1322,6 @@ EDM 考虑 $\rvx$ 预测模型的参数化，用 $\rvx_{\bm{\phi}}(\rvx, t)$\foo
 \end{align}
 这里，$c_{\mathrm{skip}}(t)$、$c_{\mathrm{out}}(t)$、$c_{\mathrm{in}}(t)$ 和 $c_{\mathrm{noise}}(t)$ 是时间相关函数。
 基于即将推出的实际考虑，选择它们是为了提高训练期间的稳定性和性能。
-
 
 
 将其插入 \Cref{eq:general-dm-loss-D} 中，经过简单的代数运算后目标函数变为 \footnote{ 我们从 $\rvx$ 预测扩散损失开始，通过替换 \Cref{eq:D-parametrization} 中给出的参数化：
@@ -1620,10 +1456,6 @@ p_{\mathrm{prior}}(\rvx_T)
 :=
 \mathcal{N}(\rvx_T;\bm{0},T^2\rmI).
 \]
-
-
-
-
 
 
 在此设置下，基于 $\rvx$ 预测 $\rvx_{\bm{\phi}^\times}$（请参阅 \Cref{eq:clean_pf_ode}）的 PF-ODE 简化为

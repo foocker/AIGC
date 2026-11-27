@@ -16,13 +16,6 @@
 本书面向研究人员、研究生和从业者。读者需要具备深度学习的基本知识，例如知道神经网络是什么、如何训练。了解深度生成模型也有帮助。读完全书后，读者应能从原理上理解扩散模型，在同一框架下解释不同表述，并具备应用现有模型、探索新研究方向所需的背景。
 
 
-
-
-
-
-
-
-
 \section*{\centering \Large 本书路线图}
 
 本书按原理、采样和快速生成的顺序展开。
@@ -40,12 +33,6 @@
 我们在 \Cref{ch:overview-dgm} 介绍深度生成模型要解决的基本问题。给定一组观测样本，我们希望模型生成的新样本看起来来自同一个数据分布，而这个分布通常是未知的。许多方法通过学习数据分布来达到这一目标，有的用概率模型显式表示分布，有的通过学习到的变换隐式定义分布。本章介绍如何用神经网络表示数据分布、怎样从样本中学习，以及训练后如何生成新样本。最后，我们对主要的生成模型进行分类，说明它们各自的基本思想和区别。
 
 
-
-
-
-
-
-
 \subparagraph{B 部分：扩散模型的三种视角。}
 \begin{figure}[th!]
 \vspace{-0.5cm}
@@ -58,7 +45,7 @@
 扩散模型把生成看作从噪声到数据的逐步变换，见 \Cref{fig:ill-forward-reverse}。在\emph{前向过程}中，我们给数据样本逐步加噪，直到样本与纯噪声难以区分。加噪过程将数据分布逐步过渡到一个容易采样的简单噪声分布，并用一系列中间分布把两端连接起来。生成时，我们先从这个噪声分布抽取一个新样本，再沿\emph{反向生成过程}逐步去噪，得到新的数据样本。反向过程没有指定要重建的原样本。下面的三种框架都遵循这一原理，用一系列去噪步骤近似前向加噪过程的反向演化。
 \begin{itemize}
     \item \textbfs{变分视角}（\Cref{ch:variational}）源于变分自编码器（VAE）~\citep{kingma2013auto}。它通过变分目标学习去噪过程，由此得到去噪扩散概率模型（DDPM）~\citep{sohl2015deep,ho2020denoising}。
-    \item \textbfs{分数视角}（\Cref{ch:score-based}）源于能量模型（EBM）~\citep{ackley1985learning}，后来发展出噪声条件分数网络（NCSN）~\citep{song2019generative}。它学习各噪声水平下样本对数密度的梯度，也就是分数函数，用来指导逐步去噪。在连续时间下，\Cref{ch:score-sde} 介绍的\emph{分数 SDE 框架}用随机微分方程（SDE）描述去噪过程，并用常微分方程（ODE）描述与之对应的确定性过程。这将扩散建模与经典微分方程理论联系起来，为分析和设计采样算法提供了数学依据。
+    \item \textbfs{分数视角}（\Cref{ch:score-based}）源于能量模型（EBM）~\citep{ackley1985learning}，后来发展出噪声条件分数网络（NCSN）~\citep{song2019generative}。它学习各噪声水平下样本对数密度的梯度，也就是分数函数，用来指导逐步去噪。在连续时间下，\Cref{ch:score-sde} 介绍的\emph{Score SDE 框架}用随机微分方程（SDE）描述去噪过程，并用常微分方程（ODE）描述与之对应的确定性过程。这将扩散建模与经典微分方程理论联系起来，为分析和设计采样算法提供了数学依据。
     \item \textbfs{流视角}（\Cref{ch:flow-based}）以归一化流~\citep{rezende2015variational}为基础，并通过流匹配~\citep{lipman2022flow}推广。它把生成看作连续变换：由速度场定义的 ODE 描述概率质量如何随时间移动，将样本从简单先验分布传输到数据分布。这一表述还可用于更一般的\emph{分布到分布的变换}，即学习一个连接给定源分布与目标分布的流。
 \end{itemize}
 
@@ -125,7 +112,7 @@
 \sqbullet\ \Cref{ch:variational}：{变分自编码器（VAE）}~\citep{kingma2013auto} $\to$ {扩散概率模型（DPM）}~\citep{sohl2015deep} $\to$
 {DDPM}~\citep{ho2020denoising}。 
  \\
-\sqbullet\ \Cref{ch:score-based,ch:score-sde}：{能量模型（EBM）}~\citep{ackley1985learning} $\to$ {噪声条件分数网络（NCSN）}~\citep{song2019generative} $\to$ {分数 SDE}~\citep{song2020score}。 \\
+\sqbullet\ \Cref{ch:score-based,ch:score-sde}：{能量模型（EBM）}~\citep{ackley1985learning} $\to$ {噪声条件分数网络（NCSN）}~\citep{song2019generative} $\to$ {Score SDE}~\citep{song2020score}。 \\
 \sqbullet\ \Cref{ch:flow-based}：{归一化流（NF）}~\citep{rezende2015variational} $\to$ {神经常微分方程（NODE）}~\citep{chen2018neural} $\to$ {流匹配（FM）}~\citep{lipman2022flow}。
 \figcredit{作者绘制。}}
   \label{fig:timeline-diffusion-perspectives-equal}
@@ -197,10 +184,6 @@
 \caption{\textbfs{B 部分：从三种视角理解扩散模型。} 变分自编码器、能量模型和归一化流分别对应一种扩散模型表述。沿图中的纵向路径，可以看到每种方法的思想来源，以及它们如何汇入同一个连续时间框架。变分、分数与流三种视角给出了数学上等价的解释。\figcredit{作者绘制。}}
 \label{fig:part-b-roadmap}
 \end{figure}
-
-
-
-
 
 
 \paragraph{C、D 部分：扩散采样的控制与加速。}

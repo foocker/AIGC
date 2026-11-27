@@ -1,13 +1,9 @@
 
 
 
-
-
-
 \chapter{基于蒸馏的快速采样方法}\label{ch:distillation}
 
 本章讨论如何用训练来加速采样。\emph{蒸馏}让学生生成器向采样较慢的预训练扩散模型学习。教师模型可能需要数百步，学生模型用几步就可以达到相近的质量\footnote{这里所说的蒸馏，压缩的是采样步数。}。上一章通过改进数值求解器来加速积分，本章则直接训练生成器。两种主要方法分别是\emph{分布层面的蒸馏}与\emph{流映射层面的蒸馏}。前者让学生模型匹配教师模型的输出分布，可以省去完整的轨迹模拟。后者训练学生用更少的步数重现教师的采样轨迹。
-
 
 
 \chapterlearning{
@@ -21,15 +17,6 @@
 }{以预先训练的扩散模型作为教师，本章的关键区别是学生被训练重现的内容：教师的分布或其流映射。下一章将探讨如何在没有教师模型的情况下学习如此快速的映射。}
 
 
-
-
-
-
-
-\clearpage
-\newpage
-
-
 \section{序言}\label{sec:distillation-prologue}
 扩散模型的一个核心瓶颈是采样太慢。由 Tweedie 公式（\Cref{subsec:four-equiv-para}）可知，扩散模型可以看成一种「$\rvx$-预测」模型：训练好的 $\rvx_{\bm{\phi}^\times}(\rvx_t, t)$ 能够从噪声输入 $\rvx_t$ 中还原出在噪声水平 $t$ 下的期望干净数据，
 \[
@@ -38,9 +25,6 @@
 其中期望取自 $p(\rvx_0 |\rvx_t)$，即与 $\rvx_t$ 相符的所有可能的干净数据。一个自然的想法是直接用 $\rvx_{\bm{\phi}^\times}(\rvx_t, t)$ 一步生成。然而这种去噪器要对许多看似合理的结果取平均，预测往往会过于平滑，只用少数几步去噪便只能得到模糊、低质的样本。
 
 另一方面，正如 \Cref{subsec:sde-sample} 所讨论的，扩散采样是通过一长串迭代步骤沿 ODE 或 SDE 轨迹推进的。这能产生高保真的样本，但反复调用神经网络使采样代价高昂。对 $n$ 阶确定性 ODE 求解器，在标准正则性假设下，局部截断误差为 $\mathcal{O}(h^{n+1})$，固定时间区间上的全局离散化误差为 $\mathcal{O}(h^n)$，其中 $h=\max_i |t_i-t_{i-1}|$ 为步长。因此，用更粗的离散化通常会增大在一个固定学得向量场上引入的数值误差，尽管样本保真度并不一定随求解步数单调变差。于是，采样精度与计算成本之间就出现了实际的权衡。为突破这一瓶颈，一条主要的研究路线是\emph{蒸馏}：在能访问训练好的扩散模型（\emph{教师}）的前提下，训练一个生成器（\emph{学生}），使其用一次前馈或少数几步计算就重现教师的行为。这就把教师的许多采样步压缩成一个快速过程，从而绕开缓慢的迭代求解器，同时保持较高的样本保真度。下面介绍蒸馏的两种视角：\emph{分布层面的蒸馏}与\emph{流映射层面的蒸馏}\footnote{从时间顺序看，流映射层面的蒸馏出现更早：\emph{知识蒸馏}（KD）~\citep{luhman2021knowledge} 发表于 2021 年，\emph{渐进式蒸馏}（PD）~\citep{salimans2021progressive} 发表于 2022 年，都早于 2023 年前后成型的分布层面蒸馏方法族。不过为叙述顺畅、便于衔接下一章，我们先介绍分布层面的蒸馏。}。
-
-
-
 
 
 \subsection{分布层面的蒸馏}
@@ -63,8 +47,6 @@ $p_{\bm{\theta}}(\hat\rvx)$ 逼近目标数据分布 $p_{\mathrm{data}}(\rvx)$�
 
 这一形式通过分布对齐把扩散模型的多步生成过程蒸馏成单步模型。
 我们在 \Cref{sec:VSD} 中详细介绍这类方法。
-
-
 
 
 \subsection{流映射层面的蒸馏}
@@ -108,7 +90,6 @@ $\bPsi_{T\to 0}(\rvx_T)$，就实现了一步生成。
 它表示以 $\rvx_s$ 为初值、从 $s$ 积分到 $t$ 的经验 PF-ODE 的数值解，其中教师参数为 $\bm{\phi}^\times$（上下文清楚时从略）。
 
 
-
 \paragraph{早期方法：直接知识蒸馏。}
 为实现少步乃至一步生成，一种直接的做法是训练生成器
 $\rmG_\btheta(\rvx_T, T,0)$，让它模仿沿完整轨迹求值的数值求解器的输出：
@@ -133,8 +114,6 @@ $\rmG_\btheta(\rvx_T, T,0)$，让它模仿沿完整轨迹求值的数值求解�
 由于生成器只学了一个从 $T$ 到 $0$ 的全局映射，它可能丧失
 从中间状态引导生成过程的可控性；因此 \Cref{ch:guidance} 中介绍的
 多数可控生成技术无法直接套用。
-
-
 
 
 \paragraph{渐进式蒸馏概述。}
@@ -163,10 +142,6 @@ $N/2$ 次转移就覆盖了同样的总时间跨度 $[0,T]$。这一阶段结束
 （$N \to N/2 \to N/4 \to \cdots$），把轨迹逐步压缩成越来越少的步骤，
 直到达到所需的推理步数。这种反复对半的做法在保持全局时间跨度的同时，
 不断降低生成过程的时间分辨率。
-
-
-
-
 
 
 \paragraph{流映射学习的统一视角。}
@@ -204,17 +179,6 @@ $\mathtt{Solver}_{T\to 0}\approx\bPsi_{T\to 0}$。关于这一表述的另一种
 但它们的成功往往取决于教师模型的质量。我们会在
 \Cref{ch:fast-scratch} 中回到 \Cref{eq:general-cm-loss}，
 给出一个从头训练方法的原则性框架，把教师排除在学习循环之外。
-
-
-
-
-
-
-
-
-\clearpage
-\newpage
-
 
 
 \section{\texorpdfstring{基于分布的蒸馏}{基于分布的蒸馏}}\label{sec:VSD}
@@ -268,8 +232,6 @@ $p_t(\rvx_t| \rvx_0)$，区别只在于起始分布不同
 求梯度，可以得到 \Cref{eq:vsd-grad} 的表达式，归纳为下面的命题。
 为书写简洁，记 $\hat\rvx_t := \rvx_t^{\bm{\theta}}$，其定义见
 \Cref{eq:vsd-forward}。
-
-
 
 
 \proppp{$\mathcal{L}_{\text{VSD}}$ 关于 $\bm{\theta}$ 的梯度}{vsd-grad}{
@@ -326,12 +288,6 @@ $\partial_{\btheta}\hat\rvx_t=\alpha_t\partial_{\btheta}\rmG_{\btheta}(\rvz)$，
 因此我们需要两类分数的近似：一类是一步生成器对应的
 $\nabla_{\rvx}\log p_t^{\bm{\theta}}(\hat\rvx_t)$，另一类是数据分布对应的
 $\nabla_{\rvx}\log p_t(\hat\rvx_t)$。下一小节将详细说明。
-
-
-
-
-
-
 
 
 \subsection{VSD 训练流程}\label{subsec:vsd-training}
@@ -473,43 +429,6 @@ $\partial_{\btheta}\hat\rvx_t$ 把它拉回到参数空间。因此，
 Wasserstein 视角描述的是分布空间中理想的运动，而 VSD 则是通过更新一个有限维、被共享的生成器来实现这一运动。
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\clearpage
-\newpage
-
 \section{\texorpdfstring{渐进蒸馏}{渐进蒸馏}}\label{sec:PD}
 
 渐进式蒸馏（PD）~\citep{salimans2021progressive} 由两个过程组成，
@@ -532,7 +451,6 @@ Wasserstein 视角描述的是分布空间中理想的运动，而 VSD 则是通
 }
     \label{fig:pd-illustration}
 \end{figure}
-
 
 
 下面先介绍 PD 的蒸馏操作 \Cref{subsec:pd-distillation}，
@@ -569,9 +487,6 @@ $\rvx_{\bm{\phi}^\times}(\rvx,\tau)$ 为教师在本轮的 $\rvx$-预测去噪�
 \tilde\rvx_t = \mathtt{Solver}_{s\to t}\left(\rvx_s; {\color{orange}\tilde\rvx}\right).
 \]
 \end{question}
-
-
-
 
 
 一旦得到 ${\color{orange}\tilde\rvx}$ 的闭式表达，就训练一个学生模型
@@ -740,134 +655,6 @@ PF-ODE 采样器。但基本的蒸馏原理更为一般：只要教师的若干�
 此时合适的目标通常是分布匹配，而非路径匹配。
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \subsection{带引导的渐进蒸馏}\label{subsec:pd-guidance}
 \citet{meng2023distillation} 给出了一个两级流程，用于蒸馏
 带无分类器引导（CFG）的扩散模型：（1）把引导「提取」进一个
@@ -904,7 +691,6 @@ $\omega$，从而使单个网络学会模拟任意强度的 CFG 引导。
 采样步数更少的学生 $\rvx_{\bm{\theta}_2}(\rvx_s, s, \rvc, \omega)$。
 每轮迭代都把步数减半（例如 $N \to N/2 \to N/4 \to \cdots$）。
 
-\newpage
 \section{结束语}\label{sec:ch10_cr}
 
 本章介绍了我们遇到的第一个基于训练的加速范式。在把无需训练的改进通过数值求解器用尽之后，我们把关注点转向一条新策略：训练一个快速的
@@ -932,6 +718,3 @@ $\omega$，从而使单个网络学会模拟任意强度的 CFG 引导。
 \end{enumerate}
 从改进求解器、从教师那里「提取」解，转而直接学习解映射本身，
 这一转变代表了迈向一类新型生成模型的重要一步——这类模型在设计上既有原则性，又足够高效。
-
-\clearpage
-\newpage
