@@ -16,14 +16,12 @@
 我们的中心对象是\emph{流映射模型}。所谓\emph{流映射}，就是 ODE
 的经典解映射；这个概念源自微分方程与动力系统，并与连续介质力学、
 流体力学中「追踪物质质点运动」的想法密切相关。
-具体来说，$\bPsi_{s\to t}$ 把时刻 $s$ 的状态映到在给定动力学下
-时刻 $t$ 到达的状态。流映射模型学会直接逼近这一映射，
+具体来说，$\bPsi_{s\to t}$ 把时刻 $s$ 的状态映到在给定动力学下时刻 $t$ 到达的状态。流映射模型学会直接逼近这一映射，
 从而只用一次或几次网络评估就能走完整条长轨迹
 \footnote{流映射的数学与历史背景见 \Cref{eq:flow-map-def} 及其周围的讨论。}。
 
 这一表述给出了一条有原理可循的途径：把概率质量从先验分布
-$p_{\mathrm{prior}}$ 输运到数据分布 $p_{\mathrm{data}}$，同时保持
-每个中间时刻由前向扩散过程规定的边缘分布 $p_t$。
+$p_{\mathrm{prior}}$ 输运到数据分布 $p_{\mathrm{data}}$，同时保持每个中间时刻由前向扩散过程规定的边缘分布 $p_t$。
 
 
 \chapterlearning{
@@ -156,7 +154,7 @@ $\rvx_s$，把它直接输运到时刻 $t$：
 关键想法是：每个状态 $\rvx_s$ 沿它自己的 PF-ODE 轨迹会被映到时刻 $0$ 的端点，
 即 $\bPsi_{s\to 0}(\rvx_s)$。形式上，一致性模型（CM）这一族的理想训练目标为~\citep{song2023consistency,songimproved,geng2024consistency,lu2024simplifying}
 \begin{align}\label{eq:oracle-cm}
-    \mathcal{L}_{\methodl{oracle}{CM}}(\btheta) 
+    \mathcal{L}_{\methodl{oracle}{CM}}(\btheta)
     := \E_{s} \E_{\rvx_s\sim p_s} \left[ w(s)  d \left(\rvf_\btheta(\rvx_s,s), \bPsi_{s\to 0}(\rvx_s)\right)\right].
 \end{align}
 
@@ -176,7 +174,7 @@ $\rvx_s$，把它直接输运到时刻 $t$：
 \subparagraph{一致性轨迹模型。}\emph{一致性轨迹模型}（CTM）\\~\citep{kim2023consistency}是第一个针对任意起止时间学习一般流映射 $\bPsi_{s\to t}$ 的工作，可以看作统一目标 \Cref{eq:general-cm-loss:rep} 下的一个具体实例。CTM 采用受欧拉法启发的参数化，把理想流映射写成
 \begin{align*}
 \bPsi_{s\to t}(\rvx_s)
-:= \rvx_s + \int_s^t \rvv^*(\rvx_u,u)\diff u 
+:= \rvx_s + \int_s^t \rvv^*(\rvx_u,u)\diff u
 = \frac{t}{s} \rvx_s
 + \frac{s-t}{s}
 \underbrace{\Big[\rvx_s + \frac{s}{s-t} \int_s^t \rvv^*(\rvx_u,u) \diff u\Big]}_{\approx~\rvg_{\btheta}},
@@ -189,7 +187,7 @@ $\rvx_s$，把它直接输运到时刻 $t$：
 其中 $\rvg_\btheta$ 是训练得到的网络，最终使 $\bPsi_{s\to t}(\rvx_s)\approx \rmG_{\btheta}(\rvx_s,s,t)$。由于理想的 $\bPsi_{s\to t}(\rvx_s)$ 无法获得，CTM 改用\emph{停止梯度}的目标，并在中间时刻 $u$ 处对它求值：
 \[
 \bPsi_{s\to t}(\rvx_s)
- \approx 
+ \approx
 \rmG_{\btheta^-} \big(\bPsi_{s\to u}(\rvx_s),\,u,\,t\big),
 \qquad u\in[t,s],
 \]
@@ -201,7 +199,7 @@ $\rvx_s$，把它直接输运到时刻 $t$：
 平均流（MF）~\citep{geng2025mean} 建立在流匹配之上，它建模的是一段时间 $[t,s]$（$t\le s$）上的\emph{平均漂移}：
 \[
 \rvh_{\btheta}(\rvx_s,s,t)
- \approx 
+ \approx
 \rvh^*(\rvx_s,s,t)
 := \frac{1}{\,t-s\,}\int_s^t \rvv^*(\rvx_u,u)\,\diff u,
 \]
@@ -291,7 +289,7 @@ $\bPsi_{s\to 0}$。这一部分既包括它的离散时间版本（\Cref{sec:dis
        \bPsi_{u\to t}\circ \bPsi_{s\to u}=\bPsi_{s\to t},
        \,\,\,
        \bPsi_{s\to s}=\rmI, \quad \text{for all }\, s, u, t \in [0,T].
-   \end{align} 
+   \end{align}
 \end{mdframed}
 直观地说，它意味着：先从 $s$ 到 $u$（经 $\bPsi_{s\rightarrow u}$），再从 $u$ 到 $t$（经 $\bPsi_{u\rightarrow t}$），
 最终到达的点与直接从 $s$ 到 $t$ 完全相同。这不过是 ODE 求解的一条基本原理\footnote{半群性质来自 ODE 初值问题的唯一性定理（参见 \Cref{app:de}）。}：
@@ -310,7 +308,7 @@ $\bPsi_{s\to 0}$。这一部分既包括它的离散时间版本（\Cref{sec:dis
     \[
        \rvf^*(\rvx(s), s) = \rvx(0), \quad \text{for all }\, s \in [0,T].
     \]
-    这是因为 
+    这是因为
 \begin{align*}
 \rvf^*(\rvx(s),s)
 &= \bPsi_{s\to 0}\big(\bPsi_{0\to s}(\rvx(0))\big)
@@ -328,8 +326,7 @@ $\bPsi_{s\to 0}$。这一部分既包括它的离散时间版本（\Cref{sec:dis
         \frac{\diff}{\diff s}\,\rvf^*(\rvx(s),s) = 0,
         \qquad \rvf^*(\rvx(0),0) = \rvx(0).
     \end{align}
-它由全局一致性推出：$\rvf^*(\rvx(s), s)$ 沿轨迹确实
-不随 $s$ 改变。
+它由全局一致性推出：$\rvf^*(\rvx(s), s)$ 沿轨迹确实不随 $s$ 改变。
 \end{enumerate}
 这三条性质彼此等价。每一条都说明：沿任意一条解轨迹 $s\mapsto \rvx(s)$，
 指向原点的一致性映射 $\rvf^*(\rvx(s),s)=\bPsi_{s\to 0}(\rvx(s))$
@@ -346,8 +343,7 @@ $\rvf_{\bm{\theta}} \colon \mathbb{R}^D \times [0,T] \to \mathbb{R}^D$，
 \]
 就称它为该 SDE 的一致性函数。这一推广由 \citep{daras2023consistent,lai2023fp} 提出或观察到，
 理论上的联系总结于 \citep{lai2023equivalence}。}。
-关键想法是沿 PF-ODE 轨迹施加一致性约束：位于同一条 ODE 轨迹上的状态
-都应映到同一个 $0$ 时刻端点
+关键想法是沿 PF-ODE 轨迹施加一致性约束：位于同一条 ODE 轨迹上的状态都应映到同一个 $0$ 时刻端点
 （更准确地说，这对应于 \Cref{eq:semi-group} 中取 $t=0$、
 $u=s-\Delta s$ 的特殊情形）。
 
@@ -371,7 +367,7 @@ $u=s-\Delta s$ 的特殊情形）。
   \end{tabular}
   }
   \label{tb:consistency-methods}
-\end{table} 
+\end{table}
 
 
 
@@ -380,14 +376,14 @@ $u=s-\Delta s$ 的特殊情形）。
 
 原则上，可以通过最小化 \Cref{eq:oracle-cm} 中的理想损失来学习一致性函数：
 \[
-    \mathcal{L}_{\methodl{oracle}{CM}}(\btheta) 
+    \mathcal{L}_{\methodl{oracle}{CM}}(\btheta)
     := \E_{s} \E_{\rvx_s\sim p_s} \left[ w(s)  d \left(\rvf_\btheta(\rvx_s,s), \bPsi_{s\to 0}(\rvx_s)\right)\right].
 \]
 该目标要求每个噪声样本 $\rvx_s$ 都映回它对应的干净端点 $\bPsi_{s\to 0}(\rvx_s)$。难点在于理想的映射 $\bPsi_{s\to 0}(\rvx_s)$ 在实践中拿不到。为绕开这一点，\citet{song2023consistency} 利用了\emph{半群性质}：任何噪声状态与它沿同一条 PF-ODE 轨迹走一步之后的状态，必须映到同一个干净端点。具体来说，把理想目标替换成一个\emph{停止梯度}的目标，其中的目标值取自轨迹上稍早的一点：
 \begin{align*}
-    \bPsi_{s\to 0}(\rvx_s) 
+    \bPsi_{s\to 0}(\rvx_s)
     &= \bPsi_{s-\Delta s \to 0} \left(\bPsi_{s\to s-\Delta s}(\rvx_s)\right) \\
-    &\approx \rvf_{\btheta^-} \left(\bPsi_{s\to s-\Delta s}(\rvx_s),\,s-\Delta s\right), 
+    &\approx \rvf_{\btheta^-} \left(\bPsi_{s\to s-\Delta s}(\rvx_s),\,s-\Delta s\right),
     \qquad \Delta s > 0,
 \end{align*}
 其中 $\bm{\theta}^-$ 表示停止梯度后的参数。另一个难点是中间状态 $\bPsi_{s\to s-\Delta s}(\rvx_s)$ 同样没有闭式，本身也得近似。实践中提出两种方案：
@@ -402,10 +398,10 @@ $u=s-\Delta s$ 的特殊情形）。
 $\rvs_{\bm{\phi}^\times}(\rvx_s, s) \approx \nabla_{\rvx_s}\log p_s(\rvx_s)$。借助这一估计，
 可以从 $\rvx_s$ 出发做一步 DDIM 更新，得到 $s' = s-\Delta s$ 处状态的近似：
 \begin{align*}
-    \bPsi_{s\to s-\Delta s}(\rvx_s) 
-    &\approx \frac{\alpha_{s'}}{\alpha_s}\,\rvx_s 
+    \bPsi_{s\to s-\Delta s}(\rvx_s)
+    &\approx \frac{\alpha_{s'}}{\alpha_s}\,\rvx_s
     + \sigma_s^2 \left( \frac{\alpha_{s'}}{\alpha_s} - \frac{\sigma_{s'}}{\sigma_s} \right)\nabla_{\rvx_s}\log p_s(\rvx_s) \\
-    &\approx \frac{\alpha_{s'}}{\alpha_s}\,\rvx_s 
+    &\approx \frac{\alpha_{s'}}{\alpha_s}\,\rvx_s
     + \sigma_s^2 \left( \frac{\alpha_{s'}}{\alpha_s} - \frac{\sigma_{s'}}{\sigma_s} \right)\rvs_{\bm{\phi}^\times}(\rvx_s, s) \\
     &:= \tilde{\rvx}_{s'}^{\bm{\phi}^\times}.
 \end{align*}
@@ -413,9 +409,9 @@ $\rvs_{\bm{\phi}^\times}(\rvx_s, s) \approx \nabla_{\rvx_s}\log p_s(\rvx_s)$。�
 把这一构造与停止梯度目标结合起来，就得到了理想损失 $\mathcal{L}_{\methodl{oracle}{CM}}(\btheta)$ 的一个实用\emph{离散时间}替代量。形式上，取时间网格 $0 = s_1 < s_2 < \cdots < s_N = T$，一致性蒸馏的训练目标为
 \begin{mdframed}
 \begin{align}\label{eq:cd-discrete-approx-N}
-    \mathcal{L}_{\text{CD}}^N(\bm{\theta}, \bm{\theta}^-; \bm{\phi}^\times) 
+    \mathcal{L}_{\text{CD}}^N(\bm{\theta}, \bm{\theta}^-; \bm{\phi}^\times)
     := \E_{\rvx_0, \beps, i} \Big[\, \omega(s_i)\,
-    d\big(\rvf_{\bm{\theta}}(\rvx_{s_{i+1}}, s_{i+1}),\, 
+    d\big(\rvf_{\bm{\theta}}(\rvx_{s_{i+1}}, s_{i+1}),\,
           \rvf_{\bm{\theta}^-}(\tilde{\rvx}_{s_i}^{\bm{\phi}^\times}, s_i)\big)\Big].
 \end{align}
 \end{mdframed}
@@ -423,7 +419,7 @@ $\rvs_{\bm{\phi}^\times}(\rvx_s, s) \approx \nabla_{\rvx_s}\log p_s(\rvx_s)$。�
 它的作用是防止训练塌缩到平凡解（例如输出恒定预测）。
 
 
-    
+
 \paragraph{没有预训练扩散模型的情形（一致性训练）。}
 当没有预训练扩散模型可用时，理想的分数 $\nabla_{\rvx}\log p_s(\rvx_s)$ 仍然可以直接用一个简单的单点近似来估计（尽管方差很大）。回忆一下，它可以写成条件期望的形式：
 \begin{align*}
@@ -446,27 +442,27 @@ $\rvs_{\bm{\phi}^\times}(\rvx_s, s) \approx \nabla_{\rvx_s}\log p_s(\rvx_s)$。�
 \begin{aligned}
     \bPsi_{s\to s'}(\rvx_s)
 &\approx
-\frac{\alpha_{s'}}{\alpha_s}\,\rvx_s 
+\frac{\alpha_{s'}}{\alpha_s}\,\rvx_s
 + \sigma_s^2 \left(\frac{\alpha_{s'}}{\alpha_s}-\frac{\sigma_{s'}}{\sigma_s}\right)\nabla_{\rvx_s}\log p_s(\rvx_s) && \text{(DDIM)}
 \\
 &\approx
-\frac{\alpha_{s'}}{\alpha_s}\,\rvx_s 
+\frac{\alpha_{s'}}{\alpha_s}\,\rvx_s
 + \sigma_s^2 \left(\frac{\alpha_{s'}}{\alpha_s}-\frac{\sigma_{s'}}{\sigma_s}\right)\widehat{\nabla_{\rvx_s}\log p_s}(\rvx_s) && \text{(1-pt score)}
 \\
 &=
-\frac{\alpha_{s'}}{\alpha_s}\,\rvx_s 
+\frac{\alpha_{s'}}{\alpha_s}\,\rvx_s
 -\left(\frac{\alpha_{s'}}{\alpha_s}-\frac{\sigma_{s'}}{\sigma_s}\right)(\rvx_s-\alpha_s\rvx_0)
 \\
-&= \alpha_{s'}\rvx_0+\sigma_{s'}\beps, 
+&= \alpha_{s'}\rvx_0+\sigma_{s'}\beps,
 \end{aligned}
 \end{align}
 其中\footnote{最后一个恒等式可由前向加噪过程 $\rvx_s=\alpha_s \rvx_0+\sigma_s \beps$ 直接经初等代数得到。}
 $\rvx_0$ 与用于构造 $\rvx_s$ 的高斯噪声 $\beps$ 来自同一个数据样本。这就给出了理想目标 $\mathcal{L}_{\methodl{oracle}{CM}}$ 的一个无教师的离散时间替代量，写作
 \begin{mdframed}
 \begin{align}\label{eq:ct-discrete-approx-N}
-    \mathcal{L}_{\text{CT}}^N(\bm{\theta}, \bm{\theta}^-) 
-    := \E_{\rvx_0, \beps, i} \left[ 
-       \omega(s_i)\, d \left(\rvf_{\bm{\theta}}(\rvx_{s_{i+1}}, s_{i+1}),\, 
+    \mathcal{L}_{\text{CT}}^N(\bm{\theta}, \bm{\theta}^-)
+    := \E_{\rvx_0, \beps, i} \left[
+       \omega(s_i)\, d \left(\rvf_{\bm{\theta}}(\rvx_{s_{i+1}}, s_{i+1}),\,
        \rvf_{\bm{\theta}^-}(\rvx_{s_i}, s_i)\right)
     \right],
 \end{align}
@@ -694,9 +690,9 @@ $T>\tau_1 > \tau_2 > \cdots > \tau_{M-1}=0$，从初始噪声 $\hat\rvx_T$ 出�
 \begin{align}\label{eq:conti-ct-motivation}
 \begin{aligned}
         &\frac{\diff }{\diff s} \rvf^*(\rvx(s), s) = 0 \\
-    \Longleftrightarrow\,\, 
-    &\left(\nabla_{\rvx} \rvf^*\right)(\rvx(s), s) \cdot 
-    \underbrace{\frac{\diff }{\diff s} \rvx(s)}_{\text{ODE velocity}} + 
+    \Longleftrightarrow\,\,
+    &\left(\nabla_{\rvx} \rvf^*\right)(\rvx(s), s) \cdot
+    \underbrace{\frac{\diff }{\diff s} \rvx(s)}_{\text{ODE velocity}} +
     \left(\frac{\partial }{\partial s} \rvf^*\right)(\rvx(s), s) = 0,
 \end{aligned}
 \end{align}
@@ -786,7 +782,7 @@ $\tfrac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)$ 指的是
 总之，连续时间一致性模型可以直接用下面这个伪目标的梯度来训练（忽略因子 $2$）：
 \begin{mdframed}
     \begin{align}\label{eq:conti-ct-loss}
-    \mathcal{L}^\infty_{\mathrm{CM}}(\bm{\theta},\bm{\theta}^-) := \mathbb{E}_{s,\rvx_0, \bm{\epsilon}}\left[\omega(s)\rvf_{\bm{\theta}}^\top(\rvx_s, s) \cdot \frac{\diff }{\diff s} \rvf_{\bm{\theta}^-}(\rvx_s, s) \right]. 
+    \mathcal{L}^\infty_{\mathrm{CM}}(\bm{\theta},\bm{\theta}^-) := \mathbb{E}_{s,\rvx_0, \bm{\epsilon}}\left[\omega(s)\rvf_{\bm{\theta}}^\top(\rvx_s, s) \cdot \frac{\diff }{\diff s} \rvf_{\bm{\theta}^-}(\rvx_s, s) \right].
 \end{align}
 \end{mdframed}
 
@@ -806,8 +802,8 @@ $\tfrac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)$ 指的是
 $\rvv_{\bm{\phi}^\times} \approx \rvv^*$，那么 \Cref{eq:total-diff} 中的切向量
 $\tfrac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)$ 可以用下面的替代量近似：
 \begin{align}\label{eq:cd-continuous-time}
-    \frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s) 
-     \approx 
+    \frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+     \approx
     \partial_s \rvf_{\btheta^-}(\rvx_s,s)
     + \big(\partial_{\rvx}\rvf_{\btheta^-}(\rvx_s,s)\big)\,
       \rvv_{\bm{\phi}^\times}(\rvx_s,s).
@@ -816,10 +812,10 @@ $\tfrac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)$ 可以用下面的替代量�
 $\mathcal{L}^\infty_{\mathrm{CM}}(\bm{\theta},\bm{\theta}^-;\bm{\phi}^\times)$。
 相应地，命题~\ref{continuous-time-ct} 可以改述为
 \[
-\lim_{N\to\infty} 
+\lim_{N\to\infty}
 \frac{1}{\Delta s_N}\,\nabla_{\bm{\theta}}\,
 \mathcal{L}_{\mathrm{CD}}^{N}(\bm{\theta},\bm{\theta}^-;\bm{\phi}^\times)
-= 
+=
 \nabla_{\bm{\theta}}\,
 \mathcal{L}_{\mathrm{CD}}^{\infty}(\bm{\theta},\bm{\theta}^-;\bm{\phi}^\times).
 \]
@@ -829,21 +825,20 @@ $\mathcal{L}^\infty_{\mathrm{CM}}(\bm{\theta},\bm{\theta}^-;\bm{\phi}^\times)$�
 $\rvv^*$ 可以用单点条件估计 $\alpha_s'\rvx_0 + \sigma_s'\beps$ 来近似。此时 \Cref{eq:total-diff} 中的切向量
 $\tfrac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)$ 换成替代量
 \begin{align}\label{eq:ct-continuous-time}
-    \frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s) 
-     \approx 
+    \frac{\diff}{\diff s}\rvf_{\btheta^-}(\rvx_s,s)
+     \approx
     \partial_s \rvf_{\btheta^-}(\rvx_s,s)
-    + \big(\partial_{\rvx}\rvf_{\btheta^-}(\rvx_s,s)\big) 
+    + \big(\partial_{\rvx}\rvf_{\btheta^-}(\rvx_s,s)\big)
       \left(\alpha_s'\rvx_0 + \sigma_s'\beps\right).
 \end{align}
 把由此得到的目标记作
-$\mathcal{L}^\infty_{\mathrm{CT}}(\bm{\theta},\bm{\theta}^-)$，它对应
-从头训练的情形。据此，命题~\ref{continuous-time-ct} 可以改述为
+$\mathcal{L}^\infty_{\mathrm{CT}}(\bm{\theta},\bm{\theta}^-)$，它对应从头训练的情形。据此，命题~\ref{continuous-time-ct} 可以改述为
 \[
-\lim_{N\to\infty} 
-\frac{1}{\Delta s_N}\,\nabla_{\bm{\theta}} 
+\lim_{N\to\infty}
+\frac{1}{\Delta s_N}\,\nabla_{\bm{\theta}}
 \mathcal{L}_{\mathrm{CT}}^{N}(\bm{\theta},\bm{\theta}^-)
 =
-\nabla_{\bm{\theta}} 
+\nabla_{\bm{\theta}}
 \mathcal{L}_{\mathrm{CT}}^{\infty}(\bm{\theta},\bm{\theta}^-).
 \]
 
@@ -861,7 +856,7 @@ $\mathcal{L}^\infty_{\mathrm{CT}}(\bm{\theta},\bm{\theta}^-)$，它对应
 
 \begin{figure}[ht]
 \centering
-\scalebox{0.9}{ 
+\scalebox{0.9}{
 \begin{tikzpicture}[
   box/.style={draw, rounded corners, thick, minimum width=3.5cm, minimum height=1cm, align=center},
   arrow/.style={thick, -{Latex[length=3mm]}},
@@ -875,7 +870,7 @@ $\mathcal{L}^\infty_{\mathrm{CT}}(\bm{\theta},\bm{\theta}^-)$，它对应
 \node[box, below=2cm of discCT] (contCT) {\small{Continuous-Time CT}};
 
 % Arrows with centered labels
-\draw[arrow] (discCD) -- node[midway, above] {\footnotesize 
+\draw[arrow] (discCD) -- node[midway, above] {\footnotesize
 \shortstack{
 $\mathcal{L}_{\text{CD}}(\bm{\theta},\bm{\theta}^-)  =\mathcal{L}_{\text{CT}}(\bm{\theta},\bm{\theta}^-) + \mathcal{O}(\Delta s^2)$
 \\
@@ -886,7 +881,7 @@ $\mathcal{L}_{\text{CD}}(\bm{\theta},\bm{\theta}^-)  =\mathcal{L}_{\text{CT}}(\b
   \footnotesize
   \shortstack{
     $\displaystyle\lim_{N\rightarrow\infty} \frac{1}{\Delta s_N}\nabla_{\bm{\theta}}\mathcal{L}^N_{\text{CD}}$ \\ $=\nabla_{\bm{\theta}}\mathcal{L}^\infty_{\text{CD}}  $ \\
-\scriptsize (Theorem 5)   
+\scriptsize (Theorem 5)
   }
 } (contCD);
 \draw[arrow] (discCT) -- node[midway, right] {
@@ -894,7 +889,7 @@ $\mathcal{L}_{\text{CD}}(\bm{\theta},\bm{\theta}^-)  =\mathcal{L}_{\text{CT}}(\b
   \shortstack{
     $\displaystyle\lim_{N\rightarrow\infty} \frac{1}{\Delta s_N}\nabla_{\bm{\theta}}\mathcal{L}^N_{\text{CT}}  $\\
     $= \nabla_{\bm{\theta}}\mathcal{L}^\infty_{\text{CT}}$ \\
-\scriptsize (Theorem 6) 
+\scriptsize (Theorem 6)
   }
 } (contCT);
 \draw[arrow] (discCD) to[out=-30,in=150] node[midway, above, yshift=-8.5mm, text width=5.2cm, align=center] {
@@ -902,13 +897,13 @@ $\mathcal{L}_{\text{CD}}(\bm{\theta},\bm{\theta}^-)  =\mathcal{L}_{\text{CT}}(\b
   \shortstack{
     $\displaystyle\lim_{N\rightarrow\infty} \frac{1}{\Delta s_N}\nabla_{\bm{\theta}}\mathcal{L}^N_{\text{CD}}(\bm{\theta},\bm{\theta}^-;\bm{\phi}^\times)  $\\
     $= \nabla_{\bm{\theta}}\mathcal{L}^\infty_{\text{CT}}(\bm{\theta},\bm{\theta}^-)$ \\
-\scriptsize (Theorem 6) 
+\scriptsize (Theorem 6)
   }
 } (contCT);
 \draw[arrow] (contCD) -- node[midway, below] {
   \footnotesize
   \shortstack{
-    $\mathcal{L}^\infty_{\text{CD}}(\bm{\theta},\bm{\theta}^-;\bm{\phi}^\times)= \mathcal{L}^\infty_{\text{CT}}(\bm{\theta},\bm{\theta}^-)$ 
+    $\mathcal{L}^\infty_{\text{CD}}(\bm{\theta},\bm{\theta}^-;\bm{\phi}^\times)= \mathcal{L}^\infty_{\text{CT}}(\bm{\theta},\bm{\theta}^-)$
   }
 } (contCT);
 \end{tikzpicture}
@@ -1122,22 +1117,6 @@ s \mapsto c_{\mathrm{noise}}(s) \mapsto \text{emb}(c_{\mathrm{noise}}(s)) \mapst
 
 
 
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
 
 
 
@@ -1153,22 +1132,38 @@ s \mapsto c_{\mathrm{noise}}(s) \mapsto \text{emb}(c_{\mathrm{noise}}(s)) \mapst
 
 
 
-        
 
 
 
 
-        
 
 
 
 
-        
 
 
 
 
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1197,13 +1192,13 @@ s \mapsto c_{\mathrm{noise}}(s) \mapsto \text{emb}(c_{\mathrm{noise}}(s)) \mapst
 与一致性模型这一族类似，CTM 最初沿用 EDM 的表述~\citep{karras2022elucidating}（\Cref{sec:edm}），
 在 $\rvx$ 预测形式下取噪声调度 $\alpha_t = 1$、$\sigma_t = t$。在这一设置下，PF-ODE 变为
 \begin{align*}
-    \frac{\diff \rvx(\tau)}{\diff \tau} 
+    \frac{\diff \rvx(\tau)}{\diff \tau}
     = \frac{\rvx(\tau) - \E[\rvx|\rvx(\tau)]}{\tau}.
 \end{align*}
 从时刻 $s$ 的 $\rvx_s$ 出发、沿时间反向演化到终止时刻 $t\le s$，
 对应的流映射（即解）可以等价地写成
 \begin{align*}
-\rvx_s + \int_s^t 
+\rvx_s + \int_s^t
     \frac{\rvx_\tau - \E[\rvx |\rvx_\tau]}{\tau}\, \diff \tau.
 \end{align*}
 
@@ -1229,7 +1224,7 @@ EDM 只是便于说明的一例；CTM 还适用于由任意线性高斯前向核
 改写为输入 $\rvx_s$ 与残差函数 $\rvg^*$ 的凸组合：
 \begin{align*}
 \bPsi_{s\to t}(\rvx_s)
-:= \rvx_s + \int_s^t \rvv^*(\rvx_u,u) \diff u 
+:= \rvx_s + \int_s^t \rvv^*(\rvx_u,u) \diff u
 = \frac{t}{s}\,\rvx_s
 + \frac{s-t}{s}
 \underbrace{\Big[\rvx_s + \frac{s}{s-t} \int_s^t \rvv^*(\rvx_u,u) \diff u\Big]}_{=:~\rvg^*}.
@@ -1262,11 +1257,11 @@ EDM 只是便于说明的一例；CTM 还适用于由任意线性高斯前向核
 \paragraph{CTM 参数化的优点。}
 $\rvg^*$ 的一个关键特征，在让 $t$ 趋于 $s$（即终点时刻与起点时刻相同）时就看得很清楚：
 \proppp{的属性 $\rvg^*$}{ctm-g-para}{\begin{enumerate}
-    \item[(i)] \textbfs{恢复扩散模型：} 
+    \item[(i)] \textbfs{恢复扩散模型：}
     \[
     \rvg^*(\rvx_s, s, s)=\lim_{t\rightarrow s}\mathbf{g}^*(\mathbf{x}_{s},s,t)=\rvx_s - s\rvv^*(\rvx_s,s).
     \]
-    \item[(ii)] \textbfs{积分表示：} 
+    \item[(ii)] \textbfs{积分表示：}
     \[
     \mathbf{g}^*(\mathbf{x}_{s},s,t)=\rvx_s - s\rvv^*(\rvx_s,s)+\mathcal{O}(\vert t-s\vert).
     \]
@@ -1295,8 +1290,7 @@ $\mathbf{g}_{\bm{\theta}} \approx \mathbf{g}^*$，而长跳跃能力则由 $\mat
 =
 \frac{\rvx_s-\rvg^*(\rvx_s,s,s)}{s},
 \]
-这一项可以直接用下面介绍的扩散模型损失来监督。可见 CTM 的参数化为学习有限时间转移与局部扩散动力学
-提供了统一的框架，把流映射模型的长跳跃能力与扩散模型的瞬时动力学结合在了一起。
+这一项可以直接用下面介绍的扩散模型损失来监督。可见 CTM 的参数化为学习有限时间转移与局部扩散动力学提供了统一的框架，把流映射模型的长跳跃能力与扩散模型的瞬时动力学结合在了一起。
 
 
 接下来两节中，先介绍 CTM 的一致性损失（\Cref{subsec:ctm-consistency}），它同时支持蒸馏与从头训练，
@@ -1344,7 +1338,7 @@ $u \sim \mathcal{U}[t,s)$，再让学生从 $u$ 跳到 $t$：
 学生被训练去匹配这一复合预测：
 \begin{align}\label{eq:soft}
 \underbrace{\mathbf{G}_{\bm{\theta}}(\rvx_s, s, t)}_{\approx\, \bPsi_{s\to t}(\rvx_s)}
- \approx 
+ \approx
 \underbrace{\mathbf{G}_{\bm{\theta}^-} \big(\mathtt{Solver}_{s\to u}(\rvx_s;\bm{\phi}^\times), u, t\big)}_{\approx\, \bPsi_{u\to t}(\bPsi_{s\to u}(\rvx_s))},
 \end{align}
 其中 $\bm{\theta}^-$ 是 $\mathbf{G}_{\bm{\theta}}$ 的停止梯度副本。改变 $u$ 的值，CTM 就在全局监督与局部监督之间插值：
@@ -1381,7 +1375,7 @@ CTM 一致性损失为
 \[
 \rvg^*(\rvx_\tau, \tau, \tau)
 = \rvx_\tau - \tau\,\rvv^*(\rvx_\tau,\tau)
- \implies 
+ \implies
 \rvv^*(\rvx_\tau,\tau)
 = \frac{\rvx_\tau - \rvg^*(\rvx_\tau, \tau, \tau)}{\tau}.
 \]
@@ -1404,7 +1398,7 @@ $\rvg_{\bm{\theta}^-}(\cdot,\tau,\tau)$（$\tau \in (0,T]$），得到自诱导�
 改走一条更短的监督路径：
 \[
 \underbrace{\mathbf{G}_{\bm{\theta}}(\rvx_s, s, t)}_{\approx\, \bPsi_{s\to t}(\rvx_s)}
- \approx 
+ \approx
 \underbrace{\mathbf{G}_{\bm{\theta}^-} \big(\mathtt{Solver}_{s\to u}(\rvx_s;\bm{\theta}^-),\, u,\, t\big)}_{\approx\, \bPsi_{u\to t}(\bPsi_{s\to u}(\rvx_s))},
 \]
 其中 $u \sim \mathcal{U}[t,s)$，$\bm{\theta}^-$ 是学生模型的停止梯度副本。与蒸馏唯一的区别是：
@@ -1453,7 +1447,7 @@ $\rvg_{\bm{\theta}^-}(\cdot,\tau,\tau)$（$\tau \in (0,T]$），得到自诱导�
 \[
 \rvv^*(\rvx_s, s)
 = \frac{\rvx_s - \rvg^*(\rvx_s, s, s)}{s},
-\qquad 
+\qquad
 \rvg^*(\rvx_s, s, s) \approx \rvg_{\btheta}(\rvx_s, s, s).
 \]
 由此可自然地引出经由 $\rvg_{\btheta}$ 的速度参数化：
@@ -1465,13 +1459,13 @@ $\rvg_{\bm{\theta}^-}(\cdot,\tau,\tau)$（$\tau \in (0,T]$），得到自诱导�
 \[
 \rvx_s = \alpha_s \rvx_0 + \sigma_s \beps,
 \qquad
-\rvx_0 \sim p_{\mathrm{data}}, 
+\rvx_0 \sim p_{\mathrm{data}},
 \beps \sim \mathcal N(0, \mathbf I),
 \]
 扩散模型损失可以写为
 \begin{align}\label{eq:ctm-dsm}
 \mathcal L_{\mathrm{DM}}(\btheta)
-&:= 
+&:=
 \E_{\rvx_0, \beps, s}
 \Bigl[
 w(s)
@@ -1493,7 +1487,7 @@ w(s)
 一致性与扩散模型损失都提供了很强的回归信号，但它们的输出可能过于平滑。因此 CTM 可以选择再加一个对抗项，
 通过让生成分布对齐数据分布，来获得更锐利、更真实的样本。设判别器
 $D_{\bm{\zeta}}$ 用于区分真实的 $\rvx_{0}\sim p_{\mathrm{data}}$ 与生成的 $\rvx_{\mathrm{est}}(\rvx_{s},s,t)$，目标为
-\begin{align*} 
+\begin{align*}
 &\mathcal{L}_{\mathrm{GAN}}(\bm{\theta}, \bm{\zeta}) := \\ &\mathbb{E}_{\mathbf{x}_0} \big[\log D_{\bm{\zeta}}(\mathbf{x}_0)\big] + \mathbb{E}_{s \in [0, T]} \mathbb{E}_{t \in [0, s]} \mathbb{E}_{\mathbf{x}_0} \mathbb{E}_{\mathbf{x}_s \vert \mathbf{x}_0} \big[\log (1 - D_{\bm{\zeta}}( \mathbf{x}_{\mathrm{est}}(\mathbf{x}_s, s, t)))\big], \end{align*}
 其中对 $D_{\bm{\zeta}}$ 取最大化、对 $\rmG_{\bm{\theta}}$ 取最小化。直观上，判别器起到一种自适应的感知距离的作用，
 促使模型生成真实的细节。理论上，GAN 项驱动的是 $p_{\mathrm{data}}$ 与 $\rmG_{\bm{\theta}}$ 所诱导的模型分布之间的分布匹配
@@ -1539,8 +1533,7 @@ CTM 学的是对任意 $s>t$ 都成立的一般流映射 $\bPsi_{s\to t}$，也�
 CTM 的 $\gamma$ 采样给出一族统一的采样器，它们都是从学习一般流映射模型的过程中自然产生的。
 这一族涵盖了此前的方法，例如一致性模型的多步采样（见 \Cref{alg:cm_sampling}），
 以及概念上与 ODE 求解器类似的时间步进式采样。
-参数 $\gamma$ 直接控制生成过程中语义变化的程度，因此 $\gamma$ 采样可以针对不同的下游应用
-灵活调整，成为一种「感知任务」的策略。
+参数 $\gamma$ 直接控制生成过程中语义变化的程度，因此 $\gamma$ 采样可以针对不同的下游应用灵活调整，成为一种「感知任务」的策略。
 
 
 
@@ -1591,10 +1584,9 @@ $、从 $p_T$ 出发所得到的密度。则
     \begin{align*}
         \mathcal{O}\left(\sqrt{T + \tau_1 + \cdots + \tau_M}\right).
     \end{align*}
-    
+
     \item \textbfs{当 $\gamma = 0$}（对应 CTM 的确定性多步采样）\textbfs{：}各次转移在时间上不再重叠，
-    于是误差不再累积，得到更紧的界 $\mathcal{O}(\sqrt{T})$。实验上，$\gamma = 0$ 的 CTM 在采样速度与样本质量之间
-    给出了很好的权衡：增加采样步数能提升生成质量，又不会引入不稳定。
+    于是误差不再累积，得到更紧的界 $\mathcal{O}(\sqrt{T})$。实验上，$\gamma = 0$ 的 CTM 在采样速度与样本质量之间给出了很好的权衡：增加采样步数能提升生成质量，又不会引入不稳定。
 \end{itemize}
 
 
@@ -1622,17 +1614,17 @@ $、从 $p_T$ 出发所得到的密度。则
 与建立在 EDM 框架上的 CM、CTM 不同，MF 采用流匹配的表述（$t\in[0,1]$ 时 $\alpha_t = 1-t$、$\sigma_t  = t$）。
 MF 不直接参数化流映射，而是学习区间 $[t,s]$（$t<s$）上的\emph{平均漂移}：
 \[
-\rvh_{\btheta}(\rvx_s, s, t)  \approx 
+\rvh_{\btheta}(\rvx_s, s, t)  \approx
 \rvh^*(\rvx_s, s, t) := \frac{1}{t-s}\int_s^t \rvv^*(\rvx_u,u) \diff u.
 \]
 对应的理想损失为
 \begin{align}\label{eq:mf-oracle}
-\mathbb{E}_{t<s} \mathbb{E}_{\rvx_s\sim p_s}\Big[w(s) 
+\mathbb{E}_{t<s} \mathbb{E}_{\rvx_s\sim p_s}\Big[w(s)
 \|\rvh_{\btheta}(\rvx_s,s,t) - \rvh^*(\rvx_s,s,t)\|_2^2\Big].
 \end{align}
 特别地，当 $s \to t$ 时，该损失就退化为流匹配损失：
 \begin{align}\label{eq:mf-to-fm}
-    \mathbb{E}_{t} \mathbb{E}_{\rvx_t\sim p_t}\Big[w(t) 
+    \mathbb{E}_{t} \mathbb{E}_{\rvx_t\sim p_t}\Big[w(t)
 \|\rvh_{\btheta}(\rvx_t,t,t) - \rvv^*(\rvx_t,t)\|_2^2\Big],
 \end{align}
 即学习瞬时速度。稍后在 \Cref{subsec:equivalence-ctm-mf} 会看到，MF 与 \Cref{eq:general-cm-loss:rep} 中的总体目标是一致的，
@@ -1645,7 +1637,7 @@ MF 不直接参数化流映射，而是学习区间 $[t,s]$（$t<s$）上的\emp
 \begin{aligned}
     \rvh^*(\rvx_s,s,t)
 &= \rvv^*(\rvx_s,s) - (s-t) \tfrac{\diff}{\diff s}\rvh^*(\rvx_s,s,t) \\
-&= \rvv^*(\rvx_s,s) - (s-t)\Big[(\partial_{\rvx}\rvh^*)(\rvx_s,s,t) \rvv^*(\rvx_s,s) 
+&= \rvv^*(\rvx_s,s) - (s-t)\Big[(\partial_{\rvx}\rvh^*)(\rvx_s,s,t) \rvv^*(\rvx_s,s)
 + \partial_s \rvh^*(\rvx_s,s,t)\Big],
 \end{aligned}
 \end{align}
@@ -1673,7 +1665,7 @@ MF 不直接参数化流映射，而是学习区间 $[t,s]$（$t<s$）上的\emp
 依靠预训练的扩散模型（\emph{蒸馏}），或者直接从数据构造一个估计量（\emph{从头训练}）。
 无论选哪种，最终都要计算目标网络 $\rvh_{\btheta^-}$ 的一个
 \emph{雅可比向量积}（JVP）：
-\[ 
+\[
 \left[\partial_\rvx \rvh_{\btheta^-}, \partial_s \rvh_{\btheta^-}, \partial_t \rvh_{\btheta^-}\right]^\top \cdot \left[\rvv^*, 1, 0\right]
 \]
 
@@ -1732,7 +1724,7 @@ $\rvx_T\sim p_{\mathrm{prior}}$，一步生成干净样本为
 以及 MF 的参数化
 \[
 \rvh_\btheta(\rvx_s,s,t) \approx \rvh^*(\rvx_s,s,t):=\frac{1}{t-s}\int_s^t \rvv^*(\rvx_u,u) \diff u,
-\] 
+\]
 下面证明 CTM 与 MF 的训练损失实际上是相等的。
 
 
@@ -1743,8 +1735,8 @@ $\rvx_T\sim p_{\mathrm{prior}}$，一步生成干净样本为
 取 $d(\rvx,\rvy):=\|\rvx-\rvy\|^2$。把它代入 \Cref{eq:general-cm-loss:rep}，并把 $\rmG_\btheta$ 看作 CTM 的流映射参数化（\Cref{eq:ctm_para_1}），可得
 \begin{align} &~d\big(\rmG_\btheta(\rvx_s,s,t), \bPsi_{s\to t}(\rvx_s)\big) \notag \\ = &~\norm{\rmG_\btheta(\rvx_s,s,t) - \bPsi_{s\to t}(\rvx_s)}^2 \notag \\ = &~\norm{\left(\frac{t}{s}\rvx_s + \frac{s-t}{s} \rvg_\btheta(\rvx_s,s,t)\right)-\left(\frac{t}{s}\rvx_s + \frac{s-t}{s}\Big[\rvx_s + \frac{s}{s-t}\int_s^t \rvv^*(\rvx_u,u) \diff u\Big]\right)}^2 \notag \\ = &~\left(\frac{s-t}{s}\right)^2\norm{\rvg_\btheta(\rvx_s,s,t)-\left(\rvx_s + \frac{s}{s-t}\int_s^t \rvv^*(\rvx_u,u) \diff u\right)}^2 \label{eq:g-para} \\ = &~\left(\frac{s-t}{s}\right)^2\norm{\left(\rvx_s - s \rvh_\btheta(\rvx_s,s,t)\right)-\left(\rvx_s + \frac{s}{s-t}\int_s^t \rvv^*(\rvx_u,u) \diff u\right)}^2 \notag \\ = &~\left(s-t\right)^2\norm{ \rvh_\btheta(\rvx_s,s,t)- \left(\frac{1}{t-s}\int_s^t \rvv^*(\rvx_u,u)\diff u \right)}^2 \label{eq:h-para} \end{align}
 于是
-\begin{align*} 
-\frac{1}{s^2} \Bigg\|\rvg_\btheta(\rvx_s,s,t)-\rvg^*(\rvx_s,s,t) \Bigg\|^2 = \Bigg\|\rvh_\btheta(\rvx_s,s,t)-\rvh^*(\rvx_s,s,t) \Bigg\|^2. 
+\begin{align*}
+\frac{1}{s^2} \Bigg\|\rvg_\btheta(\rvx_s,s,t)-\rvg^*(\rvx_s,s,t) \Bigg\|^2 = \Bigg\|\rvh_\btheta(\rvx_s,s,t)-\rvh^*(\rvx_s,s,t) \Bigg\|^2.
 \end{align*}
 不管具体用什么算法来学流映射，CTM 与 MF 的损失在数学形式上是相同的，只差一个加权函数。
 此外，两种情形下取 $t=0$ 都会回到一致性模型的设置（$\bPsi_{s\to 0}$），此时每个状态都被直接映到干净数据。
@@ -1760,7 +1752,7 @@ MF 也采用类似策略。如 \Cref{eq:mf-to-fm} 所示，当 $s \to t$ 时 MF 
 CTM ($\rmG_\btheta(\rvx_s,s,t)$) 和 MF ($\rvh_\btheta(\rvx_s,s,t)$) 都旨在近似底层流映射 $\bPsi_{s\to t}$：
 \[
 \rmG_\btheta(\rvx_s,s,t)\approx\bPsi_{s\to t},\quad  \text{and}
-\quad 
+\quad
 \rvx_s+(t-s)\rvh_\btheta(\rvx_s,s,t)\approx\bPsi_{s\to t}.
 \]
 由于这两个模型学到的都是任意两个时刻之间的显式映射，它们自然支持 CTM 的 $\gamma$ 采样，
@@ -1770,7 +1762,7 @@ CTM ($\rmG_\btheta(\rvx_s,s,t)$) 和 MF ($\rvh_\btheta(\rvx_s,s,t)$) 都旨在�
 \[
 \rvg^*(\rvx_s,s,s)=\rvx_s-s\,\rvv^*(\rvx_s,s),
 \quad  \text{and}
-\quad 
+\quad
 \rvh^*(\rvx_s,s,s)=\rvv^*(\rvx_s,s).
 \]
 而只针对 $\bPsi_{s\to0}$ 的专用流映射方案（例如一致性模型这一族）并不具备这一性质。
@@ -1785,8 +1777,7 @@ CTM ($\rmG_\btheta(\rvx_s,s,t)$) 和 MF ($\rvh_\btheta(\rvx_s,s,t)$) 都旨在�
 
 CTM 与 MF 之间的关系，类似于扩散模型的不同参数化之间的关系（\Cref{sec:equivalent-parametrizations}）：
 在理想目标这一层面上，它们编码的是同一个底层流映射。根据上面关于平方误差回归与参数化的关系，
-两者的理想回归误差只差一个已知的、与时间相关的缩放因子。不过，它们的实际训练目标仍然
-不同，因为二者采用的可计算替代目标和优化流程都不一样。
+两者的理想回归误差只差一个已知的、与时间相关的缩放因子。不过，它们的实际训练目标仍然不同，因为二者采用的可计算替代目标和优化流程都不一样。
 
 虽然 CTM 与 MF 有这样的联系，但它们在「如何学习目标」这一点上，概念上与算法上都不相同。
 CTM 的目标写成「积分」形式，因为它直接作用在流映射上；MF 的目标则写成「微分」形式，
@@ -1817,8 +1808,7 @@ CTM 与 MF 的表现可能不同，因而在某些条件下其中一种会优于
 此时不妨从具体算法里退一步看整体。知识蒸馏（\Cref{sec:distillation-prologue}）、渐进蒸馏（\Cref{sec:PD}）、
 一致性模型（\Cref{sec:discrete-cm}）、CTM（\Cref{sec:CTM}）和 MF（\Cref{sec:MF}）
 是用不同的训练构造引入的，但它们都显式或隐式地利用了同一个「ODE 解映射」结构。
-流映射本身就是微分方程与动力系统中的一个经典对象，在连续介质力学与流体力学中
-有着密切相关的「基于粒子」和「基于场」两种描述；参见
+流映射本身就是微分方程与动力系统中的一个经典对象，在连续介质力学与流体力学中有着密切相关的「基于粒子」和「基于场」两种描述；参见
 \Cref{eq:flow-map-def} 及其周围的历史讨论。这里我们用同一 ODE 流的三种经典描述——\emph{半群}、
 \emph{拉格朗日}和\emph{欧拉}视角——来作为组织前述现代学习方法的线索
 \footnote{在现代生成建模中，\citet{boffi2024flow} 把原本散见于 PD、CM、CTM 和 MF 中的结构性思想汇集起来，
@@ -1890,8 +1880,7 @@ $t$。此时终点沿同一条轨迹移动：
 0.
 \]
 「欧拉」一词借用的是经典的「基于场」观点：这里终点时刻 $t$
-固定，而起始的「状态—时刻」对 $(\rvx_s,s)$ 沿
-同一条 ODE 轨迹移动；因此时刻 $t$ 的终点保持不变。对一致性模型来说，终点时刻固定在 $t=0$，于是终点就是干净样本：
+固定，而起始的「状态—时刻」对 $(\rvx_s,s)$ 沿同一条 ODE 轨迹移动；因此时刻 $t$ 的终点保持不变。对一致性模型来说，终点时刻固定在 $t=0$，于是终点就是干净样本：
 \[
     \rvf^*(\rvx_s,s)=\bPsi_{s\to0}(\rvx_s).
 \]
@@ -1963,11 +1952,9 @@ MF 则通过平均漂移来表示同一个终点
 \end{figure}
 
 \paragraph{三种视角的数学等价性。}
-对精确的 ODE 流而言，半群恒等式、拉格朗日恒等式和欧拉恒等式
-表达的是同一条简单原理：在标准的解的存在性、唯一性与光滑性假设下，
+对精确的 ODE 流而言，半群恒等式、拉格朗日恒等式和欧拉恒等式表达的是同一条简单原理：在标准的解的存在性、唯一性与光滑性假设下，
 ODE 在每个「状态—时刻」对上确定唯一的轨迹。也就是说，一旦某时刻的状态给定，
-可走的路只有一条。半群视角把这条路径切成首尾相接的若干段；拉格朗日视角在终点时刻变化时
-追踪它的终点；欧拉视角沿同一条路径移动起点，同时保持终点不动。
+可走的路只有一条。半群视角把这条路径切成首尾相接的若干段；拉格朗日视角在终点时刻变化时追踪它的终点；欧拉视角沿同一条路径移动起点，同时保持终点不动。
 因此，这三个恒等式是对同一个 ODE 流的等价描述~\citep{arnold1988geometrical,chorin1993mathematical}。
 把半群恒等式看作「有限区间」的陈述，而把拉格朗日与欧拉恒等式看作它的两个无穷小形式
 ——分别通过缩小终点附近的短区间、起始时刻附近的短区间得到——它们之间的联系就格外清楚。
@@ -1983,8 +1970,7 @@ ODE 在每个「状态—时刻」对上确定唯一的轨迹。也就是说，�
 把两个区间之一缩小，就得到两个微分形式的视角。
 
 \subparagraph{终点时刻取极限：拉格朗日恒等式。}
-固定起始的「状态—时刻」对 $(\rvx_s,s)$，把行程最后
-一段缩短。对 $\Delta t>0$，
+固定起始的「状态—时刻」对 $(\rvx_s,s)$，把行程最后一段缩短。对 $\Delta t>0$，
 \[
     \bPsi_{t\to t-\Delta t}
     \big(\bPsi_{s\to t}(\rvx_s)\big)
@@ -2064,14 +2050,11 @@ ODE 在每个「状态—时刻」对上确定唯一的轨迹。也就是说，�
     =
     0.
 \]
-这里终点时刻 $t$ 固定，而起始的「状态—时刻」对
-沿同一条轨迹移动，因此终点保持
-不变。
+这里终点时刻 $t$ 固定，而起始的「状态—时刻」对沿同一条轨迹移动，因此终点保持不变。
 
 \subparagraph{由任一微分恒等式还原流映射。}
 反过来，两个微分恒等式中的任何一个，
-配合边界条件 $\bPsi_{s\to s}=\rmI$，都能还原出同一个
-流映射。拉格朗日恒等式从
+配合边界条件 $\bPsi_{s\to s}=\rmI$，都能还原出同一个流映射。拉格朗日恒等式从
 $\bPsi_{s\to s}(\rvx_s)=\rvx_s$ 出发，把终点一路演化出去。欧拉恒等式则说明
 $\bPsi_{\tau\to t}(\rvx_\tau)$ 沿特征线
 $\rvx_\tau=\bPsi_{s\to \tau}(\rvx_s)$ 保持常数，因此
@@ -2083,8 +2066,7 @@ $\rvx_\tau=\bPsi_{s\to \tau}(\rvx_s)$ 保持常数，因此
     \rvx_t.
 \]
 尽管这些视角在理想目标这一层面上彼此等价，一旦引入近似，它们就会导向不同的实用算法：
-必须选定要强制哪个恒等式、把停止梯度目标放在哪里、如何
-采样时间对，以及如何参数化该映射。
+必须选定要强制哪个恒等式、把停止梯度目标放在哪里、如何采样时间对，以及如何参数化该映射。
 
 
 \paragraph{结语。}

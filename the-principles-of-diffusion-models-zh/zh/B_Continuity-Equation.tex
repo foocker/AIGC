@@ -17,7 +17,7 @@
 
 \begin{figure}[ht!]
 \centering
-\scalebox{0.9}{ 
+\scalebox{0.9}{
 \begin{tikzpicture}[
     mainbox/.style={draw, thick, rectangle, rounded corners=0pt, minimum width=13cm, minimum height=2.5cm, inner sep=5mm},
     equationbox/.style={draw, thick, rectangle, rounded corners=5pt, fill=white, inner sep=3mm, text width=5.2cm, align=center},
@@ -34,7 +34,7 @@
 
 % Row 2
 \node (box1) at (3cm,-2.2cm) [mainbox] {};
-\node (transform1) at ($(box1.west) + (3.2cm, 0)$) [smalltransformbox, eqfont] 
+\node (transform1) at ($(box1.west) + (3.2cm, 0)$) [smalltransformbox, eqfont]
     {$ \rvx_0\xrightarrow{\,\bPhi\,} \rvx_1$};
 \node (density1) at ($(box1.east) - (3.5cm, 0)$) [equationbox, eqfont]
     {$p_0(\rvx_0) = p_1(\rvx_1) \left| \det \frac{\partial \bPhi(\rvx_0)}{\partial \rvx_0} \right|$};
@@ -84,7 +84,7 @@
 
 \end{tikzpicture}
 }
-\caption{A统一\emph{变量变换公式}。从上到下：（1）单双射； (2) 多重双射的复合； (3) 由 ODE 和相关连续性方程控制的连续时间确定性流； (4) 通过 SDE 和相应的 福克尔-普朗克方程模拟随机流。 \figcredit{由作者创建。}}
+\caption{A 统一\emph{变量变换公式}。从上到下：（1）单双射； (2) 多重双射的复合； (3) 由 ODE 和相关连续性方程控制的连续时间确定性流； (4) 通过 SDE 和相应的 福克尔-普朗克方程模拟随机流。 \figcredit{由作者创建。}}
 \label{fig:unified_framework_CoV}
 \end{figure}
 
@@ -103,7 +103,7 @@
 
 
 \paragraph{单个更新。}
-考虑通过应用矢量场（类似于力）引起的单个更新规则 
+考虑通过应用矢量场（类似于力）引起的单个更新规则
 $\bm{\Psi}:\R^D \to \R^D$ 一个时间单位。从初始粒子状态开始 $\rvx_0$，其下一个状态由下式给出
 \[
 \rvx_1 = \bm{\Psi}(\rvx_0).
@@ -129,7 +129,7 @@ p_1(\rvx_1)\;=\;p_0(\rmA^{-1}\rvx_1)\,\big|\det \rmA^{-1}\big|.
 \[
 \begin{array}{lccc}
    \text{\textbfs{Sample:}} & \rvx_0 & \xrightarrow{\hspace{0.2cm} \bm{\Psi} \hspace{0.2cm}} & \rvx_1  \\
-   \text{\textbfs{Density:}} & p_{\rvx_0}(\rvx_0) & \xrightarrow{\hspace{0.2cm} \bm{\Psi} \hspace{0.2cm}} & p_{\rvx_1}(\rvx_1) 
+   \text{\textbfs{Density:}} & p_{\rvx_0}(\rvx_0) & \xrightarrow{\hspace{0.2cm} \bm{\Psi} \hspace{0.2cm}} & p_{\rvx_1}(\rvx_1)
 \end{array}
 \]
 
@@ -176,15 +176,15 @@ p_{k}(\rvx_k) \;=\; p_{k-1}(\rvx_{k-1}) \,
 通过递归，最终密度为 $\rvx_L$ 是
 \begin{mdframed}
 \begin{align}\label{eq:cov-multi-layer-nolog}
-    p_{\rvx_L}(\rvx_L) 
-    = p_{\rvx_0}(\rvx_0) 
+    p_{\rvx_L}(\rvx_L)
+    = p_{\rvx_0}(\rvx_0)
     \cdot \prod_{k=1}^L \left| \det \left( \frac{\partial \bm{\Psi}_k}{\partial \rvx_{k-1}} \right) \right|^{-1}.
 \end{align}
 \end{mdframed}
 等效地，采用对数密度形式：
 \begin{align*}
-    \log p_{\rvx_L}(\rvx_L) 
-    = \log p_{\rvx_0}(\rvx_0) 
+    \log p_{\rvx_L}(\rvx_L)
+    = \log p_{\rvx_0}(\rvx_0)
     - \sum_{k=1}^L \log \left| \det \left( \frac{\partial \bm{\Psi}_k}{\partial \rvx_{k-1}} \right) \right|.
 \end{align*}
 这个表达式反映了每个变换如何 $\bm{\Psi}_k$ 拉伸或收缩体积，由雅可比行列式捕获。这些局部体积变化沿变换路径的累积决定了合成图下的最终概率密度。
@@ -194,14 +194,14 @@ p_{k}(\rvx_k) \;=\; p_{k-1}(\rvx_{k-1}) \,
 \clearpage
 \newpage
 
-\subsection{连续时间极限：连续性方程}\label{subsec:cov-continuity-eq} 
+\subsection{连续时间极限：连续性方程}\label{subsec:cov-continuity-eq}
 
 
 
-我们现在从离散更新过渡到连续描述。假设粒子运动由时变速度场驱动 
+我们现在从离散更新过渡到连续描述。假设粒子运动由时变速度场驱动
 $\rvf:\R^D \times [0,T]\to \R^D$。想象一下粒子的演化过程 $\rvx_0 \sim p_0$ 通过无限多个小的双射更新。每一步 $t$ 长度 $\Delta t>0$，更新为
 \[
-\rvx_{t+\Delta t} = \bm{\Psi}(\rvx_t) 
+\rvx_{t+\Delta t} = \bm{\Psi}(\rvx_t)
 := \rvx_t + \Delta t\, \rvf(\rvx_t, t).
 \]
 如 $\Delta t \to 0$，这些更新的组合收敛到由速度场控制的连续流 $\rvf:\R^D \times [0,T]\to \R^D$:
@@ -209,10 +209,10 @@ $\rvf:\R^D \times [0,T]\to \R^D$。想象一下粒子的演化过程 $\rvx_0 \si
     \frac{\diff \rvx(t)}{\diff t} = \rvf(\rvx(t), t),
     \qquad \rvx(0) = \rvx_0 \sim p_0.
 \end{align}
-在适当的平滑度假设下（参见 \Cref{app:de})，该 ODE 承认每个初始条件都有唯一的解，它定义了确定性流映射 
+在适当的平滑度假设下（参见 \Cref{app:de})，该 ODE 承认每个初始条件都有唯一的解，它定义了确定性流映射
 $\bm{\Psi}_{0\to t}:\R^D \to \R^D$。换句话说， $\bm{\Psi}_{0\to t}$ 带来初始状态 $\rvx_0$ 解决 \Cref{eq:ode-f-continuity} 当时 $t$:
 \[
-\bm{\Psi}_{0\to t}(\rvx_0) 
+\bm{\Psi}_{0\to t}(\rvx_0)
 = \rvx_0 + \int_{0}^{t} \rvf(\rvx(\tau), \tau)\,\diff\tau.
 \]
 结果，整个分布也移动：初始密度 $p_0$ 被传送到新密度 $p_t$，定律 $\rvx(t)$。正式地，这被写成 \emph{前推}:
@@ -221,28 +221,28 @@ p_t = \big(\bm{\Psi}_{0\to t}\big)_{\#} p_0.
 \]
 当 $\bm{\Psi}_{0\to t}$ 是平滑且可逆的，这简化为熟悉的变量更改规则：
 \[
-p_t(\rvx) 
+p_t(\rvx)
 = p_0\!\big(\bm{\Psi}_{t\to 0}(\rvx)\big)\,
    \big|\det \partial_\rvx\bm{\Psi}_{t\to 0}(\rvx)\big|
-= \int \delta\!\left(\rvx - \bm{\Psi}_{0\to t}(\rvx_0)\right) 
-   p_0(\rvx_0)\,\diff\rvx_0. 
+= \int \delta\!\left(\rvx - \bm{\Psi}_{0\to t}(\rvx_0)\right)
+   p_0(\rvx_0)\,\diff\rvx_0.
 \]
 
 \paragraph{连续性方程：密度如何随时间变化。}
 我们可以使用空间中的微分方程来描述它如何连续移动，而不是每次都编写一个单独的密度公式 $\rvx$ 和时间 $t$。这个想法很简单：概率质量守恒，速度场 $\rvf$ 仅在空间中重新分配。这给出了 \emph{连续性方程}:
 \begin{mdframed}
 \begin{align}\label{eq:continuity-cov}
-    \frac{\partial}{\partial t} p_t(\rvx) 
+    \frac{\partial}{\partial t} p_t(\rvx)
     + \nabla \cdot \big( p_t(\rvx)\,\rvf(\rvx, t) \big) = 0.
 \end{align}
 \end{mdframed}
-这里是散度项 $\nabla \cdot (p_t \rvf)$ 测量流动如何局部膨胀或压缩密度，确保总概率保持不变 $1$.该偏微分方程 (PDE) 确保当流体移动粒子时概率质量守恒。  
+这里是散度项 $\nabla \cdot (p_t \rvf)$ 测量流动如何局部膨胀或压缩密度，确保总概率保持不变 $1$.该偏微分方程 (PDE) 确保当流体移动粒子时概率质量守恒。
 事实上，它可以被视为变量变换公式的连续时间模拟。
 
 
 \paragraph{通过变量变换公式推导连续性方程。} 从概念上讲，连续性方程也可以通过取\Cref{eq:cov-multi-layer-nolog}的连续时间极限来获得。然而，这里我们采用基于\Cref{eq:change-of-variable-density}的更直接的推导。
 \subparagraph{离散化和变量变换公式.}
-考虑 
+考虑
 \[
 \mathbf{x}_{t+\Delta t} := \bm{\Psi}(\mathbf{x}_t) = \mathbf{x}_t + \Delta t\, \rvf(\mathbf{x}_t, t),
 \]
@@ -270,24 +270,24 @@ p_t(\rvx)
 \subparagraph{使用泰勒展开式.}
 现在，我们通过多元泰勒展开来展开左侧：
 \begin{align*}
-    &\log p_{t+\Delta t}(\rvx_{t+\Delta t}) 
-    - \log p_t(\rvx_t) 
-    \\= &\Delta t\, \partial_t \log p_t(\rvx_t) 
-    + (\rvx_{t+\Delta t} - \rvx_t)^\top \nabla_{\rvx_t} \log p_t(\rvx_t) 
+    &\log p_{t+\Delta t}(\rvx_{t+\Delta t})
+    - \log p_t(\rvx_t)
+    \\= &\Delta t\, \partial_t \log p_t(\rvx_t)
+    + (\rvx_{t+\Delta t} - \rvx_t)^\top \nabla_{\rvx_t} \log p_t(\rvx_t)
     + \mathcal{O}(\Delta t^2).
 \end{align*}
 替换 $\rvx_{t+\Delta t} - \rvx_t = \rvf(\rvx_t, t)\Delta t$ 得到：
 \begin{align*}
-    &\log p_{t+\Delta t}(\rvx_{t+\Delta t}) 
-    - \log p_t(\rvx_t) 
-    \\= & \Delta t\, \partial_t \log p_t(\rvx_t) 
-    + \Delta t\, \rvf(\rvx_t, t)^\top \nabla_{\rvx_t} \log p_t(\rvx_t) 
+    &\log p_{t+\Delta t}(\rvx_{t+\Delta t})
+    - \log p_t(\rvx_t)
+    \\= & \Delta t\, \partial_t \log p_t(\rvx_t)
+    + \Delta t\, \rvf(\rvx_t, t)^\top \nabla_{\rvx_t} \log p_t(\rvx_t)
     + \mathcal{O}(\Delta t^2).
 \end{align*}
 将项与 \Cref{eq:log-density-diff} 匹配并令 $\Delta t \to 0$，我们得出结论：
 \begin{equation*}
-    \partial_t \log p_t(\rvx_t) 
-    = - \nabla_{\rvx_t} \cdot \rvf(\rvx_t, t) 
+    \partial_t \log p_t(\rvx_t)
+    = - \nabla_{\rvx_t} \cdot \rvf(\rvx_t, t)
     - \rvf(\rvx_t, t)^\top \nabla_{\rvx_t} \log p_t(\rvx_t).
 \end{equation*}
 求幂并使用乘积法则可得出连续性方程。
@@ -298,18 +298,14 @@ p_t(\rvx)
 \emph{拉格朗日} 视图跟踪流中的单个粒子
 映射 $\bm{\Psi}_{0\to t}$，而 \emph{Eulerian} 视图描述了
 固定空间下的速度 $\rvf(\rvx,t)$ 和密度 $p_t(\rvx)$
-地点。在适当的规律性下，这些描述是一致的：
-规定的速度场产生粒子流，其推力
-密度满足连续性方程。
+地点。在适当的正则性条件下，这些描述是一致的：
+规定的速度场产生粒子流，其推力密度满足连续性方程。
 
-尽管如此，还是存在一个重要的不对称性。一旦速度场和
-初始密度固定，所得流和密度演化为
-确定。然而，单独规定的密度路径通常不能
-确定唯一的速度场或粒子流。
- 
+尽管如此，还是存在一个重要的不对称性。一旦速度场和初始密度固定，所得流和密度演化为确定。然而，单独规定的密度路径通常不能确定唯一的速度场或粒子流。
+
 
 \subparagraph{从速度到流和密度。}
-到目前为止，我们已经假设给出了速度场 $\rvf$。  
+到目前为止，我们已经假设给出了速度场 $\rvf$。
 粒子常微分方程
 \[
 \frac{\diff \rvx(t)}{\diff t} = \rvf(\rvx(t), t)
@@ -318,9 +314,9 @@ p_t(\rvx)
 \[
 \partial_t p_t + \nabla \!\cdot \!\big(p_t \rvf_t\big) = 0
 \]
-描述粒子的整个分布如何演化。  
-这两个视图是相连的：根据常微分方程移动粒子会自动产生满足偏微分方程的密度。  
-在这种情况下，颗粒流 $\bm{\Psi}_{0\to t}$ 是唯一确定的：从 $\rvx(0)\sim p_0$ 开始，每个轨迹 $\rvx(t)$ 都是固定的，所得密度 $p_t$ 遵循连续性方程。  
+描述粒子的整个分布如何演化。
+这两个视图是相连的：根据常微分方程移动粒子会自动产生满足偏微分方程的密度。
+在这种情况下，颗粒流 $\bm{\Psi}_{0\to t}$ 是唯一确定的：从 $\rvx(0)\sim p_0$ 开始，每个轨迹 $\rvx(t)$ 都是固定的，所得密度 $p_t$ 遵循连续性方程。
 在这里，粒子动力学和密度动力学完全一致。
 
 \subparagraph{从密度路径到速度：非唯一性。}
@@ -335,10 +331,10 @@ p_t(\rvx)
 \]
 精确产生密度 $p_t$ 通过流映射 $\bm{\Psi}_{0\to t}$。也就是说，当 $p_t$ 和 $\rvf$ 一起满足 \Cref{eq:continuity-cov}。直观地说，可实现性意味着快照 $p_t$ 随着时间的推移，可以用粒子在某些速度场下移动来解释，而不是任意的分布序列。当这个条件成立时，密度 $p_t$ 无非就是初始密度的前推 $p_0$ 沿流映射 $\bm{\Psi}_{0\to t}$。在这种情况下，应用熟悉的变量变换公式：
 \begin{align*}
-    p_t = \big(\bm{\Psi}_{0\to t}\big)_{\#} p_0 
+    p_t = \big(\bm{\Psi}_{0\to t}\big)_{\#} p_0
 = p_0\!\big(\bm{\Psi}_{t\to 0}(\rvx)\big)\,
    \big|\det \partial_\rvx\bm{\Psi}_{t\to 0}(\rvx)\big|
-= \int \delta \left(\rvx - \bm{\Psi}_{0\to t}(\rvx_0)\right) 
+= \int \delta \left(\rvx - \bm{\Psi}_{0\to t}(\rvx_0)\right)
    p_0(\rvx_0)\,\diff\rvx_0.
 \end{align*}
 
@@ -354,7 +350,7 @@ p_t(\rvx)
 \[
 \partial_t p_t(\rvx|\rvz)+\nabla\!\cdot\!\big(p_t(\rvx|\rvz)\,\rvv_t(\rvx|\rvz)\big)=0
 \]
-则边缘密度为 
+则边缘密度为
 \[
 p_t(\rvx)=\int p_t(\rvx|\rvz)\pi(\rvz)\diff\rvz.
 \]
@@ -408,10 +404,10 @@ $ \Delta p_t = \nabla \cdot \nabla_\rvx p_t $ 是拉普拉斯算子。在第一�
 \frac{1}{2}g^2(t)\nabla_{\rvx}\log p_t(\rvx).
 \]
 因此，由该速度驱动的确定性 ODE 通过相同的一次性边缘密度演化
-$p_t$ 作为SDE。这是整本书中使用的概率流 ODE。
+$p_t$ 作为 SDE。这是整本书中使用的概率流 ODE。
 
 \rmkb{
-关键是SDE和PF-ODE在以下方面达成了一致： \emph{密度路径}，但通常不讨论不同时间的样本如何耦合。任何固定时间 $t$，两者产生相同的分布 $p_t$;同样，它们的粒子“快照”具有相同的直方图。然而，随着时间的推移，它们的样本路径是不同的。对于 PF-ODE，一旦状态 $\rvx_s$ 已固定，后续状态由下式确定
+关键是 SDE 和 PF-ODE 在以下方面达成了一致： \emph{密度路径}，但通常不讨论不同时间的样本如何耦合。任何固定时间 $t$，两者产生相同的分布 $p_t$;同样，它们的粒子“快照”具有相同的直方图。然而，随着时间的推移，它们的样本路径是不同的。对于 PF-ODE，一旦状态 $\rvx_s$ 已固定，后续状态由下式确定
 $\bPsi_{s\to t}(\rvx_s)$。对于 SDE，新的布朗噪声在一段时间后注入 $s$，因此即使在调节后，后来的状态仍然是随机的 $\rvx_s$。因此，这两个过程可能具有不同的转移分布、时间相关性和路径事件，即使它们在每个单独时间的边缘密度是相同的。因此，PF-ODE 再现了 SDE \emph{边缘密度演化}，而不是其完全随机路径定律。参见 \Cref{fig:score-sde-three-dynamics} 用于说明。
 }
 
@@ -496,7 +492,7 @@ j_x(x + \Delta x, y, z, t) \Delta y \Delta z.
 \mathbf{j}(\mathbf{x},t)=p(\mathbf{x},t)\mathbf{v}(\mathbf{x},t).
 \]
 
-\paragraph{步骤 1：控制体积内的变化率。}  
+\paragraph{步骤 1：控制体积内的变化率。}
 考虑任意控制量 $V \subset \mathbb{R}^D$ 有边界 $\partial V$。守恒量的总量 $V$ 是
 \[
 \int_V p(\mathbf{x}, t) \diff V,
@@ -506,19 +502,19 @@ j_x(x + \Delta x, y, z, t) \Delta y \Delta z.
 \frac{\partial}{\partial t} \int_V p(\mathbf{x}, t) \diff V.
 \]
 
-\paragraph{步骤 2：通过边界的净通量。}  
+\paragraph{步骤 2：通过边界的净通量。}
 数量存在 $V$ 通过 $\partial V$ 具有向外法线向量 $\mathbf{n}$。净流出通量为
 \[
 \int_{\partial V} p(\mathbf{x}, t) \mathbf{v}(\mathbf{x}, t) \cdot \mathbf{n} \diff S.
 \]
 
-\paragraph{第 3 步：守恒原理。}  
+\paragraph{第 3 步：守恒原理。}
 守恒意味着内部积累速率 $V$ 等于净向外通量的负值：
 \[
 \frac{\partial}{\partial t} \int_V p \diff V + \int_{\partial V} p \mathbf{v} \cdot \mathbf{n} \diff S = 0.
 \]
 
-\paragraph{步骤 4：散度定理。}  
+\paragraph{步骤 4：散度定理。}
 应用散度定理将表面积分转换为体积积分：
 \[
 \int_{\partial V} p \mathbf{v} \cdot \mathbf{n} \diff S = \int_V \nabla \cdot (p \mathbf{v}) \diff V.
@@ -573,23 +569,13 @@ p(\mathbf{x}_t,t)\nabla\cdot\mathbf{v}(\mathbf{x}_t,t).
 
 \section{（选读）Wasserstein 梯度流作为分布级训练}
 \label{sec:wgf-distribution-level-training}我们现在从特定于扩散的动态中退一步，采取更广泛的方法
-从分布演化看深度生成模型。  我们已经讨论过连续性方程描述了概率如何
-当其粒子移动时，分布也会移动。   也可以使用相同的语言
-了解深度生成模型的训练：训练算法更新
-模型参数，更新后的生成器移动生成的粒子，以及
-这些粒子的运动改变了诱导模型分布
+从分布演化看深度生成模型。  我们已经讨论过连续性方程描述了概率如何当其粒子移动时，分布也会移动。   也可以使用相同的语言了解深度生成模型的训练：训练算法更新模型参数，更新后的生成器移动生成的粒子，以及这些粒子的运动改变了诱导模型分布
 $p_{\bphi}$。
 
-从这个角度来看，可以组织不同的生成建模方法
-根据模型分布 $p_{\bphi}$ 如何驱动数据
-分布$p_{\mathrm{data}}$。  Wasserstein 梯度流给出一
-用一种特别简洁的方式来描述这个运动：它将训练视为一种
-分布空间中概率质量的理想化流，则为
-通过有限维神经网络更新来近似。
+从这个角度来看，可以组织不同的生成建模方法根据模型分布 $p_{\bphi}$ 如何驱动数据分布$p_{\mathrm{data}}$。  Wasserstein 梯度流给出一用一种特别简洁的方式来描述这个运动：它将训练视为一种分布空间中概率质量的理想化流，则为通过有限维神经网络更新来近似。
 
 
-神经生成器 $\rmG_{\bphi}$ 定义了函数和概率
-分布。  如果
+神经生成器 $\rmG_{\bphi}$ 定义了函数和概率分布。  如果
 \[
     \rvz\sim p_{\mathrm{prior}},
     \qquad
@@ -605,21 +591,16 @@ $p_{\bphi}$ 如何处理数据分布 $p_{\mathrm{data}}$。
 这引发了一个分布级别的问题：
 \begin{question}
 我们可以先描述一下移动模型分布的理想方式吗
-$p_{\bphi}$朝向$p_{\mathrm{data}}$，然后更新神经网络
-参数以便生成器大致实现该运动？
+$p_{\bphi}$朝向$p_{\mathrm{data}}$，然后更新神经网络参数以便生成器大致实现该运动？
 \end{question}
 
 在整个可选部分中，$\tau$ 表示 \emph{ 训练时间}：
-离散训练迭代索引的理想化连续时间版本。  它
-不应与扩散/噪声时间混淆。  我们写 $\bphi_\tau$ 为
-训练时的参数 $\tau$ 和 $p_{\bphi_\tau}$
+离散训练迭代索引的理想化连续时间版本。  它不应与扩散/噪声时间混淆。  我们写 $\bphi_\tau$ 为训练时的参数 $\tau$ 和 $p_{\bphi_\tau}$
 相应的模型分布。
 
 \paragraph{通过移动粒子来移动模型分布.}
-在会计之前，我们首先描述理想的分布级别演变
-用于神经生成器的有限维参数化。
-假设当前模型分布中的粒子按照
-训练时速度场 $\rvw_\tau$：
+在会计之前，我们首先描述理想的分布级别演变用于神经生成器的有限维参数化。
+假设当前模型分布中的粒子按照训练时速度场 $\rvw_\tau$：
 \[
     \frac{\diff \rvx_\tau}{\diff \tau}
     =
@@ -648,9 +629,8 @@ $p_{\bphi_\tau}$ 朝向 $p_{\mathrm{data}}$。  让
     \mathcal{D}(p_{\bphi_\tau},p_{\mathrm{data}})
 \]
 当前模型分布与数据之间存在差异
-分布。  \emph{Wasserstein梯度流}~\citep{jordan1998variational,ambrosio2005gradient}选择的粒子速度
-在移动的几何形状下最直接地减少这种差异
-概率质量。
+分布。  \emph{Wasserstein 梯度流}~\citep{jordan1998variational,ambrosio2005gradient}选择的粒子速度
+在移动的几何形状下最直接地减少这种差异概率质量。
 
 为了选取速度场，先考察对当前分布作无穷小扰动时，目标函数如何变化。可将 $\mathcal{D}(p,p_{\mathrm{data}})$ 看作分布 $p$ 的整体能量。它的一阶变分给出定义在空间各点的能量势，指明对当前分布而言，哪些区域代价较高，哪些区域更有利。
 
@@ -668,8 +648,7 @@ $p_{\bphi_\tau}$ 朝向 $p_{\mathrm{data}}$。  让
     +
     \mathop{\mathrm{o}}(\epsilon).
 \]
-这里 $p$ 是虚拟分布变量。  进行变异后，我们
-在当前模型分布 $p=p_{\bphi_\tau}$ 上对其进行评估。
+这里 $p$ 是虚拟分布变量。  进行变异后，我们在当前模型分布 $p=p_{\bphi_\tau}$ 上对其进行评估。
 
 我们通过以下方式定义所得的逐点能量势
 \[
@@ -680,8 +659,7 @@ $p_{\bphi_\tau}$ 朝向 $p_{\mathrm{data}}$。  让
 \]
 直观地说，如果 $E_\tau(\rvx)$ 很大，则放置更多的概率质量
 $\rvx$ 附近会增加差异。  如果 $E_\tau(\rvx)$ 很小，
-那么将质量移向 $\rvx$ 是有利的。  因此，瓦瑟斯坦
-梯度流速使粒子在此势下向下移动：
+那么将质量移向 $\rvx$ 是有利的。  因此，瓦瑟斯坦梯度流速使粒子在此势下向下移动：
 \[
     \rvw_\tau(\rvx)
     =
@@ -702,21 +680,15 @@ $\rvx$ 附近会增加差异。  如果 $E_\tau(\rvx)$ 很小，
     \diff\rvx
     \le 0.
 \]
-因此，Wasserstein梯度流是梯度下降
-$2$-Wasserstein概率分布几何\footnote{我们注意到这个理想
-分布空间动力学不应与普通梯度混淆
-神经参数 $\bphi$ 的下降：后者受到
-有限维生成器系列，通常只实现一个
+因此，Wasserstein 梯度流是梯度下降
+$2$-Wasserstein 概率分布几何\footnote{我们注意到这个理想
+分布空间动力学不应与普通梯度混淆神经参数 $\bphi$ 的下降：后者受到有限维生成器系列，通常只实现一个
 所需粒子运动的近似值。}。  全局差异 $\mathcal{D}$ 定义了
-整个分布的能量，第一个变体 $E_\tau$ 定义了
-粒子看到的局部能量景观，以及
-$-\nabla_{\rvx}E_\tau$ 给出了降低粒子速度的理想粒子速度
-差异。
+整个分布的能量，第一个变体 $E_\tau$ 定义了粒子看到的局部能量景观，以及
+$-\nabla_{\rvx}E_\tau$ 给出了降低粒子速度的理想粒子速度差异。
 
 \paragraph{用神经网络实现分布速度。}
-上面的速度是一个分布级别的对象：它表示如何生成
-粒子应该移动。  然而，神经生成器无法移动每个粒子
-独立。  它只能通过共享参数更新来移动粒子
+上面的速度是一个分布级别的对象：它表示如何生成粒子应该移动。  然而，神经生成器无法移动每个粒子独立。  它只能通过共享参数更新来移动粒子
 $\bphi$。
 
 在训练时间$\tau$，当前生成器产生粒子
@@ -735,8 +707,7 @@ Wasserstein 的一个小步骤将这些粒子移动到
     =
     \rvx_i+\eta\rvw_\tau(\rvx_i),
 \]
-其中 $\eta>0$ 是小步长。  然后更新神经网络
-它的新输出与这些移动的粒子相匹配：
+其中 $\eta>0$ 是小步长。  然后更新神经网络它的新输出与这些移动的粒子相匹配：
 \[
     \bphi_{\tau+\eta}
     \approx
@@ -752,8 +723,7 @@ Wasserstein 的一个小步骤将这些粒子移动到
         \big)
     \right\|_2^2.
 \]
-这里 $\operatorname{sg}(\cdot)$ 表示停止梯度，因此移动的粒子
-被视为固定目标。对于小参数更新 $\Delta\bphi$，我们有线性化
+这里 $\operatorname{sg}(\cdot)$ 表示停止梯度，因此移动的粒子被视为固定目标。对于小参数更新 $\Delta\bphi$，我们有线性化
 \[
     \rmG_{\bphi_\tau+\Delta\bphi}(\rvz_i)
     \approx
@@ -772,12 +742,9 @@ Wasserstein 的一个小步骤将这些粒子移动到
         \eta\rvw_\tau(\rvx_i)
     \right\|_2^2.
 \]
-换句话说，Wasserstein 梯度流指定了所需的分布级别
-粒子运动，而神经网络训练将这个运动投射到
-可以通过改变有限维来实现的一组运动
-参数$\bphi$。
+换句话说，Wasserstein 梯度流指定了所需的分布级别粒子运动，而神经网络训练将这个运动投射到可以通过改变有限维来实现的一组运动参数$\bphi$。
 
-\paragraph{Forward-KL训练：数据端似然学习.}
+\paragraph{Forward-KL 训练：数据端似然学习.}
 经典的分布级目标是数据侧或前向 KL
 散度：
 \[
@@ -807,13 +774,9 @@ Wasserstein 的一个小步骤将这些粒子移动到
 \]
 这是许多基于似然的模型背后的分布级别视图。
 自回归模型和归一化流直接优化可精确计算的似然；
-基于似然的 VAE 优化变分下界；能量模型
-通过正相和负相优化似然；和扩散模型
-可以通过其用似然或分数匹配的替代目标来训练
-变分和去噪目标。
+基于似然的 VAE 优化变分下界；能量模型通过正相和负相优化似然；和扩散模型可以通过其用似然或分数匹配的替代目标来训练变分和去噪目标。
 
-从 Wasserstein 梯度流的角度来看，前向 KL 首先
-变异
+从 Wasserstein 梯度流的角度来看，前向 KL 首先变异
 \[
     \frac{\delta}{\delta p}
     \mathcal D_{\mathrm{KL}}(p_{\mathrm{data}}\|p)
@@ -832,20 +795,13 @@ Wasserstein 的一个小步骤将这些粒子移动到
     \right).
 \]
 该表达式涉及密度比
-$p_{\mathrm{data}}/p_{\bphi_\tau}$，通常很难估计
-对于隐式生成器。在实践中，前向 KL 或最大似然
-当似然、变分界或合适时，训练是最直接的
-似然梯度的近似值是可用的。分数匹配
-通过匹配分数提供不同的分布学习途径
-函数而不是直接实现前向 KL Wasserstein 流。
+$p_{\mathrm{data}}/p_{\bphi_\tau}$，通常很难估计对于隐式生成器。在实践中，前向 KL 或最大似然当似然、变分界或合适时，训练是最直接的似然梯度的近似值是可用的。分数匹配通过匹配分数提供不同的分布学习途径函数而不是直接实现前向 KL Wasserstein 流。
 
-前向KL训练的主要优势在于它是数据覆盖和
-当似然或变分替代目标是统计上有充分依据的
-可用。  它的局限性在于它通常需要易于处理的密度，
+前向 KL 训练的主要优势在于它是数据覆盖和当似然或变分替代目标是统计上有充分依据的可用。  它的局限性在于它通常需要易于处理的密度，
 变分界限、分数匹配替代项或昂贵的负采样，
 这使得它与任意隐式生成器不太直接兼容。
 
-\paragraph{反向-KL训练：模型端评分-不匹配动力学.}
+\paragraph{反向-KL 训练：模型端评分-不匹配动力学.}
 模型侧或反向 KL 散度为
 \[
     \mathcal{D}_{\mathrm{RKL}}(p_{\bphi},p_{\mathrm{data}})
@@ -880,12 +836,9 @@ $p_{\mathrm{data}}/p_{\bphi_\tau}$，通常很难估计
     -
     \text{model score}.
 \]
-目标分数将生成的粒子吸引到高密度区域
-数据分布，而模型分数排斥来自数据分布区域的粒子
+目标分数将生成的粒子吸引到高密度区域数据分布，而模型分数排斥来自数据分布区域的粒子
 目前的车型分布已经过于集中。在扩散蒸馏和分布匹配中（参见\Cref{sec:VSD}），这种想法通常是
-适用于噪声水平 $s$。  让 $p_s$ 表示教师或噪声数据
-分布，并让 $p_{\bphi_\tau,s}$ 表示噪声分布
-当前生成器样本。  反向KL目标
+适用于噪声水平 $s$。  让 $p_s$ 表示教师或噪声数据分布，并让 $p_{\bphi_\tau,s}$ 表示噪声分布当前生成器样本。  反向 KL 目标
 \[
     \E_s
     \left[
@@ -924,45 +877,23 @@ $\hat\rvx_s\sim p_{\bphi_\tau,s}$，获得以下形式的梯度
 -
 \nabla_{\rvx}\log p_{\bphi_\tau,s}(\hat\rvx_s)
 \]
-提供驱动参数的分布级别下降方向
-梯度。各个生成样本的实际移动是由
-共享神经参数化，如上所述。这种分数差梯度是基本的分配级别机制
-基于反向 KL 的方法（例如 DMD 和 VSD）背后：估计目标并
-对生成的样本进行模型评分，并使用它们的差异来更新
-生成器。
+提供驱动参数的分布级别下降方向梯度。各个生成样本的实际移动是由共享神经参数化，如上所述。这种分数差梯度是基本的分配级别机制基于反向 KL 的方法（例如 DMD 和 VSD）背后：估计目标并对生成的样本进行模型评分，并使用它们的差异来更新生成器。
 
-反向 KL 训练的主要优势在于它与
-一旦可以估计相关分数，就可以使用隐式生成器。  这也是
-模式搜索，可以一步或几步提高视觉保真度
-一代。  它的局限性是它可以丢弃模式，很大程度上取决于
-分数估计的质量，可能需要额外的模型分数网络或
-一位坚强的老师。
+反向 KL 训练的主要优势在于它与一旦可以估计相关分数，就可以使用隐式生成器。  这也是模式搜索，可以一步或几步提高视觉保真度一代。  它的局限性是它可以丢弃模式，很大程度上取决于分数估计的质量，可能需要额外的模型分数网络或一位坚强的老师。
 
-同样的吸引-排斥解释也出现在漂流式中
-粒子更新~\citep{weber2023the,deng2026generative}。  在术语中
-\citet{lai2026unified}、DMD/VSD/SiD提供基于参数评分的
-这种分数不匹配动态的实例化，而漂移式
-方法~\citep{weber2023the,deng2026generative}提供了一个
-基于非参数内核的实例化。
+同样的吸引-排斥解释也出现在漂流式中粒子更新~\citep{weber2023the,deng2026generative}。  在术语中
+\citet{lai2026unified}、DMD/VSD/SiD 提供基于参数评分的
+这种分数不匹配动态的实例化，而漂移式方法~\citep{weber2023the,deng2026generative}提供了一个基于非参数内核的实例化。
 
 
 \paragraph{结束语.}
-总之，连续性方程提供了两者背后的共同语言
-扩散动力学和分布级训练。  在扩散模型中，
-描述中间分布 $p_t$ 如何沿着规定的演化
-噪声或概率流动力学。  在 Wasserstein 梯度流中，同样
-方程描述了模型分布 $p_{\bphi_\tau}$ 在
-当生成的粒子朝着数据分布移动时进行训练
+总之，连续性方程提供了两者背后的共同语言扩散动力学和分布级训练。  在扩散模型中，
+描述中间分布 $p_t$ 如何沿着规定的演化噪声或概率流动力学。  在 Wasserstein 梯度流中，同样方程描述了模型分布 $p_{\bphi_\tau}$ 在当生成的粒子朝着数据分布移动时进行训练
 $p_{\mathrm{data}}$。
 
-因此，这种观点扩大了连续性方程的作用，超越了
-扩散模型。  它让我们将生成建模解释为设计
-分布动态：不同的方法选择不同的差异，
+因此，这种观点扩大了连续性方程的作用，超越了扩散模型。  它让我们将生成建模解释为设计分布动态：不同的方法选择不同的差异，
 不同的粒子速度，以及不同的参数更新来驱动
-$p_{\bphi}$ 朝向 $p_{\mathrm{data}}$。  从这个角度来说，扩散
-模型、基于似然的模型、分布匹配方法，以及
-可以在共享分布级别下查看基于分数不匹配的方法
-分类学。
+$p_{\bphi}$ 朝向 $p_{\mathrm{data}}$。  从这个角度来说，扩散模型、基于似然的模型、分布匹配方法，以及可以在共享分布级别下查看基于分数不匹配的方法分类学。
 
 
 

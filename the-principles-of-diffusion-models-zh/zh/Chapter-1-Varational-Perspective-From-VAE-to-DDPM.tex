@@ -1,4 +1,4 @@
-\chapter{变分视角：从VAE到DDPM}\label{ch:variational}
+\chapter{变分视角：从 VAE 到 DDPM}\label{ch:variational}
 
 
 本章从变分视角介绍扩散模型。变分自编码器（VAE）用潜变量表示数据，训练时最大化一个可计算的对数似然下界。编码器从观测数据推断潜变量，解码器再根据潜变量重建观测数据。
@@ -42,7 +42,7 @@
     draw=black, fill=gray!10,
     minimum height=45pt, minimum width=25pt, align=center,
     % Add outer sep to ensure arrows connect cleanly to the rounded edges
-    outer sep=0pt 
+    outer sep=0pt
   },
   latent/.style={
     rectangle, rounded corners=3pt,
@@ -177,12 +177,12 @@ ELBO 有一个自然的信息论解释。前面提到，最大似然训练等价
 \end{itemize}
 比较这两个分布，可以得到不等式
 \begin{align}\label{eq:joint-bound}
-    \mathcal{D}_{\mathrm{KL}}(p_{\text{data}}(\rvx) \| p_{\bm{\phi}}(\rvx)) 
+    \mathcal{D}_{\mathrm{KL}}(p_{\text{data}}(\rvx) \| p_{\bm{\phi}}(\rvx))
     \leq \mathcal{D}_{\mathrm{KL}}(q_{\bm{\theta}}(\rvx,\rvz) \| p_{\bm{\phi}}(\rvx,\rvz)),
 \end{align}
 它有时被称为 KL 散度的链式法则。直观上，只比较边缘分布（$\rvx$）可能会掩盖在完整的潜变量联合分布上才会显露的不匹配。形式上，把联合 KL 展开：
 \begin{align*}
-    &\underbrace{\mathcal{D}_{\mathrm{KL}}(q_{\bm{\theta}}(\mathbf{x}, \mathbf{z}) \| p_{\bm{\phi}}(\mathbf{x}, \mathbf{z}))}_{\text{Total Error Bound}} 
+    &\underbrace{\mathcal{D}_{\mathrm{KL}}(q_{\bm{\theta}}(\mathbf{x}, \mathbf{z}) \| p_{\bm{\phi}}(\mathbf{x}, \mathbf{z}))}_{\text{Total Error Bound}}
     \\=& \mathbb{E}_{q_{\bm{\theta}}(\mathbf{x}, \mathbf{z})} \left[ \log \frac{p_{\text{data}}(\mathbf{x}) q_{\bm{\theta}}(\mathbf{z}|\mathbf{x})}{p_{\bm{\phi}}(\mathbf{x}) p_{\bm{\phi}}(\mathbf{z}|\mathbf{x})} \right] \\=&\mathbb{E}_{p_{\text{data}}(\mathbf{x})} \left[ \log \frac{p_{\text{data}}(\mathbf{x})}{p_{\bm{\phi}}(\mathbf{x})} + \mathcal{D}_{\mathrm{KL}}\left( q_{\bm{\theta}}(\mathbf{z}|\mathbf{x}) \| p_{\bm{\phi}}(\mathbf{z}|\mathbf{x}) \right) \right] \\
     \\=&  \underbrace{\mathcal{D}_{\mathrm{KL}}(p_{\text{data}} \| p_{\bm{\phi}})}_{\text{True Modeling Error}} + \underbrace{\mathbb{E}_{p_{\text{data}}(\mathbf{x})} \big[ \mathcal{D}_{\mathrm{KL}}( q_{\bm{\theta}}(\mathbf{z}|\mathbf{x}) \| p_{\bm{\phi}}(\mathbf{z}|\mathbf{x}) ) \big]}_{\text{Inference Error}},
 \end{align*}
@@ -190,7 +190,7 @@ ELBO 有一个自然的信息论解释。前面提到，最大似然训练等价
 
 最后注意
 \[
-\log p_{\bm{\phi}}(\rvx) - \mathcal{L}_{\text{ELBO}}(\bm{\theta},\bm{\phi};\rvx) 
+\log p_{\bm{\phi}}(\rvx) - \mathcal{L}_{\text{ELBO}}(\bm{\theta},\bm{\phi};\rvx)
 = \mathcal{D}_{\mathrm{KL}} \left(q_{\bm{\theta}}(\rvz|\rvx)\|p_{\bm{\phi}}(\rvz|\rvx)\right).
 \]
 可见推理误差恰好是对数似然与 ELBO 之间的差距。因此，最大化 ELBO 就是在直接缩小推理误差，使训练真正优化总体界中可优化的部分。
@@ -208,7 +208,7 @@ q_{\bm{\theta}}(\mathbf{z} | \mathbf{x}) := \mathcal{N}\left(\mathbf{z}; \bm{\mu
 p_{\bm{\phi}}(\mathbf{x}|\mathbf{z}) := \mathcal{N}\bigl(\mathbf{x}; \bm{\mu}_{\bm{\phi}}(\mathbf{z}), \sigma^2 \rmI\bigr),
 \]
 其中$\bm{\mu}_{\bm{\phi}} : \mathbb{R}^d \to \mathbb{R}^D$是一个神经网络，$\sigma > 0$是一个控制方差的较小常数。
- 
+
 在这一假设下，ELBO 中的重建项化为
 \[
 \mathbb{E}_{q_{\bm{\theta}}(\mathbf{z} | \mathbf{x})} \left[\log p_{\bm{\phi}}(\mathbf{x} | \mathbf{z})\right]
@@ -221,7 +221,7 @@ p_{\bm{\phi}}(\mathbf{x}|\mathbf{z}) := \mathcal{N}\bigl(\mathbf{x}; \bm{\mu}_{\
 \]
 其中在高斯假设下 KL 项有闭式解。因此，训练 VAE 归结为在正则化约束下最小化重建损失。
 
-\subsection{标准VAE的不足}\label{sec:drawback_standard_VAE}
+\subsection{标准 VAE 的不足}\label{sec:drawback_standard_VAE}
 VAE 框架在理论上很有吸引力，但有一个明显缺陷：它生成的样本往往比较模糊\footnote{这里讨论的局限针对的是前文引入的常见 VAE 设置，即用平方误差训练、解码器为简单的高斯分布。在这种设置下，总体最优的解码器返回条件均值。若若干个视觉上差别很大的输入对应到重叠的潜在区域，这种平均就会显得模糊。这不应被理解为关于所有 VAE 架构或观测模型的普遍结论。}。
 
 \paragraph{VAE 中的模糊生成。}
@@ -296,14 +296,14 @@ q_{\text{enc}}(\mathbf{z})
   \node[state] (zT) [node_dist=dots] {$\rvz_L$};
 
   % Draw the arrows (edges) with labels
-  
+
   % Inference path (top, q, forward) - Shifted up
   \path ([yshift=4.5pt]x.east)  edge node[above] {$q_{\bm{\theta}}(\rvz_1|\rvx)$} ([yshift=4.5pt]z1.west);
   \path ([yshift=4.5pt]z1.east) edge node[above] {$q_{\bm{\theta}}(\rvz_2|\rvz_1)$} ([yshift=4.5pt]z2.west);
   \path ([yshift=4.5pt]z2.east) edge ([yshift=4.5pt]dots.west);
   % --- CHANGED: Added pos=0.4 to shift label left ---
   \path ([yshift=4.5pt]dots.east) edge node[above, pos=0.4] {$q_{\bm{\theta}}(\rvz_L|\rvz_{L-1})$} ([yshift=4.5pt]zT.west);
-  
+
   % Generative path (bottom, p, backward) - Shifted down
   \path ([yshift=-4.5pt]z1.west) edge node[below] {$p_{\bm{\phi}}(\rvx|\rvz_1)$} ([yshift=-4.5pt]x.east);
   \path ([yshift=-4.5pt]z2.west) edge node[below] {$p_{\bm{\phi}}(\rvz_1|\rvz_2)$} ([yshift=-4.5pt]z1.east);
@@ -346,7 +346,7 @@ q_{\bm{\theta}}(\mathbf{z}_{1:L} | \mathbf{x}) = q_{\bm{\theta}}(\mathbf{z}_1 | 
 与 \Cref{eq:vae-elbo} 类似，ELBO 由 Jensen 不等式导出：
 \begin{align}\label{eq:hvae-elbo}
 \begin{aligned}
-    \log p_{\text{HVAE}}(\mathbf{x}) 
+    \log p_{\text{HVAE}}(\mathbf{x})
 &= \log \int p_{\bm{\phi}}(\mathbf{x}, \mathbf{z}_{1:L}) \diff \mathbf{z}_{1:L} \\
 &= \log \int \frac{p_{\bm{\phi}}(\mathbf{x}, \mathbf{z}_{1:L})}{q_{\bm{\theta}}(\mathbf{z}_{1:L}|\mathbf{x})}   q_{\bm{\theta}}(\mathbf{z}_{1:L}|\mathbf{x}) \diff \mathbf{z}_{1:L} \\
 &= \log \mathbb{E}_{q_{\bm{\theta}}(\mathbf{z}_{1:L}|\mathbf{x})} \left[ \frac{p_{\bm{\phi}}(\mathbf{x}, \mathbf{z}_{1:L})}{q_{\bm{\theta}}(\mathbf{z}_{1:L}|\mathbf{x})} \right] \\
@@ -356,8 +356,8 @@ q_{\bm{\theta}}(\mathbf{z}_{1:L} | \mathbf{x}) = q_{\bm{\theta}}(\mathbf{z}_1 | 
 \end{align}
 代入因式分解的形式得到：
 \begin{align*}
-\mathcal{L}_{\text{ELBO}} 
-= \mathbb{E}_{q_{\bm{\theta}}(\mathbf{z}_{1:L}|\mathbf{x})} \left[ 
+\mathcal{L}_{\text{ELBO}}
+= \mathbb{E}_{q_{\bm{\theta}}(\mathbf{z}_{1:L}|\mathbf{x})} \left[
 \log \frac{
 p(\mathbf{z}_L) \prod_{i=2}^{L} p_{\bm{\phi}}(\mathbf{z}_{i-1} | \mathbf{z}_i)   p_{\bm{\phi}}(\mathbf{x} | \mathbf{z}_1)
 }{
@@ -475,14 +475,14 @@ DDPM 的核心涉及两个不同的随机过程：
   \node[state] (zT) [node_dist=dots] {$\rvx_L$};
 
   % Draw the arrows (edges) with labels
-  
+
   % Inference path (top, q, forward) - Shifted up
   % Changed 'darkgray' to 'gray' for a lighter color
   \path [gray] ([yshift=4.5pt]x.east)  edge node[above] {$p(\rvx_1|\rvx_0)$} ([yshift=4.5pt]z1.west);
   \path [gray] ([yshift=4.5pt]z1.east) edge node[above] {$p(\rvx_2|\rvx_1)$} ([yshift=4.5pt]z2.west);
   \path [gray] ([yshift=4.5pt]z2.east) edge ([yshift=4.5pt]dots.west);
   \path [gray] ([yshift=4.5pt]dots.east) edge node[above, pos=0.4] {$p(\rvx_L|\rvx_{L-1})$} ([yshift=4.5pt]zT.west);
-  
+
   % Generative path (bottom, p, backward) - Shifted down
   \path ([yshift=-4.5pt]z1.west) edge node[below] {$p_{\bm{\phi}}(\rvx_0|\rvx_1)$} ([yshift=-4.5pt]x.east);
   \path ([yshift=-4.5pt]z2.west) edge node[below] {$p_{\bm{\phi}}(\rvx_1|\rvx_2)$} ([yshift=-4.5pt]z1.east);
@@ -526,7 +526,7 @@ p(\rvx_i|\rvx_{i-1}) := \mathcal{N}(\rvx_i; \sqrt{1 - \beta_i^2}   \rvx_{i-1}, \
 这里过程从 $\rvx_{0}$ 开始，它代表从真实数据分布 $p_{\text{data}}$ 中抽取的样本。序列 $\{\beta_i\}_{i=1}^L$ 是预先给定的单调递增噪声表，其中每个
 $\beta_i \in (0, 1)$ 控制第 $i$ 步注入的高斯噪声的方差。为方便起见，定义 $\alpha_i := \sqrt{1 - \beta_i^2}$。这个定义完全等价于下面直观的迭代更新：
 \[
-\rvx_i = \alpha_i \rvx_{i-1} + \beta_i \bm{\epsilon}_i,  
+\rvx_i = \alpha_i \rvx_{i-1} + \beta_i \bm{\epsilon}_i,
 \]
 其中 $\bm{\epsilon}_i \sim \mathcal{N}(\bm{0}, \rmI)$ 独立同分布。也就是说，在第 $i$ 步，我们先把上一状态 $\rvx_{i-1}$ 按 $\alpha_i$ 缩小，再加上按 $\beta_i$ 缩放的一份受控高斯噪声。
 
@@ -610,9 +610,7 @@ $\rvx_0$ 做平均，因此它可能是一个复杂的混合分布。
 \textbfs{(右)}
 但在训练时，用来生成
 $\rvx_i$ 的干净样本 $\rvx_0$ 是已知的。以该样本为条件就得到
-$p(\rvx_{i-1}|\rvx_i,\rvx_0)$，它是一个均值有闭式、方差已知的高斯分布。于是 DDPM 可以把这种易于处理的条件分布
-当作简单的回归目标。虽然每个训练样本上的条件只涉及一个干净样本，但对所有样本取平均后，条件训练目标给出的最优模型与直接学习
-边缘反向分布得到的最优模型相同；见定理~\ref{thm:equiv-marginal-kl}。
+$p(\rvx_{i-1}|\rvx_i,\rvx_0)$，它是一个均值有闭式、方差已知的高斯分布。于是 DDPM 可以把这种易于处理的条件分布当作简单的回归目标。虽然每个训练样本上的条件只涉及一个干净样本，但对所有样本取平均后，条件训练目标给出的最优模型与直接学习边缘反向分布得到的最优模型相同；见定理~\ref{thm:equiv-marginal-kl}。
 因此 DDPM 无需直接回归那个复杂、通常难以处理的
 边缘混合分布，也能学到同样的最优反向预测。    \figcredit{由作者借助 AI 辅助编码创建。}}
         \label{fig:conditional-trick}
@@ -763,10 +761,10 @@ p_{\bm{\phi}}(\rvx_0, \rvx_{1:L}) := p_{\bm{\phi}}(\rvx_0|\rvx_1)  p_{\bm{\phi}}
 \end{align*}
 
 事实上，DDPM 通过 \Cref{eq:ddpm-diffusion} 的训练可以严格基于最大似然估计（\Cref{eq:MLE}）。具体而言，其目标构成一个 ELBO，与 VAE 和 HVAE 中的目标（\Cref{sec:vae}）类似，作为对数密度的下界：
-\thmp{DDPM的ELBO}{ddpm-elbo}{    
+\thmp{DDPM 的 ELBO}{ddpm-elbo}{
 \begin{align}\label{eq:ddpm-elbo}
         \begin{aligned}
-        -\log p_{\bm{\phi}}(\rvx_0)  &\leq-\mathcal{L}_{\text{ELBO}}(\rvx_0; \bm{\phi}) 
+        -\log p_{\bm{\phi}}(\rvx_0)  &\leq-\mathcal{L}_{\text{ELBO}}(\rvx_0; \bm{\phi})
         \\&:= \mathcal{L}_{\text{prior}}(\rvx_0) + \mathcal{L}_{\text{recon.}}(\rvx_0;\bm{\phi})  + \mathcal{L}_{\text{diffusion}}(\rvx_0;\bm{\phi})
         \end{aligned}
 \end{align}
@@ -774,7 +772,7 @@ p_{\bm{\phi}}(\rvx_0, \rvx_{1:L}) := p_{\bm{\phi}}(\rvx_0|\rvx_1)  p_{\bm{\phi}}
 \begin{align*}
    \mathcal{L}_{\text{prior}}(\rvx_0) &:= \mathcal{D}_{\text{KL}}\Big( p(\rvx_L|\rvx_0) \Vert p_{\text{prior}}(\rvx_L)\Big)\\
    \mathcal{L}_{\text{recon.}}(\rvx_0;\bm{\phi}) &:= \mathbb{E}_{p(\rvx_1|\rvx_0)}\left[-\log p_{\bm{\phi}}(\rvx_0|\rvx_1)\right]\\
-   \mathcal{L}_{\text{diffusion}}(\rvx_0;\bm{\phi}) &= \sum_{i=2}^L  \mathbb{E}_{p_i(\rvx_i|\rvx_0)}\left[\mathcal{D}_{\text{KL}}\Big(p(\rvx_{i-1}|\rvx_i, \rvx_0) \Vert p_{\bm{\phi}}(\rvx_{i-1}|\rvx_i) \Big)\right]. 
+   \mathcal{L}_{\text{diffusion}}(\rvx_0;\bm{\phi}) &= \sum_{i=2}^L  \mathbb{E}_{p_i(\rvx_i|\rvx_0)}\left[\mathcal{D}_{\text{KL}}\Big(p(\rvx_{i-1}|\rvx_i, \rvx_0) \Vert p_{\bm{\phi}}(\rvx_{i-1}|\rvx_i) \Big)\right].
 \end{align*}}{推导先应用 Jensen 不等式（与 HVAE/VAE 的 ELBO 中的做法相同，见 \Cref{eq:hvae-elbo}），再进一步化简。详细证明见 \Cref{app:vlb-proof}。}
 ELBO $\mathcal{L}_{\text{ELBO}}$ 由三项组成：
 \begin{itemize}
@@ -795,7 +793,7 @@ ELBO $\mathcal{L}_{\text{ELBO}}$ 由三项组成：
 
 
 
-\subsection{采样} 
+\subsection{采样}
 训练完成后，得到 $\beps$ 预测模型 $\bm{\epsilon}_{\bm{\phi}^\times}(\rvx_i, i)$\footnote{我们用符号``$\times$''表示模型已经训练好并已被冻结。}，采样按 \Cref{fig:ddpm-sampling-formal-rev} 所示顺序执行，使用的是反向的参数化转移 $p_{\bm{\phi}^\times}(\rvx_{i-1} | \rvx_i)$。具体来说，从一个随机种子 $\rvx_L \sim p_{\text{prior}} = \mathcal{N}(\bm{0},\rmI)$ 出发，对 $i = L, L-1, \dots, 1$ 依次按下面的更新规则采样 $p_{\bm{\phi}^\times}(\rvx_{i-1} | \rvx_i)$：
 \begin{align}\label{eq:ddpm-sampling}
     \rvx_{i-1} \leftarrow \underbrace{\frac{1}{\alpha_i}\left( \rvx_i  - \frac{1-\alpha_i^2}{\sqrt{1-\bar{\alpha}_i^2}} \bm{\epsilon}_{\bm{\phi}^\times}(\rvx_i, i)\right)}_{\bm{\mu}_{\bm{\phi}^\times}(\rvx_i, i)} +\sigma(i) \bm{\epsilon}_i,\quad \bm{\epsilon}_i\sim  \mathcal{N}(\bm{0},\rmI).

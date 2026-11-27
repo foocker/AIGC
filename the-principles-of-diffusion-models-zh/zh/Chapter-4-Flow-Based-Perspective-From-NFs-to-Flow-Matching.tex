@@ -26,7 +26,7 @@ p_{\mathrm{prior}}(\rvz)
 \end{mdframed}
 当 $\rvf$ 易于计算时，这个公式可以在变换的两端换算密度，是 \Cref{sec:flow-based-method} 中归一化流的基础。下面讨论如何把这样一个变换延伸到连续时间。
 
-本章的思路是：从归一化流出发，走到神经常微分方程，再进入流匹配。其中与 \Cref{ch:score-sde} 的衔接尤其重要。在 Score SDE 中，学到的分数被用来\emph{构造} PF-ODE 的速度场；流匹配则\emph{直接}学出速度场。就同一条扩散概率路径而言，这两者给出的是同一个确定性概率流的两种视角。
+本章的思路是：从归一化流出发，走到神经常微分方程，再进入流匹配。其中与 \Cref{ch:score-sde} 的衔接尤其重要。在 Score SDE 中，学到的分数用来\emph{构造} PF-ODE 的速度场；流匹配则\emph{直接}学出速度场。就同一条扩散概率路径而言，这两者给出的是同一个确定性概率流的两种视角。
 
 因此，一个有用的心智图景是：二者依赖的是同一条条件化原则：
 
@@ -51,29 +51,29 @@ p_{\mathrm{prior}}(\rvz)
   lbl/.style={draw=black!25, rounded corners=2pt, fill=white, inner sep=3pt,
               font=\footnotesize, align=center}
 ]
- 
+
 %--------------------------- conditional row (what is regressed) ------------
 \node[sblock] (cs) at (-3.0,2.55)
   {\textbfs{Conditional Score}\\[1pt]
    $\nabla_{\rvx}\log p_t(\rvx\,|\,\rvx_0)$\\[1pt]
    \subnote{closed form}};
- 
+
 \node[fblock] (cv) at (3.0,2.55)
   {\textbfs{Conditional Velocity}\\[1pt]
    $\rvv_t(\rvx\,|\,\rvz)$\\[1pt]
    \subnote{closed form}};
- 
+
 %--------------------------- marginal row (what is wanted) ------------------
 \node[sblock] (ms) at (-3.0,0)
   {\textbfs{Marginal Score}\\[1pt]
    $\nabla_{\rvx}\log p_t(\rvx)$\\[1pt]
    \subnote{intractable}};
- 
+
 \node[fblock] (mv) at (3.0,0)
   {\textbfs{Marginal Velocity}\\[1pt]
    $\rvv_t(\rvx)$\\[1pt]
    \subnote{intractable}};
- 
+
 %--------------------------- panels (background) ----------------------------
 \begin{pgfonlayer}{background}
   \node[panel, draw=scoreblue!40, fill=scoreblue!4,
@@ -81,62 +81,54 @@ p_{\mathrm{prior}}(\rvz)
   \node[panel, draw=fmorange!40, fill=fmorange!4,
         fit=(cv)(mv), inner xsep=8pt, inner ysep=12pt] (panelF) {};
 \end{pgfonlayer}
- 
+
 \node[head, text=scoreblue] at (panelS.north) {\textbfs{Score SDE}};
 \node[head, text=fmorange]  at (panelF.north) {\textbfs{Flow Matching}};
- 
+
 \draw[dashed, black!22, line width=.5pt]
   ($(panelS.north east)!0.5!(panelF.north west)$) --
   ($(panelS.south east)!0.5!(panelF.south west)$);
 \node[fill=white, inner sep=2pt, text=black!45, font=\large]
   at ($(panelS.east)!0.5!(panelF.west)$) {$\Longleftrightarrow$};
- 
+
 %--------------------------- conditional averaging --------------------------
 \draw[arr] (cs) -- (ms);
 \draw[arr] (cv) -- (mv);
 \node[lbl] at ($(cs)!0.5!(ms)$) {$\E_{\rvx_0\,|\,\rvx}\big[\,\cdot\,\big]$};
 \node[lbl] at ($(cv)!0.5!(mv)$) {$\E_{\rvz\,|\,\rvx}\big[\,\cdot\,\big]$};
- 
+
 %--------------------------- the single conversion --------------------------
 \node[bridge, text width=5.8cm] (conv) at (0,-3.45)
   {$\displaystyle \rvv_t(\rvx)=f(t)\rvx-\tfrac{1}{2}g^{2}(t)\,\nabla_{\rvx}\log p_t(\rvx)$};
- 
+
 % both columns drop, run together on a common bus, then one arrow descends
 \coordinate (bus) at ($(panelS.south)+(0,-0.75)$);
 \coordinate (busC) at (bus -| conv.north);
 \draw[semithick, black!60, rounded corners=4pt] (panelS.south) |- (busC);
 \draw[semithick, black!60, rounded corners=4pt] (panelF.south) |- (busC);
 \draw[arr] (busC) -- (conv.north);
- 
+
 %--------------------------- shared destination -----------------------------
 \node[shared, text width=7.8cm] (ode) at (0,-5.75)
   {\textbfs{The same probability flow}\\[4pt]
    $\displaystyle \frac{\diff \rvx(t)}{\diff t}=\rvv_t\big(\rvx(t)\big),$ \\[4pt] transporting between $p_{\mathrm{data}}$ and $p_{\mathrm{prior}}$.};
- 
+
 \draw[arr] (conv.south) -- (ode.north);
- 
+
 \end{tikzpicture}}
-\caption{\textbfs{对SDE和流匹配进行评分。}
+\caption{\textbfs{对 SDE 和流匹配进行评分。}
 两个框架都在顶部的封闭形式 \emph{conditional} 数量上进行训练
 行。对条件变量（垂直箭头）求平均值，得出
 棘手的\emph{marginal}数量如下，这是训练好的模型
 恢复了。这些列的区别仅在于数量不同。在扩散上
-path中的score通过中间的转换决定了速度，所以
-两条路线均以相同的 ODE 结束；流匹配直接学习速度并
-两个端点都不需要是高斯的。
+path 中的 score 通过中间的转换决定了速度，所以两条路线均以相同的 ODE 结束；流匹配直接学习速度并两个端点都不需要是高斯的。
 \figcredit{由作者创建。}}
 \label{fig:score-fm-mental-picture}
 \end{figure}
 
-流匹配使这一原理超越了通常的高斯扩散
-设置。它可以在更通用的源和更通用的源之间构建连续传输
-可获得样本的目标分布，前提是
-所选择的条件概率路径可以被有效地采样，并且它们
-条件速度可以轻松计算。为了支持对本章的深入理解，我们提供了
+流匹配使这一原理超越了通常的高斯扩散设置。它可以在更通用的源和更通用的源之间构建连续传输可获得样本的目标分布，前提是所选择的条件概率路径可以被有效地采样，并且它们条件速度可以轻松计算。为了支持对本章的深入理解，我们提供了
 \Cref{app:continuity} 直观、独立的不同概述
-变量变化原理的形式，是从普通原理发展而来的
-将变量变换公式转化为连续性方程，并且具有随机性
-动力学，到福克尔-普朗克方程。
+变量变化原理的形式，是从普通原理发展而来的将变量变换公式转化为连续性方程，并且具有随机性动力学，到福克尔-普朗克方程。
 
 \chapterlearning{
   \item 通过传输概率分布的共同思想（从离散可逆变换到连续时间速度场）连接归一化流、神经常微分方程和流匹配；
@@ -148,10 +140,7 @@ path中的score通过中间的转换决定了速度，所以
 }{
 已经熟悉归一化流和神经常微分方程的读者可以略读
 \Cref{sec:flow-based-method} 并以 \Cref{subsec:lesson-score} 开头。
-对于第一遍，重点关注 Score SDE 和 Flow 之间的连接
-匹配视图、连续性方程和条件边缘
-速度建设。详细的路径构造和可选的理论
-之后可以重新访问属性。
+对于第一遍，重点关注 Score SDE 和 Flow 之间的连接匹配视图、连续性方程和条件边缘速度建设。详细的路径构造和可选的理论之后可以重新访问属性。
 }
 
 
@@ -247,13 +236,13 @@ $\rvf_\bphi = \nabla \psi_\bphi$ 与 $\psi_\bphi$ 凸，则
   \node[state] (xL) [node_dist=dots] {$\rvx_L$};
 
   % Draw the arrows (edges) with labels
-  
+
   % Top path (Generative, right to left) - Shifted up
   \path [black] ([yshift=4.5pt]x0.west)  edge node[above] {$\rvf_0$} ([yshift=4.5pt]x1.east);
   \path [black] ([yshift=4.5pt]x1.west) edge node[above] {$\rvf_1$} ([yshift=4.5pt]x2.east);
   \path [black] ([yshift=4.5pt]x2.west) edge ([yshift=4.5pt]dots.east);
   \path [black] ([yshift=4.5pt]dots.west) edge node[above, pos=0.4] {$\rvf_{L-1}$} ([yshift=4.5pt]xL.east);
-  
+
   % Bottom path (Inference, left to right) - Shifted down
   \path ([yshift=-4.5pt]x1.east) edge node[below] {$\rvf_0^{-1}$} ([yshift=-4.5pt]x0.west);
   \path ([yshift=-4.5pt]x2.east) edge node[below] {$\rvf_1^{-1}$} ([yshift=-4.5pt]x1.west);
@@ -512,23 +501,15 @@ p_{\bm{\phi}}(\cdot, T) \approx p_{\text{data}},
 
 两者均分数 SDE~(\Cref{ch:score-sde}) 和
 NODEs~(\Cref{sec:flow-based-method}) 将生成建模描述为
-连续运输过程。 Score SDE 通过以下方式制定此传输
-随机动力学以及相关的 PF-ODE，
-而 NODE 则直接参数化一个确定性 ODE。在标准的
-生成设置，两者都旨在传输简单的高斯先验
+连续运输过程。 Score SDE 通过以下方式制定此传输随机动力学以及相关的 PF-ODE，
+而 NODE 则直接参数化一个确定性 ODE。在标准的生成设置，两者都旨在传输简单的高斯先验
 $p_{\mathrm{prior}}$ 进入数据分布$p_{\mathrm{data}}$。
 
 NODE 的一个实际限制是基于似然的训练需要
 反复求解 ODE。 \emph{流匹配}（FM）
-Framework~\citep{lipman2022flow,lipman2024flow,tongimproving} 避免了这种情况
-通过训练神经网络直接预测速度场来计算成本
-通过回归目标。因此需要 ODE 积分
-生成，但不在训练循环内，进行 FM 训练
-免模拟。
+Framework~\citep{lipman2022flow,lipman2024flow,tongimproving} 避免了这种情况通过训练神经网络直接预测速度场来计算成本通过回归目标。因此需要 ODE 积分生成，但不在训练循环内，进行 FM 训练免模拟。
 
-更一般地说，FM 不限于高斯到数据的传输。它
-考虑源分布 $p_{\mathrm{src}}$ 和目标
-分布 $p_{\mathrm{tgt}}$，两者都假设很容易从中采样。
+更一般地说，FM 不限于高斯到数据的传输。它考虑源分布 $p_{\mathrm{src}}$ 和目标分布 $p_{\mathrm{tgt}}$，两者都假设很容易从中采样。
 标准生成模型被恢复为特殊情况
 \[
 p_{\mathrm{src}}=p_{\mathrm{prior}},
@@ -537,9 +518,9 @@ p_{\mathrm{tgt}}=p_{\mathrm{data}},
 \]
 其中 $p_{\mathrm{prior}}$ 是典型的高斯分布。
 
-本节我们采用FM观点\footnote{几种相关方法共享使用连续时间流在端点分布之间传输的核心思想，尽管它们的表述略有不同。其中包括流匹配 (FM)~\citep{lipman2022flow,neklyudov2023action}，整流流 (RF)~\citep{liu2022rectified,heitz2023iterative}和随机插值~\citep{albergo2023stochastic,albergobuilding,ma2024sit}。在这里，我们使用 FM 作为统一术语。}
+本节我们采用 FM 观点\footnote{几种相关方法共享使用连续时间流在端点分布之间传输的核心思想，尽管它们的表述略有不同。其中包括流匹配 (FM)~\citep{lipman2022flow,neklyudov2023action}，整流流 (RF)~\citep{liu2022rectified,heitz2023iterative}和随机插值~\citep{albergo2023stochastic,albergobuilding,ma2024sit}。在这里，我们使用 FM 作为统一术语。}
 其目标是学习与时间相关的速度场
-$\mathbf{v}_t(\rvx_t)$ 其关联的 ODE 沿着规定的概率路径传输样本 $\{p_t\}_{t\in[0,1]}$ 满意
+$\mathbf{v}_t(\rvx_t)$ 其关联的 ODE 沿着规定的概率路径传输样本 $\{p_t\}_{t\in[0,1]}$ 满足
 \[
 p_0=p_{\mathrm{src}},
 \qquad
@@ -601,8 +582,8 @@ p_1=p_{\mathrm{tgt}}.
 \begin{figure}[th!]
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/data_vs_prior_cone_with_oval.pdf}
-    
-    \caption{\textbfs{条件转换分布的图示。} 
+
+    \caption{\textbfs{条件转换分布的图示。}
 $p_t(\rvx_t | \rvx_0) = \mathcal{N}(\rvx_t;\alpha_t \rvx_0,\sigma_t^2 \mathbf{I})$，它定义了数据样本 $\rvx_0 \sim p_{\text{data}}$（左）朝向高斯先验 $p_{\text{prior}}$（右）演化的（高斯）条件概率路径。 \figcredit{由作者创建。}}
     \label{fig:data-prior-conditioning}
 \end{figure}
@@ -731,7 +712,7 @@ f(t)\rvx_t
 这个偏微分方程保证 PF-ODE 给出的密度与前向 SDE 的边缘分布相吻合。要看清这一点，回忆 \Cref{eq:flow-map-def} 中 PF-ODE 的\emph{流映射} $\bPsi_{s \to t}(\rvx_s)$ 的定义：它把时刻 $s$ 的初始状态 $\rvx_s$ 直接送到时刻 $t$ 的状态。把 PF-ODE 从 $t=1$ 反向跑到 $t=0$，起点为 $\rvx_1 \sim p_{\mathrm{prior}}$，则由前推公式得到随时间的密度：
 \begin{align}\label{eq:pushforward-ode}
     p_t^{\mathrm{rev}}(\rvx)
-    = \int \delta \left(\rvx - \bPsi_{1 \to t}(\rvx_1)\right) 
+    = \int \delta \left(\rvx - \bPsi_{1 \to t}(\rvx_1)\right)
       p_{\mathrm{prior}}(\rvx_1) \mathrm{d}\rvx_1.
 \end{align}
 
@@ -803,7 +784,7 @@ $\mathbf{x}(1)\sim p_{\text{tgt}}$ 至 $p_{\text{src}}$
 \end{equation}
 \end{mdframed}
 
-任意速度场 $\mathbf{v}_t$ 满意 \Cref{eq:continuity_eq}，连同初始条件 $p_0=p_{\mathrm{src}}$，生成一个 ODE，其演化边缘遵循规定路径 $\{p_t\}$，在适当的规律性条件下。因此，求解 ODE 提供了样本之间的传输 $p_{\mathrm{src}}$ 和 $p_{\mathrm{tgt}}$ 匹配中间分布时。重要的是，连续性方程限制了概率密度的演化，但通常不能唯一地确定速度场。因此，不同的样本轨迹可以产生完全相同的边缘密度演化。例如，在以下地区： $p_t>0$，如果
+任意满足 \Cref{eq:continuity_eq} 的速度场 $\mathbf{v}_t$，连同初始条件 $p_0=p_{\mathrm{src}}$，都会生成一个 ODE，在适当的正则性条件下，其演化边缘沿规定的路径 $\{p_t\}$ 变化。因此，求解该 ODE 就给出了 $p_{\mathrm{src}}$ 与 $p_{\mathrm{tgt}}$ 之间逐样本的传输，同时匹配中间分布。重要的是，连续性方程约束了概率密度的演化，但一般不能唯一地确定速度场。因此，不同的样本轨迹可以产生完全相同的边缘密度演化。例如，在 $p_t>0$ 的区域上，如果
 $\mathbf{v}_t$ 满足 \Cref{eq:continuity_eq}，那么
 \[
 \mathbf{v}_t
@@ -812,20 +793,16 @@ $\mathbf{v}_t$ 满足 \Cref{eq:continuity_eq}，那么
 \]
 对于任何足够规则的无散度场也满足
 $\tilde{\mathbf{v}}_t$ 与
-$\nabla\cdot\tilde{\mathbf{v}}_t=0$.因此FM寻找\emph{a}速度场来实现规定的
-概率路径。对于一般源和目标分布，两者都不是
-边缘密度 $p_t$ 也通常无法获得这样的速度场
-封闭形式。这激发了接下来介绍的条件构造，
-其中易于处理的条件路径和速度用于学习有效的
-边缘速度场。
+$\nabla\cdot\tilde{\mathbf{v}}_t=0$.因此 FM 寻找\emph{a}速度场来实现规定的
+概率路径。对于一般源和目标分布，两者都不是边缘密度 $p_t$ 也通常无法获得这样的速度场封闭形式。这激发了接下来介绍的条件构造，
+其中易于处理的条件路径和速度用于学习有效的边缘速度场。
 
 作为一个具体的例子，在
 \Cref{subsec:special-fm-instantiations} 我们认为是高斯到高斯
-路径与特定的仿射流映射一起，对应的
-速度场可以明确计算。
+路径与特定的仿射流映射一起，对应的速度场可以明确计算。
 
 
-\paragraph{第3步：通过条件策略学习。}
+\paragraph{第 3 步：通过条件策略学习。}
 一旦选定了概率路径与相应的边缘速度场 $\rvv_t$，FM 就直接用一个神经网络 $\rvv_{\bm{\phi}}$ 去拟合它。理想的 FM 目标是
 \[
 \mathcal{L}_{\mathrm{FM}}(\bm{\phi})
@@ -934,12 +911,8 @@ C.
     这里，$\rvx_1\sim p_{\mathrm{tgt}}$表示目标数据样本。
     \textbfs{(左)}
     对于固定中间样本 $\rvx_t$，边缘速度
-    $\rvv_t(\rvx_t)$ 平均与相关的条件速度
-    所有可能产生的目标样本 $\rvx_1$
-    $\rvx_t$。每个 $\rvx_1$ 的贡献按以下方式加权
-    它与观察到的 $\rvx_t$ 兼容。计算这个平均值
-    直接需要对整个目标分布进行积分，并且
-    一般是很难处理的。
+    $\rvv_t(\rvx_t)$ 平均与相关的条件速度所有可能产生的目标样本 $\rvx_1$
+    $\rvx_t$。每个 $\rvx_1$ 的贡献按以下方式加权它与观察到的 $\rvx_t$ 兼容。计算这个平均值直接需要对整个目标分布进行积分，并且一般是很难处理的。
     \textbfs{(右)}
     然而，在训练过程中，使用了特定的目标样本 $\rvx_1$
     构造$\rvx_t$是已知的。以该样本为条件即可得到
@@ -950,16 +923,10 @@ C.
         \frac{a_t'}{a_t}
         \bigl(\rvx_t-b_t\rvx_1\bigr)$，
     它提供一个简单的向量作为回归目标
-    （提案~\ref{closed-form-vf}）。虽然每个训练示例
-    仅针对一个目标样本的条件，对条件进行平均
-    对数据的训练目标给出了相同的最佳边缘
-    速度场；参见定理~\ref{thm:fm-cfm}。因此，条件流
-    匹配学习 $\rvv_t(\rvx_t)$ 而无需直接回归
-    通常难以处理的边缘速度。这是同样的条件
-    变分透视中使用的原理
+    （提案~\ref{closed-form-vf}）。虽然每个训练示例仅针对一个目标样本的条件，对条件进行平均对数据的训练目标给出了相同的最佳边缘速度场；参见定理~\ref{thm:fm-cfm}。因此，条件流匹配学习 $\rvv_t(\rvx_t)$ 而无需直接回归通常难以处理的边缘速度。这是同样的条件变分透视中使用的原理
     (Theorem~\ref{thm:equiv-marginal-kl}) 和去噪分数匹配
     （定理~\ref{thm:sm-dsm}）。
-    \figcredit{由作者使用AI辅助编码创建。}}
+    \figcredit{由作者使用 AI 辅助编码创建。}}
     \label{fig:cfm-illustration}
 \end{figure}
 
@@ -984,7 +951,7 @@ p(\rvx_0|\rvx_t) = \frac{p_t(\rvx_t|\rvx_0) p_{\mathrm{data}}(\rvx_0)}{p_t(\rvx_
 \]
 \Cref{eq:marginal-oracle-velocity} 的类似分解出现在基于分数的模型中：
 \begin{align*}
-    \nabla_{\rvx_t} \log p_t(\rvx_t) 
+    \nabla_{\rvx_t} \log p_t(\rvx_t)
     &= \mathbb{E}_{\rvx_0 \sim p(\cdot|\rvx_t)} \left[ \nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0) \right] \\
     &= \mathbb{E}_{\rvx_0 \sim p_{\text{data}}} \left[ \nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0) \cdot \frac{p_t(\rvx_t|\rvx_0)}{p_t(\rvx_t)} \right],
 \end{align*}
@@ -994,7 +961,7 @@ p(\rvx_0|\rvx_t) = \frac{p_t(\rvx_t|\rvx_0) p_{\mathrm{data}}(\rvx_0)}{p_t(\rvx_
 与 \Cref{subsec:lesson-score} 一样，必须显式给出条件密度 $p_t(\rvx_t|\rvz)$ 与条件速度场 $\rvv_t(\rvx_t|\rvz)$——在扩散模型里它们分别取 $p_t(\rvx_t|\rvx_0) = \mathcal{N}(\rvx_t; \alpha_t \rvx_0, \sigma_t^2 \rmI)$ 与 $\rvv_t(\rvx_t|\rvx_0) = f(t)\rvx_t - \frac{1}{2}g^2(t)\nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0)$；通用的条件流匹配框架同样离不开这两样东西。不过在这一般情形下，我们还没有具体构造出条件密度 $p_t(\rvx_t|\rvz)$ 或条件速度场 $\rvv_t(\rvx_t|\rvz)$。\Cref{sec:instance-fm} 会给出这两者的几种常见实例。
 
 
-\subsection{扩散模型、一般流匹配与NODE的比较}\label{subsec:compare-dm-general-fm}
+\subsection{扩散模型、一般流匹配与 NODE 的比较}\label{subsec:compare-dm-general-fm}
 
 
 \paragraph{扩散模型与一般流匹配的比较。}
@@ -1013,7 +980,7 @@ p(\rvx_0|\rvx_t) = \frac{p_t(\rvx_t|\rvx_0) p_{\mathrm{data}}(\rvx_0)}{p_t(\rvx_
 \midrule
 源分布 $p_{\mathrm{src}}$ & 高斯先验 & 任意 \\
 目标分布 $p_{\mathrm{tgt}}$ & 数据分布 & 任意 \\
-潜变量分布 $\pi(\rvz)$ & $p_{\text{data}}$ & 见 \Cref{subsec:fm-instantiations} \\ 
+潜变量分布 $\pi(\rvz)$ & $p_{\text{data}}$ & 见 \Cref{subsec:fm-instantiations} \\
 条件分布 $p_t(\rvx_t|\rvz)$ & $\mathcal{N}(\rvx_t;\alpha_t\rvx_0,\sigma_t^2\rmI)$ & 见 \Cref{subsec:fm-instantiations} \\
 边缘分布 $p_t(\rvx_t)$ & $\int p_t(\rvx_t|\rvx_0) p_{\mathrm{data}}(\rvx_0) \diff\rvx_0$ & $ \int p_t(\rvx_t|\rvz) \pi(\rvz) \diff\rvz$ \\
 条件速度 $\rvv_t(\rvx|\rvz)$ & $f(t) \rvx - \frac{1}{2} g^2(t) \nabla \log p_t(\rvx|\rvx_0)$ & 见 \Cref{subsec:fm-instantiations} \\
@@ -1039,8 +1006,8 @@ FM 可以看作 \Cref{subsec:NODE} 中 NODE 的免模拟替代。CNF 在最大�
 \]
 如 \Cref{eq:pushforward-ode} 所述，该 ODE 对任意 $s,t \in [0,1]$ 定义了流映射 $\bm{\Psi}_{s\to t}(\rvx_0)$；特别是它把初始点 $\rvx_0 \sim p_{\mathrm{src}}$ 从时刻 $0$ 送到时刻 $t$。在时刻 $t$ 诱导出的分布由前推给出
 \begin{align}\label{eq:ode-pushforward}
-    p_t^{\mathrm{fwd}}(\rvx) 
-    = \int \delta \left(\rvx - \bm{\Psi}_{0\to t}(\rvx_0)\right) 
+    p_t^{\mathrm{fwd}}(\rvx)
+    = \int \delta \left(\rvx - \bm{\Psi}_{0\to t}(\rvx_0)\right)
       p_{\mathrm{src}}(\rvx_0) \mathrm{d}\rvx_0=: \bm{\Psi}_{0\to t}\# p_{\mathrm{src}},
 \end{align}
 于是只要 $\rvx_0 \sim p_{\mathrm{src}}$，就有 $\bm{\Psi}_{0\to t}(\rvx_0) \sim p_t^{\mathrm{fwd}}$。类似地，也可以用 $\bm{\Psi}_{1\to 0}(\rvx_1)$ 把 $\rvx_1 \sim p_{\mathrm{tgt}}$ 送回 $p_{\mathrm{src}}$。设有规定的密度路径 $\{p_t\}_{t \in [0,1]}$，并构造一个定义粒子流的速度场 $\{\rvv_t\}_{t \in [0,1]}$，自然要问：
@@ -1064,7 +1031,7 @@ p_t^{\mathrm{fwd}} = p_t, \quad \forall\, t \in [0,1],
 
 \paragraph{从条件路径到边缘路径。} 如 \Cref{subsec:fm-framework} 所示，我们先定义条件概率路径 $p_t(\cdot| \rvz)$ 与相应的条件速度场 $\rvv_t(\cdot| \rvz)$，再按下式构造边缘速度场：
 \[
-    \rvv_t(\rvx) 
+    \rvv_t(\rvx)
     = \int \rvv_t(\rvx| \rvz) \frac{p_t(\rvx| \rvz) \pi(\rvz)}{p_t(\rvx)}   \diff \rvz,
 \]
 这正是 \Cref{eq:marginal-oracle-velocity}。不过我们还需要确认：最终的边缘速度 $\rvv_t$ 所诱导的 ODE 流，其密度路径确实与规定的 $p_t$ 一致。好在这样的验证完全可以放到条件层面去做：只要每个条件速度场 $\rvv_t(\cdot| \rvz)$ 诱导出条件密度路径 $p_t(\cdot| \rvz)$，那么得到的边缘速度 $\rvv_t$ 也必然导出正确的边缘路径。形式上，结论如下；后面还会给出一份完整推导，把边缘速度场为何取这一形式交代清楚：
@@ -1080,12 +1047,12 @@ p_t^{\mathrm{fwd}} = p_t, \quad \forall\, t \in [0,1],
 \begin{align}\label{eq:p_t_continuity}
     \frac{\diff}{\diff t} p_t(\rvx) =- \nabla_\rvx \cdot \big({\color{orange}\rvv_t(\rvx)} p_t(\rvx)\big).
 \end{align}
-从定义开始 $p_t$ 在 \Cref{eq:p_t}, 
+从定义开始 $p_t$ 在 \Cref{eq:p_t},
 \begin{align*}
   \frac{\diff}{\diff t} p_t(\rvx) &=\int \frac{\diff}{\diff t} p_t(\rvx_t|\rvz)\pi(\rvz)\diff \rvz \nonumber\\
   &=  - \int \nabla_\rvx \cdot\Big(  \rvv_t(\rvx|\rvz) p_t(\rvx | \rvz)  \Big)\pi(\rvz) \diff \rvz \quad \nonumber \\
-  &=  -\nabla_\rvx \cdot \Big( \int  \rvv_t(\rvx|\rvz) p_t(\rvx | \rvz) 
- \pi(\rvz) \diff \rvz\Big), \nonumber  
+  &=  -\nabla_\rvx \cdot \Big( \int  \rvv_t(\rvx|\rvz) p_t(\rvx | \rvz)
+ \pi(\rvz) \diff \rvz\Big), \nonumber
 \end{align*}
 第二个等式遵循应用 \Cref{eq:continuity_conditional_pt}。将此与右侧进行比较 \Cref{eq:p_t_continuity} 表明，直到无散项，
 \[
@@ -1105,11 +1072,13 @@ p_t^{\mathrm{fwd}} = p_t, \quad \forall\, t \in [0,1],
 
 \newpage
 
-\section{构建分布之间的概率路径和速度}\label{sec:instance-fm}流匹配的本质在于源分布逐渐转变为目标分布。为了指导这种转换，需要两个关键元素：\emph{概率路径} $p_{t}$，它提供了每个时间$t$演化分布的快照，以及\emph{速度场} $\rvv_{t}$，它描述了单个粒子如何沿着路径移动。这两个对象不是独立的；它们通过连续性方程联系起来，这确保了粒子动力学与分布的演化一致。因此，学习任务简化为寻找忠实驱动该过程的速度场 $\rvv_t$。然而，困难在于，对于一般和复杂的分布，真正的边缘速度 $\rvv_t$ 是未知的，这给我们留下了一个无法直接访问的棘手目标。 
+\section{构建分布之间的概率路径和速度}\label{sec:instance-fm}
 
-条件流匹配的核心思想是通过构建人工但易于处理的过程来解决真实边缘速度的棘手问题。为此，我们引入条件变量 $\rvz$ 并设计条件速度 $\rvv_t(\rvx_t|\rvz)$ 和/或条件路径 $p_t(\rvx_t|\rvz)$，故意选择简单。
+流匹配的本质，是把源分布逐渐转变为目标分布。为了引导这一转变，需要两个关键要素：\emph{概率路径} $p_{t}$，它给出每个时刻 $t$ 上演化中分布的一张快照；以及\emph{速度场} $\rvv_{t}$，它描述单个粒子如何沿这条路径移动。这两个对象并不彼此独立，它们通过连续性方程联系在一起，从而保证粒子动力学与分布的演化相容。于是，学习任务就归结为找出一个能忠实驱动这一过程的速度场 $\rvv_t$。困难之处在于：对于一般而复杂的分布，真实的边缘速度 $\rvv_t$ 是未知的，这就留下了一个无法直接获取、因而难以处理的目标。
 
- 由于这些条件对象以封闭形式已知，因此它们充当模型可以回归的代理目标。如果满足两个实际要求，这会导致有效的训练损失 $\mathcal{L}_{\mathrm{CFM}}$：（i）我们可以从 $p_t(\cdot|\rvz)$ 中有效采样，以及（ii）相应的速度 $\rvv_t(\cdot|\rvz)$ 允许封闭式表达式。 
+条件流匹配的核心思路，正是通过构造一个人为但可处理的过程，来对付真实边缘速度的这一困难。为此我们引入条件变量 $\rvz$，设计条件速度 $\rvv_t(\rvx_t|\rvz)$ 和/或条件路径 $p_t(\rvx_t|\rvz)$，并有意把它们取得足够简单。
+
+由于这些条件对象都有闭式表达，它们便可充当模型可以回归的替代目标。只要满足两个实际要求，就能得到一个有效的训练损失 $\mathcal{L}_{\mathrm{CFM}}$：（i）能够从 $p_t(\cdot|\rvz)$ 中高效采样；（ii）相应的速度 $\rvv_t(\cdot|\rvz)$ 具有闭式表达。
 
 
 那么，应当如何设计一个性质良好的条件过程？不妨先看一个已完全吃透的案例：高斯到高斯桥（\Cref{subsec:special-fm-instantiations}）。这一例子凸显了两种自然的设计策略：逐个时刻地指定高斯概率路径，或者直接规定一个仿射速度场——两者在解析上都可处理。
@@ -1218,7 +1187,7 @@ p_{\text{tgt}} = p_1 =  \mathcal{N}\left(\rvx; \bm{\mu}(1), \sigma^2(1) \rmI\rig
 只要具体结构给定，验证这些约束并不困难，因此这里不再专门讨论验证步骤。
 
 
- 
+
 \paragraph{情形一：双侧 $\rvz = (\rvx_0, \rvx_1)$——“光束状”路径。}
     \subparagraph{选取 $\pi(\rvz)$。} 考虑 $\mathbb{R}^D$ 上的一般分布 $p_{\mathrm{src}}$ 与 $p_{\mathrm{tgt}}$。令 $\rvz = (\rvx_0, \rvx_1)$，其中 $\rvx_0 \sim p_{\mathrm{src}}$、$\rvx_1 \sim p_{\mathrm{tgt}}$ 相互独立，即
     \[
@@ -1328,15 +1297,15 @@ $p_{\mathrm{data}}*\mathcal{N}(\bm{0},a_1^2\rmI)$；表中给出的高斯先验�
      \toprule
          & \textbfs{VE} & \textbfs{VP} & \textbfs{FM/RF} & \textbfs{Trig.}~\citep{albergo2023stochastic} \\
     \midrule
-     $a_t$ （先验系数） 
-       & $a_t$ 
-       & $\sqrt{1-b_t^2}$ 
-       & $1-t$ 
+     $a_t$ （先验系数）
+       & $a_t$
+       & $\sqrt{1-b_t^2}$
+       & $1-t$
        & $\cos \bigl(\tfrac{\pi}{2}t\bigr)$ \\
-     $b_t$ （数据系数） 
-       & $1$ 
-       & $b_t$ 
-       & $t$ 
+     $b_t$ （数据系数）
+       & $1$
+       & $b_t$
+       & $t$
        & $\sin \bigl(\tfrac{\pi}{2}t\bigr)$ \\
     \midrule
      $a_0$ & $0$ & $0$ & $1$ & $1$ \\
@@ -1344,11 +1313,11 @@ $p_{\mathrm{data}}*\mathcal{N}(\bm{0},a_1^2\rmI)$；表中给出的高斯先验�
      $a_1$ & $a_1$ & $1$ & $0$ & $0$ \\
      $b_1$ & $1$ & $0$ & $1$ & $1$ \\
     \midrule
-     $p_{\text{prior}}$ 
+     $p_{\text{prior}}$
        & $p_{\mathrm{data}} * \mathcal{N}(\bm{0},a_1^2\rmI)
-   \approx \mathcal{N}(\bm{0},a_1^2\rmI)$ 
-       & $\mathcal{N}(\bm{0},\rmI)$ 
-       & $\mathcal{N}(\bm{0},\rmI)$ 
+   \approx \mathcal{N}(\bm{0},a_1^2\rmI)$
+       & $\mathcal{N}(\bm{0},\rmI)$
+       & $\mathcal{N}(\bm{0},\rmI)$
        & $\mathcal{N}(\bm{0},\rmI)$ \\
      \bottomrule
   \end{tabular}}
@@ -1371,7 +1340,7 @@ $p_{\mathrm{data}}*\mathcal{N}(\bm{0},a_1^2\rmI)$；表中给出的高斯先验�
 
 
 \paragraph{条件仿射流（与命题~\ref{closed-form-vf} 的联系）。}
-固定一个条件变量 $\rvz\sim\pi$（例如在单侧的“聚光灯”训练中取 $\rvz=\rvx_1\sim p_{\mathrm{tgt}}$），把 $\rvx_0\sim p_{\mathrm{src}}$ 经由时变的 \emph{条件仿射流} 向前推： 
+固定一个条件变量 $\rvz\sim\pi$（例如在单侧的“聚光灯”训练中取 $\rvz=\rvx_1\sim p_{\mathrm{tgt}}$），把 $\rvx_0\sim p_{\mathrm{src}}$ 经由时变的 \emph{条件仿射流} 向前推：
 \[
 \bPsi_{0\to t}(\rvx_0;\rvz) := \bm\mu_t(\rvz) + \rmA_t(\rvz) \rvx_0,\qquad t\in[0,1],
 \]
@@ -1419,7 +1388,7 @@ p_t(\cdot)  =  \int p_t(\cdot|\rvz)\pi(\rvz)\diff\rvz.
 也就是说，先固定初始点 $\rvy$、对前向流映射关于 $t$ 求导，再代入“在时刻 $t$ 恰好到达 $\rvx$”的那个初始点。由于 $\rvx_t=\bm\mu_t(\rvz)+\rmA_t(\rvz)\rvx_0$ 且 $\rmA_t(\rvz)$ 在 $(0,1)$ 上可逆，可得 $\rvx_0=\rmA_t(\rvz)^{-1}\bigl(\rvx-\bm\mu_t(\rvz)\bigr)$，于是
 \[
 \rvv_t(\rvx|\rvz)
- = 
+ =
 \bm\mu_t'(\rvz) + \rmA_t'(\rvz) \rmA_t(\rvz)^{-1} \bigl(\rvx-\bm\mu_t(\rvz)\bigr).
 \]
 
@@ -1450,14 +1419,14 @@ p_t(\cdot|\rvx_0,\rvx_1)=\delta\left(\cdot - (a_t\rvx_0+b_t\rvx_1)\right),
 即标准的双侧 CFM 目标。
 
 \subparagraph{无条件高斯路径作为特例。}
-如果 $\bm{\mu}_t$ 独立于 $\rvz$ （表示 $\bm{\mu}(t)$) 和 
+如果 $\bm{\mu}_t$ 独立于 $\rvz$ （表示 $\bm{\mu}(t)$) 和
 $\rmA_t = \tfrac{\sigma(t)}{\sigma(0)} \rmI$，那么
 \[
 \bPsi_{0\to t}(\rvx_0)=\bm\mu(t)+\sigma(t) \frac{\rvx_0-\bm\mu(0)}{\sigma(0)},
 \quad
 \rvv_t(\rvx)=\bm\mu'(t)+\frac{\sigma'(t)}{\sigma(t)}\bigl(\rvx-\bm\mu(t)\bigr),
 \]
-恢复命题中的高斯密度路径和封闭式速度~\ref{closed-form-vf}.
+恢复命题中的高斯密度路径和闭式速度~\ref{closed-form-vf}.
 
 
 
@@ -1714,9 +1683,9 @@ z_{1/2} = \frac{z_0}{\sqrt{2}} \neq z_0.
     实线为精确的边缘 ODE 轨迹 $z_t = z_0\sqrt{(1-t)^2 + (\sigma_1/\sigma_0)^2 t^2}$；虚线为由 $z_0$ 到 $z_1$ 的相应直线插值。
     实线与虚线之间可见的间隙说明：尽管每条条件路径都是直线，边缘 ODE 轨迹关于 $t$ 却不是仿射的。
     左右两侧边缘分别给出了边缘密度 $p_{\mathrm{src}}$ 与 $p_{\mathrm{tgt}}$。
-    \figcredit{由作者使用AI辅助编码创建。}}
+    \figcredit{由作者使用 AI 辅助编码创建。}}
 \end{figure}
-     
+
 
 
 
@@ -1735,13 +1704,13 @@ a_t = 1 - t, \qquad b_t = t,
 \]
 产生插值
 \[
-\mathbf{x}_t = (1 - t)\mathbf{x}_0 + t \mathbf{x}_1, 
+\mathbf{x}_t = (1 - t)\mathbf{x}_0 + t \mathbf{x}_1,
 \qquad \mathbf{x}_0 \sim p_{\mathrm{src}},\ \mathbf{x}_1 \sim p_{\mathrm{tgt}}.
 \]
 在这种选择下，训练目标简化为
 \[
-\mathbb{E}_{t \sim \mathcal{U}[0,1]}   
-\mathbb{E}_{\mathbf{x}_0, \mathbf{x}_1} 
+\mathbb{E}_{t \sim \mathcal{U}[0,1]}
+\mathbb{E}_{\mathbf{x}_0, \mathbf{x}_1}
 \left[ \bigl\|\mathbf{v}_{\bm{\phi}}(\mathbf{x}_t, t) - (\mathbf{x}_1 - \mathbf{x}_0)\bigr\|_2^2 \right].
 \]
 
@@ -1765,7 +1734,7 @@ p_{\mathrm{tgt}}(\rvx_1),
 $(1-t)\rvx_0+t\rvx_1$ 都是直线。但正如 \Cref{sec:optimal-canonical} 所强调的，相应的边缘速度是对许多互不相关的端点对的方向做了平均，因此诱导出的
 边缘 ODE 轨迹不一定是直线。这种弯曲的边缘动力学，只用少数几个数值步就很难精确积分。
 
-整流通过改变端点之间的耦合来解决这个问题。一个学到的 ODE 把每个源样本输运到模型自己生成的端点，由此得到一个有依赖关系的耦合；这一耦合随后被用来定义新的条件插值。
+整流通过改变端点之间的耦合来解决这个问题。一个学到的 ODE 把每个源样本输运到模型自己生成的端点，由此得到一个有依赖关系的耦合；我们随后用这一耦合定义新的条件插值。
 
 \paragraph{用相关耦合调整流。}
 我们不再依赖任意配对，而是借助一个预训练的扩散模型：以 $\rvv_{\bphi^\times}(\cdot,t)$ 作为 PF-ODE 的漂移项，\emph{确定性地} 输运每个源点。从 $\rvz(0)=\rvz_0 \sim p_{\text{src}}$ 出发，积分
@@ -1782,7 +1751,7 @@ $(1-t)\rvx_0+t\rvx_1$ 都是直线。但正如 \Cref{sec:optimal-canonical} 所�
 \Require 参考路径 $\{\rvx_t\}_{t\in[0,1]}$（例如 $\rvx_t=a_t\rvx_0+b_t\rvx_1$）
 \State \textbfs{预训练漂移场。} 在所选路径上通过最小化下式拟合 $\rvv_{\bphi^\times}$：
 \[
-\bphi^\times \in \arg\min_{\bphi} 
+\bphi^\times \in \arg\min_{\bphi}
 \mathbb{E}_{t,\rvx_0,\rvx_1} \left[\Big\|\rvv_{\bphi}(\rvx_t,t)-\frac{\diff \rvx_t}{\diff t}\Big\|_2^2\right].
 \]
 \State \textbfs{整流。} 采样 $\rvz_0 \sim p_{\text{src}}$ 并积分
@@ -1802,13 +1771,13 @@ $(1-t)\rvx_0+t\rvx_1$ 都是直线。但正如 \Cref{sec:optimal-canonical} 所�
 \]
 我们有两个直接后果：
 \begin{itemize}
-    \item \textbfs{保留源边缘：} 
+    \item \textbfs{保留源边缘：}
     $\displaystyle \int \pi_{\text{Rectify}}(\rvz_0,\rvz_1) \diff \rvz_1
     = p_{\text{src}}(\rvz_0)$.
-    \item \textbfs{沿流程推进：} 
+    \item \textbfs{沿流程推进：}
     $\displaystyle (\bPhi_{0\to t})_{\#}p_{\text{src}}=\mathrm{Law}(\rvz(t))$，即时间——$t$ 分布是推动 $p_{\text{src}}$ 通过 $\bPhi_{0\to t}$.
 \end{itemize}
-如果 $\rvv_{\bphi^\times}$ 匹配给定参考路径的预言机漂移 $\rvx_t$，则所有中间边缘都重合：
+如果 $\rvv_{\bphi^\times}$ 匹配给定参考路径的预言漂移 $\rvx_t$，则所有中间边缘都重合：
 \[
 \mathrm{Law}(\rvz(t))=\mathrm{Law}(\rvx_t),\quad \text{for all }t\in[0,1],
 \quad\text{and}\quad
@@ -1844,7 +1813,7 @@ $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 
 \paragraph{\texttt{Reflow} 的流程。}
 每次迭代包含两个步骤：
-\begin{itemize} 
+\begin{itemize}
     \item \textbfs{重新拟合流：} 用来自当前耦合的样本训练一个新的速度场： \begin{align} \bm{\phi}_{k+1} &= \arg\min_{\bm{\phi}} \mathcal{L}\left(\bm{\phi}\Big\vert \pi^{(k)}\right), \quad \text{其中} \notag \\ \mathcal{L}\left(\bm{\phi}\Big\vert \pi^{(k)}\right) &:= \mathbb{E}_{t, (\rvz_0^{(k)}, \hat\rvz_1^{(k)})\sim \pi^{(k)}} \left[\left\|\rvv_{\bm{\phi}}(\rvz_t, t) - (\hat\rvz_1^{(k)} - \rvz_0^{(k)})\right\|^2\right] \label{eq:reflow-loss} \end{align} 与 $\rvz_t = (1-t)\rvz_0^{(k)} + t\hat\rvz_1^{(k)}$.
     \item \textbfs{生成新耦合：} 从新的源样本 $\rvz_0^{(k+1)} \sim p_{\text{src}}$ 出发求解学到的 ODE： \[ \hat\rvz_1^{(k+1)} \gets \rvz_0^{(k+1)} + \int_0^1 \rvv_{\bm{\phi}_{k+1}}(\rvz(t), t) \mathrm{d}t, \] 并定义更新后的耦合： \[ \pi^{(k+1)}(\rvz_0, \rvz_1) := p_{\text{src}}(\rvz_0) \delta\left(\rvz_1 - \hat\rvz_1^{(k+1)}\right). \] \end{itemize}
 换言之，\texttt{Reflow} 可以看作反复施加 \texttt{Rectify} 算子，从而得到一系列逐步细化的耦合：
@@ -1909,7 +1878,7 @@ $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 
 \newpage
 \section{结束语}\label{sec:ch5_cr}
-     
+
 本章阐明了关于扩散模型的第三个、也是最后一个基础视角——它植根于确定性流的原理。我们的探索从归一化流（NF）开始：它借助变量替换公式，学习简单先验与数据分布之间一个精确的可逆映射。随后我们看到，这一思想演变为神经常微分方程所描述的连续时间过程，其中由学习得到的速度场主导整个变换。但这种方法有一个明显的缺点：训练循环内部需要执行开销很大的 ODE 模拟。
 
 

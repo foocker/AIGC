@@ -1,4 +1,4 @@
-\chapter{分数视角：从能量模型到NCSN}\label{ch:score-based}
+\chapter{分数视角：从能量模型到 NCSN}\label{ch:score-based}
 
 
 
@@ -30,7 +30,7 @@
 
 设 $\mathbf{x} \in \mathbb{R}^D$ 表示一个数据点。EBM 通过能量函数 $E_{\bm{\phi}}(\mathbf{x})$（由 ${\bm{\phi}}$ 参数化）来定义概率密度，它给更可能的配置分配更低的能量。得到的分布为
 \begin{align*}
-    p_{{\bm{\phi}}}(\mathbf{x}) := \frac{\exp(-E_{\bm{\phi}}(\mathbf{x}))}{Z_\bphi}, \quad 
+    p_{{\bm{\phi}}}(\mathbf{x}) := \frac{\exp(-E_{\bm{\phi}}(\mathbf{x}))}{Z_\bphi}, \quad
     Z_\bphi := \int_{\mathbb{R}^D} \exp(-E_{\bm{\phi}}(\mathbf{x})) \diff\mathbf{x},
 \end{align*}
 其中 $Z_\bphi$ 称为\emph{配分函数}，用来保证归一化：
@@ -53,7 +53,7 @@
 原则上，EBM 可以用最大似然来训练，它自然地平衡了拟合数据与全局正则化（见 \Cref{eq:MLE}）：
 \begin{align}
 \label{eq:mle-ebm}
-\mathcal{L}_{\text{MLE}}(\bphi) 
+\mathcal{L}_{\text{MLE}}(\bphi)
 &= \mathbb{E}_{p_{\text{data}}(\rvx)}  \left[ \log \frac{\exp(-E_{\bphi}(\rvx))}{Z_\bphi} \right] \\
 &= -  \underbrace{\mathbb{E}_{p_{\text{data}}}[E_{\bphi}(\rvx)]}_{\text{降低数据的能量}}
    -  \underbrace{\log \int \exp(-E_{\bphi}(\rvx))\diff\rvx}_{\text{全局正则化}}, \nonumber
@@ -84,22 +84,22 @@
 \paragraph{为什么建模分数而不是密度？}
 对分数建模在理论和实践上都有好处：
 
-\subparagraph{1. 不受归一化常数的影响。}\mbox{}\\  
+\subparagraph{1. 不受归一化常数的影响。}\mbox{}\\
      许多分布只以非归一化密度 $\tilde{p}(\rvx)$ 的形式给出，例如 EBM 中的 $\exp(-E_{\bm{\phi}}(\rvx))$：
     \[
-    p(\rvx) = \frac{\tilde{p}(\rvx)}{Z}, 
-    \qquad 
+    p(\rvx) = \frac{\tilde{p}(\rvx)}{Z},
+    \qquad
     Z = \int \tilde{p}(\rvx)\diff\rvx.
     \]
     计算 $Z$ 通常很困难，但分数只依赖于 $\tilde{p}$：
 \begin{align}\label{eq:score-compute}
-\nabla_{\rvx}\log p(\rvx) = \nabla_{\rvx}\log \tilde{p}(\rvx) - \underbrace{\nabla_{\rvx}\log Z}_{=0} = \nabla_{\rvx}\log \tilde{p}(\rvx), \end{align} 
+\nabla_{\rvx}\log p(\rvx) = \nabla_{\rvx}\log \tilde{p}(\rvx) - \underbrace{\nabla_{\rvx}\log Z}_{=0} = \nabla_{\rvx}\log \tilde{p}(\rvx), \end{align}
     因为 $Z$ 对 $\rvx$ 而言是常数。这就完全绕开了配分函数。
 
-\subparagraph{2. 完整的表示。}  
+\subparagraph{2. 完整的表示。}
 分数函数完全刻画了底层的分布。由于它是对数密度的梯度，原则上可以把它积分回去，从而恢复密度（至多相差一个常数）：
 \[
-\log p(\rvx) 
+\log p(\rvx)
 = \log p(\rvx_0) + \int_0^1 \rvs(\rvx_0 + t(\rvx - \rvx_0))^\top (\rvx - \rvx_0)  \diff t,
 \]
 其中 $\rvx_0$ 是参考点，$\log p(\rvx_0)$ 由归一化条件确定。因此，对分数建模与对 $p(\rvx)$ 本身建模具有相同的表达能力，而前者通常更有利于生成建模。
@@ -110,9 +110,9 @@
 
 \emph{分数匹配}~\citep{hyvarinen2005estimation} 正是利用了分数只依赖于能量函数这一事实。它不去拟合归一化后的概率，而是通过让模型分数对齐（未知的）数据分数来训练 EBM：
 \begin{align}\label{eq:ebm-sm}
-    \mathcal{L}_{\mathrm{SM}}(\bm{\phi}) 
-= \tfrac{1}{2}  \mathbb{E}_{p_{\mathrm{data}}(\mathbf{x})} 
-\big\| \nabla_{\mathbf{x}} \log p_{\bm{\phi}}(\mathbf{x}) 
+    \mathcal{L}_{\mathrm{SM}}(\bm{\phi})
+= \tfrac{1}{2}  \mathbb{E}_{p_{\mathrm{data}}(\mathbf{x})}
+\big\| \nabla_{\mathbf{x}} \log p_{\bm{\phi}}(\mathbf{x})
 - \nabla_{\mathbf{x}} \log p_{\mathrm{data}}(\mathbf{x}) \big\|_2^2.
 \end{align}
 
@@ -227,7 +227,7 @@ EBM 表明，生成只取决于分数——它指向概率更高的区域，而�
 \emph{分数匹配}通过最小化真实分数与估计分数之间的均方误差（MSE）来拟合这一向量场：
 \begin{mdframed}
 \begin{align}\label{eq:sm}
-    \mathcal{L}_{\mathrm{SM}}(\bm{\phi}) 
+    \mathcal{L}_{\mathrm{SM}}(\bm{\phi})
     := \frac{1}{2}  \mathbb{E}_{\rvx \sim p_{\mathrm{data}}}
     \Big[\| \rvs_{\bm{\phi}}(\rvx) - \rvs(\rvx)\|_2^2\Big].
 \end{align}
@@ -271,21 +271,16 @@ $\rvs^*(\rvx)=\nabla_{\rvx}\log p_{\mathrm{data}}(\rvx)$。
 由于 $\widetilde{\mathcal{L}}_{\mathrm{SM}}(\bm\phi)$ 中的期望是对
 $p_{\mathrm{data}}$ 取的，$p_{\mathrm{data}}(\rvx)$ 较大的区域（数据密度高）
 对损失的贡献更大。因此幅值项
-$\tfrac12\|\rvs_{\bm\phi}(\rvx)\|^2$ 会压制这些区域中过大的
-分数值。不过这一项本身并不意味着
-在每个高密度点上都有 $\rvs_{\bm\phi}(\rvx)=\mathbf{0}$；在总体最优解处，
+$\tfrac12\|\rvs_{\bm\phi}(\rvx)\|^2$ 会压制这些区域中过大的分数值。不过这一项本身并不意味着在每个高密度点上都有 $\rvs_{\bm\phi}(\rvx)=\mathbf{0}$；在总体最优解处，
 \[
 \rvs^*(\rvx)=\nabla_{\rvx}\log p_{\mathrm{data}}(\rvx),
 \]
 它只在（对数密度的）驻点处才为零。
 
 \subparagraph{场为（近似）梯度时的凹性。}
-散度项 $\Tr(\nabla_{\rvx} \rvs_{\bm\phi}(\rvx))$ 在损失中以正号出现，因此最小化目标倾向于
-在数据分布集中的区域会出现负的散度。散度为负意味着局部净收缩，不过
-它本身并不保证驻点就是汇点。
+散度项 $\Tr(\nabla_{\rvx} \rvs_{\bm\phi}(\rvx))$ 在损失中以正号出现，因此最小化目标倾向于在数据分布集中的区域会出现负的散度。散度为负意味着局部净收缩，不过它本身并不保证驻点就是汇点。
 为把这一点说清，假设
-$\rvs_{\bm\phi}=\nabla_{\rvx}u$，其中 $u:\R^D\to\R$ 是标量函数，此时模型正是在匹配
-对数密度。于是 $\nabla_{\rvx}\rvs_{\bm\phi}=\nabla_{\rvx}^2 u$（黑塞矩阵），而
+$\rvs_{\bm\phi}=\nabla_{\rvx}u$，其中 $u:\R^D\to\R$ 是标量函数，此时模型正是在匹配对数密度。于是 $\nabla_{\rvx}\rvs_{\bm\phi}=\nabla_{\rvx}^2 u$（黑塞矩阵），而
 $\nabla \cdot \rvs_{\bm\phi}(\rvx)=\Tr(\nabla_{\rvx}^2 u(\rvx))$（散度）。
 
 在驻点 $\rvx_\star$，其中 $\rvs_{\bm\phi}(\rvx_\star)=\nabla_{\rvx}u(\rvx_\star)=\mathbf{0}$，
@@ -299,8 +294,7 @@ u(\rvx)
 如果黑塞矩阵 $\nabla_{\rvx}^2 u(\rvx_\star)$ 负定，则 $u$ 在
 $\rvx_\star$ 处局部凹，对数密度在该点取得严格的局部极大值\footnote{ 注意，严格的凹性（从而是对数密度的严格局部极大值）要求整个黑塞矩阵
 $\nabla_{\rvx}^2 u$ 负定，而不仅仅是迹为负。
-迹为负只能保证特征值之和为负，某些特征值仍可能
-为正，从而得到鞍点而非极大值。
+迹为负只能保证特征值之和为负，某些特征值仍可能为正，从而得到鞍点而非极大值。
 }。
 由于黑塞矩阵的所有特征值均为负，其迹也必为负：
 $\Tr(\nabla_{\rvx}^2 u(\rvx_\star))<0$。
@@ -308,7 +302,7 @@ $\Tr(\nabla_{\rvx}^2 u(\rvx_\star))<0$。
 微小的扰动都会被拉向 $\rvx_\star$。
 
 \subsection{用朗之万动力学采样}
-通过最小化 \Cref{eq:sm-alternative} 训练完成后，就可以用分数模型 $\rvs_{\bm{\phi}^\times}(\rvx)$ 替换朗之万动力学中的 oracle 分数来做采样：
+通过最小化 \Cref{eq:sm-alternative} 训练完成后，就可以用分数模型 $\rvs_{\bm{\phi}^\times}(\rvx)$ 替换朗之万动力学中的预言（oracle）分数来做采样：
 \begin{align}\label{eq:score-langevin-emp}
     \mathbf{x}_{n+1} = \mathbf{x}_n + \eta   \rvs_{\bm{\phi}^\times}(\rvx_n) + \sqrt{2\eta}    \bm{\epsilon}_n, \quad \bm{\epsilon}_n \sim \mathcal{N}(\bm{0}, \bm{I}),
 \end{align}
@@ -479,8 +473,8 @@ p_\sigma(\tilde{\rvx}):= \int \mathcal{N}(\tilde{\rvx};\alpha \rvx,\sigma^2\math
 \]
 的分数方向 $\nabla_{\tilde{\rvx}}\log p_\sigma(\tilde{\rvx})$ 推进一步，步长为 $\sigma^2$。下面给出正式的命题。
 \lemp{Tweedie 公式}{tweedie}{设 $\rvx\sim p_{\mathrm{data}}$，且在给定 $\rvx$ 的条件下 $\tilde{\rvx}\sim\mathcal N(\,\cdot\,;\alpha\rvx,\sigma^2\mathrm{I})$，其中 $\alpha\neq0$。则 Tweedie 公式给出
- \begin{align}\label{eq:tweedie} 
- \alpha   \mathbb{E}_{\rvx \sim p(\rvx |\tilde\rvx)}\big[\rvx  \big|  \tilde\rvx\big] = \tilde\rvx + \sigma^2 \nabla_{\tilde\rvx} \log p_\sigma(\tilde\rvx), 
+ \begin{align}\label{eq:tweedie}
+ \alpha   \mathbb{E}_{\rvx \sim p(\rvx |\tilde\rvx)}\big[\rvx  \big|  \tilde\rvx\big] = \tilde\rvx + \sigma^2 \nabla_{\tilde\rvx} \log p_\sigma(\tilde\rvx),
  \end{align} 其中期望取在给定 $\tilde\rvx$ 时 $\rvx$ 的后验分布 $p(\rvx |\tilde\rvx)$ 上。
 }{
 证明的做法是先计算边缘分布的分数
@@ -554,7 +548,7 @@ p(\boldsymbol\eta|\tilde{\rvx})
 \paragraph{SURE（Stein 的无偏风险估计器）。}
 从高层看，Stein 无偏风险估计（SURE）是一种在\emph{不知道干净信号}的情况下估计降噪器 $\rmD$ 的均方误差（MSE）的技术。换言之，SURE 提供了一种只依赖带噪数据来挑选或训练降噪器的办法。为清楚起见，考虑加性高斯噪声的设定：
 \[
-\tilde{\rvx} = \rvx + \sigma \bm{\epsilon}, 
+\tilde{\rvx} = \rvx + \sigma \bm{\epsilon},
 \qquad \bm{\epsilon} \sim \mathcal{N}(\mathbf{0},\rmI),
 \]
 其中 $\rvx \in \R^D$ 是未知的干净信号，$\tilde{\rvx}$ 是观测到的带噪版本。降噪器是任意（弱可微）映射 $\rmD:\R^D \to \R^D$，它对 $\rvx$ 给出估计 $\rmD(\tilde{\rvx})$。自然的质量度量是条件 MSE
@@ -633,7 +627,7 @@ $\nabla_{\tilde{\rvx}}\log p_\sigma(\cdot)$。把 $\rmD(\tilde{\rvx})=\tilde{\rv
 设 $p$ 为数据分布，$q$ 为任意模型分布。对作用于 $\rvx$ 的标量函数的线性算子 $\mathcal L$，定义广义 Fisher 散度
 \[
 \mathcal D_{\mathcal L}(p \,\|\, q)
-:= \int p(\rvx) 
+:= \int p(\rvx)
 \left\|
 \frac{\mathcal L p(\rvx)}{p(\rvx)}
 -
@@ -777,8 +771,8 @@ p_\sigma(\rvx_{\sigma}) = \int p_{\sigma} (\rvx_{\sigma} | \rvx)    p_{\text{dat
 \end{align}
 其中
 \begin{align*}
-\mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma) 
-= \frac{1}{2} \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx),   \tilde{\rvx} \sim p_{\sigma}(\tilde{\rvx} | \rvx)} 
+\mathcal{L}_{\text{DSM}}(\bm{\phi}; \sigma)
+= \frac{1}{2} \mathbb{E}_{\rvx \sim p_{\text{data}}(\rvx),   \tilde{\rvx} \sim p_{\sigma}(\tilde{\rvx} | \rvx)}
 \left[ \norm{\rvs_{\bm{\phi}}(\tilde{\rvx}, \sigma) - \left( \frac{\rvx - \tilde{\rvx}}{\sigma^2} \right)}_2^2 \right],
 \end{align*}
 $\lambda(\sigma_i)>0$ 是各尺度对应的权重函数。最小化该目标得到的分数模型 $\rvs^*(\rvx, \sigma)$ 能恢复每个噪声水平上的真实分数：
@@ -822,7 +816,7 @@ $\lambda(\sigma_i)>0$ 是各尺度对应的权重函数。最小化该目标得�
 
 
 
-\subsection{采样} 
+\subsection{采样}
 
 
 \begin{algorithm}[th]
@@ -918,7 +912,7 @@ NCSN 借助退火 MCMC（通常是朗之万动力学）在一系列噪声尺度 
   \resizebox{\textwidth}{!}{
   \begin{tabular}{cccc}
      \toprule
-    
+
          &   \textbfs{NCSN}   & \textbfs{DDPM}  \\
         \midrule
     $\rvx_{i+1}|\rvx_{i}$ & 由 $\rvx_{i+1} =  \rvx_i + \sqrt{\sigma^2_{i+1}-\sigma^2_{i}}\bm{\epsilon}$ 推出   &  \cc{15}定义为 $\rvx_{i+1} = \sqrt{1-\beta_{i}} \rvx_{i} + \sqrt{\beta_{i}}\bm{\epsilon}$  \\
@@ -926,11 +920,11 @@ NCSN 借助退火 MCMC（通常是朗之万动力学）在一系列噪声尺度 
        &  由 $\rvx_i = \bar{\alpha}_i\rvx + \sqrt{1 - \bar{\alpha}_i^2}\bm{\epsilon}$ 推出 \\
    $p_{\text{prior}}$   & $ \mathcal{N}(\bm{0}, \sigma_L^2\rmI)$    &  $\mathcal{N}(\bm{0}, \rmI)$  \\
    \midrule
-        损失 
-          &  
-        $\mathbb{E}_{i} \mathbb{E}_{p_{\text{data}}(\rvx)} 
-        \mathbb{E}_{\bm{\epsilon} \sim \mathcal{N}\left(\mathbf{0}, \rmI\right)}   
-    \left[ \norm{\rvs_{\bm{\phi}}(\rvx_i, \sigma_i) +   \frac{\bm{\epsilon}}{\sigma_i}}_2^2 \right] $ 
+        损失
+          &
+        $\mathbb{E}_{i} \mathbb{E}_{p_{\text{data}}(\rvx)}
+        \mathbb{E}_{\bm{\epsilon} \sim \mathcal{N}\left(\mathbf{0}, \rmI\right)}
+    \left[ \norm{\rvs_{\bm{\phi}}(\rvx_i, \sigma_i) +   \frac{\bm{\epsilon}}{\sigma_i}}_2^2 \right] $
             &  $      \mathbb{E}_{i}\mathbb{E}_{p_{\text{data}}(\rvx)} \mathbb{E}_{\bm{\epsilon}\sim \mathcal{N}(\bm{0},\rmI)}\left[ \norm{\bm{\epsilon}_{\bm{\phi}}(\rvx_i, i) - \bm{\epsilon}}_2^2 \right]$ \\
     \midrule
      采样   & \begin{tabular}{@{}c@{}} 逐层执行朗之万；\\ 用其输出初始化下一层 \end{tabular}  &  \begin{tabular}{@{}c@{}}遍历马尔可夫链 \\ $p_{\bm{\phi}^\times}(\rvx_{i-1} | \rvx_i)$   \end{tabular} \\

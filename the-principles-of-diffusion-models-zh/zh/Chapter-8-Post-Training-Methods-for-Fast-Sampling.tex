@@ -43,7 +43,7 @@
 
 
 
-\subsection{分布层面的蒸馏}  
+\subsection{分布层面的蒸馏}
 分布层面的蒸馏旨在训练一个一步生成器 $\rmG_{\bm{\theta}}(\rvz)$，
 把噪声 $\rvz \sim p_{\mathrm{prior}}$ 映射为样本
 $\hat\rvx = \rmG_{\bm{\theta}}(\rvz)$，使其诱导分布
@@ -53,13 +53,11 @@ $p_{\bm{\theta}}(\hat\rvx)$ 逼近目标数据分布 $p_{\mathrm{data}}(\rvx)$�
 \min_{\bm{\theta}}  \mathcal{D}\!\left(p_{\bm{\theta}}(\hat\rvx),  p_{\mathrm{data}}(\hat\rvx)\right),
 \]
 其中 $\mathcal{D}$ 表示合适的散度，例如 KL 散度。实际做法中，
-基于分布的方法让生成器的分布去对齐预训练扩散模型所诱导的
-经验分布 $p_{\bm{\phi}^\times}(\rvx)$：
+基于分布的方法让生成器的分布去对齐预训练扩散模型所诱导的经验分布 $p_{\bm{\phi}^\times}(\rvx)$：
 \[
 \min_{\bm{\theta}}  \mathcal{D}\!\left(p_{\bm{\theta}}(\hat\rvx),  p_{\bm{\phi}^\times}(\hat\rvx)\right),
 \]
-即用 $p_{\bm{\phi}^\times}$ 代替 $p_{\mathrm{data}}$。这类方法并不显式地
-计算该散度，而是借助预训练的教师模型，以及按学生当前分布估计出的量，
+即用 $p_{\bm{\phi}^\times}$ 代替 $p_{\mathrm{data}}$。这类方法并不显式地计算该散度，而是借助预训练的教师模型，以及按学生当前分布估计出的量，
 为它的梯度构造一个可计算的估计式。在基于 KL 的分布匹配下，
 这一梯度就表现为学生分数函数与目标分数函数之差。
 
@@ -69,10 +67,12 @@ $p_{\bm{\theta}}(\hat\rvx)$ 逼近目标数据分布 $p_{\mathrm{data}}(\rvx)$�
 
 
 
-\subsection{流映射层面的蒸馏} 考虑 PF-ODE，它可以写成任意一种预测模型的形式（参见 \Cref{eq:predictions-equivalence}）：
+\subsection{流映射层面的蒸馏}
+
+考虑 PF-ODE，它可以写成任意一种预测模型的形式（参见 \Cref{eq:predictions-equivalence}）：
 \begin{align}\label{eq:pf-ode-ct}
-    \frac{\diff \rvx(\tau)}{\diff \tau} 
-    = f(\tau) \rvx(\tau) - \tfrac{1}{2}g^2(\tau) \nabla_\rvx \log p_\tau(\rvx(\tau)) 
+    \frac{\diff \rvx(\tau)}{\diff \tau}
+    = f(\tau) \rvx(\tau) - \tfrac{1}{2}g^2(\tau) \nabla_\rvx \log p_\tau(\rvx(\tau))
     =: \rvv^*(\rvx(\tau), \tau).
 \end{align}
 
@@ -80,7 +80,7 @@ $p_{\bm{\theta}}(\hat\rvx)$ 逼近目标数据分布 $p_{\mathrm{data}}(\rvx)$�
 $t \leq s$，记作 $\bPsi_{s\to t}(\rvx_s)$，即
 \begin{align}\label{eq:int_target_gt}
 \begin{aligned}
-    \bPsi_{s\to t}(\rvx_s) 
+    \bPsi_{s\to t}(\rvx_s)
     &\coloneqq \rvx_s + \int_s^t \rvv^*(\rvx(\tau), \tau) \diff \tau,
 \end{aligned}
 \end{align}
@@ -89,8 +89,7 @@ $\rvx_s$ 输运到噪声更小的时刻 $t$（最终数据位于 $t=0$）。
 从扩散模型采样，就相当于对 $\rvx_T \sim p_{\mathrm{prior}}$ 求
 $\bPsi_{T\to 0}(\rvx_T)$。通常这一积分要借助速度场 $\rvv$ 的迭代数值求解器
 来近似（参见 \Cref{ch:solvers}），而这需要很多步（例如即便用
-DPM-Solver 也要至少 $10$–$20$ 次 NFE），于是采样速度就比 GAN 这类
-经典的一步生成模型慢。这就自然引出下面的问题：
+DPM-Solver 也要至少 $10$–$20$ 次 NFE），于是采样速度就比 GAN 这类经典的一步生成模型慢。这就自然引出下面的问题：
 \begin{question}
     能否直接学习解映射 $\bPsi_{s\to t}(\rvx_s)$？
 \end{question}
@@ -100,16 +99,13 @@ $\bPsi_{T\to 0}(\rvx_T)$，就实现了一步生成。
 
 \paragraph{轨迹蒸馏。}
 
-轨迹蒸馏的目标是训练一个神经网络生成器，使其在单个样本的层面上
-近似解映射。由于 PF-ODE 的积分很少能写成闭式，训练时必须对它作
-数值近似。为便于表述，引入通用的求解器记号
+轨迹蒸馏的目标是训练一个神经网络生成器，使其在单个样本的层面上近似解映射。由于 PF-ODE 的积分很少能写成闭式，训练时必须对它作数值近似。为便于表述，引入通用的求解器记号
 \begin{align}\label{eq:solver}
     \mathtt{Solver}_{s\to t}(\rvx_s;\,\bm{\phi}^\times)
     \quad \text{or simply} \quad
     \mathtt{Solver}_{s\to t}(\rvx_s),
 \end{align}
-它表示以 $\rvx_s$ 为初值、从 $s$ 积分到 $t$ 的经验 PF-ODE 的
-数值解，其中教师参数为 $\bm{\phi}^\times$（上下文清楚时从略）。
+它表示以 $\rvx_s$ 为初值、从 $s$ 积分到 $t$ 的经验 PF-ODE 的数值解，其中教师参数为 $\bm{\phi}^\times$（上下文清楚时从略）。
 
 
 
@@ -117,14 +113,14 @@ $\bPsi_{T\to 0}(\rvx_T)$，就实现了一步生成。
 为实现少步乃至一步生成，一种直接的做法是训练生成器
 $\rmG_\btheta(\rvx_T, T,0)$，让它模仿沿完整轨迹求值的数值求解器的输出：
 \[
-\rmG_\btheta(\rvx_T, T,0)\approx \mathtt{Solver}_{T\to 0}(\rvx_T), 
+\rmG_\btheta(\rvx_T, T,0)\approx \mathtt{Solver}_{T\to 0}(\rvx_T),
 \qquad \rvx_T \sim p_{\mathrm{prior}}.
 \]
 这一想法正是最早的轨迹蒸馏方法之一\emph{知识蒸馏}
 ~\citep{luhman2021knowledge} 的基础，其回归损失为
 \[
 \mathcal{L}_{\mathrm{KD}}(\btheta)
-:= 
+:=
 \E_{\rvx_T \sim p_{\mathrm{prior}}}
 \left\|
 \rmG_\btheta(\rvx_T, T,0)
@@ -132,8 +128,7 @@ $\rmG_\btheta(\rvx_T, T,0)$，让它模仿沿完整轨迹求值的数值求解�
 \mathtt{Solver}_{T\to 0}(\rvx_T)
 \right\|_2^2.
 \]
-这种方法虽然能直接利用预训练教师提供的监督，却用不上原始训练数据中
-那份更强的监督。此外，若在训练循环里调用 ODE 积分，计算代价会很高，
+这种方法虽然能直接利用预训练教师提供的监督，却用不上原始训练数据中那份更强的监督。此外，若在训练循环里调用 ODE 积分，计算代价会很高，
 因为每次参数更新都要先解一遍 ODE 才能得到回归目标。最后，
 由于生成器只学了一个从 $T$ 到 $0$ 的全局映射，它可能丧失
 从中间状态引导生成过程的可控性；因此 \Cref{ch:guidance} 中介绍的
@@ -145,8 +140,7 @@ $\rmG_\btheta(\rvx_T, T,0)$，让它模仿沿完整轨迹求值的数值求解�
 \paragraph{渐进式蒸馏概述。}
 \emph{渐进式蒸馏}（PD）~\citep{salimans2021progressive} 借助教师的
 \emph{局部}片段来训练一个带时间条件的 $\mathtt{Student}$。
-设 $t_0=T>t_1>\cdots>t_N=0$ 为固定时间网格，教师提供
-各段时间步进映射 $\mathtt{Teacher}_{t_k\to t_{k+1}}$，
+设 $t_0=T>t_1>\cdots>t_N=0$ 为固定时间网格，教师提供各段时间步进映射 $\mathtt{Teacher}_{t_k\to t_{k+1}}$，
 $k=0,\ldots,N-1$。PD 并不只监督 $T\to 0$ 这一大步，
 而是让 $\mathtt{Student}$ 去匹配教师连续两步所对应的两步跳跃映射：
 \[
@@ -157,8 +151,7 @@ $k=0,\ldots,N-1$。PD 并不只监督 $T\to 0$ 这一大步，
 \mathtt{Teacher}_{t_{k}\to t_{k+1}},
 \]
 其中 $k = 0, 2, 4, \dots$。匹配用一个简单的回归损失（例如均方误差）来实现。
-在这些局部配对片段上训练完毕之后，$\mathtt{Student}$ 就不再走原网格的
-每一个时间间隔，而是每隔一个时间点前进一步，
+在这些局部配对片段上训练完毕之后，$\mathtt{Student}$ 就不再走原网格的每一个时间间隔，而是每隔一个时间点前进一步，
 \[
 t_0 \to t_2 \to t_4 \to \cdots \to t_N,
 \]
@@ -180,11 +173,10 @@ $N/2$ 次转移就覆盖了同样的总时间跨度 $[0,T]$。这一阶段结束
 包括 KD 与 PD 在内的各类方法，都可以纳入同一个损失框架：
 \begin{align}\label{eq:general-cm-loss}
   \mathcal{L}_{\mathrm{oracle}}(\btheta)
-  := \E_{s,t} \E_{\rvx_s \sim p_s} 
+  := \E_{s,t} \E_{\rvx_s \sim p_s}
   \left[  w(s,t)  d \big(\rmG_\btheta(\rvx_s, s,t),  \bPsi_{s\to t}(\rvx_s)\big)\right],
 \end{align}
-其中 $\bPsi_{s\to t}$ 是预言量形式的流映射，$w(s,t) \geq 0$ 指定
-各时间对 $(s,t)$ 的加权方式，$d(\cdot,\cdot)$ 是某种差异度量，例如
+其中 $\bPsi_{s\to t}$ 是预言形式的流映射，$w(s,t) \geq 0$ 指定各时间对 $(s,t)$ 的加权方式，$d(\cdot,\cdot)$ 是某种差异度量，例如
 $d(\rvx,\rvy)=\|\rvx-\rvy\|_2^2$ 或 $d(\rvx,\rvy)=\|\rvx-\rvy\|_1$，
 $p_s$ 表示时刻 $s$ 的前向噪声边缘。由于 $\bPsi_{s\to t}$ 没有闭式，
 只能依靠近似值，通常来自预训练的扩散模型（教师）或其他便于计算的替身。
@@ -193,13 +185,13 @@ $(s,t)=(T,0)$。等价地，也可取退化的权重
 $w(s,t)=\delta(s{-}T)\delta(t)$。若设 $p_T=p_{\mathrm{prior}}$
 \footnote{当噪声调度恰好在 $T$ 处到达先验时该等式成立；
 否则通常取足够大的 $T$ 使 $p_T\approx p_{\mathrm{prior}}$。}，
-则预言量目标变为
+则预言目标变为
 \[
 \E_{\rvx_T\sim p_T}
 \big\|\rmG_\btheta(\rvx_T,T,0)-\bPsi_{T\to 0}(\rvx_T)\big\|_2^2
 \approx \mathcal{L}_{\mathrm{KD}}(\btheta),
 \]
-而实用的 KD 目标则把预言量流映射换成
+而实用的 KD 目标则把预言流映射换成
 $\mathtt{Solver}_{T\to 0}\approx\bPsi_{T\to 0}$。关于这一表述的另一种
 看法见 \Cref{app-sec:flow-map}。PD 同样能纳入这一模板：它不只用
 单个端点对 $(T,0)$ 作监督，而是取许多\emph{相邻}时间对，
@@ -207,7 +199,7 @@ $\mathtt{Solver}_{T\to 0}\approx\bPsi_{T\to 0}$。关于这一表述的另一种
 应当与一步直接跨越两步的结果相符。我们在 \Cref{eq:pd-local}
 处再回到这一点。
 
-实践中最大的困难在于预言量流映射 $\bPsi_{s\to t}$ 一般没有闭式表达，
+实践中最大的困难在于预言流映射 $\bPsi_{s\to t}$ 一般没有闭式表达，
 因此无法直接用作监督。为有效地逼近这一目标，已经发展出一系列方法，
 但它们的成功往往取决于教师模型的质量。我们会在
 \Cref{ch:fast-scratch} 中回到 \Cref{eq:general-cm-loss}，
@@ -247,13 +239,12 @@ $\mathtt{Solver}_{T\to 0}\approx\bPsi_{T\to 0}$。关于这一表述的另一种
 \[
 \rvx_t = \alpha_t \rvx_0 + \sigma_t \bm{\epsilon}, \quad \bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI),
 \]
-其初始分布为 $p_0 = p_{\mathrm{data}}$。另记 $p_0^{\bm{\theta}}$ 为
-确定性一步生成器 $\rmG_{\bm{\theta}}(\rvz)$ 在隐变量
+其初始分布为 $p_0 = p_{\mathrm{data}}$。另记 $p_0^{\bm{\theta}}$ 为确定性一步生成器 $\rmG_{\bm{\theta}}(\rvz)$ 在隐变量
 $\rvz \sim p_{\mathrm{prior}}(\rvz)$ 下所产生的合成样本分布。
 再把 $\{p_t^{\bm{\theta}}\}_{t \in [0,T]}$ 定义为对 $p_0^{\bm{\theta}}$
 施加同一前向扩散过程所得的边缘密度，即
 \begin{align}\label{eq:vsd-forward}
-    \rvx_t^{\bm{\theta}} := \alpha_t \rmG_{\bm{\theta}}(\rvz) + \sigma_t \bm{\epsilon}, 
+    \rvx_t^{\bm{\theta}} := \alpha_t \rmG_{\bm{\theta}}(\rvz) + \sigma_t \bm{\epsilon},
 \end{align}
 其中 $\rvz \sim p_{\mathrm{prior}}$，$\bm{\epsilon} \sim \mathcal{N}(\bm{0}, \rmI)$。
 可见 $p_t$ 与 $p_t^{\bm{\theta}}$ 共用同一个高斯扩散核
@@ -271,8 +262,7 @@ $p_t(\rvx_t| \rvx_0)$，区别只在于起始分布不同
 分布层面的蒸馏中具有特殊地位，我们将在 \Cref{subsec:vsd-discussion}
 中说明。如~\citet{wang2023prolificdreamer} 所示，在总体层面上，
 当 $p_0^{\bm{\theta}^*}=p_{\mathrm{data}}$ 时生成器的分布即与数据分布一致。
-因此，VSD 目标为学习 $p_{\mathrm{data}}$ 提供了一个有原则的
-分布匹配损失。
+因此，VSD 目标为学习 $p_{\mathrm{data}}$ 提供了一个有原则的分布匹配损失。
 
 然而，这种基于密度的目标本身并不能直接用于训练。所幸对 $\bm{\theta}$
 求梯度，可以得到 \Cref{eq:vsd-grad} 的表达式，归纳为下面的命题。
@@ -286,8 +276,8 @@ $p_t(\rvx_t| \rvx_0)$，区别只在于起始分布不同
 我们有
 \begin{align}\label{eq:vsd-grad}
 \begin{aligned}
-        \nabla_{\bm{\theta}}\mathcal{L}_{\text{VSD}}(\bm{\theta}) = \mathbb{E}_{t, \rvz, \bm{\epsilon}} \left[ \omega(t)\alpha_t  \left( 
-\nabla_{\rvx} \log p_t^{\bm{\theta}}(\hat\rvx_t) - \nabla_{\rvx} \log p_t(\hat\rvx_t) 
+        \nabla_{\bm{\theta}}\mathcal{L}_{\text{VSD}}(\bm{\theta}) = \mathbb{E}_{t, \rvz, \bm{\epsilon}} \left[ \omega(t)\alpha_t  \left(
+\nabla_{\rvx} \log p_t^{\bm{\theta}}(\hat\rvx_t) - \nabla_{\rvx} \log p_t(\hat\rvx_t)
 \right) \cdot \partial_{\bm{\theta}} \rmG_{\bm{\theta}}(\rvz) \right].
 \end{aligned}
 \end{align}
@@ -324,7 +314,7 @@ $p_t(\rvx_t| \rvx_0)$，区别只在于起始分布不同
 $\partial_{\btheta}\hat\rvx_t=\alpha_t\partial_{\btheta}\rmG_{\btheta}(\rvz)$，于是
 \[
 \nabla_{\btheta}\mathcal{L}_{\text{VSD}}(\btheta)
-= \E_{t,\rvz,\beps} \left[\omega(t) \alpha_t 
+= \E_{t,\rvz,\beps} \left[\omega(t) \alpha_t
 \big(\nabla_{\rvx}\log p_t^{\btheta}(\hat\rvx_t)-\nabla_{\rvx}\log p_t(\hat\rvx_t)\big)^\top
 \partial_{\btheta}\rmG_{\btheta}(\rvz)\right].
 \]
@@ -346,10 +336,9 @@ $\nabla_{\rvx}\log p_t(\hat\rvx_t)$。下一小节将详细说明。
 
 \subsection{VSD 训练流程}\label{subsec:vsd-training}
 已有工作~\citep{yin2024one,yin2024improved,pooledreamfusion,wang2023prolificdreamer,luo2023diff,lu2024simplifying}
-通常用双层优化的方式求解：另外训练一个新的扩散模型去近似
-生成器 $\rmG_{\bm{\theta}}(\rvz)$ 所产生的样本上的
+通常用双层优化的方式求解：另外训练一个新的扩散模型去近似生成器 $\rmG_{\bm{\theta}}(\rvz)$ 所产生的样本上的
 $\nabla_{\rvx} \log p_t^{\bm{\theta}}(\hat\rvx_t)$，
-而对难以直接计算的预言量分数 $\nabla_{\rvx} \log p_t(\hat\rvx_t)$
+而对难以直接计算的预言分数 $\nabla_{\rvx} \log p_t(\hat\rvx_t)$
 （在合成样本 $\hat\rvx_t$ 处取值），则用预训练扩散模型来充当替身。
 更准确地说，训练在两个阶段之间交替：
 \begin{itemize}
@@ -365,7 +354,7 @@ $\nabla_{\rvx} \log p_t^{\bm{\theta}}(\hat\rvx_t)$，
     \]
     使 $\rvs_{\bm{\zeta}}(\cdot,t)$ 在固定的 $\bm{\theta}$ 下最好地逼近
     $\nabla_{\rvx}\log p_t^{\bm{\theta}}(\cdot)$。
-    
+
 
   \item \textbfs{生成器更新阶段。} 冻结 $s_{\bm{\zeta}}$（即停止梯度回传），
   用 \Cref{eq:vsd-grad} 更新 $\bm{\theta}$，其中各个分数项换成对应的替身：
@@ -381,16 +370,13 @@ $\nabla_{\rvx} \log p_t^{\bm{\theta}}(\hat\rvx_t)$，
     \Big].
   \]
 \end{itemize}
-这两个阶段在整个训练过程中交替进行。理想情况下，辅助模型始终跟踪
-学生当前的分数 $\rvs_{\bm{\zeta}}(\cdot,t)\approx\nabla_{\rvx}\log p_t^{\bm{\theta}}(\cdot)$，
+这两个阶段在整个训练过程中交替进行。理想情况下，辅助模型始终跟踪学生当前的分数 $\rvs_{\bm{\zeta}}(\cdot,t)\approx\nabla_{\rvx}\log p_t^{\bm{\theta}}(\cdot)$，
 而预训练教师提供目标分数的近似
 $\rvs_{\bm{\phi}^\times}(\cdot,t)\approx\nabla_{\rvx}\log p_t(\cdot)$。
-在总体层面上，若在某个 $\sigma_t>0$、$\alpha_t\neq 0$ 的噪声水平上
-这两个分数函数一致，则它们对应的归一化密度也一致，即
+在总体层面上，若在某个 $\sigma_t>0$、$\alpha_t\neq 0$ 的噪声水平上这两个分数函数一致，则它们对应的归一化密度也一致，即
 $p_t^{\bm{\theta}}=p_t$。又因为加高斯噪声这一映射是单射的，
 当 $\alpha_t\neq 0$ 时便可进一步推出
-$p_0^{\bm{\theta}}=p_{\mathrm{data}}$。不过实际中这两个分数都由
-容量有限的学习网络表示，所以上述等号刻画的是理想的总体解，
+$p_0^{\bm{\theta}}=p_{\mathrm{data}}$。不过实际中这两个分数都由容量有限的学习网络表示，所以上述等号刻画的是理想的总体解，
 而不是交替优化一定能达到的保证。
 
 
@@ -464,8 +450,7 @@ r_t(\hat\rvx_t)f''\!\big(r_t(\hat\rvx_t)\big)
 \]
 而散度怎么选，只是改变了不同区域被 $r_t f''(r_t)$ 加权的强弱。
 因此对 $f$ 通常的严格凸取法而言，总体层面的分布匹配条件仍是
-$p_t^{\btheta}=p_t$；换一种散度，改变的是优化过程中各密度比区间
-通过 $r_t f''(r_t)$ 得到的不同权重。
+$p_t^{\btheta}=p_t$；换一种散度，改变的是优化过程中各密度比区间通过 $r_t f''(r_t)$ 得到的不同权重。
 
 对 VSD 所用的反向 KL，取 $f(r)=r\log r$，于是
 \[
@@ -475,21 +460,17 @@ r f''(r)=1.
 \Cref{eq:vsd-grad} 中的梯度。因此只要学生分数与目标分数可得，
 反向 KL 训练就不需要额外的逐点密度比估计器。相比之下，一般的
 $f$ 散度需要系数 $r_t f''(r_t)$；虽然分数差已给出
-$\nabla_{\rvx}\log r_t$，但比值 $r_t$ 本身对隐式生成器而言
-并不能直接得到，通常还需额外估计。
+$\nabla_{\rvx}\log r_t$，但比值 $r_t$ 本身对隐式生成器而言并不能直接得到，通常还需额外估计。
 
 例如前向 KL 对应 $f(r)=-\log r$，此时
-$r f''(r)=1/r$。因此它会更加重视那些模型密度相对于
-目标密度偏小的区域。这就说明，不同的散度可以共享同一个
-分数失配方向，却着重强调不同的密度比区间。
+$r f''(r)=1/r$。因此它会更加重视那些模型密度相对于目标密度偏小的区域。这就说明，不同的散度可以共享同一个分数失配方向，却着重强调不同的密度比区间。
 
 最后，这一「分数失配」的视角直接联系到
 \Cref{sec:wgf-distribution-level-training} 中的 Wasserstein 梯度流。
 在分布层面上，反向 KL 梯度流按目标分数减去模型分数来移动分布。
 VSD 的参数梯度中含有同一个分数失配，只是又通过生成器的雅可比
 $\partial_{\btheta}\hat\rvx_t$ 把它拉回到参数空间。因此，
-Wasserstein 视角描述的是分布空间中理想的运动，而 VSD 则是通过
-更新一个有限维、被共享的生成器来实现这一运动。
+Wasserstein 视角描述的是分布空间中理想的运动，而 VSD 则是通过更新一个有限维、被共享的生成器来实现这一运动。
 
 
 
@@ -542,12 +523,11 @@ Wasserstein 视角描述的是分布空间中理想的运动，而 VSD 则是通
 
 \begin{figure}[th!]
     \centering
-    \includegraphics[width=0.93\linewidth]{Images/PartD/PD.pdf} 
+    \includegraphics[width=0.93\linewidth]{Images/PartD/PD.pdf}
     \caption{\textbfs{渐进蒸馏（PD）示意。}
 每一轮训练学生时，都要求学生的单步复现教师相邻两步的效果。
 这一过程把教师的 $N$ 个区间蒸馏成 $N/2$ 个学生步，再反复进行，
-逐步把轨迹长度减半，直到达到所需的步数。箭头表示多步的教师转移
-如何被压缩为更少的学生步，从噪声走向数据。
+逐步把轨迹长度减半，直到达到所需的步数。箭头表示多步的教师转移如何被压缩为更少的学生步，从噪声走向数据。
 \figcredit{由作者绘制。}
 }
     \label{fig:pd-illustration}
@@ -569,9 +549,7 @@ $\rvx$-DDIM 去噪器后所得的确定性映射。在 PD 的第一轮中
 而在后面几轮中（教师换成以前的学生），$\mathtt{Solver}_{s \to t}$
 只是当前教师所诱导的 DDIM 转移，而不再是原始的扩散 PF-ODE。
 蒸馏步骤如下：从噪声输入 $\rvx_s$ 出发（即干净数据的一个受扰版本，
-$\rvx_s = \alpha_s \rvx_0 + \sigma_s \bm{\epsilon}$），训练学生去预测
-目标 ${\color{orange}\tilde\rvx}$，使得学生走一步 $s\!\to\! t$ 就能
-复现教师连续两步 $s\!\to\! u\!\to\! t$ 的结果。记
+$\rvx_s = \alpha_s \rvx_0 + \sigma_s \bm{\epsilon}$），训练学生去预测目标 ${\color{orange}\tilde\rvx}$，使得学生走一步 $s\!\to\! t$ 就能复现教师连续两步 $s\!\to\! u\!\to\! t$ 的结果。记
 $\rvx_{\bm{\phi}^\times}(\rvx,\tau)$ 为教师在本轮的 $\rvx$-预测去噪器。
 连续施加两次教师诱导的 DDIM 转移，得到
 \[
@@ -606,11 +584,10 @@ $\rvf_{\bm{\theta}}(\rvx_s, s)$（这里同样是 $\rvx$-预测模型），
 \end{align}
 
 
-下面说明：在 DDIM 规则下，${\color{orange}\tilde\rvx}$ 有初等代数形式的
-闭式表达（该结果对离散时间与连续时间都成立）：
+下面说明：在 DDIM 规则下，${\color{orange}\tilde\rvx}$ 有初等代数形式的闭式表达（该结果对离散时间与连续时间都成立）：
 \lemp{DDIM 下的两步合一目标 ${\color{orange}\tilde\rvx}$}{pd-ddim}{以 $\rvx_s$ 为初始条件，若求解器采用 DDIM，则「两步合一」目标 ${\color{orange}\tilde\rvx}$ 可按下式计算
 \begin{align*}
-    {\color{orange}\tilde\rvx} 
+    {\color{orange}\tilde\rvx}
     &=\frac{\sigma_s}{\alpha_t\sigma_s - \alpha_s\sigma_t} \tilde\rvx_t - \frac{\sigma_t}{\alpha_t\sigma_s - \alpha_s\sigma_t} \rvx_s.
 \end{align*}
 其中 $\tilde\rvx_t$ 是沿 $s \to u \to t$ 把 DDIM（\Cref{eq:ddim-update-all}）施加两次得到的：
@@ -643,7 +620,7 @@ ${\color{orange}\tilde\rvx}$ 关于 $\tilde\rvx_t$、$s$ 与 $t$ 的表达式：
 而学生要学的则是与教师映射复合相匹配的两步跳跃映射：
 \[
 \mathtt{Student}_{t_k\to t_{k+2}}
- \approx 
+ \approx
 \mathtt{Teacher}_{t_{k+1}\to t_{k+2}}
 \circ
 \mathtt{Teacher}_{t_{k}\to t_{k+1}}.
@@ -653,7 +630,7 @@ ${\color{orange}\tilde\rvx}$ 关于 $\tilde\rvx_t$、$s$ 与 $t$ 的表达式：
 $(s,u,t)=(t_k,t_{k+1},t_{k+2})$，其中
 $k\in\{0,2,\ldots,N-2\}$。此时目标 \Cref{eq:pd-optimization} 变为
 \[
-\min_{\bm{\theta}} 
+\min_{\bm{\theta}}
 \mathbb{E}_{\,k \sim \mathcal{U}\{0,2,\ldots,N{-}2\}}
 \mathbb{E}_{\,\rvx_{t_k}\sim p_{t_k}}\!
 \Big[
@@ -673,7 +650,7 @@ t = T\Big(1 - \frac{k+2}{N}\Big),
 对应着间距均匀的时间步长 $\Delta s = T/N$。
 
 
-\subsection{PD的整个训练流程及其采样}\label{subsec:pd-training}
+\subsection{PD 的整个训练流程及其采样}\label{subsec:pd-training}
 在这些局部配对片段上按 \Cref{eq:pd-optimization} 训练完毕之后，
 $\mathtt{Student}$ 就不再走原网格的每一个区间：它的每一步都覆盖
 $\mathtt{Teacher}$ 连续的两步，因此每隔一个时间点前进一步，
@@ -687,8 +664,7 @@ t_0 \to t_2 \to t_4 \to \cdots \to t_N,
 N \;\to\; N/2 \;\to\; N/4 \;\to\; \cdots,
 \]
 直到达到所需的推理步数。每一轮迭代中，新的 $\mathtt{Student}$
-都从更新后的 $\mathtt{Teacher}$ 初始化而来。这种反复对半的做法
-在保留全局时间范围的同时，逐步压缩生成过程的时间分辨率。
+都从更新后的 $\mathtt{Teacher}$ 初始化而来。这种反复对半的做法在保留全局时间范围的同时，逐步压缩生成过程的时间分辨率。
 
 \paragraph{采样。}
 推理时用（DDIM）求解器配合当前的 $\mathtt{Student}$ 作为去噪器，
@@ -701,15 +677,14 @@ N \;\to\; N/2 \;\to\; N/4 \;\to\; \cdots,
 
 
 \paragraph{渐进蒸馏作为局部半群匹配。}
-在统一目标 \Cref{eq:general-cm-loss} 中，难以直接计算的预言量目标
+在统一目标 \Cref{eq:general-cm-loss} 中，难以直接计算的预言目标
 $\bPsi_{s\to 0}$ 被一个由教师诱导的替身取代，所用的是 ODE 流的
 \emph{半群性质}（详见后文 \Cref{eq:semi-group}）：从 $s$ 演化到 $t$，
 应当等价于先从 $s$ 走到任一中间时刻 $u$、再从 $u$ 走到 $t$，即
 \[
 \bPsi_{s\to t} = \bPsi_{u\to t}\circ\bPsi_{s\to u}.
 \]
-PD 是在局部施加这一要求：训练学生的单步映射去匹配教师两个相邻
-单步片段的复合，即
+PD 是在局部施加这一要求：训练学生的单步映射去匹配教师两个相邻单步片段的复合，即
 \begin{align}\label{eq:pd-local}
   \E_{s}\E_{\rvx_s\sim p_s}
   \big\|
@@ -745,22 +720,19 @@ PD 是在局部施加这一要求：训练学生的单步映射去匹配教师�
 
 \paragraph{能否改用别的求解器？}
 上面的推导中，我们在 $\rvx$-预测参数化下用 DDIM 作为具体的
-PF-ODE 采样器。但基本的蒸馏原理更为一般：只要教师的若干步
-能给出目标终点，再训练学生用更粗的一步到达同一个终点即可。
+PF-ODE 采样器。但基本的蒸馏原理更为一般：只要教师的若干步能给出目标终点，再训练学生用更粗的一步到达同一个终点即可。
 
 只要较粗那一层的求解器更新可以依据学生的网络预测反解出来，
 前面导出的闭式伪目标就同样可用。
 对 DDIM 来说，更新式关于单个 $\rvx$ 预测是仿射的，
-所以这一反解可以解析地完成。同样的思路也适用于其他
-一步更新允许类似反解的求解器。
+所以这一反解可以解析地完成。同样的思路也适用于其他一步更新允许类似反解的求解器。
 
 而对更复杂的求解器，这种「由单个输出反解」的做法未必可行：
 多阶段方法要用多次网络评估，多步方法依赖先前的求解器状态，
 隐式方法还要解耦合方程。此时可以改为直接算出较粗的学生步，
 再把它与教师细步所得的端点按 \Cref{eq:pd-local} 直接匹配，
 并在可行时让梯度穿过求解器回传给学生。另外要注意，
-较粗的步本身可能就要用多次网络评估，因此时间步数变少
-并不一定意味着 NFE 同比例减少。
+较粗的步本身可能就要用多次网络评估，因此时间步数变少并不一定意味着 NFE 同比例减少。
 
 对随机采样器而言，同样的路径匹配逻辑要成立，
 就必须让教师与学生固定或耦合使用同一组随机抽样。
@@ -904,8 +876,7 @@ PF-ODE 采样器。但基本的蒸馏原理更为一般：只要教师的若干�
 上都验证了这一做法。
 
 \paragraph{第一级蒸馏：把引导蒸馏掉。}
-记 $\rvx_{\bm{\phi}^\times}(\rvx_s, s, \rvc)$ 为（预训练的）条件扩散模型
-在「$\rvx$-预测」参数化下的输出（即干净数据估计），时刻为 $s$、
+记 $\rvx_{\bm{\phi}^\times}(\rvx_s, s, \rvc)$ 为（预训练的）条件扩散模型在「$\rvx$-预测」参数化下的输出（即干净数据估计），时刻为 $s$、
 条件为 $\rvc$；条件也可以取空，即 $\rvc=\emptyset$（无条件分支）。
 \Cref{eq:cfg-model-nn} 中带权 $\omega$ 的 CFG 组合可以写成
 \begin{equation}\label{eq:cfg-model-clean}
@@ -936,8 +907,7 @@ $\omega$，从而使单个网络学会模拟任意强度的 CFG 引导。
 \newpage
 \section{结束语}\label{sec:ch10_cr}
 
-本章介绍了我们遇到的第一个基于训练的加速范式。在把无需训练的改进
-通过数值求解器用尽之后，我们把关注点转向一条新策略：训练一个快速的
+本章介绍了我们遇到的第一个基于训练的加速范式。在把无需训练的改进通过数值求解器用尽之后，我们把关注点转向一条新策略：训练一个快速的
 \textit{学生}生成器，让它学会复制那个缓慢的、预训练的\textit{教师}
 扩散模型的行为。
 
@@ -946,11 +916,9 @@ $\omega$，从而使单个网络学会模拟任意强度的 CFG 引导。
 做法是在各个噪声水平上调准二者的分数函数，从而给出稳定、
 非对抗式的目标。其二是流映射层面的蒸馏，我们看到渐进蒸馏（PD）
 这类方法如何训练学生直接逼近教师的解轨迹；PD 的迭代做法
-（每轮把采样步数减半）被证明是把漫长的迭代过程压缩到几步的
-有力且实用的手段。
+（每轮把采样步数减半）被证明是把漫长的迭代过程压缩到几步的有力且实用的手段。
 
-这些蒸馏技术成功弥补了迭代式扩散模型的高样本质量与一步生成器的
-推理速度之间的落差，为高效、高保真的合成提供了一条很有吸引力的路径。
+这些蒸馏技术成功弥补了迭代式扩散模型的高样本质量与一步生成器的推理速度之间的落差，为高效、高保真的合成提供了一条很有吸引力的路径。
 
 然而，依赖预训练教师也带来了两段式的流程：先训练一个缓慢但强大的教师，
 再把它蒸馏成快速的学生。这就在生成模型研究的前沿引出一个基本问题：
@@ -963,8 +931,7 @@ $\omega$，从而使单个网络学会模拟任意强度的 CFG 引导。
     \item 我们还将深入讨论一致性模型的推广形式，即学会把 ODE 轨迹上的任意一点一步映射到轨迹上的另一点。
 \end{enumerate}
 从改进求解器、从教师那里「提取」解，转而直接学习解映射本身，
-这一转变代表了迈向一类新型生成模型的重要一步——这类模型在设计上
-既有原则性，又足够高效。
+这一转变代表了迈向一类新型生成模型的重要一步——这类模型在设计上既有原则性，又足够高效。
 
 \clearpage
 \newpage

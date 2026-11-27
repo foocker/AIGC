@@ -34,11 +34,11 @@
 在这里， $\nabla_{\rvy}\rvh$ 是 $\rvh$ 的雅可比矩阵。这非常适合确定性路径 $\rvy_t$.
 
 \begin{question}
-    但是如果 $\rvx_t$ 是一个随机过程，例如由 SDE 驱动 
+    但是如果 $\rvx_t$ 是一个随机过程，例如由 SDE 驱动
 \[
 \diff \rvx_t = \rvf(\rvx_t, t)\diff t + g(t) \diff \rvw_t
 \]
-如 \Cref{eq:sde}？ SDE的流程是什么 $\rvh(\rvx_t, t)$ 满意吗？
+如 \Cref{eq:sde}？ SDE 的流程是什么 $\rvh(\rvx_t, t)$ 满足吗？
 \end{question}
 
 \paragraph{为什么普通链式法则失败？}
@@ -63,7 +63,7 @@ x_0=0,
 \[
 \diff h = 2 x_t \diff x_t = 2 x_t \sigma \diff w_t.
 \]
-如果这是真的，则期望 $h(x_t)$ 在时间上是恒定的，因为 
+如果这是真的，则期望 $h(x_t)$ 在时间上是恒定的，因为
 \[
 \mathbb{E}[\diff h ] =  2 \sigma \mathbb{E}[x_t  \diff w_t]= 2 \sigma \mathbb{E}[x_t]  \underbrace{\mathbb{E}[\diff w_t]}_{=0}=0.
 \]
@@ -80,7 +80,7 @@ x_0=0,
 \paragraph{通过泰勒展开式确定性链式法则。}
 为了理解为什么经典链式法则对于 SDE 定义的随机过程失败，我们首先使用泰勒展开在确定性设置中重新审视它。我们考虑标量情况： $y_t \in \mathbb{R}$ 和 $h(\cdot,\cdot)\in \mathbb{R}$。正式治疗 $\diff y_t = y_{t+\diff t} - y_t$，与 $\diff t \approx 0$，我们扩展：
 \begin{align*}
-&h(y_{t+\diff t}, t+\diff t) 
+&h(y_{t+\diff t}, t+\diff t)
 - h(y_t, t) \\
 = ~&\frac{\partial h}{\partial t} \diff t
 + \frac{\partial h}{\partial y} \diff y_t  + \frac{1}{2} \left(\textcolor{gray}{\frac{\partial^2 h}{\partial y^2}  (\diff y_t)^2}
@@ -105,32 +105,32 @@ x_0=0,
 \]
 其中，$w_t$ 是标准布朗运动。我们要求标量函数 $h(x_t, t)$ 的微分。对 $\diff x_t$ 做随机泰勒展开并保留到二阶~\citep{kloeden1992stochastic}，得到
 \begin{align*}
-&h(x_{t+\diff t}, t+\diff t) 
+&h(x_{t+\diff t}, t+\diff t)
 - h(x_t, t) \\
-=~&\frac{\partial h}{\partial t} \diff t 
-+ \frac{\partial h}{\partial x} \diff x_t 
-+ \frac{1}{2} \left( \frac{\partial^2 h}{\partial x^2} (\diff x_t)^2 
-+ 2\textcolor{gray}{{\frac{\partial^2 h}{\partial t \partial x} \diff t \diff x_t}} 
+=~&\frac{\partial h}{\partial t} \diff t
++ \frac{\partial h}{\partial x} \diff x_t
++ \frac{1}{2} \left( \frac{\partial^2 h}{\partial x^2} (\diff x_t)^2
++ 2\textcolor{gray}{{\frac{\partial^2 h}{\partial t \partial x} \diff t \diff x_t}}
 + \textcolor{gray}{{ \frac{\partial^2 h}{\partial t^2} (\diff t)^2}} \right)
 + \cdots
 \end{align*}
 \subparagraph{可忽略的交叉项。}
-通过布朗运动的标度性质（\Cref{eq:wiener-gaussian}), 
+通过布朗运动的标度性质（\Cref{eq:wiener-gaussian}),
 \[
 \diff w_t = \mathcal{O}(\sqrt{\diff t}) \quad \Rightarrow \quad \diff t \cdot \diff w_t = \mathcal{O}((\diff t)^{3/2}).
 \]
 因此，
 \begin{align*}
-\diff t \cdot \diff x_t 
-&= \diff t \left(f \diff t + g \diff w_t\right) 
-= f (\diff t)^2 + g \cdot \diff t \cdot \diff w_t 
+\diff t \cdot \diff x_t
+&= \diff t \left(f \diff t + g \diff w_t\right)
+= f (\diff t)^2 + g \cdot \diff t \cdot \diff w_t
 = \mathcal{O}((\diff t)^{3/2}).
 \end{align*}
 所以，灰色项可以忽略不计： $ \mathcal{O}((\diff t)^{3/2}) $ 或更小。
 \subparagraph{二阶项 $(\diff x_t)^2$.}
 使用 SDE 扩展：
 \begin{align*}
-(\diff x_t)^2 
+(\diff x_t)^2
 &= \left( f \diff t + g \diff w_t \right)^2 \\
 &= f^2 (\diff t)^2 + 2fg \diff t \diff w_t + g^2 (\diff w_t)^2 \\
 &= g^2(t) \diff t,
@@ -192,7 +192,7 @@ $(\diff w_t)^2=\diff t$，最后一个恒等式在二次变分意义上被理解
 
 
 \paragraph{标量值函数的多维伊藤公式。}
-让 $\rvx_t \in \mathbb{R}^D$ 满足SDE：
+让 $\rvx_t \in \mathbb{R}^D$ 满足 SDE：
 \[
 \diff \rvx_t = \rvf(\rvx_t, t) \diff t + g(t) \diff \rvw_t,
 \]
@@ -356,10 +356,10 @@ $\int \partial_t\phi\,p_t\,\diff\rvx\,\diff t$ 取消。申请步骤~4 剩下的
 \quad \text{并令} \quad
 \rvy_t := \Psi(t)\rvx_t.
 \]
-\subparagraph{第 2 步：应用伊藤（It\^o）公式。}  
+\subparagraph{第 2 步：应用伊藤（It\^o）公式。}
 把伊藤公式应用于函数 $\rvh(\rvx, t) := \Psi(t)\rvx$。这是伊藤乘积法则的一个特例，见 \Cref{eq:ito-product}。自从 $\Psi(t)$ 是确定性的，没有交叉变分项，公式简化为：
 \begin{align*}
-    \mathrm{d}\rvy_t 
+    \mathrm{d}\rvy_t
     &= \mathrm{d}[\Psi(t)\rvx_t] \\
     &= \Psi'(t)\rvx_t \mathrm{d}t + \Psi(t) \mathrm{d}\rvx_t \\
     &= -f(t)\Psi(t)\rvx_t \mathrm{d}t + \Psi(t)\left[f(t)\rvx_t \mathrm{d}t + g(t) \mathrm{d}\rvw_t\right] \\
@@ -370,7 +370,7 @@ $\int \partial_t\phi\,p_t\,\diff\rvx\,\diff t$ 取消。申请步骤~4 剩下的
 \rvy_t = \rvy_0 + \int_0^t \Psi(s)g(s) \mathrm{d}\rvw(s) = \rvx_0 + \int_0^t \Psi(s)g(s) \mathrm{d}\rvw(s),
 \]
 自 $\Psi(0) = 1$.
-\subparagraph{第 3 步：求解 $\rvx_t$.}  
+\subparagraph{第 3 步：求解 $\rvx_t$.}
 使用 $\rvx_t = \Psi(t)^{-1}\rvy_t$，我们得到
 \begin{align}\label{eq:lienar-sde-solution}
     \rvx_t &=  e^{ \int_0^t f(s)\mathrm{d}s}
@@ -418,7 +418,7 @@ $\int \partial_t\phi\,p_t\,\diff\rvx\,\diff t$ 取消。申请步骤~4 剩下的
 这表明条件协方差是各向同性的。
 
 \paragraph{\Cref{eq:mean-var-evolution}.} 中均值和方差 ODE 的推导
-或者，我们可以直接从线性 SDE \Cref{eq:app-linear-sde} 导出矩演化方程。 
+或者，我们可以直接从线性 SDE \Cref{eq:app-linear-sde} 导出矩演化方程。
 
 
 \subparagraph{均值进化.}
@@ -433,8 +433,8 @@ $\int \partial_t\phi\,p_t\,\diff\rvx\,\diff t$ 取消。申请步骤~4 剩下的
 定义中心化过程 $ \tilde{\rvx}_t := \rvx_t - \rvm(t) $。应用伊藤（It\^o）乘积法则（参见\Cref{eq:ito-product}）：
 \[
 \diff \left( \tilde{\rvx}_t \tilde{\rvx}_t^\top \right)
-= \diff \tilde{\rvx}_t \cdot \tilde{\rvx}_t^\top 
-+ \tilde{\rvx}_t \cdot \diff \tilde{\rvx}_t^\top 
+= \diff \tilde{\rvx}_t \cdot \tilde{\rvx}_t^\top
++ \tilde{\rvx}_t \cdot \diff \tilde{\rvx}_t^\top
 + \diff \tilde{\rvx}_t \cdot \diff \tilde{\rvx}_t^\top.
 \]
 
@@ -467,7 +467,7 @@ $\int \partial_t\phi\,p_t\,\diff\rvx\,\diff t$ 取消。申请步骤~4 剩下的
 
 
 
- 
+
 
 
 
@@ -579,15 +579,12 @@ $\int \partial_t\phi\,p_t\,\diff\rvx\,\diff t$ 取消。申请步骤~4 剩下的
 
 \subsection{吉尔萨诺夫定理作为似然训练和分数匹配之间的桥梁}\label{subsec:girsanov}
 
-在了解吉尔萨诺夫定理如何关联单个概率之后
-不同漂移假设下的路径，我们现在深入研究其对
-扩散模型。回想一下扩散模型中的前向 SDE：
+在了解吉尔萨诺夫定理如何关联单个概率之后不同漂移假设下的路径，我们现在深入研究其对扩散模型。回想一下扩散模型中的前向 SDE：
 \[
 \diff \rvx_t = \rvf(\rvx_t, t) \diff t + g(t) \diff \rvw_t,
 \]
 这会在整个轨迹上产生 \emph{ 路径分布 } $P$
-$\rvx_{0:T} := \{\rvx_t\}_{t=0}^T$（即过程的联合律
-整个时间间隔）。
+$\rvx_{0:T} := \{\rvx_t\}_{t=0}^T$（即过程的联合律整个时间间隔）。
 逆时 SDE，由可学习的分数函数参数化
 $\rvs_{\bm{\phi}}(\rvx_t, t)$，由下式给出
 \[
@@ -599,43 +596,29 @@ $P_{\bm{\phi}}$ 超过轨迹。
 
 
 \paragraph{扩散模型中的两个概念。}
-区分两个随机过程可以在两个级别上进行区分是有用的
-同意：
+区分两个随机过程可以在两个级别上进行区分是有用的同意：
 \begin{itemize}
-    \item \textbfs{概念1.边缘分布匹配：}
+    \item \textbfs{概念 1.边缘分布匹配：}
     进程在每个固定位置具有相同的分布 $p_t(\rvx_t)$
     时间 $t$。因此，他们的时间索引“快照”是一致的。
 
-    \item \textbfs{概念2.关节路径分布匹配：}
+    \item \textbfs{概念 2.关节路径分布匹配：}
     这些过程在整个轨迹上具有相同的概率定律。
-    这个更强烈的概念也符合不同时期的状态
-    耦合，包括它们的过渡定律和时间依赖性。
+    这个更强烈的概念也符合不同时期的状态耦合，包括它们的过渡定律和时间依赖性。
 \end{itemize}
 
-匹配全路径法则自动意味着边缘匹配，因为
-每个$p_t$都是通过将路径定律投影到时间状态上得到的
-$t$。反之通常是错误的：两个进程可以具有相同的
-每次都有边缘，同时在这些边缘之间引入不同的耦合
-边缘。 SDE 及其相关的 PF-ODE 提供了一个重要的示例：
-它们共享相同的边缘密度路径，但通常具有不同的
-样本轨迹和路径定律。
+匹配全路径法则自动意味着边缘匹配，因为每个$p_t$都是通过将路径定律投影到时间状态上得到的
+$t$。反之通常是错误的：两个进程可以具有相同的每次都有边缘，同时在这些边缘之间引入不同的耦合边缘。 SDE 及其相关的 PF-ODE 提供了一个重要的示例：
+它们共享相同的边缘密度路径，但通常具有不同的样本轨迹和路径定律。
 
 
 \paragraph{吉尔萨诺夫定理将分数错误与路径律不匹配联系起来。}
-精确的逆时 SDE 满足上述更强的概念。下
-标准正则条件，当从确切的终端初始化时
-边缘$p_T$并配备真实分数
-$\nabla_{\rvx}\log p_t(\rvx)$，是正向的时间反转
-扩散，因此再现其完整的时间反转路径定律。
+精确的逆时 SDE 满足上述更强的概念。下标准正则条件，当从确切的终端初始化时边缘$p_T$并配备真实分数
+$\nabla_{\rvx}\log p_t(\rvx)$，是正向的时间反转扩散，因此再现其完整的时间反转路径定律。
 
 让 $P^{\mathrm{rev}}$ 表示这个精确的反时路径定律，并让
-$P_{\bm{\phi}}$ 表示学习到的逆时路径定律
-用 $\rvs_{\bm{\phi}}$ 替换真实分数并从
-$p_{\mathrm{prior}}$。将路径空间 KL 分解为初始路径空间之间的不匹配
-分布和条件路径定律，并应用吉尔萨诺夫
-使用相同的方法表达两个过程后，得出后者的定理
-增加逆时时钟，给出原始扩散时间
-标签$t$，
+$P_{\bm{\phi}}$ 表示学习到的逆时路径定律用 $\rvs_{\bm{\phi}}$ 替换真实分数并从
+$p_{\mathrm{prior}}$。将路径空间 KL 分解为初始路径空间之间的不匹配分布和条件路径定律，并应用吉尔萨诺夫使用相同的方法表达两个过程后，得出后者的定理增加逆时时钟，给出原始扩散时间标签$t$，
 \begin{align}\label{eq:girsanov-KL}
 \begin{aligned}
 \mathcal{D}_{\mathrm{KL}}
@@ -660,21 +643,12 @@ g^2(t)
 \diff t .
 \end{aligned}
 \end{align}
-第一项衡量真实终端分布之间的不匹配
-以及用于初始化生成的先验；当它消失时
-$p_T=p_{\mathrm{prior}}$。第二项衡量累积的不匹配
-在习得的漂移和精确的反向漂移之间。因此，与特定似然权重 $g^2(t)$ 的分数匹配
-有直接的路径空间解释：最小化加权分数误差
-最小化精确的反向路径定律和学习到的反向路径定律之间的 KL 散度，
-直至固定终端分布项。当去噪分数匹配为
-使用而不是边缘分数匹配，相应的目标不同
-由与参数无关的常数。通常不同的时间加权
-不对应于相同的路径空间KL。
+第一项衡量真实终端分布之间的不匹配以及用于初始化生成的先验；当它消失时
+$p_T=p_{\mathrm{prior}}$。第二项衡量累积的不匹配在习得的漂移和精确的反向漂移之间。因此，与特定似然权重 $g^2(t)$ 的分数匹配有直接的路径空间解释：最小化加权分数误差最小化精确的反向路径定律和学习到的反向路径定律之间的 KL 散度，
+直至固定终端分布项。当去噪分数匹配为使用而不是边缘分数匹配，相应的目标不同由与参数无关的常数。通常不同的时间加权不对应于相同的路径空间 KL。
 
 \paragraph{与数据似然的连接.}
-路径空间 KL 还控制生成的和
-数据边缘。由于轨迹的端点是可测量的
-预测和 KL 散度在边缘化下不会增加，
+路径空间 KL 还控制生成的和数据边缘。由于轨迹的端点是可测量的预测和 KL 散度在边缘化下不会增加，
 \begin{align}\label{eq:girsanov-likelihood}
 \mathcal{D}_{\mathrm{KL}}
 \bigl(p_{\mathrm{data}}\|p_{\bm{\phi}}\bigr)
@@ -685,7 +659,5 @@ $p_T=p_{\mathrm{prior}}$。第二项衡量累积的不匹配
 其中 $p_{\bm{\phi}}$ 表示数据时间生成的边缘。
 
 将此与 \Cref{eq:girsanov-KL} 相结合表明，似然加权
-分数匹配与终端分布不匹配一起提供
-数据侧 KL 散度的上限，因此也是预期的上限
-负对数似然达到独立于 $\bm{\phi}$ 的常数
+分数匹配与终端分布不匹配一起提供数据侧 KL 散度的上限，因此也是预期的上限负对数似然达到独立于 $\bm{\phi}$ 的常数
 \citep{song2021maximum}。

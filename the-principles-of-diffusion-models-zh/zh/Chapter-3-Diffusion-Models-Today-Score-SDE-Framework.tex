@@ -1,4 +1,4 @@
-\chapter{当代扩散模型：分数SDE框架}\label{ch:score-sde}
+\chapter{当代扩散模型：分数 SDE 框架}\label{ch:score-sde}
 
 \epigraph{
     \textit{表达物理定律只有一种精确的方式，那就是微分方程。它们的长处在于足够基本，而且据我们所知，足够精确。
@@ -96,7 +96,7 @@
 
 
 
-    
+
 
 
 
@@ -176,21 +176,21 @@
 
 我们回头看看 NCSN 与 DDPM 的前向加噪方案。NCSN 使用一串逐渐增大的噪声水平 $\{\sigma_i\}_{i=1}^L$，每个干净样本 $\rvx_0 \sim p_{\mathrm{data}}$ 被扰动为
 \[
-\rvx_{\sigma_i} = \rvx_0 + \sigma_i \bm{\epsilon}_i, 
+\rvx_{\sigma_i} = \rvx_0 + \sigma_i \bm{\epsilon}_i,
 \qquad \bm{\epsilon}_i \sim \mathcal{N}(\bm{0}, \rmI).
 \]
 DDPM 则按一个方差计划逐步注入噪声 $\{\beta_i\}_{i=1}^L$\footnote{\Cref{sec:ddpm} 中把 DDPM 的前向步写作 $\rvx_i = \sqrt{1-\beta_i^2}\,\rvx_{i-1} + \beta_i\,\bm{\epsilon}_i$，其中 $\beta_i$ 表示所注入噪声的标准差，记 $\alpha_i := \sqrt{1-\beta_i^2}$。本章沿用 \citet{song2020score} 的约定，$\beta_i$ 表示所注入噪声的\emph{方差}，即 $\rvx_i = \sqrt{1-\beta_i}\,\rvx_{i-1} + \sqrt{\beta_i}\,\bm{\epsilon}_i$。两种约定的关系为 $\beta_i^{\textup{(此处)}} = \bigl(\beta_i^{\textup{(第~\ref{ch:variational} 章)}}\bigr)^2$，所描述的动力学相同。}：
 \[
-\rvx_i = \sqrt{1 - \beta_i}\, \rvx_{i-1} + \sqrt{\beta_i}\, \bm{\epsilon}_i, 
+\rvx_i = \sqrt{1 - \beta_i}\, \rvx_{i-1} + \sqrt{\beta_i}\, \bm{\epsilon}_i,
 \qquad \bm{\epsilon}_i \sim \mathcal{N}(\bm{0}, \rmI).
 \]
 把两者放到同一个离散时间网格上来看，从 $\rvx_t$ 到 $\rvx_{t+\Delta t}$ 的一步更新都具有如下形式\footnote{为书写方便，我们用 $\rvx(t)$ 与 $\rvx_t$ 互换表示 $t$ 时刻的样本（其他随时间变化的量同理）。}：
 \begin{align*}
     \text{\textbfs{NCSN:}} \,\,
-    & \rvx_{t+\Delta t} = \rvx_t + \sqrt{\sigma_{t+\Delta t}^2 - \sigma_t^2} \bm{\epsilon}_t 
+    & \rvx_{t+\Delta t} = \rvx_t + \sqrt{\sigma_{t+\Delta t}^2 - \sigma_t^2} \bm{\epsilon}_t
     &&\approx \rvx_t + \sqrt{\frac{\diff \sigma_t^2}{\diff t} \Delta t}  \bm{\epsilon}_t \\[0.5em]
     \text{\textbfs{DDPM:}} \,\,
-    & \rvx_{t+\Delta t} = \sqrt{1 - \beta(t)\Delta t} \rvx_t + \sqrt{\beta(t)\Delta t} \bm{\epsilon}_t 
+    & \rvx_{t+\Delta t} = \sqrt{1 - \beta(t)\Delta t} \rvx_t + \sqrt{\beta(t)\Delta t} \bm{\epsilon}_t
     &&\approx \rvx_t - \frac{1}{2} \beta(t) \rvx_t  \Delta t + \sqrt{\beta(t)\Delta t}  \bm{\epsilon}_t,
 \end{align*}
 其中 $\bm{\epsilon}_t \sim \mathcal{N}(\bm{0}, \rmI)$。有趣的是，两种加噪过程遵循同一个结构模式：
@@ -199,9 +199,9 @@ DDPM 则按一个方差计划逐步注入噪声 $\{\beta_i\}_{i=1}^L$\footnote{\
 \end{align}
 其中 $\rvf: \mathbb{R}^D \times \mathbb{R} \to \mathbb{R}^D$ 与 $g: \mathbb{R} \to \mathbb{R}$ 取值如下：
 \begin{align*}
-    \text{\textbfs{NCSN:}} \quad 
+    \text{\textbfs{NCSN:}} \quad
     & \rvf(\rvx, t) = 0, \qquad g(t) = \sqrt{\frac{\diff \sigma^2(t)}{\diff t}} \\[0.5em]
-    \text{\textbfs{DDPM:}} \quad 
+    \text{\textbfs{DDPM:}} \quad
     & \rvf(\rvx, t) = -\frac{1}{2} \beta(t)\, \rvx, \qquad g(t) = \sqrt{\beta(t)}.
 \end{align*}
 
@@ -273,7 +273,7 @@ p_t(\rvx_t |\rvx_0)
 \]
 描述干净数据样本 $ \rvx_0 \sim p_{\mathrm{data}} $ 如何演化为 $t$ 时刻的带噪版本 $\rvx_t$。一般地，\Cref{eq:sde_forward} 中的漂移项 $\rvf(\rvx,t)$ 可以是 $\rvx$ 的任意函数；但一个常见、且便于解析处理的选择，是假定它为仿射形式：
 \begin{equation}\label{eq:affine-drift}
-    \rvf(\rvx,t) = f(t) \rvx, 
+    \rvf(\rvx,t) = f(t) \rvx,
 \end{equation}
 其中 $f(t)$ 是 $t$ 的标量函数，通常取非正值。在这一结构下，给定 $\rvx_0$ 后的条件过程仍是高斯的，且扰动核可由求解相应的均值—方差 ODE 得到闭式解~\citep{sarkka2019applied}
 （另见 \Cref{subsec:scoresde-perturbation-kernel}）。具体为
@@ -308,8 +308,8 @@ p_T(\mathbf{x}_T) = \int p_T(\mathbf{x}_T |\mathbf{x}_0) p_{\mathrm{data}}(\math
 \]
 它最初是数据样本上的复杂混合，最终收敛到简单的先验 $p_{\mathrm{prior}}$，通常取高斯分布。在该极限下，
 \[
-p_T(\mathbf{x}_T) \approx p_{\mathrm{prior}}(\mathbf{x}_T) 
-\quad \text{且} \quad 
+p_T(\mathbf{x}_T) \approx p_{\mathrm{prior}}(\mathbf{x}_T)
+\quad \text{且} \quad
 p_T(\mathbf{x}_T |\mathbf{x}_0) \approx p_{\mathrm{prior}}(\mathbf{x}_T),
 \]
 因此前向过程把任意数据分布都映射到一个易于处理的先验，为反转与生成提供了方便的起点。
@@ -327,7 +327,7 @@ p_T(\mathbf{x}_T |\mathbf{x}_0) \approx p_{\mathrm{prior}}(\mathbf{x}_T),
 \begin{figure}[th!]
     \centering
     \includegraphics[width=\textwidth]{Images/PartB/reverse_sde_and_ode_trajectories.pdf}
-    \caption{\textbfs{用于数据生成的逆时随机过程可视化。} 
+    \caption{\textbfs{用于数据生成的逆时随机过程可视化。}
 过程从 $t=T$ 时由简单先验分布（$p_{\mathrm{prior}}$）抽取的样本出发（以“$\times$”标记），借助反向 SDE 沿时间反向演化；所得轨迹终止于 $t=0$，共同形成目标的双峰数据分布（$p_0 = p_{\mathrm{data}}$）。背景热图显示概率密度如何由简单的高斯分布逐步转变为复杂的目标分布。
 \figcredit{由作者创建。}}
     \label{fig:sde-density-back-traj}
@@ -470,8 +470,7 @@ g(t)\diff \rvw(t),
 \qquad
 \rvx(0)\sim p_0=p_{\mathrm{data}}.
 \]
-在标准正则条件下，其边缘密度 $p_t$ 演化
-根据福克尔-普朗克方程
+在标准正则条件下，其边缘密度 $p_t$ 演化根据福克尔-普朗克方程
 \begin{align}\label{eq:fp_general}
 \begin{aligned}
 \partial_t p_t(\rvx)
@@ -509,11 +508,11 @@ $\{p_t\}_{t\in[0,T]}$可以通过两种不同的动力来实现：
 \]
 从 $\tilde\rvx(0)\sim p_0$ 开始，从 $0$ 向前求解到 $T$
 给出 $\tilde\rvx(t)\sim p_t$。
-等价地，从$\tilde\rvx(T)\sim p_T$开始并求解相同的ODE
+等价地，从$\tilde\rvx(T)\sim p_T$开始并求解相同的 ODE
 从 $T$ 向后到 $0$ 遵循相同的反向边缘。
 
 \item[\textup{(ii)}]
-\emph{反时限SDE}
+\emph{反时限 SDE}
 \[
 \diff\bar\rvx(t)
 =
@@ -525,17 +524,14 @@ g^2(t)\nabla_{\rvx}\log p_t(\bar\rvx(t))
 +
 g(t)\diff\bar\rvw(t).
 \]
-从$\bar\rvx(T)\sim p_T$开始，这个SDE在时间上向后求解
-$t=T$ 至 $t=0$。沿着这个反向演化，它的边缘分布在
-时间 $t$ 是
+从$\bar\rvx(T)\sim p_T$开始，这个 SDE 在时间上向后求解
+$t=T$ 至 $t=0$。沿着这个反向演化，它的边缘分布在时间 $t$ 是
 \[
 \bar\rvx(t)\sim p_t.
 \]
 \end{enumerate}
 
-因此，反向时间 SDE 和 PF-ODE 可以具有相同的边缘分布
-在每个噪声水平，即使一个是随机的，另一个是
-确定性的。
+因此，反向时间 SDE 和 PF-ODE 可以具有相同的边缘分布在每个噪声水平，即使一个是随机的，另一个是确定性的。
 }{
 \Cref{app-sec:scoresde-fpe-proof} 中提供了证明，而 \Cref{subsec:fpe-reason} 使用概率边缘化技术提供了福克尔-普朗克方程背后的进一步直觉。
 }
@@ -549,7 +545,7 @@ $t=T$ 至 $t=0$。沿着这个反向演化，它的边缘分布在
 \begin{align*}
 \rvv(\rvx, \tau) := \rvf(\rvx, \tau) - \frac{1}{2} g^2(\tau)\nabla_{\rvx}\log p_\tau(\rvx).
 \end{align*}
-这里的积分刻画了沿 PF-ODE 轨迹累积的净位移。\emph{流映射} 这个术语在微分方程、动力系统和连续介质力学中本就是经典概念：它指的是在给定动力学下，把状态从时刻 $s$ 的位置带到时刻 $t$ 的位置的那个映射。速度场 $\rvv(\rvx,t)$ 描述的是瞬时运动，而流映射 $\bPsi_{s\to t}$ 记录的是有限时间区间内累积起来的运动~\citep{arnold1988geometrical,chorin1993mathematical}\footnote{这个映射背后的物理思想要古老得多。十八世纪的流体力学就已经通过速度场、通过追踪物质粒子的演化来研究运动，欧拉和拉格朗日的奠基性著作尤其如此~\citep{euler1757fluid,lagrange1783fluid}。}。全书都在这一标准的数学与物理意义上使用该术语，讨论基于扩散的快速生成器时尤其如此（见 \Cref{ch:distillation,ch:fast-scratch}）。在对 $\rvv$ 的温和光滑性假设下，流映射 $\bPsi_{s \to t}: \mathbb{R}^D \to \mathbb{R}^D$ 是光滑双射\footnote{%
+这里的积分刻画了沿 PF-ODE 轨迹累积的净位移。\emph{流映射} 这个术语在微分方程、动力系统和连续介质力学中本就是经典概念：它指的是在给定动力学下，把状态从时刻 $s$ 的位置带到时刻 $t$ 的位置的那个映射。速度场 $\rvv(\rvx,t)$ 描述的是瞬时运动，而流映射 $\bPsi_{s\to t}$ 记录的是有限时间区间内累积起来的运动~\citep{arnold1988geometrical,chorin1993mathematical}\footnote{这个映射背后的物理思想要古老得多。十八世纪的流体力学就已经通过速度场、通过追踪物质粒子的演化来研究运动，欧拉和拉格朗日的奠基性著作尤其如此~\citep{euler1757fluid,lagrange1783fluid}。}。全书都在这一标准的数学与物理意义上使用该术语，讨论基于扩散的快速生成器时尤其如此（见 \Cref{ch:distillation,ch:fast-scratch}）。在对 $\rvv$ 的适当光滑性假设下，流映射 $\bPsi_{s \to t}: \mathbb{R}^D \to \mathbb{R}^D$ 是光滑双射\footnote{%
 剧透一下：PF-ODE 的流映射 $\bPsi_{s\to t}$ 正是把 $p_s$ 搬运到 $p_t$ 的标准化流（NF）双射（详见 \Cref{sec:flow-based-method}）。区别在于：一旦前向 SDE 及其边缘密度确定，PF-ODE 公式就唯一地指定了与之相伴的速度场 $\rvv(\rvx,t) = \rvf(\rvx,t) -\frac{1}{2}g^2(t)\nabla_{\rvx}\log p_t(\rvx)$；而标准化流（或连续时间标准化流）则直接对速度场做参数化并加以学习。两者依赖的都是同一条“变量连续变化”的原理。
 }。
 
@@ -575,7 +571,18 @@ $Q_t(\rvx_t |\rvx_0)$ 之所以不唯一，是因为边缘约束并不能唯一�
 \msg{观察}{匹配预设的边缘密度}{
 多个过程可以产生相同的边缘密度序列；真正要紧的是满足福克尔—普朗克方程。这一基本洞见赋予我们极大的灵活性：设计从 $ p_{\mathrm{prior}} $ 到 $ p_{\mathrm{data}} $（或反向）的生成过程时，有大量可选方案。
 }
-福克尔—普朗克方程是扩散模型的核心，其根源是概率密度最基本的 \emph{变量替换公式}（系统处理见 \Cref{app:continuity}）。这绝不是一个次要的技术细节：这条原理贯穿本书的整个推演过程，在 \Cref{sec:flow-matching-framework} 中体现得尤为突出。取一小段欧拉步长 $\Delta t>0$:以同样的方式扩展到更高的维度。从正向SDE开始
+福克尔—普朗克方程是扩散模型的核心，其根源是概率密度最基本的 \emph{变量替换公式}（系统处理见 \Cref{app:continuity}）。这绝不是一个次要的技术细节：这条原理贯穿本书的整个推演过程，在 \Cref{sec:flow-matching-framework} 中体现得尤为突出。
+
+
+\subsection{一个可计算的例子：高斯动力学下的演化}\label{subsec:example-gaussian}
+当 $p_{\mathrm{data}}$ 是正态分布（或高斯的混合）时，分数函数有闭式表达。这使得它成为建立扩散过程直觉的理想设定：只需微积分的基本工具，就能显式地推出反向时间 SDE 与 PF-ODE，而不必借助高深的数学工具。本小节我们就演示这些方程在这样一个可处理的例子中会表现成什么样。
+
+
+\paragraph{用高斯情形精确计算反向时间 SDE。}
+当 $p_{\mathrm{data}}$ 为高斯时，\Cref{eq:sde_backward} 中的公式可以直接推出，无需依赖 \citet{anderson1982reverse} 的一般理论与证明。为说明核心思路，我们考虑一维情形；向更高维的推广方式完全相同。
+
+
+从正向 SDE 开始
 \[
 \diff x(t)  =  f(t)  x(t)  \diff t  +  g(t)  \diff w_t,
 \]
@@ -596,13 +603,13 @@ x_t \sim \mathcal N(\cdot;m_t,   s_t^2),
 由贝叶斯公式，条件密度正比于先验与转移核的乘积：
 \begin{align*}
     p(x_t   |   x_{t+\Delta t})  &\propto p(x_{t+\Delta t} | x_t   ) p_t(\rvx_t) \\&\propto
-\exp\Big(-\frac{(x_t-m_t)^2}{2s_t^2}\Big)  
+\exp\Big(-\frac{(x_t-m_t)^2}{2s_t^2}\Big)
 \exp\Big(-\frac{(x_{t+\Delta t}-a  x_t)^2}{2r^2}\Big).
 \end{align*}
 指数部分是 $x_t$ 的二次式。把两个平方项都展开并按项归并，就能清楚地看出哪些系数真正起作用：
 \[
 -2\log p(x_t   |   x_{t+\Delta t})
- = 
+ =
 A  x_t^2  -  2 B  x_t  +  \text{const},
 \]
 其中
@@ -613,14 +620,14 @@ B:=\frac{m_t}{s_t^2}+\frac{a  x_{t+\Delta t}}{r^2}.
 这里 $A$ 是各精度之和（先验精度，加上经 $a$ 传递过来的转移核精度），$B$ 则是对应的、以精度加权的目标值之和。有了这两项，配方一步就能给出后验：有了这些，完成平方就可以在一行中得到后验：
 \[
 A x_t^2 - 2 B x_t
-  =  
+  =
 A\Big(x_t-\frac{B}{A}\Big)^2  -  \frac{B^2}{A},
 \]
 于是条件分布是高斯分布，方差为 $1/A$，均值为 $B/A$：
 \[
 \Var(x_t   |   x_{t+\Delta t})   =   \frac{1}{\frac{1}{s_t^2}+\frac{a^2}{r^2}},
 \qquad
-\mathbb E[x_t   |   x_{t+\Delta t}]   =  
+\mathbb E[x_t   |   x_{t+\Delta t}]   =
 \frac{\frac{m_t}{s_t^2}+\frac{a  x_{t+\Delta t}}{r^2}}{\frac{1}{s_t^2}+\frac{a^2}{r^2}}.
 \]
 这两个闭式结果已经刻画了任意小 $\Delta t$ 下的反向转移。要从中读出反向时间 SDE，接着对小的 $\Delta t$ 做展开。
@@ -644,14 +651,13 @@ A\Big(x_t-\frac{B}{A}\Big)^2  -  \frac{B^2}{A},
 把均值与方差合在一起，就得到一步反向转移核
 \[
 x_t    |    x_{t+\Delta t}
- \sim 
+ \sim
 \mathcal N\!\left(
 x_{t+\Delta t} + \Delta t\!\left[-\left(f+\frac{g^2}{s_t^2}\right)  x_{t+\Delta t} + \frac{g^2}{s_t^2}  m_t\right],
  g^2  \Delta t\right)
  +  \mathcal{O}(\Delta t^2).
 \]
-这正是从 $t+\Delta t$ 回溯到 $t$ 的 Euler--Maruyama 更新：这被认为是 Euler--Maruyama 更新，从
-$t+\Delta t$ 至 $t$:
+这正是从 $t+\Delta t$ 回溯到 $t$ 的 Euler--Maruyama 更新：
 \[
 x_t - x_{t+\Delta t}
 = \Delta t\!\left[-\left(f+\frac{g^2}{s_t^2}\right) x_{t+\Delta t}
@@ -680,9 +686,7 @@ g^2(t)\partial_x\log p_t(\bar x(t))
 g(t)\diff\bar w(t),
 \qquad t:T\to0.
 \]
-这与 \Cref{eq:sde_backward} 中的一般反向时间 SDE 完全一致。写成向量形式时，标量导数 $\partial_x\log p_t$ 换成 $\nabla_{\rvx}\log p_t$。在向量形式中，标量导数
-$\partial_x\log p_t$ 替换为
-$\nabla_{\rvx}\log p_t$.
+这与 \Cref{eq:sde_backward} 中的一般反向时间 SDE 完全一致。写成向量形式时，标量导数 $\partial_x\log p_t$ 就换成 $\nabla_{\rvx}\log p_t$。
 
 \paragraph{用高斯情形精确计算 PF-ODE。}
 当假定数据分布为高斯时，我们同样可以直接推出 PF-ODE 的公式，避开福克尔—普朗克方程这类笨重的工具。最后会看到，PF-ODE 的边缘密度与正向 SDE、反向时间 SDE 的边缘密度完全吻合，这为 \Cref{subsec:fpe-sde-ode} 中将要讨论的福克尔—普朗克理论提供了一个构造性的验证。
@@ -764,7 +768,7 @@ x'(t)  =  f(t) x(t)  -  \tfrac12 g^2(t) \partial_x\log p_t\!\big(x(t)\big).
 \section{分数 SDE 的训练与采样}\label{sec:scoresde-training-sampling}
 
 \subsection{训练}\label{subsec:sde-train}
-沿用 \Cref{ch:score-based} 的思路，我们用一个以时间为条件的神经网络 $\mathbf{s}_{\bm{\phi}} = \mathbf{s}_{\bm{\phi}}(\rvx, t)$ 来逼近预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$（对所有 $t\in[0,T]$），做法是最小化 \Cref{eq:sm} 中的分数匹配目标：
+沿用 \Cref{ch:score-based} 的思路，我们用一个以时间为条件的神经网络 $\mathbf{s}_{\bm{\phi}} = \mathbf{s}_{\bm{\phi}}(\rvx, t)$ 来逼近预言分数 $\nabla_{\rvx} \log p_t(\rvx)$（对所有 $t\in[0,T]$），做法是最小化 \Cref{eq:sm} 中的分数匹配目标：
 \begin{equation*}
 \mathcal{L}_{\text{SM}}(\bm{\phi}; \omega(\cdot)) := \frac{1}{2} \mathbb{E}_{t\sim p_{\text{time}}}  \mathbb{E}_{\rvx_t \sim p_t}\left[\omega(t) \left\|\mathbf{s}_{\bm{\phi}}(\rvx_t, t) - \nabla_{\rvx} \log p_t(\rvx_t)\right\|_2^2\right],
 \end{equation*}
@@ -783,7 +787,7 @@ x'(t)  =  f(t) x(t)  -  \tfrac12 g^2(t) \partial_x\log p_t\!\big(x(t)\big).
     \label{fig:score-and-denoising-score}
 \end{figure}
 
-为避免依赖难以处理的预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$，我们改用 \Cref{eq:dsm-loss} 中的 DSM 损失。以数据点 $\rvx_0$ 为条件，这一做法可以借助 \Cref{eq:score-gaussian-formula} 使用解析上可处理的条件分数 $\nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0)$，具体例子见 \Cref{sec:instances}。我们具体使用如下损失函数：
+为避免依赖难以处理的预言分数 $\nabla_{\rvx} \log p_t(\rvx)$，我们改用 \Cref{eq:dsm-loss} 中的 DSM 损失。以数据点 $\rvx_0$ 为条件，这一做法可以借助 \Cref{eq:score-gaussian-formula} 使用解析上可处理的条件分数 $\nabla_{\rvx_t} \log p_t(\rvx_t|\rvx_0)$，具体例子见 \Cref{sec:instances}。我们具体使用如下损失函数：
 \begin{mdframed}
     \begin{equation}\label{eq:conti-dsm_loss-real}
 \begin{aligned}
@@ -801,7 +805,7 @@ x'(t)  =  f(t) x(t)  -  \tfrac12 g^2(t) \partial_x\log p_t\!\big(x(t)\big).
 最小化器 $\mathbf{s}^*$ 满足
 \begin{align}\label{eq:optimal-score}
 \begin{aligned}
-    \mathbf{s}^*(\rvx_t, t) 
+    \mathbf{s}^*(\rvx_t, t)
     = \mathbb{E}_{\rvx_0 \sim p(\rvx_0 | \rvx_t)} \big[ \nabla_{\rvx_t} \log p_t(\rvx_t | \rvx_0) \big]= \nabla_{\rvx_t} \log p_t(\rvx_t),
 \end{aligned}
 \end{align}
@@ -822,11 +826,11 @@ DSM 目标可以理解为一个最小二乘问题。具体地说，在每个时�
 \end{figure}
 
 
-学习后 
+学习后
 \[
 \mathbf{s}_{\bm{\phi}^\times} := \mathbf{s}_{\bm{\phi}^\times}(\rvx, t) \approx \nabla_{\rvx} \log p_t(\rvx),
 \]
-我们就可以把反向时间 SDE（\Cref{eq:sde_backward}）和 PF-ODE（\Cref{eq:prob_ode_gt}）中那个难以处理的预言机分数 $\nabla_{\rvx} \log p_t(\rvx)$ 换成学到的代理 $\mathbf{s}_{\bm{\phi}^\times}(\rvx, t)$。有了这个替换，无论走 SDE 还是走 ODE，推理都变得可计算。为清楚起见，我们把得到的过程分别记作 $\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(t)$ 与 $\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t)$，但后文将不再作此区分。\footnote{这样做是为了在本小节之后简化记号。}
+我们就可以把反向时间 SDE（\Cref{eq:sde_backward}）和 PF-ODE（\Cref{eq:prob_ode_gt}）中那个难以处理的预言分数 $\nabla_{\rvx} \log p_t(\rvx)$ 换成学到的代理 $\mathbf{s}_{\bm{\phi}^\times}(\rvx, t)$。有了这个替换，无论走 SDE 还是走 ODE，推理都变得可计算。为清楚起见，我们把得到的过程分别记作 $\rvx^{\mathrm{SDE}}_{\bm{\phi}^\times}(t)$ 与 $\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t)$，但后文将不再作此区分。\footnote{这样做是为了在本小节之后简化记号。}
 
 \paragraph{经验反向时间 SDE。}
 把训练好的分数模型 $\mathbf{s}_{\bm{\phi}^\times}$ 代入 \Cref{eq:sde_backward} 中的真实分数，就得到用于生成的参数化反向时间 SDE：
@@ -847,7 +851,7 @@ p_{\bm{\phi}^\times}^{\mathrm{SDE}}(\cdot; 0) \approx p_{\mathrm{data}}(\cdot).
 
 \paragraph{经验 PF-ODE。}
 PF-ODE 定义了一条连接 $p_{\mathrm{prior}}$ 与 $p_{\mathrm{data}}$ 的连续流，使采样、编码和精确似然评估都成为可能。下面分别说明这几种操作。
-\subparagraph{I. 用 PF-ODE 采样。} 把 \Cref{eq:prob_ode_gt} 中的预言机分数替换为 $\mathbf{s}_{\bm{\phi}^\times}$，即得经验 PF-ODE：
+\subparagraph{I. 用 PF-ODE 采样。} 把 \Cref{eq:prob_ode_gt} 中的预言分数替换为 $\mathbf{s}_{\bm{\phi}^\times}$，即得经验 PF-ODE：
 \begin{equation}\label{eq:prob_ode_sub}
     \frac{\diff}{\diff t} \rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t) = \mathbf{f}\left(\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t), t\right) - \frac{1}{2} g^2(t) \mathbf{s}_{\bm{\phi}^\times}\left(\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(t), t\right).
 \end{equation}
@@ -857,14 +861,14 @@ PF-ODE 定义了一条连接 $p_{\mathrm{prior}}$ 与 $p_{\mathrm{data}}$ 的连
 \]
 解这个积分就得到最终样本 $\rvx^{\mathrm{ODE}}_{\bm{\phi}^\times}(0)$。由这一确定性过程生成的样本，其分布记作 $p_{\bm{\phi}^\times}^{\mathrm{ODE}}(\cdot; 0)$，它是数据分布的近似，即 $p_{\bm{\phi}^\times}^{\mathrm{ODE}}(\cdot; 0) \approx p_{\mathrm{data}}$。设 $\Delta t > 0$ 为离散化步长。标准的数值积分做法是欧拉方法，即在 $\tau \in [t-\Delta t, t]$ 上用
 \[
-\mathbf{f}(\rvx_\tau, \tau) - \frac{1}{2} g^2(\tau)  
-\mathbf{s}_{\bm{\phi}^\times}(\rvx_\tau, \tau) \approx \mathbf{f}(\rvx_t, t) - \frac{1}{2} g^2(t)  
+\mathbf{f}(\rvx_\tau, \tau) - \frac{1}{2} g^2(\tau)
+\mathbf{s}_{\bm{\phi}^\times}(\rvx_\tau, \tau) \approx \mathbf{f}(\rvx_t, t) - \frac{1}{2} g^2(t)
 \mathbf{s}_{\bm{\phi}^\times}(\rvx_t, t)
 \]
 来近似被积函数，由此得到如下更新规则：导致以下更新规则：
 \begin{equation}\label{eq:euler-ode}
 \rvx_{t - \Delta t} \leftarrow \rvx_t -
-\left[ \mathbf{f}(\rvx_t, t) - \frac{1}{2} g^2(t)  
+\left[ \mathbf{f}(\rvx_t, t) - \frac{1}{2} g^2(t)
 \mathbf{s}_{\bm{\phi}^\times}(\rvx_t, t) \right] \Delta t.
 \end{equation}
 
@@ -902,9 +906,7 @@ PF-ODE 还可以用来计算数据样本的似然。
 \rvv_{\bm{\phi}^\times}(\rvx(t),t).
 \]
 
-要计算一个观测样本 $\rvx_0$ 的似然，我们把 PF-ODE 从 $t=0$ 正向跑到 $t=T$，将 $\rvx_0$ 映射到一个终点，而在该点上模型密度就是那个可处理的先验。同时可以追踪对数密度的变化，为此定义为了计算观测样本 $\rvx_0$ 的似然，我们沿概率流 ODE 积分
-从 $t=0$ 转发到 $t=T$，将 $\rvx_0$ 映射到
-而在该点上模型密度就是那个可处理的先验。同时可以追踪对数密度的变化，为此定义
+要计算一个观测样本 $\rvx_0$ 的似然，我们把 PF-ODE 从 $t=0$ 正向跑到 $t=T$，将 $\rvx_0$ 映射到一个终点，而在该点上模型密度就是那个可处理的先验。同时可以追踪对数密度的变化，为此定义为了计算观测样本 $\rvx_0$ 的似然，我们沿概率流 ODE 积分从 $t=0$ 转发到 $t=T$，将 $\rvx_0$ 映射到而在该点上模型密度就是那个可处理的先验。同时可以追踪对数密度的变化，为此定义
 \[
 \delta(t)
 :=
@@ -912,8 +914,7 @@ PF-ODE 还可以用来计算数据样本的似然。
 -
 \log p^{\textup{ODE}}_{\bm{\phi}^\times}(\rvx_0;0).
 \]
-于是 $\delta(0)=0$，并且状态与对数密度变化可以一并算出：因此，可以计算 $\delta(0)=0$ 以及状态和对数密度变化
-一起通过
+于是 $\delta(0)=0$，并且状态与对数密度变化可以一并算出：因此，可以计算 $\delta(0)=0$ 以及状态和对数密度变化一起通过
 \begin{align}\label{eq:score-sde-likelihood}
 \frac{\diff}{\diff t}
 \begin{bmatrix}
@@ -977,18 +978,18 @@ p^{\textup{ODE}}_{\bm{\phi}^\times}(\rvx_0;0)
   \resizebox{\textwidth}{!}{
   \begin{tabular}{cccc}
      \toprule
-    
+
          & \textbfs{VE SDE} & \textbfs{VP SDE} \\
        \midrule
     $\mathbf{f}(\rvx, t)$ & $\mathbf{0} $ & $-\frac{1}{2}\beta(t)\rvx$ \\
-      $g(t)$ & $\sqrt{\frac{\diff \sigma^2(t)}{\diff t}}$ 
-      
+      $g(t)$ & $\sqrt{\frac{\diff \sigma^2(t)}{\diff t}}$
+
        & $\sqrt{\beta(t)}$ \\
 
     SDE & $\diff\rvx(t) =  g(t) \diff\rvw(t)$ & $\diff\rvx(t) = -\frac{1}{2}\beta(t) \rvx(t) \diff t + \sqrt{\beta(t)} \diff\rvw(t)$ \\
    \midrule
      $p_t(\rvx_t|\rvx_0)$ & $        \mathcal{N}\left(\rvx_t ; \rvx_0, \left(\sigma^2(t) - \sigma^2(0)\right)\rmI\right)$ & $ \mathcal{N}\left(\rvx_t ; \rvx_0 e^{-\frac{1}{2}\int_{0}^{t} \beta(\tau)\diff \tau}, \rmI - \rmI e^{-\int_{0}^{t} \beta(\tau)\diff \tau}\right)$ \\
-   
+
      $p_{\mathrm{prior}}$ & $ \mathcal{N}(\bm{0}, \sigma^2(T)\rmI)$ & $\mathcal{N}(\bm{0}, \rmI)$ \\
  \bottomrule
   \end{tabular}
@@ -1008,12 +1009,12 @@ VE SDE 由以下几部分组成：
 前向 SDE 的形式如下：
 \begin{equation}\label{eq:vesde}
     \diff\rvx(t) =  \sqrt{\frac{\diff \sigma^2(t)}{\diff t}} \diff\rvw(t).
-\end{equation} 
+\end{equation}
 同样，\Cref{subsec:scoresde-perturbation-kernel} 的结果直接给出了 VE SDE 的扰动核，并提示了应当如何选取先验分布：
 \begin{itemize}
     \item \textbfs{扰动核：}
 \begin{align*}
-        p_t(\rvx_t | \rvx_0) &= \mathcal{N}\left(\rvx_t ; \rvx_0, \left(\sigma^2(t) - \sigma^2(0)\right)\rmI\right) 
+        p_t(\rvx_t | \rvx_0) &= \mathcal{N}\left(\rvx_t ; \rvx_0, \left(\sigma^2(t) - \sigma^2(0)\right)\rmI\right)
 \end{align*}
     \item \textbfs{先验分布：} 假定 $\sigma(t)$ 在 $t \in [0,T]$ 上单调递增，且 $\sigma^2(T) \gg \sigma^2(0)$。此时先验分布为
     \[
@@ -1090,8 +1091,8 @@ P(t) \mathbf{I}_D = \operatorname{Cov} \left[\rvx_t | \rvx(0) = \rvx_0\right].
 \end{align}
 前提是初始均值 $\rvm(0)$ 与方差 $P(0)$ 有限。由于这两个 ODE 都是线性的，可以用积分因子法求出闭式解。给定初始条件 $\rvx_0$，均值与方差按如下方式演化
 \begin{align}\label{eq:mean-var-solution}
-    \rvm(t) = \mathcal{E}(0  \to  t) \rvx_0, 
-\qquad 
+    \rvm(t) = \mathcal{E}(0  \to  t) \rvx_0,
+\qquad
 P(t) = \int_{0}^{t} \mathcal{E}^{2}(s  \to  t)  g(s)^{2} \diff s,
 \end{align}
 初始值为 $\rvm(0)=\rvx_0$、$P(0)=0$。这里 $\mathcal{E}(s  \to  t)$ 表示指数积分因子
@@ -1107,9 +1108,9 @@ P(t) = \int_{0}^{t} \mathcal{E}^{2}(s  \to  t)  g(s)^{2} \diff s,
 
 \proofparagraph{均值。}
 \[
-\frac{\diff \rvm(t)}{\diff t} = 0, 
+\frac{\diff \rvm(t)}{\diff t} = 0,
 \quad \text{with} \quad \rvm(0) = \rvx_0
- \Longrightarrow 
+ \Longrightarrow
 \rvm(t) = \rvx_0.
 \]
 
@@ -1117,7 +1118,7 @@ P(t) = \int_{0}^{t} \mathcal{E}^{2}(s  \to  t)  g(s)^{2} \diff s,
 \[
 \frac{\diff P(t)}{\diff t} = \frac{\diff \sigma^2(t)}{\diff t},
 \quad \text{with} \quad P(0) = 0
- \Longrightarrow 
+ \Longrightarrow
 P(t) = \sigma^2(t) - \sigma^2(0).
 \]
 因此
@@ -1159,8 +1160,8 @@ P(t) = 1 - e^{-B(t)}.
 \[
 p_t(\rvx_t|\rvx_0)
 = \mathcal{N} \left(
-   \rvx_t; 
-   \underbrace{e^{-\frac{1}{2} B(t)} \rvx_0}_{\rvm(t)}, 
+   \rvx_t;
+   \underbrace{e^{-\frac{1}{2} B(t)} \rvx_0}_{\rvm(t)},
    \underbrace{\big(1 - e^{-B(t)}\big)\mathbf{I}_D}_{P(t)\mathbf{I}_D}
 \right),
 \quad
@@ -1373,7 +1374,7 @@ g^2(t)\to\infty
 \begin{align}
 \begin{aligned}
     \label{eq:snr-kl}
-    \mathcal{D}_{\text{KL}}\big(p(\rvx_t|\rvx_s, \rvx_0)  \| p_{\bm{\phi}}(\rvx_t|\rvx_s)\big)  
+    \mathcal{D}_{\text{KL}}\big(p(\rvx_t|\rvx_s, \rvx_0)  \| p_{\bm{\phi}}(\rvx_t|\rvx_s)\big)
     &= \frac{1}{2\sigma^2(s,t)} \left\| \bm{\mu}(\rvx_s, \rvx_0; s,t) - \bm{\mu}_{\bm{\phi}}(\rvx_s, s, t) \right\|_2^2 \\
     &= \frac{1}{2} \big(\text{SNR}(t) - \text{SNR}(s)\big) \left\| \rvx_0 - \rvx_{\bm{\phi}}(\rvx_s, s) \right\|_2^2,
 \end{aligned}
@@ -1383,7 +1384,7 @@ g^2(t)\to\infty
 \rmkb{
 在 \citep{kingma2021variational} 中，作者考察了 \Cref{eq:snr-kl} 的连续时间极限 $t \to s$，得到
 \begin{align*}
-\mathcal{L}_{\text{VDM}}^\infty(\rvx_0) 
+\mathcal{L}_{\text{VDM}}^\infty(\rvx_0)
 = -\frac{1}{2}  \mathbb{E}_{s, \bm{\epsilon} \sim \mathcal{N}(\bm{0}, \bfI)}  \text{SNR}'(s)  \big\| \rvx_0 - \rvx_{\bm{\phi}}(\rvx_s, s) \big\|_2^2.
 \end{align*}
 这一框架还进一步引出了可学习的噪声调度；它虽然超出了连续时间数据设定的范围，但已不属于当前讨论的题目。
@@ -1437,7 +1438,7 @@ p_{t+\Delta t}(\rvx)
 \end{align*}
 
 \paragraph{泰勒展开。}
-对任意光滑函数 $\phi://R^D//to//R$ 与尺度 $\sigma>0$，若 $\rvz\sim\mathcal N(\bm{0},\rmI)$，则如下近似成立  
+对任意光滑函数 $\phi://R^D//to//R$ 与尺度 $\sigma>0$，若 $\rvz\sim\mathcal N(\bm{0},\rmI)$，则如下近似成立
 （称为\emph{泰勒—高斯平滑公式}）：
 
 \[
@@ -1458,7 +1459,7 @@ p_{t+\Delta t}(\rvx)
 \\=& -\Delta t \rvf(\rvx,t) \cdot \nabla_\rvx p_t(\rvx)
 -\Delta t (\nabla_\rvx \cdot\rvf)(\rvx,t) p_t(\rvx)
 +\frac{g^2(t)}{2}\Delta t \Delta_\rvx p_t(\rvx)
-+\mathcal O(\Delta t^2) 
++\mathcal O(\Delta t^2)
 \\=&  - \Delta t \nabla_\rvx \cdot \big(\rvf(\rvx,t) p_t(\rvx)\big)
  + \frac{g^2(t)}{2} \Delta t \Delta_\rvx p_t(\rvx)
  + \mathcal O(\Delta t^2).
@@ -1483,7 +1484,7 @@ p(\rvx_t | \rvx_{t+\Delta t}),
 \]
 再令 $\Delta t \rightarrow 0$ 得到连续时间下的公式。由贝叶斯定理，
 \begin{align}\label{eq:reverse-sde-bayes-discrete}
-    p(\rvx_t | \rvx_{t+\Delta t}) 
+    p(\rvx_t | \rvx_{t+\Delta t})
     &= p(\rvx_{t+\Delta t} | \rvx_t) \frac{p_t(\rvx_t)}{p_{t+\Delta t}(\rvx_{t+\Delta t})} \nonumber \\
     &= p(\rvx_{t+\Delta t} | \rvx_t) \exp\left(\log p_t(\rvx_t) - \log p_{t+\Delta t}(\rvx_{t+\Delta t})\right).
 \end{align}
@@ -1497,7 +1498,7 @@ p(\rvx_{t+\Delta t} | \rvx_t) = \mathcal{N}\left(\rvx_{t+\Delta t}; \rvx_t + \rv
 为处理指数项，我们对它做一阶泰勒展开，关键是在 $t$ 的时间方向上、围绕点 $(\rvx_t, t)$ 在空间与时间上同时展开：
 \begin{align*}
     \log p_{t+\Delta t}(\rvx_{t+\Delta t}) &= \log p_t(\rvx_t) + \nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t) \nonumber \\
-    &\quad + \frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t + \mathcal{O}(\|\rvh\|_2^2) 
+    &\quad + \frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t + \mathcal{O}(\|\rvh\|_2^2)
 \end{align*}
 其中 $\rvh := (\rvx_{t+\Delta t} - \rvx_t, \Delta t)$。因此：
 \begin{align}
@@ -1512,29 +1513,29 @@ p(\rvx_{t+\Delta t} | \rvx_t) = \mathcal{N}\left(\rvx_{t+\Delta t}; \rvx_t + \rv
 \begin{align*}
     &p(\rvx_t | \rvx_{t+\Delta t}) \nonumber \\
     = &\frac{1}{(2\pi g^2(t) \Delta t)^{D/2}} \exp\left(-\frac{\|\rvx_{t+\Delta t} - \rvx_t - \rvf(\rvx_t, t) \Delta t\|_2^2}{2 g^2(t) \Delta t}\right) \nonumber \\
-    &\qquad \cdot \exp\left(-\nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t) - \frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t +\mathcal{O}(\Delta t)\right). 
+    &\qquad \cdot \exp\left(-\nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t) - \frac{\partial \log p_t(\rvx_t)}{\partial t} \Delta t +\mathcal{O}(\Delta t)\right).
 \end{align*}
 \paragraph{代数运算。}
 关键一步是对指数配方。我们有：
 \begin{align*}
     &-\frac{\|\rvx_{t+\Delta t} - \rvx_t - \rvf(\rvx_t, t) \Delta t\|_2^2}{2 g^2(t) \Delta t} - \nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t) \nonumber \\
-    = &-\frac{\left[\|\rvx_{t+\Delta t} - \rvx_t - \rvf(\rvx_t, t) \Delta t\|_2^2 + 2 g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t)\right]}{2 g^2(t) \Delta t} 
+    = &-\frac{\left[\|\rvx_{t+\Delta t} - \rvx_t - \rvf(\rvx_t, t) \Delta t\|_2^2 + 2 g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t) \cdot (\rvx_{t+\Delta t} - \rvx_t)\right]}{2 g^2(t) \Delta t}
 \end{align*}
 记 $\boldsymbol{\delta} := \rvx_{t+\Delta t} - \rvx_t$、$\boldsymbol{\mu} := \rvf(\rvx_t, t) \Delta t$，则
 \begin{align*}
     &\|\boldsymbol{\delta} - \boldsymbol{\mu}\|_2^2 + 2 g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t) \cdot \boldsymbol{\delta} \nonumber \\
     = &\|\boldsymbol{\delta}\|_2^2 - 2\boldsymbol{\delta} \cdot \boldsymbol{\mu} + \|\boldsymbol{\mu}\|_2^2 + 2 g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t) \cdot \boldsymbol{\delta} \nonumber \\
     = &\|\boldsymbol{\delta}\|_2^2 - 2\boldsymbol{\delta} \cdot [\boldsymbol{\mu} - g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)] + \|\boldsymbol{\mu}\|_2^2 \nonumber \\
-    = &\|\boldsymbol{\delta} - [\boldsymbol{\mu} - g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)]\|_2^2 - \|g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)\|_2^2 
+    = &\|\boldsymbol{\delta} - [\boldsymbol{\mu} - g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)]\|_2^2 - \|g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)\|_2^2
 \end{align*}
 代回原变量：
 \begin{align*}
     &\|\boldsymbol{\delta} - [\rvf(\rvx_t, t) \Delta t - g^2(t) \Delta t \nabla_{\rvx} \log p_t(\rvx_t)]\|_2^2 \nonumber \\
-    = &\|\rvx_{t+\Delta t} - \rvx_t - [\rvf(\rvx_t, t) - g^2(t) \nabla_{\rvx} \log p_t(\rvx_t)] \Delta t\|_2^2. 
+    = &\|\rvx_{t+\Delta t} - \rvx_t - [\rvf(\rvx_t, t) - g^2(t) \nabla_{\rvx} \log p_t(\rvx_t)] \Delta t\|_2^2.
 \end{align*}
 于是
 \begin{align*}
-    p(\rvx_t | \rvx_{t+\Delta t}) 
+    p(\rvx_t | \rvx_{t+\Delta t})
     =~&\frac{1}{(2\pi g^2(t) \Delta t)^{D/2}} \nonumber \\
     \quad &\cdot \exp\left(-\frac{\|\rvx_{t+\Delta t} - \rvx_t - [\rvf(\rvx_t, t) - g^2(t) \nabla_{\rvx} \log p_t(\rvx_t)] \Delta t\|_2^2}{2 g^2(t) \Delta t}\right) \nonumber \\
     \quad &\cdot \exp(\mathcal{O}(\Delta t)) \nonumber \\
