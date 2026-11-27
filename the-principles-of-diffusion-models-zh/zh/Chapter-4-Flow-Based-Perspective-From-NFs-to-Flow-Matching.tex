@@ -801,12 +801,12 @@ C.
 \begin{align*}
     \mathcal{L}_{\mathrm{FM}}(\bm{\phi}) = \mathcal{L}_{\mathrm{CFM}}(\bm{\phi}) + C,
 \end{align*}
-其中 $C$ 是与参数 $\bm{\phi}$ 无关的常数。此外，两个损失的最小化器 $\rvv^*$ 满足
+其中 $C$ 是与参数 $\bm{\phi}$ 无关的常数。此外，两个损失的最优解 $\rvv^*$ 满足
 \[
     \rvv^*(\rvx_t, t) = \rvv_t(\rvx_t), \quad \text{for almost every } \rvx_t \sim p_t,
 \]
 其中 $\rvv_t(\rvx_t)$ 在 \Cref{eq:marginal-oracle-velocity} 中定义。
-}{最小化器的论证与推导，与命题~\ref{dsm-minimizer} 中分数匹配的情形完全一致。}
+}{最优解的论证与推导，与命题~\ref{dsm-minimizer} 中分数匹配的情形完全一致。}
 
 这是条件化技巧产生可算训练目标的第三个实例，如 \Cref{fig:cfm-illustration} 所示。值得注意的是，变分方法、基于分数的方法与基于流的方法体现的都是同一条基本原理。\rmkb{
 取$\pi = p_{\mathrm{data}}$，我们可以应用贝叶斯规则：
@@ -1120,7 +1120,7 @@ $p_0=\mathcal N(\bm 0,\rmI)$ （独立于 $p_{\mathrm{data}}$) 和 $p_1=p_{\math
 \[
 \mathbf v^*(\rvx,t)=\E \big[a_t'\rvx_0 + b_t'\rvx_1 | \rvx_t=\rvx\big],
 \]
-所以单侧与双侧的 CFM 目标具有相同的最小化器。
+所以单侧与双侧的 CFM 目标具有相同的最优解。
 
 
 \paragraph{高斯 FM = 扩散模型。}
@@ -1652,7 +1652,7 @@ $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 
 \paragraph{性质一：\texttt{Reflow} 不会增加输运代价。}
 设 $c(\rvy)$ 为凸代价函数（例如 $c(\rvy)=\|\rvy\|_2^p$，$p \geq 1$）。每一步 \texttt{Rectify} 所形成的新耦合 $(\rvz_0, \hat\rvz_1)$，其代价都不会比原来更差：
-\proppp{\texttt{Rectify} 可以降低输运代价}{rec-transport-cost}{
+\proppp{\texttt{Rectify} 可能降低输运代价}{rec-transport-cost}{
 假设速度场是理想的，即 $\rvv^* = \rvv_{\bm{\phi}^\times}$，则有：
 \[
 \mathbb{E}\left[c\left(\hat\rvz_1 - \rvz_0\right)\right] \leq \mathbb{E}\left[c\left(\rvx_1 - \rvx_0\right)\right].

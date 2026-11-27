@@ -588,7 +588,7 @@ p(\mathbf{x}_{i-1}|\mathbf{x}_i, \mathbf{x}_0) = p(\mathbf{x}_i|\mathbf{x}_{i-1}
     \right] + C.
 \end{aligned}
 \end{align}
-其中 $C$ 是独立于 $\bm{\phi}$ 的常数。此外，\Cref{eq:kl-matching}的最小化器满足
+其中 $C$ 是独立于 $\bm{\phi}$ 的常数。此外，\Cref{eq:kl-matching} 的最优解满足
 \[
 p^*(\mathbf{x}_{i-1}|\mathbf{x}_i) = \mathbb{E}_{p(\mathbf{x}_0|\mathbf{x}_i)} \big[p(\mathbf{x}_{i-1}|\mathbf{x}_i, \mathbf{x}_0)\big] = p(\mathbf{x}_{i-1}|\mathbf{x}_i), \quad \mathbf{x}_i \sim p_i.
 \]
