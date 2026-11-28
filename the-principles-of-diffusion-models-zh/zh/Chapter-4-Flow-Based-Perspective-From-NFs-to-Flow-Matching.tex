@@ -121,9 +121,9 @@ p_{\mathrm{prior}}(\rvz)
 \label{fig:score-fm-mental-picture}
 \end{figure}
 
-流匹配使这一原理超越了通常的高斯扩散设置。它可以在更通用的源和更通用的源之间构建连续传输可获得样本的目标分布，前提是所选择的条件概率路径可以被有效地采样，并且它们条件速度可以轻松计算。为了支持对本章的深入理解，我们提供了
-\Cref{app:continuity} 直观、独立的不同概述
-变量变化原理的形式，是从普通原理发展而来的将变量变换公式转化为连续性方程，并且具有随机性动力学，到福克尔-普朗克方程。
+流匹配把这一原理推广到了通常的高斯扩散设定之外。只要所选择的条件概率路径能够被高效采样、其条件速度能够以可处理的方式算出，它就可以在样本可得的更一般的源分布与目标分布之间构造连续输运。
+
+为帮助读者扎实理解本章，\Cref{app:continuity} 中给出了一份直观而自包含的综述，介绍变量变换原理的几种不同形式：从通常的变量变换公式，到连续性方程，再到引入随机动力学后的福克尔—普朗克方程。
 
 \chapterlearning{
   \item 通过传输概率分布的共同思想（从离散可逆变换到连续时间速度场）连接归一化流、神经常微分方程和流匹配；
@@ -342,7 +342,7 @@ t_k=k\Delta t,
 
 
 \paragraph{连续时间的变量替换公式。}
-与 \Cref{eq:nf-change-of-var}、\Cref{eq:multi-nf-density} 相仿，\citet{chen2018neural} 给出了变量替换公式的连续时间版本。设过程 $\rvx(t)$ 按 \Cref{eq:neural-ode} 演化、密度为随时间变化的 $p_{\bm{\phi}}(\rvx(t),t)$，则所谓的\emph{瞬时变量替换公式}为
+与 \Cref{eq:nf-change-of-var}、\Cref{eq:multi-nf-density} 相仿，\citet{chen2018neural} 给出了变量替换公式的连续时间版本。设过程 $\rvx(t)$ 按 \Cref{eq:neural-ode} 演化、密度为随时间变化的 $p_{\bm{\phi}}(\rvx(t),t)$，则所谓的\emph{瞬时变量变换公式}为
 \[
 \frac{\diff}{\diff t}
 \log p_{\bm{\phi}}(\rvx(t),t)
@@ -367,7 +367,7 @@ t_k=k\Delta t,
 
 这个公式乍看可能陌生，其实与福克尔—普朗克方程密切相关。特别地，它可以理解为沿一条轨迹写出的\emph{连续性方程}，也就是福克尔—普朗克方程在扩散为零时的确定性特例（见 \Cref{app:continuity}）。它同时也可看作离散变量替换公式 \Cref{eq:multi-nf-density} 的连续时间极限。我们把结论整理如下。
 
-\lemp{瞬时变量替换}{instant-change-of-var}{
+\lemp{瞬时变量变换}{instant-change-of-var}{
 设 $\rvz(t)$ 是一个密度随时间变化的连续过程，密度记为 $p(\rvz(t),t)$，并假定它按如下 ODE 演化
 \begin{align*}
 \frac{\diff\rvz(t)}{\diff t}
@@ -1435,7 +1435,7 @@ $p_{\mathrm{tgt}}$。
 
 \subsection{条件轨迹平直并不意味着边缘流平直}
 
-规范仿射插值
+典范仿射插值
 \[
 \rvx_t
 =
@@ -1454,7 +1454,7 @@ $p_{\mathrm{tgt}}$。
 \rvx_t=\rvx
 \right].
 \]
-端点对上的后验分布一般会随 $(\rvx,t)$ 的变化而变化。因此，尽管训练中每一条条件插值都是直线，沿边缘 ODE 轨迹实际遇到的速度却不必保持恒定。所以，仅仅选取了规范的仿射调度，并不意味着学到的边缘 ODE 就是精确平直的，也不意味着单个欧拉步就是精确的。整流流正是针对这一点：它的整流（或 \texttt{Reflow}）过程会改变端点之间的耦合，使诱导出的因果流逐步趋于平直流~\citep{liu2022flow}。下面的例子把这一区别讲得更清楚。
+端点对上的后验分布一般会随 $(\rvx,t)$ 的变化而变化。因此，尽管训练中每一条条件插值都是直线，沿边缘 ODE 轨迹实际遇到的速度却不必保持恒定。所以，仅仅选取了典范的仿射调度，并不意味着学到的边缘 ODE 就是精确平直的，也不意味着单个欧拉步就是精确的。整流流正是针对这一点：它的整流（或 \texttt{Reflow}）过程会改变端点之间的耦合，使诱导出的因果流逐步趋于平直流~\citep{liu2022flow}。下面的例子把这一区别讲得更清楚。
 
 \exm{一个简单的一维反例}{
 考虑一维设置
@@ -1463,7 +1463,7 @@ x_0 \sim \mathcal{N}(0, \sigma_0^2),
 \qquad
 x_1 \sim \mathcal{N}(0, \sigma_1^2),
 \]
-取独立耦合，并采用规范的仿射插值
+取独立耦合，并采用典范的仿射插值
 $x_t = (1-t)x_0 + tx_1$。每条条件路径 $(1-t)x_0 + tx_1$ 在时间上都是直线。下面来计算诱导出的边缘速度场。由于 $(x_1 - x_0,\, x_t)$ 服从联合高斯分布，条件期望关于 $x$ 是线性的，故有
 \[
 v^*(x,t)
@@ -1515,7 +1515,7 @@ z_{1/2} = \frac{z_0}{\sqrt{2}} \neq z_0.
         \label{fig:straightness-counterexample}
     \centering
     \includegraphics[width=\linewidth]{Images/PartB/straightness_counterexample.pdf}
-    \caption{\textbfs{边缘 ODE 轨迹在规范仿射插值下不是直的。}
+    \caption{\textbfs{边缘 ODE 轨迹在典范仿射插值下不是直的。}
     取 $x_0 \sim \mathcal{N}(0, \sigma_0^2)$ 与 $x_1 \sim \mathcal{N}(0, \sigma_1^2)$，令 $\sigma_0=2$、$\sigma_1=3$，采用独立耦合。
     灰色细线为采样得到的条件路径 $(1-t)x_0 + tx_1$，按构造它们都是直线。
     实线为精确的边缘 ODE 轨迹 $z_t = z_0\sqrt{(1-t)^2 + (\sigma_1/\sigma_0)^2 t^2}$；虚线为由 $z_0$ 到 $z_1$ 的相应直线插值。
@@ -1525,7 +1525,7 @@ z_{1/2} = \frac{z_0}{\sqrt{2}} \neq z_0.
 \end{figure}
 
 
-\section{\texorpdfstring{（选读）正则仿射流的性质}{（选读）正则仿射流的性质}}\label{sec:optimal-canonical}
+\section{\texorpdfstring{（选读）典范仿射流的性质}{（选读）典范仿射流的性质}}\label{sec:optimal-canonical}
 
 给定两个端点分布 $p_0=p_{\mathrm{src}}$ 与 $p_1=p_{\mathrm{tgt}}$，在流匹配（FM）~\citep{lipman2022flow} 与整流流（RF）~\citep{liu2022flow} 中，定义条件路径时一个自然且被广泛采用的选择是线性插值
 \[
@@ -1611,7 +1611,7 @@ $(1-t)\rvx_0+t\rvx_1$ 都是直线。但正如 \Cref{sec:optimal-canonical} 所�
 
 
 \paragraph{小结。}
-整流把独立的端点耦合替换为由学到的流所诱导的耦合。在反复执行 \texttt{Reflow} 的情形下，由此得到的边缘输运会越来越容易用少量数值步完成积分。对于规范路径，反复施加 \texttt{Rectify}（即“\emph{\texttt{Reflow}}”）可以在不增加输运代价的前提下进一步拉直轨迹，使训练更加容易。
+整流把独立的端点耦合替换为由学到的流所诱导的耦合。在反复执行 \texttt{Reflow} 的情形下，由此得到的边缘输运会越来越容易用少量数值步完成积分。对于典范路径，反复施加 \texttt{Rectify}（即“\emph{\texttt{Reflow}}”）可以在不增加输运代价的前提下进一步拉直轨迹，使训练更加容易。
 
 
 \subsection{\texttt{Reflow}：迭代拉直流}\label{subsec:reflow-def}
@@ -1627,7 +1627,7 @@ $(1-t)\rvx_0+t\rvx_1$ 都是直线。但正如 \Cref{sec:optimal-canonical} 所�
 
 \paragraph{核心思想：通过 \texttt{Rectify} 递归拉直。}
 
-从乘积耦合上的规范插值开始
+从乘积耦合上的典范插值开始
 $\pi^{(0)}:=p_{\text{src}}(\rvx_0)p_{\text{tgt}}(\rvx_1)$,
 \[
 \rvx_t=(1-t)\rvx_0+t\rvx_1.

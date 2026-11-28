@@ -1080,7 +1080,7 @@ r_{\pi}(\mathbf c,\mathbf x_w)-r_{\pi}(\mathbf c,\mathbf x_l)
 \subsection{Diffusion-DPO}\label{subsec:diffusion-dpo}
 本小节沿用 \Cref{subsec:dpo} 中的策略记号：$\pi_{\bm\theta}$ 与 $\pi_{\mathrm{ref}}$ 分别表示待学习与参考的扩散策略，包括它们的路径分布和转移分布；$p_t(\rvx_t|\rvx_0)$ 仍表示固定的前向加噪过程。
 \paragraph{为什么朴素的 DPO 在扩散模型上失效？}
-在扩散模型中计算样本似然 $\pi_\btheta(\mathbf x|\mathbf c)$ 需要用到 ODE 求解的瞬时变量替换公式（即漂移的散度，参见 \Cref{eq:score-sde-likelihood}）\footnote{在离散时间扩散模型（如 DDPM）中，计算 $\pi_{\bm\theta}(\mathbf x_0| \mathbf c)$ 需要对隐变量反向轨迹 $\mathbf x_{1:T}$ 做边缘化。}，计算量很大。此外，对整个采样轨迹求导还可能遇到梯度消失或爆炸。为避开这些问题，Diffusion-DPO 在\emph{路径}层面展开。我们以离散时间扩散模型（如 DDPM）为例说明，连续时间情形完全类似。
+在扩散模型中计算样本似然 $\pi_\btheta(\mathbf x|\mathbf c)$ 需要用到 ODE 求解的瞬时变量变换公式（即漂移的散度，参见 \Cref{eq:score-sde-likelihood}）\footnote{在离散时间扩散模型（如 DDPM）中，计算 $\pi_{\bm\theta}(\mathbf x_0| \mathbf c)$ 需要对隐变量反向轨迹 $\mathbf x_{1:T}$ 做边缘化。}，计算量很大。此外，对整个采样轨迹求导还可能遇到梯度消失或爆炸。为避开这些问题，Diffusion-DPO 在\emph{路径}层面展开。我们以离散时间扩散模型（如 DDPM）为例说明，连续时间情形完全类似。
 
 \paragraph{定义路径式的隐式奖励。}
 设一条轨迹为 $\mathbf x_{0:T}:=(\mathbf x_T,\ldots,\mathbf x_0)$，它服从以 $\pi(\mathbf x_{t-1}|\mathbf x_t,\mathbf c)$ 为条件转移的逆时间马尔可夫链。其中 $\mathbf x_T$ 是噪声最大的状态，$\mathbf x_0$ 是干净输出。人类偏好由最终输出定义，即 $r(\mathbf c,\mathbf x_0)$。由于 $\mathbf x_0$ 本身就是每条扩散轨迹的一部分，转到路径空间时奖励本身无需改动；真正有意义的一步是对整个反向过程做正则化。由 KL 散度的链式法则，完整路径分布之间的 KL 散度不小于其端点边缘分布之间的 KL 散度。这就启发如下路径式目标

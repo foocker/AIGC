@@ -321,7 +321,7 @@ p_t(\mathbf{x}_t|\mathbf{x}_0) = \mathcal{N}\left(\mathbf{x}_t; \alpha_t \mathbf
 下面逐一展开这四个组成部分，并以此作为后文各节的路线图。
 
 \paragraph{(A) 噪声调度 $\alpha_t$ 与 $\sigma_t$。}
-用户可以按自己的应用灵活选择调度，常见例子汇总在 \Cref{tb:interpolant_instances} 中。要点在于：正如 \Cref{eq:fm-general-affine-formula,eq:any-to-trig} 将要展示的，所有形如 $\mathbf{x}_t = \alpha_t \mathbf{x}_0 + \sigma_t \bm{\epsilon}$ 的仿射流在数学上都是等价的。具体地说，任何这样的插值都可以通过适当的时间重参数化与空间重缩放，转化为规范的线性调度（$\alpha_t = 1 - t$，$\sigma_t = t$）或三角调度（$\alpha_t = \cos t$，$\sigma_t = \sin t$）。
+用户可以按自己的应用灵活选择调度，常见例子汇总在 \Cref{tb:interpolant_instances} 中。要点在于：正如 \Cref{eq:fm-general-affine-formula,eq:any-to-trig} 将要展示的，所有形如 $\mathbf{x}_t = \alpha_t \mathbf{x}_0 + \sigma_t \bm{\epsilon}$ 的仿射流在数学上都是等价的。具体地说，任何这样的插值都可以通过适当的时间重参数化与空间重缩放，转化为典范的线性调度（$\alpha_t = 1 - t$，$\sigma_t = t$）或三角调度（$\alpha_t = \cos t$，$\sigma_t = \sin t$）。
 
 \paragraph{(B) 参数化 $\mathrm{NN}_{\bm{\phi}}$ 与训练目标 $A_t \rvx_0 + B_t \bm{\epsilon}$。}
 \begin{table}[th!]
@@ -372,7 +372,7 @@ $\rvx_0$ 作比较，而 $\rvv$ 预测网络则与条件速度
 网络的输出与损失中使用的量也可以分别选取。做法是先用
 \Cref{eq:predictions-equivalence} 中的关系把网络预测转换过去，再针对转换后预测类型所对应的目标计算损失。
 
-例如，在规范调度
+例如，在典范调度
 \[
 \rvx_t=(1-t)\rvx_0+t\beps,
 \]
@@ -556,7 +556,7 @@ $t$ 递减而有 $\frac{\diff}{\diff t}w(\Lambda_t)\geq0$。于是归一化之�
     \[
     \rvx_t=\alpha_t\rvx_0+\sigma_t\beps
     \]
-    可以通过状态重缩放，与规范仿射形式以及对应的规范坐标相互关联。当该坐标随时间单调演化时，
+    可以通过状态重缩放，与典范仿射形式以及对应的典范坐标相互关联。当该坐标随时间单调演化时，
     这一关系还同时定义了时间重参数化。
 
     \item \textbfs{边缘密度路径。}
@@ -568,9 +568,9 @@ $t$ 递减而有 $\frac{\diff}{\diff t}w(\Lambda_t)\geq0$。于是归一化之�
 \Cref{subsec:pf-ode-different-para} 随后说明这些预测如何导出
 对同一个预言的不同表述——PF-ODE。
 接下来，\Cref{subsec:all-flows-are-equiv} 把仿射概率路径与
-规范的线性形式和三角形式联系起来。
+典范的线性形式和三角形式联系起来。
 最后，\Cref{subsec:concept-why-v-affine} 给出关于
-规范线性调度与速度预测的进一步直觉，包括它们对训练和数值积分的影响。
+典范线性调度与速度预测的进一步直觉，包括它们对训练和数值积分的影响。
 
 这些精确的关系提供了通用的数学基础，而实际中的选择仍然是有意义的：有限容量的神经网络对等价的预言会有不同的近似，损失加权、优化过程、模型结构与数值积分也都可能导致不同的训练与采样表现。
 
@@ -740,8 +740,8 @@ g^2(t) = \frac{\diff}{\diff t} \big(\sigma_t^2\big)
 \subsection{所有仿射流都是等价的}\label{subsec:all-flows-are-equiv}
 接下来分析 \Cref{eq:general-dm-loss-D} 中 (A) 这一设计选项。
 
-\paragraph{规范形式下的等价。}
-FM~\citep{lipman2022flow} 与 RF~\citep{liu2022rectified} 中采用的便捷规范插值是
+\paragraph{典范形式下的等价。}
+FM~\citep{lipman2022flow} 与 RF~\citep{liu2022rectified} 中采用的便捷典范插值是
 \[
 \rvx_t^{\mathrm{FM}}=(1-t) \rvx_0+t \beps = \rvx_{0}+t(\beps-\rvx_0),
 \]
@@ -749,7 +749,7 @@ FM~\citep{lipman2022flow} 与 RF~\citep{liu2022rectified} 中采用的便捷规�
 \[
 \rvx_t=\alpha_t \rvx_0+\sigma_t \beps
 \]
-都可以写成规范路径经过时间重参数化与重缩放之后的版本。定义
+都可以写成典范路径经过时间重参数化与重缩放之后的版本。定义
 \[
 c(t):=\alpha_t+\sigma_t,
 \qquad
@@ -765,7 +765,7 @@ c(t):=\alpha_t+\sigma_t,
 &=c(t) \left(\big(1-\tau(t)\big)\rvx_0+\tau(t)\beps\right)
 =c(t) \rvx_{\tau(t)}^{\mathrm{FM}}.
 \end{align*}
-可见只要 $c(t)\neq0$，任何仿射路径都可以逐点表示为规范路径的一个标量重缩放。此外，如果 $\tau(t)$ 在所关心的时间区间上连续且严格单调，那么
+可见只要 $c(t)\neq0$，任何仿射路径都可以逐点表示为典范路径的一个标量重缩放。此外，如果 $\tau(t)$ 在所关心的时间区间上连续且严格单调，那么
 $t\mapsto\tau(t)$ 本身就是一个合法的（重新参数化的）时间变量，两条路径便通过时间重参数化与缩放 $c(t)$ 联系在一起。
 对常见的前向扩散调度而言，信噪比单调衰减，
 也就意味着 $\tau(t)$ 单调演化。
@@ -779,7 +779,7 @@ $t\mapsto\tau(t)$ 本身就是一个合法的（重新参数化的）时间变�
 &=c'(t) \rvx_{\tau(t)}^{\mathrm{FM}}+c(t) \tau'(t) \frac{\diff}{\diff s}\rvx^{\mathrm{FM}}_{s}\bigg|_{s=\tau(t)} \\
 &=c'(t) \rvx_{\tau(t)}^{\mathrm{FM}}+c(t) \tau'(t) \rvv^{\mathrm{FM}} \left(\rvx_{\tau(t)}^{\mathrm{FM}},\tau(t)\right),
 \end{align*}
-这里用到了沿规范路径成立的 $\rvv^{\mathrm{FM}}(\rvx^{\mathrm{FM}}_{\tau},\tau)=-\rvx_0+\beps$。
+这里用到了沿典范路径成立的 $\rvv^{\mathrm{FM}}(\rvx^{\mathrm{FM}}_{\tau},\tau)=-\rvx_0+\beps$。
 
 上述推导可归纳为下面的正式命题。
 
@@ -877,7 +877,7 @@ c(t)\tau'(t)
 \end{align}
 
 根据命题~\ref{equiv-interpolation}，任意仿射流 $\rvx_t=\alpha_t\rvx_0+\sigma_t\beps$
-都可以映射到规范 FM 路径 $\rvx_t=c(t)\rvx^{\mathrm{FM}}_{\tau(t)}$，其中
+都可以映射到典范 FM 路径 $\rvx_t=c(t)\rvx^{\mathrm{FM}}_{\tau(t)}$，其中
 $c(t)=\alpha_t+\sigma_t$、$\tau(t)=\sigma_t/(\alpha_t+\sigma_t)$。求导可得
 \[
 \rvv_{\bphi}(\rvx_t,t)=c'(t)\rvx^{\mathrm{FM}}_{\tau(t)}
@@ -897,15 +897,15 @@ $\rvv^*$ 也满足同样的关系。于是速度损失变为
 \msg{结论}{}{分数、噪声、干净数据与速度这四类训练目标，在理论上只相差一个与时间相关的权重（对速度目标而言，还涉及由 $(\alpha_t,\sigma_t)$ 确定的仿射转换 $\rvx_t$）。}
 
 
-\subsection{（选读）参数化与规范流的分析}\label{subsec:concept-why-v-affine}
-前面的章节已经表明：四种参数化在数学上彼此等价、可以相互转换，并且前向仿射加噪流等价于规范形式
+\subsection{（选读）参数化与典范流的分析}\label{subsec:concept-why-v-affine}
+前面的章节已经表明：四种参数化在数学上彼此等价、可以相互转换，并且前向仿射加噪流等价于典范形式
 \[
 \rvx_t^{\mathrm{FM}} = (1-t) \rvx_0 + t \beps,
 \]
-本小节将提供进一步的直观理解，并分析 $\rvv$ 预测参数化与这一规范仿射流的配合使用。这里要回答的问题很简单：\emph{不同的参数化与调度，如何塑造模型所学到的东西，又如何影响我们的采样方式？} 我们从两个概念角度入手：
+本小节将提供进一步的直观理解，并分析 $\rvv$ 预测参数化与这一典范仿射流的配合使用。这里要回答的问题很简单：\emph{不同的参数化与调度，如何塑造模型所学到的东西，又如何影响我们的采样方式？} 我们从两个概念角度入手：
 \begin{itemize}
     \item \textbfs{回归目标与调度。}
-    我们重点关注为什么把 $\rvv$ 预测与规范线性调度 $(\alpha_t,\sigma_t)=(1-t,t)$ 搭配起来是自然的：它使条件速度目标的量级在时间上保持恒定，并从速度的分解式中消去了显式的进度曲率项。
+    我们重点关注为什么把 $\rvv$ 预测与典范线性调度 $(\alpha_t,\sigma_t)=(1-t,t)$ 搭配起来是自然的：它使条件速度目标的量级在时间上保持恒定，并从速度的分解式中消去了显式的进度曲率项。
   \item \textbfs{对求解器的影响。}
 我们考察这一参数化如何与数值积分相互作用；更细致的求解器分析留到 \Cref{ch:solvers}。
 \end{itemize}
@@ -930,7 +930,7 @@ $\rvv^*$ 也满足同样的关系。于是速度损失变为
 
 
 \subparagraph{量级恒定的回归目标。}
-对规范调度 $\zeta(t)=t$，条件速度 $\rvv_t(\cdot |\rvz)$ 满足
+对典范调度 $\zeta(t)=t$，条件速度 $\rvv_t(\cdot |\rvz)$ 满足
 \begin{align}\label{eq:unit-velocity}
 \mathbb{E}\left[\|\rvv_t(\cdot |\rvz)\|_2^2\right]
 =\E_{\beps}\norm{\beps}_2^2+\E_{\rvx_0}\norm{\rvx_0}^2_2 = D + \underbrace{\Tr\Cov[\rvx_0]}_{\text{total variance}}+\underbrace{\norm{\E\rvx_0}^2_2}_{\text{mean}}.
@@ -949,8 +949,8 @@ $\alpha_t'\rvx_0$ 与 $\sigma_t'\beps$ 这两个分量对任意 $t$ 的贡献相
   \partial_{\bphi}\rvv_{\bphi}(\rvx_t,t)^{\top} \left(\rvv_{\bphi}(\rvx_t,t) - \rvv_t(\rvx_t|\rvz)\right)
 \right].
 \]
-可见目标的量级 $\|\rvv_t(\rvx_t|\rvz)\|_2$ 会影响梯度的稳定性：若它在某些 $t$ 处塌缩到 $0$（或爆掉），在其他条件相同的情况下，梯度就容易消失（或爆炸）。在规范选择 $\zeta(t)=t$ 之下，\Cref{eq:unit-velocity} 给出的目标量级与 $t$ 无关，因此不会在两个端点（$t=0$ 或 $t=1$）附近出现由回归信号导致的塌缩或爆炸（前提是 $\E\|\partial_{\bphi}\rvv_{\bphi}(\rvx_t,t)\|^2$ 以及任何时间权重都得到控制）。
-\subparagraph{规范调度与 $\rvv$ 预测的相互作用。}
+可见目标的量级 $\|\rvv_t(\rvx_t|\rvz)\|_2$ 会影响梯度的稳定性：若它在某些 $t$ 处塌缩到 $0$（或爆掉），在其他条件相同的情况下，梯度就容易消失（或爆炸）。在典范选择 $\zeta(t)=t$ 之下，\Cref{eq:unit-velocity} 给出的目标量级与 $t$ 无关，因此不会在两个端点（$t=0$ 或 $t=1$）附近出现由回归信号导致的塌缩或爆炸（前提是 $\E\|\partial_{\bphi}\rvv_{\bphi}(\rvx_t,t)\|^2$ 以及任何时间权重都得到控制）。
+\subparagraph{典范调度与 $\rvv$ 预测的相互作用。}
 在仿射路径 $\rvx_t=\alpha_t \rvx_0+\sigma_t\beps$ 下，预言速度可分解为
 \[
 \rvv^*(\rvx, t)=\alpha_t' \rvx^*(\rvx,t)+\sigma_t' \beps^*(\rvx,t),
@@ -987,7 +987,7 @@ $(1-t,t)$ 与 $v$ 预测相结合（尽管这并非唯一选择），能给出�
 \]
 在边界条件 $\zeta(0)=0$、$\zeta(1)=1$ 下，
 欧拉—拉格朗日方程 $\zeta''(t)=0$ 给出的驻点为 $\zeta(t)=t$，对应的正是直线条件路径。这说明：在这一切光滑调度 $\zeta$ 之中，
-规范流 $\zeta(t)=t$ 是把 $\rvx_0$ 输运到 $\beps$ 最省能的方式。我们将在命题~\ref{ot-conditional-flow} 中再次讨论这一点，并给出更细致的处理。
+典范流 $\zeta(t)=t$ 是把 $\rvx_0$ 输运到 $\beps$ 最省能的方式。我们将在命题~\ref{ot-conditional-flow} 中再次讨论这一点，并给出更细致的处理。
 
 
 \subparagraph{关于预言速度能量的注记。}
@@ -1100,7 +1100,7 @@ DPM-Solver~\citep{lu2022dpm}）正是利用了这一结构。求解器视角的�
 \rvv^*(\rvx(t),t).
 \]
 因此，一次网络前向就直接给出了标准 ODE 求解器所需要的量，
-无需先把预测与另一个线性项组合起来。规范线性调度使这一联系尤为清晰。
+无需先把预测与另一个线性项组合起来。典范线性调度使这一联系尤为清晰。
 对于
 \[
 \rvx_t=(1-t)\rvx_0+t\beps,
@@ -1123,7 +1123,7 @@ DPM-Solver~\citep{lu2022dpm}）正是利用了这一结构。求解器视角的�
 +
 (s-t)\rvv_{\bm{\phi}^{\times}}(\rvx_t,t),
 \]
-这恰好是规范线性调度下，用学到的速度场做简单欧拉更新所得的结果。因此，$\rvv$ 预测与线性调度在“模型的预测”与“PF-ODE 的数值积分”之间搭起了一座格外直接的桥。关于数值求解器以及更一般调度的详细讨论，我们留到 \Cref{ch:solvers}。
+这恰好是典范线性调度下，用学到的速度场做简单欧拉更新所得的结果。因此，$\rvv$ 预测与线性调度在“模型的预测”与“PF-ODE 的数值积分”之间搭起了一座格外直接的桥。关于数值求解器以及更一般调度的详细讨论，我们留到 \Cref{ch:solvers}。
 
 综合来看：$\rvv$ 预测直接给出了 PF-ODE 所需的速度；
 而其他预测类型要通过依赖调度的转换，才能表示同一个预言动力学。正是这种直接对应关系，
@@ -1131,7 +1131,7 @@ DPM-Solver~\citep{lu2022dpm}）正是利用了这一结构。求解器视角的�
 
 
 \paragraph{小结。}
-把 $\rvv$ 预测与规范线性调度结合使用，确实带来了一些理论上的好处，例如目标量级恒定、不存在调度曲率；但这些性质并不能让它普遍占优。实践中，模型性能取决于一系列相互作用的因素，包括网络结构、归一化方案、随时间变化的损失权重、采样器与离散化步数的选择、引导强度、正则化策略、数据缩放以及总体训练预算。不同的数据集与目标，可能更适合别的参数化或调度；最优配置归根结底是个经验问题，应通过验证与消融实验来确定。
+把 $\rvv$ 预测与典范线性调度结合使用，确实带来了一些理论上的好处，例如目标量级恒定、不存在调度曲率；但这些性质并不能让它普遍占优。实践中，模型性能取决于一系列相互作用的因素，包括网络结构、归一化方案、随时间变化的损失权重、采样器与离散化步数的选择、引导强度、正则化策略、数据缩放以及总体训练预算。不同的数据集与目标，可能更适合别的参数化或调度；最优配置归根结底是个经验问题，应通过验证与消融实验来确定。
 
 
 \section{万变不离其宗：福克尔—普朗克方程}\label{sec:comparison-connection}

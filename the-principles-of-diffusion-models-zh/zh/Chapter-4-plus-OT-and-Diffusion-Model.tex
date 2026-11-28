@@ -1018,7 +1018,7 @@ u(\mathbf{x}) = \frac{1}{2} \|\mathbf{x}\|^2 + \varepsilon \phi(\mathbf{x}), \qu
 答案是「不能」。不过，把线性路径与给定耦合结合起来，可以给出真实 OT 代价的一个实际上界；而在所有可能的路径中，线性插值给出的上界是最紧的，下面的讨论将说明这一点。
 
 
-\paragraph{规范线性流与最优传输。}
+\paragraph{典范线性流与最优传输。}
 对于二次代价下的最优传输，我们考察 \Cref{eq:ot} 的如下等价形式，即 Benamou--Brenier 表述 \Cref{eq:bb-ot}：
 \begin{equation*}
     \mathcal{K}\left(p_{\mathrm{src}}, p_{\mathrm{tgt}}\right) :=  \min_{\substack{ (p_t, \rvv_t) \text{ s.t. }
@@ -1028,7 +1028,7 @@ u(\mathbf{x}) = \frac{1}{2} \|\mathbf{x}\|^2 + \varepsilon \phi(\mathbf{x}), \qu
     \int_0^1 \int_{\mathbb{R}^D} \|\rvv_t(\rvx)\|^2 p_t(\rvx) \diff\rvx \diff t.
 \end{equation*}
 与静态的 Monge 表述不同（\Cref{eq: Monge's Formulation}；那里求最优映射需要解 Monge--Ampère 方程，见 \Cref{eq:monge-ampere}），Benamou--Brenier 问题在引入动量场
-$\rvm_t := p_t \rvv_t$ 之后具有凸的重构形式。尽管如此，要在 $\mathbb{R}^D$ 的网格上离散化这个凸问题，在高维情形下依然难以处理。虽然求解 Benamou--Brenier 表述通常很棘手，但 \citet{liu2022rectified,lipman2024flow} 指出其动能存在一个实用的上界。其做法是把搜索范围限制在更简单的一族\emph{条件流}中：每一条路径都由它的固定端点 $(\rvx_0, \rvx_1)$ 确定，而端点对由源分布与目标分布之间的耦合 $\pi_{0,1}$ 诱导。在\emph{条件流}这一族里，规范线性插值就是最优选择，如下所示。
+$\rvm_t := p_t \rvv_t$ 之后具有凸的重构形式。尽管如此，要在 $\mathbb{R}^D$ 的网格上离散化这个凸问题，在高维情形下依然难以处理。虽然求解 Benamou--Brenier 表述通常很棘手，但 \citet{liu2022rectified,lipman2024flow} 指出其动能存在一个实用的上界。其做法是把搜索范围限制在更简单的一族\emph{条件流}中：每一条路径都由它的固定端点 $(\rvx_0, \rvx_1)$ 确定，而端点对由源分布与目标分布之间的耦合 $\pi_{0,1}$ 诱导。在\emph{条件流}这一族里，典范线性插值就是最优选择，如下所示。
 
 \proppp{用条件流给出 OT 动能的上界}{ot-conditional-flow}{
 设 $\pi_{0,1}$ 为 $p_{\mathrm{src}}$ 与 $p_{\mathrm{tgt}}$ 之间的任一耦合。
