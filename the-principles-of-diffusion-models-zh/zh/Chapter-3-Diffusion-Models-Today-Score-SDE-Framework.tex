@@ -401,7 +401,7 @@ $t=T$ 至 $t=0$。沿着这个反向演化，它的边缘分布在时间 $t$ 是
 \rvv(\rvx, \tau) := \rvf(\rvx, \tau) - \frac{1}{2} g^2(\tau)\nabla_{\rvx}\log p_\tau(\rvx).
 \end{align*}
 这里的积分刻画了沿 PF-ODE 轨迹累积的净位移。\emph{流映射} 这个术语在微分方程、动力系统和连续介质力学中本就是经典概念：它指的是在给定动力学下，把状态从时刻 $s$ 的位置带到时刻 $t$ 的位置的那个映射。速度场 $\rvv(\rvx,t)$ 描述的是瞬时运动，而流映射 $\bPsi_{s\to t}$ 记录的是有限时间区间内累积起来的运动~\citep{arnold1988geometrical,chorin1993mathematical}\footnote{这个映射背后的物理思想要古老得多。十八世纪的流体力学就已经通过速度场、通过追踪物质粒子的演化来研究运动，欧拉和拉格朗日的奠基性著作尤其如此~\citep{euler1757fluid,lagrange1783fluid}。}。全书都在这一标准的数学与物理意义上使用该术语，讨论基于扩散的快速生成器时尤其如此（见 \Cref{ch:distillation,ch:fast-scratch}）。在对 $\rvv$ 的适当光滑性假设下，流映射 $\bPsi_{s \to t}: \mathbb{R}^D \to \mathbb{R}^D$ 是光滑双射\footnote{%
-剧透一下：PF-ODE 的流映射 $\bPsi_{s\to t}$ 正是把 $p_s$ 搬运到 $p_t$ 的标准化流（NF）双射（详见 \Cref{sec:flow-based-method}）。区别在于：一旦前向 SDE 及其边缘密度确定，PF-ODE 公式就唯一地指定了与之相伴的速度场 $\rvv(\rvx,t) = \rvf(\rvx,t) -\frac{1}{2}g^2(t)\nabla_{\rvx}\log p_t(\rvx)$；而标准化流（或连续时间标准化流）则直接对速度场做参数化并加以学习。两者依赖的都是同一条“变量连续变化”的原理。
+剧透一下：PF-ODE 的流映射 $\bPsi_{s\to t}$ 正是把 $p_s$ 搬运到 $p_t$ 的归一化流（NF）双射（详见 \Cref{sec:flow-based-method}）。区别在于：一旦前向 SDE 及其边缘密度确定，PF-ODE 公式就唯一地指定了与之相伴的速度场 $\rvv(\rvx,t) = \rvf(\rvx,t) -\frac{1}{2}g^2(t)\nabla_{\rvx}\log p_t(\rvx)$；而归一化流（或连续时间归一化流）则直接对速度场做参数化并加以学习。两者依赖的都是同一条“变量连续变化”的原理。
 }。
 
 
@@ -1381,7 +1381,7 @@ p(\rvx_{t+\Delta t} | \rvx_t) = \mathcal{N}\left(\rvx_{t+\Delta t}; \rvx_t + \rv
     \text{\textbfs{Mean:}} &  \quad\rvx_{t+\Delta t} - \big[\rvf(\rvx_{t+\Delta t}, t+\Delta t) - g^2(t+\Delta t) \rvs (\rvx_{t+\Delta t}, t+\Delta t)\big] \Delta t, \\
     \text{\textbfs{Covariance:}} & \quad g^2(t+\Delta t) \Delta t \mathbf{I}.
 \end{align*}
-令 $\Delta t \rightarrow 0$，我们就“推出”了 \Cref{eq:sde_backward} 所给出的逆时连续 SDE。\newpage
+令 $\Delta t \rightarrow 0$，我们就“推出”了 \Cref{eq:sde_backward} 所给出的逆时连续 SDE。
 
 \section{结束语}
 
